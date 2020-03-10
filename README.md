@@ -12,4 +12,4 @@ Currently available algorithms include:
 
 "particle_filter"
 
-Make sure to set move_base to use the global_planner/GlobalPlanner plugin rather than navfn, since the implementation of the algorithms utilize the make_plan service.
+Make sure to set move_base to use the global_planner/GlobalPlanner plugin rather than navfn, since the implementations of the algorithms utilize the make_plan service.
