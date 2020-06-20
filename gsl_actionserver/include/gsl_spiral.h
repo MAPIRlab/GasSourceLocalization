@@ -1,35 +1,17 @@
-#include <ros/ros.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <actionlib/client/simple_action_client.h>
-#include <ros/ros.h>
-
-#include <actionlib/client/simple_action_client.h>
-#include <move_base_msgs/MoveBaseAction.h>
-#include <nav_msgs/GetPlan.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <geometry_msgs/Quaternion.h>
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
-
-#include <olfaction_msgs/gas_sensor_array.h>
-#include <olfaction_msgs/gas_sensor.h>
-#include <olfaction_msgs/anemometer.h>
-
 #include <vector>
 #include <list>
-#include <angles/angles.h>
 #include <fstream>      // std::ofstream
 #include <iostream>
-#include <cmath>
+
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+
+#include <gsl_algorithm.h>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 enum class SPIRAL_state {WAITING_FOR_MAP, STOP_AND_MEASURE, SPIRAL};
 
-class SpiralSearcher
+class SpiralSearcher:public GSLAlgorithm
 {   
 public:
 
@@ -49,10 +31,8 @@ public:
     void setRandomGoal();
     void resetSpiral();
     move_base_msgs::MoveBaseGoal nextGoalSpiral(geometry_msgs::Pose initial);
-    bool checkGoal(move_base_msgs::MoveBaseGoal * goal);
     bool doSpiral();
-    int checkSourceFound();
-    bool isInMotion();
+
     SPIRAL_state getPreviousState();
     SPIRAL_state getCurrentState();
     double getPI();
@@ -60,11 +40,8 @@ public:
     void save_results_to_file(int result);
     
 private:
-    ros::NodeHandle *nh_;
-    MoveBaseClient mb_ac;
     SPIRAL_state current_state;
     SPIRAL_state previous_state;
-    bool inMotion;    //! Determines if a goal has been set and we are moving towards it
 
     //Variables for controlling when to reset spiral
     double Kmu; //constants
@@ -90,40 +67,11 @@ private:
     double step;
     double step_increment;
     double initStep;
-    bool verbose;
-    bool inExecution;
-    ros::Time start_time;
-    double max_search_time;
-    double distance_found;
-    std::vector<geometry_msgs::PoseWithCovarianceStamped> robot_poses_vector;
-    double source_pose_x, source_pose_y;
-    double robot_pose_x, robot_pose_y;
-    std::string results_file;
-    int arrow_count;
 
-    //Variables for navigation
-    nav_msgs::OccupancyGrid map_;                                       //! Map
-    geometry_msgs::PoseWithCovarianceStamped current_robot_pose;        //! Robot pose on the global frame referential
-
-
-    //Subscriptions
-    ros::Subscriber gas_sub_;                                           //! Gas readings subscriber
-    ros::Subscriber map_sub_;                                           //! Map subscriber.
-    ros::Subscriber localization_sub_;
-    ros::ServiceClient mb_client;
-    tf::TransformListener tf_;
-    std::string enose_topic, robot_location_topic, map_topic;
-    
-    //Called Services
-    ros::ServiceClient srv_GDM_client;
-    
     //-------------------
     // CallBack functions
     //-------------------
-    void gasCallback(const olfaction_msgs::gas_sensorPtr& msg);
-    void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-    void localizationCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg);
-    void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const move_base_msgs::MoveBaseResultConstPtr &result);
-    void goalActiveCallback();
-    void goalFeedbackCallback(const move_base_msgs::MoveBaseFeedbackConstPtr &feedback);
+    void gasCallback(const olfaction_msgs::gas_sensorPtr& msg) override;
+    void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg) override;
+    void windCallback(const olfaction_msgs::anemometerPtr& msg) override;
 };

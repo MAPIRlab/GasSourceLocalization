@@ -252,11 +252,11 @@ Eigen::Vector3d ParticleFilter::valueToColor(double val){
     double logaritmo=log10(val);
     if(logaritmo<-6.6){
         r=0;
-        g=std::max<double>((logaritmo+10)/3.3,0);
-        b=1;
+        g=1;
+        b=1-std::max<double>((logaritmo+10)/3.3,0);
     }
     else if(logaritmo<-3.3){
-        r=1-(logaritmo+6.6)/3.3;
+        r=(logaritmo+6.6)/3.3;
         g=1;
         b=0;
     }else{

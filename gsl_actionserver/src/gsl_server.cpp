@@ -2,6 +2,7 @@
 #include "gsl_spiral.h"
 #include "gsl_particle_filter.h"
 #include "gsl_surge_cast.h"
+#include "gsl_grid.h"
 
 // GAS SOURCE LOCALIZATION BASED ON SEMANTIC KNOWLEDGE
 int CGSLServer::doSurgeCast()
@@ -89,7 +90,7 @@ int CGSLServer::doSpiral()
             //Search ended and results are saved to file
             return 1;
         }
-        if (!spiral.isInMotion())
+        if (!spiral.get_inMotion())
         {
             switch(spiral.getCurrentState()){
                 case(SPIRAL_state::WAITING_FOR_MAP):
@@ -299,6 +300,37 @@ int CGSLServer::doParticleFilter()
     }
 }
 
+int CGSLServer::doGrid()
+{
+    ros::NodeHandle nh("~");
+    GridGSL grid(&nh);
+    ros::Rate loop_rate(10);
+    while(ros::ok()&&grid.checkSourceFound()==-1)
+    {
+        ros::spinOnce();
+        if(!grid.get_inMotion()){
+            switch(grid.getState()){
+                case Grid_state::WAITING_FOR_MAP:
+                    ROS_INFO("[GSL-PlumeTracking] Waiting for the map of the environment!...."); 
+                    break;
+                case Grid_state::STOP_AND_MEASURE:
+                    grid.getGasWindObservations();
+                    break;
+                case Grid_state::MOVING:
+                    grid.setGoal();
+                    break;
+                case Grid_state::EXPLORATION:
+                    break;
+                default:
+                    ROS_ERROR("[GSL-Grid] Search state is undefined!");
+            }
+        }
+        
+        loop_rate.sleep();
+    }
+    return 1;
+}
+
 //=======================================================
 // Action Server Callback when Goal is received (START!)
 //=======================================================
@@ -320,6 +352,9 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
     }
     else if(goal->gsl_method == "particle_filter"){
         res=doParticleFilter();
+    }
+    else if(goal->gsl_method == "grid"){
+        res=doGrid();
     }
     else
         ROS_ERROR("[GSL_server] Invalid GSL method: %s, candidates are: 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter", goal->gsl_method.c_str());
@@ -348,6 +383,7 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
         // set the action state to succeeded (end)
         as_.setSucceeded(result_);
     }
+    ros::shutdown();
 }
 
 //===================================================================================

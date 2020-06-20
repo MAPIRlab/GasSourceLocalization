@@ -19,5 +19,5 @@ public:
     void checkState() override;                  //Check gas/wind to see if a state transition is necessary
     void setSurgeGoal() override;                //Set target upwind
     void setCastGoal() override;                 //Set target crosswind
-
+    void save_results_to_file(int result) override;
 };

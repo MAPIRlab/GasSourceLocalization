@@ -75,11 +75,13 @@ void SurgeCastPT::setSurgeGoal()
     if (verbose) ROS_DEBUG("SurgeCastPT - %s - Sending robot to %lf %lf", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
     mb_ac.sendGoal(goal, boost::bind(&SurgeCastPT::goalDoneCallback, this,  _1, _2), boost::bind(&SurgeCastPT::goalActiveCallback, this), boost::bind(&SurgeCastPT::goalFeedbackCallback, this, _1));
     inMotion = true;
+    
 }
 
 
 void SurgeCastPT::setCastGoal()
 {
+    
     // Initially, get CrossWind direction with respect reference /map
     double movement_dir;
     if (cast_movement == 0)
@@ -120,11 +122,6 @@ void SurgeCastPT::setCastGoal()
         goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
         //ROS_INFO("SurgeCastPT - %s - Testing %lf %lf...", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-        if(!nh_->ok())
-        {
-            ROS_ERROR("SurgeCastPT - %s - Exiting...", __FUNCTION__);
-            return;
-        }
 
         //reduce step (in case goal is an obstacle or out of bounds)
         current_step = current_step-0.3;
@@ -152,7 +149,7 @@ void SurgeCastPT::checkState()
     {
     case PT_state::EXPLORATION:
         //We are looking for gas clues
-        if(get_average_vector(gasConcentration_v) > th_gas_present)
+        if(gasFound&&*max_element(gasConcentration_v.begin(), gasConcentration_v.end()))
         {
             if (verbose) ROS_INFO("GAS HIT!");
             gasHit=true;
@@ -168,7 +165,7 @@ void SurgeCastPT::checkState()
         break;
     case PT_state::UPWIND_SURGE:
         //We are moving within the gas plume
-        if(get_average_vector(gasConcentration_v) < th_gas_present)
+        if(*max_element(gasConcentration_v.begin(), gasConcentration_v.end()) < th_gas_present)
         {
             if (verbose) ROS_INFO("Gas plume lost!");
             cancel_navigation();                //Stop Robot
@@ -179,7 +176,7 @@ void SurgeCastPT::checkState()
         break;
     case PT_state::CROSSWIND_CAST:
         //We are trying to return to the plume
-        if(get_average_vector(gasConcentration_v) > th_gas_present)
+        if(*max_element(gasConcentration_v.begin(), gasConcentration_v.end()) >= th_gas_present)
         {
             if (verbose) ROS_INFO("Gas plume found! - Returning to UPWIND_SURGE movement!");
             gasHit=true;
@@ -194,5 +191,20 @@ void SurgeCastPT::checkState()
     }
 }
 
+void SurgeCastPT::save_results_to_file(int result)
+{
+    mb_ac.cancelAllGoals();
+
+    //1. Search time.
+    ros::Duration time_spent = ros::Time::now() - start_time;
+    double search_t = time_spent.toSec();
+
+    std::ofstream file;
+    file.open(results_file, std::ios_base::app);
+
+    for(geometry_msgs::PoseWithCovarianceStamped p : robot_poses_vector){
+       file<<p.pose.pose.position.x<<", "<<p.pose.pose.position.y<<"\n";
+    }
+}
 
 // EOF

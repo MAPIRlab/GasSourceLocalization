@@ -1,5 +1,5 @@
 # Define the goal
-string gsl_method                   # Method for searching the gas source: SGSL (semantic), CFD (Carlos), etc. 
+string gsl_method                   # Method for searching the gas source 
 ---
 # Define the result
 uint32 success

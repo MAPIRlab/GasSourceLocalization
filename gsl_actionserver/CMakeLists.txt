@@ -73,7 +73,7 @@ include_directories(
 )
 
 ## Declare a C++ executable
-add_executable(gsl_actionserver_node src/gsl_server.cpp src/gsl_spiral.cpp src/gsl_plume_tracking.cpp src/gsl_surge_cast.cpp src/gsl_surge_spiral.cpp src/gsl_particle_filter.cpp)
+add_executable(gsl_actionserver_node src/gsl_server.cpp src/gsl_algorithm.cpp src/gsl_server.cpp src/gsl_spiral.cpp src/gsl_plume_tracking.cpp src/gsl_surge_cast.cpp src/gsl_surge_spiral.cpp src/gsl_particle_filter.cpp src/gsl_grid.cpp)
 add_executable(gsl_actionserver_call src/gsl_server_call.cpp)
 
 ## Add cmake target dependencies of the executable

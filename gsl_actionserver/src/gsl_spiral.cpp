@@ -2,69 +2,25 @@
 
 
 SpiralSearcher::SpiralSearcher(ros::NodeHandle *nh) :
-    nh_(nh),
-    mb_ac("move_base", true)
+    GSLAlgorithm(nh)
 {
-    srand(time(NULL));      //initialize random seed
-
-    //tell the action client that we want to spin a thread by default
     
-    ROS_INFO("[SPIRAL_SEARCH] Waiting for the move_base action server to come online...");
-
-    bool mb_aconline = false;
-    for(int i=0 ; i<10 ; i++)
-    {
-        if(mb_ac.waitForServer(ros::Duration(1.0)))
-        {
-            mb_aconline = true;
-            break;
-        }
-        ROS_INFO("[SPIRAL_SEARCH] Unable to find the move_base action server, retrying...");
-    }
-
-    if(!mb_aconline)
-    {
-        ROS_FATAL("[SPIRAL_SEARCH] No move_base node found. Please ensure the move_base node is active.");
-        ROS_BREAK();
-        return;
-    }
-    ROS_INFO("[SPIRAL_SEARCH] Found MoveBase! Initializing module...");
-
-
     // Load Parameters
     //-----------------
     nh->param<double>("minPI", minPI, 0.1);
     nh->param<double>("stop_and_measure_time", stop_and_measure_time, 1.0);
-    
-    nh->param<std::string>("enose_topic", enose_topic, "/PID/Sensor_reading");
-    nh->param<std::string>("robot_location_topic", robot_location_topic, "/amcl_pose");
-    nh->param<std::string>("map_topic", map_topic, "/map");
-
-    nh->param<double>("max_search_time", max_search_time, 600.0);
-    nh->param<double>("distance_found", distance_found, 0.5);
-    nh->param<double>("source_pose_x", source_pose_x, 5.85);
-    nh->param<double>("source_pose_y", source_pose_y, 7.7);
-    nh->param<double>("robot_pose_x", robot_pose_x, 0.0);
-    nh->param<double>("robot_pose_y", robot_pose_y, 0.0);
+   
     nh->param<double>("initial_step", initStep, 0.6);
     nh->param<double>("step_increment", step_increment, 0.3);
     nh->param<double>("Kmu", Kmu, 0.5);
     nh->param<double>("Kp", Kp, 1);
     nh->param<double>("intervalLength", intervalLength, 0.5);
-    
-    nh->param<std::string>("results_file",results_file,"/home/pepe/catkin_ws/src/olfaction/gas_source_localization/results/spiral/results.txt");
-    nh->param<bool>("verbose",verbose,"false");
-    
+
     nh->param<double>("gas_present_thr", gas_present_thr, 1);
     // Subscribers
     //------------
     gas_sub_ = nh_->subscribe(enose_topic,1, &SpiralSearcher::gasCallback, this);
     map_sub_ = nh_->subscribe(map_topic, 1,  &SpiralSearcher::mapCallback, this);
-    localization_sub_ = nh_->subscribe(robot_location_topic,100, &SpiralSearcher::localizationCallback, this);
-
-    // Services
-    //-----------
-    mb_client = nh->serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
 
     // Init State
     previous_state = SPIRAL_state::WAITING_FOR_MAP;
@@ -79,8 +35,6 @@ SpiralSearcher::SpiralSearcher(ros::NodeHandle *nh) :
     //Init variables
     step=initStep;
     consecutive_misses=0;
-    inMotion = false;
-    inExecution = false;
     spiral_iter=1;
 }
 
@@ -124,41 +78,10 @@ void SpiralSearcher::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     ROS_WARN("[SPIRAL_SEARCH] STARTING THE SEARCH --> NEW SPIRAL");
 }
 
-
-void SpiralSearcher::localizationCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg)
+void SpiralSearcher::windCallback(const olfaction_msgs::anemometerPtr& msg)
 {
-    //keep the most recent robot pose
-    current_robot_pose = *msg;
-
-    //Keep all poses for later distance estimation
-    robot_poses_vector.push_back(current_robot_pose);
-    robot_pose_x=current_robot_pose.pose.pose.position.x;
-    robot_pose_y=current_robot_pose.pose.pose.position.y;
+    
 }
-
-// Move Base CallBacks
-void SpiralSearcher::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const move_base_msgs::MoveBaseResultConstPtr &result)
-{
-    if(state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED)
-    {
-        ROS_DEBUG("SPIRAL_SEARCH - %s - Target achieved!", __FUNCTION__);
-        // This makes the search slower, but more robust!
-        cancelNavigation();
-        previous_state = current_state;
-        current_state = SPIRAL_state::STOP_AND_MEASURE;
-        ROS_WARN("[SPIRAL_SEARCH] New state --> STOP_AND_MEASURE");
-    }
-    else if(state.state_ == actionlib::SimpleClientGoalState::ABORTED)
-        ROS_DEBUG("SPIRAL_SEARCH - %s - UPS! Couldn't reach the target.", __FUNCTION__);
-
-    //Notify that the objective has been reached
-    inMotion = false;
-}
-
-void SpiralSearcher::goalActiveCallback(){}
-void SpiralSearcher::goalFeedbackCallback(const move_base_msgs::MoveBaseFeedbackConstPtr &feedback){}
-
-
 //----------------------
 
     //Gas measurement functions
@@ -349,82 +272,6 @@ void SpiralSearcher::setRandomGoal()
     inMotion = true;
 }
 
-bool SpiralSearcher::checkGoal(move_base_msgs::MoveBaseGoal * goal)
-{
-    //ROS_INFO("[DEBUG] Checking Goal [%.2f, %.2f] in map frame", goal->target_pose.pose.position.x, goal->target_pose.pose.position.y);
-
-    //1. Get dimensions of OccupancyMap
-    double map_min_x = map_.info.origin.position.x;
-    double map_max_x = map_.info.origin.position.x + map_.info.width*map_.info.resolution;
-    double map_min_y = map_.info.origin.position.y;
-    double map_max_y = map_.info.origin.position.y + map_.info.height*map_.info.resolution;
-
-    //2. Check that goal falls inside the map
-    if (goal->target_pose.pose.position.x < map_min_x ||
-        goal->target_pose.pose.position.x > map_max_x ||
-        goal->target_pose.pose.position.y < map_min_y ||
-        goal->target_pose.pose.position.y > map_max_y)
-    {
-        if (verbose) ROS_INFO("[DEBUG] Goal is out of map dimensions");
-        return false;
-    }
-
-    //3. Use Move Base Service to declare a valid navigation goal
-    nav_msgs::GetPlan mb_srv;
-    geometry_msgs::PoseStamped start_point;
-    start_point.header.frame_id = "map";
-    start_point.header.stamp = ros::Time::now();
-    start_point.pose = current_robot_pose.pose.pose;
-    mb_srv.request.start = start_point;
-    mb_srv.request.start.header.frame_id = "map";
-    mb_srv.request.goal = goal->target_pose;
-    mb_srv.request.tolerance=0;
-    //get path from robot to candidate.
-    bool ok =  mb_client.call(mb_srv);
-    if( ok && mb_srv.response.plan.poses.size()>1)
-    {
-        return true;
-    }
-    else
-    {
-        if (verbose) ROS_INFO("[DEBUG] Unable to reach  [%.2f, %.2f] with MoveBase", goal->target_pose.pose.position.x, goal->target_pose.pose.position.y);
-        return false;
-    }
-}
-
-//Check if the robot found the gas source.
-// -1 = running,  0=failure, 1=sucess
-int SpiralSearcher::checkSourceFound()
-{ 
-    if (inExecution)
-    {
-        //1. Check that working time < max allowed time for search
-        ros::Duration time_spent = ros::Time::now() - start_time;
-        if (time_spent.toSec() > max_search_time)
-        {
-            //Report failure, we were too slow
-            ROS_INFO("[SPIRAL_SEARCH] - FAILURE-> Time spent (%.3f s) > max_search_time = %.3f", time_spent.toSec(), max_search_time);
-            save_results_to_file(0);
-            return 0;
-        }
-
-        //2. Distance from robot to source
-        double Ax = current_robot_pose.pose.pose.position.x - source_pose_x;
-        double Ay = current_robot_pose.pose.pose.position.y - source_pose_y;
-        double dist = sqrt( pow(Ax,2) + pow(Ay,2) );
-        if (dist < distance_found)
-        {
-            //GSL has finished with success!
-            ROS_INFO("[SPIRAL_SEARCH] - SUCCESS -> Time spent (%.3f s)", time_spent.toSec());
-            save_results_to_file(1);
-            return 1;
-        }
-    }
-
-    //In other case, we are still searching (keep going)
-    return -1;
-}
-
 void SpiralSearcher::save_results_to_file(int result)
 {
     mb_ac.cancelAllGoals();
@@ -522,11 +369,6 @@ void SpiralSearcher::save_results_to_file(int result)
 SPIRAL_state SpiralSearcher::getCurrentState(){
     return current_state;
 }
-
-bool SpiralSearcher::isInMotion(){
-    return inMotion;
-}
-
 
 //------------------------
 

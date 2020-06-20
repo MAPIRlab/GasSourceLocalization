@@ -7,6 +7,10 @@ int main (int argc, char **argv)
 {
     ros::init(argc, argv, "Requesting_GSL");
 
+    ros::NodeHandle private_nh("~");
+
+    std::string method;
+    private_nh.param<std::string>("method", method, "surge_cast");
     // create the action client
     // true causes the client to spin its own thread
     actionlib::SimpleActionClient<gsl_actionserver::gsl_action_msgAction> ac("gsl", true);
@@ -23,7 +27,7 @@ int main (int argc, char **argv)
 
     // SIMULATE CALL
     gsl_actionserver::gsl_action_msgGoal goal;
-    goal.gsl_method = "particle_filter";
+    goal.gsl_method = method;
     ac.sendGoal(goal);
 
     //wait for the action to return
