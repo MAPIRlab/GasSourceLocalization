@@ -475,20 +475,17 @@ void GridGSL::setGoal(){
 
         std::vector<WindVector> wind = estimateWind();
 
-        double ent=100;
+        double ent=-100;
         double entAux=0;
         if(!openMoveSet.empty()){
-            double max = 0;
-            double maxD = 0;
             for (auto &p:wind){
                 int r=p.i; int c=p.j;
                 entAux=entropy(r,c, Eigen::Vector2d(p.speed,p.angle));
-                if(entAux<ent){
+                if(entAux>ent){
                     ent=entAux;
                     i=r; j=c;
                 }
             }
-            openMoveSet.erase(std::pair<int,int>(i,j));
         }else{
             ROS_ERROR("Set of open nodes is empty! Are you certain the source is reachable?");
         }
@@ -499,19 +496,17 @@ void GridGSL::setGoal(){
 
         if(!openMoveSet.empty()){
             double max = 0;
-            double maxD = 0;
             for (auto &p:openMoveSet){
                 if(cells[p.first][p.second].weight>max){
                     i=p.first; j=p.second;
                     max=cells[p.first][p.second].weight;
-                    maxD=cells[p.first][p.second].distance;
                 }
             }
-            openMoveSet.erase(std::pair<int,int>(i,j));
         }else{
             ROS_ERROR("Set of open nodes is empty! Are you certain the source is reachable?");
         }
     }
+    openMoveSet.erase(std::pair<int,int>(i,j));
     moveTo(i,j);
 }
 
@@ -542,13 +537,15 @@ double GridGSL::entropy(int i, int j, Eigen::Vector2d wind){
     auto cells2=cells; //temp copy of the matrix of cells that we can modify to simulate the effect of a measurement
     
     double entH = 0;
-    if(wind.x()>=th_wind_present){
+    if(wind.x()>=th_wind_present)
+    {
         estimateProbabilities(cells2, true, wind.y(), Eigen::Vector2i(i,j));
     
         for(int r =0 ; r<cells2.size();r++){
             for(int c=0; c<cells2[0].size();c++){
-                double aux = cells2[r][c].weight*log(cells2[r][c].weight/cells[r][c].weight);
-                entH-=isnan(aux)?0:
+                double aux = cells2[r][c].weight*log(cells2[r][c].weight/cells[r][c].weight)+
+                            (1-cells2[r][c].weight)*log((1-cells2[r][c].weight)/(1-cells[r][c].weight));
+                entH+=isnan(aux)?0:
                                 aux;
             }
         }
@@ -559,8 +556,9 @@ double GridGSL::entropy(int i, int j, Eigen::Vector2d wind){
     double entM = 0;
     for(int r =0 ; r<cells2.size();r++){
         for(int c=0; c<cells2[0].size();c++){
-            double aux = cells2[r][c].weight*log(cells2[r][c].weight/cells[r][c].weight);
-            entM-=isnan(aux)?0:
+            double aux = cells2[r][c].weight*log(cells2[r][c].weight/cells[r][c].weight)+
+                        (1-cells2[r][c].weight)*log((1-cells2[r][c].weight)/(1-cells[r][c].weight));
+            entM+=isnan(aux)?0:
                             aux;
         }
     }
