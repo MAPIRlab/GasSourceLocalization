@@ -162,7 +162,6 @@ void GridGSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
         return;
     }
 
-    //*windD_it = msg->wind_direction;
 
     //Only if we are in the Stop_and_Measure
     if (this->current_state == Grid_state::STOP_AND_MEASURE)
@@ -374,7 +373,7 @@ void GridGSL::propagateProbabilities(std::vector<std::vector<Cell> >& map,
         openPropagationSet.clear();
     }
     
-    normalizeWeights();
+    normalizeWeights(map);
 }
 
 
@@ -407,18 +406,18 @@ void GridGSL::calculateWeight(std::vector<std::vector<Cell> >& map, int i, int j
     }
 }
 
-void GridGSL::normalizeWeights(){
+void GridGSL::normalizeWeights(std::vector<std::vector<Cell> >& map){
     double s=0.0;
-    for(int i=0;i<cells.size();i++){
-        for(int j=0;j<cells[0].size();j++){
-            if(cells[i][j].free)
-                s+=cells[i][j].weight;
+    for(int i=0;i<map.size();i++){
+        for(int j=0;j<map[0].size();j++){
+            if(map[i][j].free)
+                s+=map[i][j].weight;
         }
     }
-    for(int i=0;i<cells.size();i++){
-        for(int j=0;j<cells[0].size();j++){
-            if(cells[i][j].free)
-                cells[i][j].weight=cells[i][j].weight/s;
+    for(int i=0;i<map.size();i++){
+        for(int j=0;j<map[0].size();j++){
+            if(map[i][j].free)
+                map[i][j].weight=map[i][j].weight/s;
         }
     }
 

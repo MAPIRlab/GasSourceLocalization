@@ -79,7 +79,7 @@ class GridGSL:public GSLAlgorithm
                                 std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& openSet,
                                 std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& closedSet,
                                 std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& activeSet);
-        void normalizeWeights();
+        void normalizeWeights(std::vector<std::vector<Cell> >& map);
 
         
         //Movement
