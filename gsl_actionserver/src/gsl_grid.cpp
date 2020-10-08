@@ -115,7 +115,7 @@ void GridGSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
         }
         cellsI++;
     }
-    normalizeWeights();
+    normalizeWeights(cells);
     showWeights();
     //Start the fun!!
     current_state=Grid_state::EXPLORATION;
