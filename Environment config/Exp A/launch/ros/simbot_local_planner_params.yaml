@@ -1,0 +1,86 @@
+###############################################################################################
+# Base_local_planner parameters - Trajectory generator based on costmaps
+#
+# The base_local_planner package provides a controller that drives a mobile base in the plane. 
+###############################################################################################
+
+
+# IF use DWA Planner
+#-----------------------------------
+DWAPlannerROS:
+
+  max_trans_vel: 0.8
+  min_trans_vel: 0.06
+  max_vel_x: 0.8
+  min_vel_x: 0.0
+  max_vel_y: 0.0
+  min_vel_y: 0.0
+  max_rot_vel: 1.5           #rad 0.8rad = 45deg (aprox)
+  min_rot_vel: 0.2
+
+  acc_lim_x: 5.0
+  acc_lim_y: 0.0
+  acc_lim_theta: 5.0
+  acc_lim_trans: 0.8
+
+  prune_plan: true
+  xy_goal_tolerance: 0.2     #m
+  yaw_goal_tolerance: 0.5    #rad
+
+  trans_stopped_vel: 0.0
+  rot_stopped_vel: 1.5
+  sim_time: 1.0
+  sim_granularity: 0.025
+  angular_sim_granularity: 0.025
+  # Trajectory Scoring Parameters
+  path_distance_bias: 54.0      # 32.0   - weighting for how much it should stick to the global path plan
+  goal_distance_bias: 25.0      # 24.0   - wighting for how much it should attempt to reach its goal
+  occdist_scale: 0.3            # 0.01   - weighting for how much the controller should avoid obstacles
+  forward_point_distance: 0.325 # 0.325  - how far along to place an additional scoring point
+  stop_time_buffer: 0.2         # 0.2    - amount of time a robot must stop in before colliding for a valid traj.
+  scaling_speed: 0.25           # 0.25   - absolute velocity at which to start scaling the robot's footprint
+  max_scaling_factor: 0.2       # 0.2    - how much to scale the robot's footprint when at speed.
+
+  # Oscillation Prevention Parameters
+  oscillation_reset_dist: 0.02  # 0.05   - how far to travel before resetting oscillation flags
+  oscillation_reset_angle: 0.1
+
+  vx_samples: 10
+  vy_samples: 1
+  vth_samples: 50
+  use_dwa: true
+  holonomic_robot: false
+
+
+# IF use Trajectory Rollout Planner
+#-----------------------------------
+TrajectoryPlannerROS:   
+  max_vel_x: 0.6                #0.4
+  min_vel_x: 0.1                #0.0
+  max_vel_theta: 0.6            #rad 0.8rad = 45deg (aprox)
+  min_vel_theta: -0.6
+  min_in_place_vel_theta: 0.1
+
+
+  acc_lim_x: 5.0                #must be high
+  acc_lim_y: 0.0
+  acc_lim_theta: 5.0
+  acc_limit_trans: 0.4
+
+  holonomic_robot: false
+  
+#Goal Tolerance Parameters
+  yaw_goal_tolerance: 0.4       #rad
+  xy_goal_tolerance: 0.3        #m
+  
+#Forward Simulation Parameters
+  sim_time: 5.0
+#  sim_granularity: 0.05
+#  angular_sim_granularity: 0.05
+#  vx_samples: 3
+#  vtheta_samples: 20
+#  controller_frequency: 20
+  
+#Trajectory Scoring Parameters  
+#  pdist_scale: 0.6              #The weighting for how much the controller should stay close to the path it was given (default 0.6)
+#  gdist_scale: 0.8              #The weighting for how much the controller should attempt to reach its local goal, also controls speed (default 0.8#)
