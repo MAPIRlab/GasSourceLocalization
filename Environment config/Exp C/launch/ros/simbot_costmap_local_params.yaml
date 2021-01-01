@@ -24,8 +24,8 @@ local_costmap:
     track_unknown_space: true
   
   inflation:
-    inflation_radius: 0.75
-    cost_scaling_factor: 5.0
+    inflation_radius: 1.5
+    cost_scaling_factor: 2.5
  
   #proxemic:
   # amplitude: 150.0

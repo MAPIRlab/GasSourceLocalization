@@ -9,7 +9,7 @@
 <launch>
     <arg name="scenario" default="ROOMS" />
     <arg name="info" default="true" />
-    <arg name="simulation" default="1-6" />
+    <arg name="simulation" default="1,2,3-5,6" />
     <arg name="source_location_x" default="1.75" />
     <arg name="source_location_y" default="8.60" />
     <arg name="source_location_z" default="0.50" />
@@ -37,6 +37,8 @@
       <param name="frame_id" value="map"/>
     </node>  
     <include file="$(find my_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" />  
+    <!--include file="$(find missions_pkg)/launch/gsl/movecare_topological_graph.launch"  />
+    <include file="$(find missions_pkg)/launch/gsl/simbot_nav_assistant.launch"  /--> 
     
     <node pkg="fake_localization" type="fake_localization" name="fake_localization">	    
         <param name="odom_frame_id" value="odom"/>
@@ -85,7 +87,7 @@
     <node pkg="gaden_player" type="gaden_player" name="gaden_player" output="screen">
         <param name="verbose" value="false" />
 	    <param name="player_freq" value="2" />         ###(Hz) Freq for loading the simulation log_files
-	    <param name="initial_iteration" value="30" />
+	    <param name="initial_iteration" value="40" />
 	    <param name="num_simulators" value="1" />      ### Number of simulations to load [1-inf] (useful for multiple sources and gases)
     
         # Data from the "filament_simulator" pkg. Multiple sources can be set here
@@ -93,8 +95,8 @@
         
         # Loop options        
         <param name="allow_looping" value="true" />
-        <param name="loop_from_iteration" value="45" />
-        <param name="loop_to_iteration" value="52" />
+        <param name="loop_from_iteration" value="55" />
+        <param name="loop_to_iteration" value="62" />
         
     </node>
   
@@ -128,17 +130,17 @@
 
   ## GSL ##
 
-  <node pkg="gsl_actionserver" type="gsl_actionserver_call" name="gsl_call" output="screen"> 
+  <!--node pkg="gsl_actionserver" type="gsl_actionserver_call" name="gsl_call" output="screen"> 
     <param name="method" value="grid"/>
-  </node> 
+  </node--> 
   <node pkg="gsl_actionserver" type="gsl_actionserver_node" name="gsl_node" output="screen" required="true" >
     #Common
-    <param name="stop_and_measure_time" value="2"/>
+    <param name="stop_and_measure_time" value="1"/>
     <param name="th_gas_present" value="0.2"/>
     <param name="th_wind_present" value="0.1"/>
     <param name="ground_truth_x" value="$(arg source_location_x)"/>
     <param name="ground_truth_y" value="$(arg source_location_y)"/>
-    <param name="results_file" value=""/>
+    <param name="results_file" value="/home/pepe/Documents/Results/SurgeCast$(arg scenario)_$(arg simulation)_Infotaxis_$(arg info)_$(arg index).csv"/>
     
     #Grid
     <param name="scale" value="65"/>
@@ -149,7 +151,7 @@
 
     #Surge-Cast
     <param name="step" value="0.7"/>
-    <param name="moving_average_size" value="25"/>
+    <param name="moving_average_size" value="45"/>
   </node> 
 
 

@@ -131,10 +131,10 @@ floorMap                     # load an environment bitmap
   name "SimulatedMap"
   
   bitmap "../../occupancy.pgm"
-  size [10.0 10.0 3.000]           #m  
-  pose [ 5.0 5.0 0.000 0.000 ]    #Coordinates (m) of the Center of the image_map
+  size [10.000 10.000 3.000]           #m  
+  pose [ 5.000 5.000 0.000 0.000 ]    #Coordinates (m) of the Center of the image_map
 )
 
 # throw in a robot
-robotBase( pose [ 6.884 0.816 0.000 98.606 ] name "SimRobot" color "blue")
+robotBase( pose [ 5.132 0.967 0.000 126.855 ] name "SimRobot" color "blue")
 

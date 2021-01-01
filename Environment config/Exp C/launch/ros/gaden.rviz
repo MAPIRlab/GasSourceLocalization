@@ -4,6 +4,7 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Local Map1
         - /Global Map1/Planner1
         - /TF1/Frames1
         - /TF1/Tree1
@@ -80,7 +81,7 @@ Visualization Manager:
           Buffer Length: 1
           Class: rviz/Path
           Color: 0; 12; 255
-          Enabled: false
+          Enabled: true
           Head Diameter: 0.300000012
           Head Length: 0.200000003
           Length: 0.300000012
@@ -98,8 +99,8 @@ Visualization Manager:
           Shaft Length: 0.100000001
           Topic: /move_base/DWAPlannerROS/local_plan
           Unreliable: false
-          Value: false
-      Enabled: false
+          Value: true
+      Enabled: true
       Name: Local Map
     - Class: rviz/Group
       Displays:
@@ -117,7 +118,7 @@ Visualization Manager:
           Buffer Length: 1
           Class: rviz/Path
           Color: 255; 0; 0
-          Enabled: false
+          Enabled: true
           Head Diameter: 0.300000012
           Head Length: 0.200000003
           Length: 0.300000012
@@ -135,7 +136,7 @@ Visualization Manager:
           Shaft Length: 0.100000001
           Topic: /move_base/GlobalPlanner/plan
           Unreliable: false
-          Value: false
+          Value: true
       Enabled: true
       Name: Global Map
     - Alpha: 1
@@ -143,7 +144,7 @@ Visualization Manager:
       Axes Radius: 0.100000001
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: false
+      Enabled: true
       Head Length: 0.300000012
       Head Radius: 0.100000001
       Name: Goal
@@ -152,7 +153,7 @@ Visualization Manager:
       Shape: Arrow
       Topic: /move_base/current_goal
       Unreliable: false
-      Value: false
+      Value: true
     - Class: rviz/TF
       Enabled: false
       Frame Timeout: 15
@@ -249,18 +250,68 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/RobotModel
       Collision Enabled: false
-      Enabled: false
+      Enabled: true
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        body:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        green_button:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hokuyo_front:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        neck:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        red_button:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        screen:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
       Update Interval: 0
-      Value: false
+      Value: true
       Visual Enabled: true
     - Class: rviz/Axes
       Enabled: false
@@ -304,21 +355,21 @@ Visualization Manager:
       Unreliable: false
       Value: false
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /Anemometer/WindSensor_display
       Name: DownWindMarker
       Namespaces:
-        {}
+        measured_wind_inverted: true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /gsl_node/probability_markers
       Name: Cells
       Namespaces:
         {}
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: false
       Marker Topic: /gmrf/wind_array_pub
@@ -351,25 +402,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 15.2776012
+      Distance: 10.4112577
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.95505095
-        Y: 2.47704005
+        X: 2.09053493
+        Y: 5.66388226
         Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.38539755
+      Pitch: 1.52039742
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 4.71040821
+      Yaw: 4.7054081
     Saved: ~
 Window Geometry:
   Displays:

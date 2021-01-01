@@ -30,7 +30,7 @@
 
         #Wind Data (the node will append _i.csv to the name that is specified here)
         <param name="uniformWind" value="false"/>
-        <param name="wind_files" value="$(find my_env)/$(arg scenario)/wind_simulations/1-6"/>
+        <param name="wind_files" value="$(find my_env)/$(arg scenario)/wind_simulations/1,2,3-5,6"/>
 
         #Where to write the output files
         <param name="output_path" value="$(find my_env)/$(arg scenario)" />

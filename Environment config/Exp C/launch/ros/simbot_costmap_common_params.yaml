@@ -10,7 +10,7 @@ raytrace_range: 3.0 #Clear out space (remove obstacles) up to 3.0 meters away gi
 #footprint: [[0.35,0.25],[0.35,-0.25],[-0.35,-0.25],[-0.35,0.25]]
 #A circular footprint of 0.45 diameter
 #footprint: [[ 0.225,0.000 ], [ 0.208, 0.086 ],[ 0.159, 0.159 ],[ 0.086, 0.208 ], [ 0.000, 0.225 ], [ -0.086, 0.208 ], [ -0.159, 0.159 ], [ -0.208, 0.086 ], [ -0.225, 0.000 ],[ -0.208, -0.086 ], [ -0.159, -0.159 ], [ -0.086, -0.208 ], [ -0.000, -0.225 ], [ 0.086, -0.208 ], [ 0.159, -0.159 ], [ 0.208, -0.086 ]]    
-robot_radius: 0.28           #[m] radius of the robot shape for Giraff Robots (instead of the footprint)
+robot_radius: 0.29           #[m] radius of the robot shape for Giraff Robots (instead of the footprint)
 #inflation_radius: 0.6
 
 
