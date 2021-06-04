@@ -5,13 +5,12 @@ To use one of the implemented algorithms, simply launch gsl_actionserver_node an
 Currently available algorithms include:
 
 "surge_cast"
-
 "surge_spiral"
-
 "spiral"
-
 "particle_filter"
+(See paper: https://dl.acm.org/doi/10.1145/3378184.3378220)
 
 "grid"
+(See paper: https://ieeexplore.ieee.org/document/9347683)
 
 Make sure to set move_base to use the global_planner/GlobalPlanner plugin rather than navfn, since the implementations of the algorithms utilize the make_plan service.
