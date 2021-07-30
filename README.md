@@ -14,3 +14,6 @@ Currently available algorithms include:
 (See paper: https://ieeexplore.ieee.org/document/9347683)
 
 Make sure to set move_base to use the global_planner/GlobalPlanner plugin rather than navfn, since the implementations of the algorithms utilize the make_plan service.
+
+
+The implementation of the grid_gsl algorithm depends on this project for the infotaxis version: https://github.com/MAPIRlab/GMRF-wind Install this in your catkin_ws if you are getting the error "gmrf_wind_mapping/WindEstimation.h: No such file or directory".
