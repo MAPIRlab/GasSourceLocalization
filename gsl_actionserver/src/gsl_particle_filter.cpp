@@ -380,7 +380,7 @@ bool ParticleFilter::isDegenerated(){
     double effectiveP=1.0/neff;
     ROS_INFO("Effective particles %d\nTotal particles: %d\n", (int)effectiveP, particles.size());
 
-    return effectiveP<particles.size()*0.25||isnan(effectiveP);
+    return effectiveP<particles.size()*0.25||std::isnan(effectiveP);
 }
 
 void ParticleFilter::resample(){
@@ -463,7 +463,7 @@ void ParticleFilter::estimateLocation(){
         averageY+=p.weight*p.y;
     }
 
-    if(!isnan(averageX)&&!isnan(averageY)){
+    if(!std::isnan(averageX)&&!std::isnan(averageY)){
         estimatedLocations.push_back(Eigen::Vector2d(averageX, averageY));
         allEstimations.push_back(Eigen::Vector2d(averageX, averageY));
         if(estimatedLocations.size()>maxEstimations){

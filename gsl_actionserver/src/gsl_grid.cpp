@@ -545,7 +545,7 @@ double GridGSL::entropy(int i, int j, Eigen::Vector2d wind){
             for(int c=0; c<cells2[0].size();c++){
                 double aux = cells2[r][c].weight*log(cells2[r][c].weight/cells[r][c].weight)+
                             (1-cells2[r][c].weight)*log((1-cells2[r][c].weight)/(1-cells[r][c].weight));
-                entH+=isnan(aux)?0:
+                entH+=std::isnan(aux)?0:
                                 aux;
             }
         }
@@ -558,7 +558,7 @@ double GridGSL::entropy(int i, int j, Eigen::Vector2d wind){
         for(int c=0; c<cells2[0].size();c++){
             double aux = cells2[r][c].weight*log(cells2[r][c].weight/cells[r][c].weight)+
                         (1-cells2[r][c].weight)*log((1-cells2[r][c].weight)/(1-cells[r][c].weight));
-            entM+=isnan(aux)?0:
+            entM+=std::isnan(aux)?0:
                             aux;
         }
     }
