@@ -1,3 +1,4 @@
+#pragma once
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 
@@ -33,9 +34,9 @@ class ParticleFilter:public SurgeSpiralPT{
         bool firstObserv;
 
         std::vector<Particle> particles; //current set of particles
-        std::vector<Eigen::Vector2d> estimatedLocations; //record of estimated positions
-        std::vector<Eigen::Vector2d> allEstimations; //record of estimated positions
-        std::vector<Eigen::Vector2d> historicWind; //record of measured wind
+        std::vector<Utils::Vector2> estimatedLocations; //record of estimated positions
+        std::vector<Utils::Vector2> allEstimations; //record of estimated positions
+        std::vector<Utils::Vector2> historicWind; //record of measured wind
         ros::Time lastWindObservation;
 
         ros::Publisher particle_markers;
@@ -50,10 +51,10 @@ class ParticleFilter:public SurgeSpiralPT{
         
         //aux functions
         bool cellIsFree(double x, double y);
-        Eigen::Vector2d average_vector(std::vector<Eigen::Vector2d> &data);
+        Utils::Vector2 average_vector(std::vector<Utils::Vector2> &data);
         visualization_msgs::Marker emptyMarker();
-        Eigen::Vector2d standardDeviationWind(int first);
-        Eigen::Vector2d sourceLocalizationEstimation();
+        Utils::Vector2 standardDeviationWind(int first);
+        Utils::Vector2 sourceLocalizationEstimation();
 
         //particle filter
         void estimateLocation();

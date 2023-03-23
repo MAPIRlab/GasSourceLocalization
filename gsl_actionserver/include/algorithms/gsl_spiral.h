@@ -1,3 +1,4 @@
+#pragma once
 #include <vector>
 #include <list>
 #include <fstream>      // std::ofstream
@@ -8,7 +9,7 @@
 
 #include <gsl_algorithm.h>
 
-typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
 enum class SPIRAL_state {WAITING_FOR_MAP, STOP_AND_MEASURE, SPIRAL};
 
 class SpiralSearcher:public GSLAlgorithm
@@ -30,7 +31,7 @@ public:
     geometry_msgs::PoseStamped get_random_pose_environment();
     void setRandomGoal();
     void resetSpiral();
-    move_base_msgs::MoveBaseGoal nextGoalSpiral(geometry_msgs::Pose initial);
+    navigation_assistant::nav_assistantGoal nextGoalSpiral(geometry_msgs::Pose initial);
     bool doSpiral();
 
     SPIRAL_state getPreviousState();

@@ -1,3 +1,4 @@
+#pragma once
 #include <gsl_plume_tracking.h>
 /*   DESCRIPTION OF SEARCH STATES
  * --------------------------------
@@ -30,7 +31,7 @@ public:
     void setSurgeGoal() override; 
 
     void setCastGoal() override;
-    move_base_msgs::MoveBaseGoal nextGoalSpiral(geometry_msgs::Pose initial);
+    navigation_assistant::nav_assistantGoal nextGoalSpiral(geometry_msgs::Pose initial);
     void resetSpiral();
 
 };

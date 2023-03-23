@@ -25,7 +25,7 @@ SpiralSearcher::SpiralSearcher(ros::NodeHandle *nh) :
     // Init State
     previous_state = SPIRAL_state::WAITING_FOR_MAP;
     current_state = SPIRAL_state::WAITING_FOR_MAP;
-    ROS_INFO("[SPIRAL_SEARCH] INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
+    spdlog::info("[SPIRAL_SEARCH] INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
 
     average_concentration=0;
 
@@ -57,14 +57,14 @@ void SpiralSearcher::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
 
 void SpiralSearcher::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    if (verbose) ROS_INFO("[SPIRAL_SEARCH] - %s - Got the map of the environment!", __FUNCTION__);
+    if (verbose) spdlog::info("[SPIRAL_SEARCH] - {} - Got the map of the environment!", __FUNCTION__);
     //ROS convention is to consider cell [0,0] as the lower-left corner (see http://docs.ros.org/api/nav_msgs/html/msg/MapMetaData.html)
     map_ = *msg;
 
-    if (verbose) ROS_INFO("--------------GSL---------------");
-    if (verbose) ROS_INFO("Occupancy Map dimensions:");
-    if (verbose) ROS_INFO("x_min:%.2f x_max:%.2f   -   y_min:%.2f y_max:%.2f",map_.info.origin.position.x, map_.info.origin.position.x+map_.info.width*map_.info.resolution, map_.info.origin.position.y,map_.info.origin.position.y+map_.info.height*map_.info.resolution);
-   if (verbose)  ROS_INFO("--------------------------------");
+    if (verbose) spdlog::info("--------------GSL---------------");
+    if (verbose) spdlog::info("Occupancy Map dimensions:");
+    if (verbose) spdlog::info("x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}",map_.info.origin.position.x, map_.info.origin.position.x+map_.info.width*map_.info.resolution, map_.info.origin.position.y,map_.info.origin.position.y+map_.info.height*map_.info.resolution);
+   if (verbose)  spdlog::info("--------------------------------");
 
     //Start the fun!!
     cancelNavigation();
@@ -75,7 +75,7 @@ void SpiralSearcher::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     robot_poses_vector.clear();         //start measuring distance
     inExecution = true;
     inMotion = false;
-    ROS_WARN("[SPIRAL_SEARCH] STARTING THE SEARCH --> NEW SPIRAL");
+    spdlog::warn("[SPIRAL_SEARCH] STARTING THE SEARCH --> NEW SPIRAL");
 }
 
 void SpiralSearcher::windCallback(const olfaction_msgs::anemometerPtr& msg)
@@ -102,7 +102,7 @@ void SpiralSearcher::getGasObservations()
 
         //Check thresholds and set new search-state
         if (verbose){
-            ROS_INFO("[SPIRAL_SEARCH] Previous PI=%2f", previousPI);
+            spdlog::info("[SPIRAL_SEARCH] Previous PI={:.2}", previousPI);
         } 
 
         if (PI > previousPI)
@@ -112,17 +112,17 @@ void SpiralSearcher::getGasObservations()
             previousPI=PI;
             current_state=SPIRAL_state::SPIRAL;
             resetSpiral();
-            if (verbose) ROS_WARN("[SPIRAL_SEARCH] NEW SPIRAL --> Proximity Index:%.4f",PI);
+            if (verbose) spdlog::warn("[SPIRAL_SEARCH] NEW SPIRAL --> Proximity Index:{:.4}",PI);
         }
         else
         {
             //Nothing
             previous_state = current_state;
             current_state=SPIRAL_state::SPIRAL;
-            if (verbose) ROS_WARN("[SPIRAL_SEARCH] CONTINUE --> Proximity Index:%.4f", PI);
+            if (verbose) spdlog::warn("[SPIRAL_SEARCH] CONTINUE --> Proximity Index:{:.4}", PI);
             if(consecutive_misses>3){
                 previousPI=previousPI/2.0;
-                if (verbose) ROS_WARN("[SPIRAL_SEARCH] PI reduced to:%.4f",previousPI);
+                if (verbose) spdlog::warn("[SPIRAL_SEARCH] PI reduced to:{:.4}",previousPI);
 
                 consecutive_misses=0;
             }else{
@@ -177,10 +177,10 @@ void SpiralSearcher::resetSpiral(){
     spiral_iter=-1;
 }
 
-move_base_msgs::MoveBaseGoal SpiralSearcher::nextGoalSpiral(geometry_msgs::Pose initial){
+navigation_assistant::nav_assistantGoal SpiralSearcher::nextGoalSpiral(geometry_msgs::Pose initial){
 
     double yaw=tf::getYaw(initial.orientation);
-    move_base_msgs::MoveBaseGoal goal;
+    navigation_assistant::nav_assistantGoal goal;
     goal.target_pose.header.frame_id="map";
     goal.target_pose.header.stamp=ros::Time::now();
     if(spiral_iter==-1){
@@ -198,16 +198,16 @@ move_base_msgs::MoveBaseGoal SpiralSearcher::nextGoalSpiral(geometry_msgs::Pose 
         spiral_iter++;
     }
     
-    ROS_INFO("[SPIRAL_SEARCH] New Goal [%.2f, %.2f]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    spdlog::info("[SPIRAL_SEARCH] New Goal [{:.2}, {:.2}]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
     return goal;
 }
 
 bool SpiralSearcher::doSpiral(){
-    move_base_msgs::MoveBaseGoal goal = nextGoalSpiral(current_robot_pose.pose.pose);
+    navigation_assistant::nav_assistantGoal goal = nextGoalSpiral(current_robot_pose.pose.pose);
     int i=0;
     bool blocked=false;
     while(ros::ok()&&!checkGoal(&goal)){
-        if(verbose) ROS_INFO("[SPIRAL_SEARCH] SKIPPING NEXT POINT IN SPIRAL (OBSTACLES)");
+        if(verbose) spdlog::info("[SPIRAL_SEARCH] SKIPPING NEXT POINT IN SPIRAL (OBSTACLES)");
         goal=nextGoalSpiral(goal.target_pose.pose);
         i++;
         if(i>3){
@@ -215,13 +215,14 @@ bool SpiralSearcher::doSpiral(){
             //if it happens again, abort the spiral and go to a random nearby position
             i=0;
             if(blocked){return false;}
-            ROS_INFO("[SPIRAL_SEARCH] UNABLE TO CONTINUE SPIRAL (OBSTACLES)");
+            spdlog::info("[SPIRAL_SEARCH] UNABLE TO CONTINUE SPIRAL (OBSTACLES)");
             resetSpiral();
             blocked=true;
         }
     }
     inMotion=true;
-    mb_ac.sendGoal(goal, boost::bind(&SpiralSearcher::goalDoneCallback, this,  _1, _2), boost::bind(&SpiralSearcher::goalActiveCallback, this), boost::bind(&SpiralSearcher::goalFeedbackCallback, this, _1));
+    mb_ac.sendGoal(goal, std::bind(&SpiralSearcher::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SpiralSearcher::goalActiveCallback, this), std::bind(&SpiralSearcher::goalFeedbackCallback, this, std::placeholders::_1));
+
     return true;
 }
 
@@ -249,26 +250,26 @@ geometry_msgs::PoseStamped SpiralSearcher::get_random_pose_environment()
         mb_srv.request.goal = p;
 
         //get path from robot to candidate.
-        if( mb_client.call(mb_srv) && mb_srv.response.plan.poses.size())
+        if( make_plan_client.call(mb_srv) && mb_srv.response.plan.poses.size())
             valid_pose = true;
         else
-            if (verbose) ROS_WARN("[SPIRAL_SEARCH] invalid random pose=[%.2f, %.2f, %.2f]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
+            if (verbose) spdlog::warn("[SPIRAL_SEARCH] invalid random pose=[{:.2}, {:.2}, {:.2}]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
     }
    
     //show content
-    if (verbose) ROS_INFO("[SPIRAL_SEARCH] Random Goal pose =[%.2f, %.2f, %.2f]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
+    if (verbose) spdlog::info("[SPIRAL_SEARCH] Random Goal pose =[{:.2}, {:.2}, {:.2}]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
     return p;
 }
 
 //Set a random goal within the map (EXPLORATION)
 void SpiralSearcher::setRandomGoal()
 {
-    move_base_msgs::MoveBaseGoal goal;
+    navigation_assistant::nav_assistantGoal goal;
     goal.target_pose = get_random_pose_environment();
 
     //Send goal to the Move_Base node for execution
-    if (verbose) ROS_INFO("[SPIRAL_SEARCH] - %s - Sending robot to %lf %lf", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, boost::bind(&SpiralSearcher::goalDoneCallback, this,  _1, _2), boost::bind(&SpiralSearcher::goalActiveCallback, this), boost::bind(&SpiralSearcher::goalFeedbackCallback, this, _1));
+    if (verbose) spdlog::info("[SPIRAL_SEARCH] - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    mb_ac.sendGoal(goal, std::bind(&SpiralSearcher::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SpiralSearcher::goalActiveCallback, this), std::bind(&SpiralSearcher::goalFeedbackCallback, this, std::placeholders::_1));
     inMotion = true;
 }
 
@@ -314,9 +315,9 @@ void SpiralSearcher::save_results_to_file(int result)
     mb_srv.request.goal = source_pose;
 
     // Get path
-    if( !mb_client.call(mb_srv) )
+    if( !make_plan_client.call(mb_srv) )
     {
-        ROS_ERROR("[GSL-PlumeTracking] Unable to GetPath from MoveBase");
+        spdlog::error(" Unable to GetPath from MoveBase");
         nav_d = -1;
     }
     else
@@ -342,8 +343,8 @@ void SpiralSearcher::save_results_to_file(int result)
 
     // 4. Nav time
     double nav_t = nav_d/0.4;   //assumming a cte speed of 0.4m/s
-    std::string str = boost::str(boost::format("[PlumeTracking] RESULT IS: Success=%u, Search_d=%.3f, Nav_d=%.3f, Search_t=%.3f, Nav_t=%.3f\n") % result % search_d % nav_d % search_t % nav_t).c_str();
-    ROS_INFO(str.c_str());
+    std::string str = fmt::format("RESULT IS: Success={}, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}\n", result, search_d, nav_d, search_t, nav_t);
+    spdlog::info(str.c_str());
 
 
     //Save to file
@@ -357,7 +358,7 @@ void SpiralSearcher::save_results_to_file(int result)
         fclose(output_file);
     }
     else
-        ROS_ERROR("Unable to open Results file at: %s", results_file.c_str());
+        spdlog::error("Unable to open Results file at: {}", results_file.c_str());
 }
 
 //------------------------

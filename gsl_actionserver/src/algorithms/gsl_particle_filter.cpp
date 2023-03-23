@@ -56,11 +56,11 @@ void ParticleFilter::windCallback(const olfaction_msgs::anemometerPtr& msg){
         anemometer_downWind_pose.pose.position.z = 0.0;
         anemometer_downWind_pose.pose.orientation = tf::createQuaternionMsgFromYaw(downWind_direction);
 
-        tf_.transformPose("map", anemometer_downWind_pose, map_downWind_pose);
+        tf_listener.transformPose("map", anemometer_downWind_pose, map_downWind_pose);
     }
     catch(tf::TransformException &ex)
     {
-        ROS_ERROR("[Particle_Filter] - %s - Error: %s", __FUNCTION__, ex.what());
+        spdlog::error("[Particle_Filter] - {} - Error: {}", __FUNCTION__, ex.what());
         return;
     }
 
@@ -82,7 +82,7 @@ void ParticleFilter::windCallback(const olfaction_msgs::anemometerPtr& msg){
         lastWindObservation=ros::Time::now();
         double speed = get_average_vector(windSpeed_v)*length;
         double angle = get_average_wind_direction(windDirection_v);
-        historicWind.push_back(Eigen::Vector2d(speed*cos(angle),speed*sin(angle)));
+        historicWind.push_back(Utils::Vector2(speed*cos(angle),speed*sin(angle)));
 
         if(historicWind.size()>numberOfWindObs){
             historicWind.erase(historicWind.begin());
@@ -102,12 +102,12 @@ void ParticleFilter::checkState()
         //We are looking for gas clues
         if(get_average_vector(gasConcentration_v) > th_gas_present)
         {
-            if (verbose) ROS_INFO("GAS HIT!");
+            if (verbose) spdlog::info("GAS HIT!");
             gasHit=true;
             cancel_navigation();                //Stop Robot
             previous_state = PT_state::EXPLORATION;
             current_state = PT_state::STOP_AND_MEASURE;
-            if (verbose) ROS_WARN("[GSL-ParticleFilter] New state --> STOP_AND_MEASURE");
+            if (verbose) spdlog::warn("[GSL-ParticleFilter] New state --> STOP_AND_MEASURE");
         }
         break;
     case PT_state::INSPECTION:
@@ -123,7 +123,7 @@ void ParticleFilter::checkState()
                 if(ros::Time::now().toSec()-recoveryTimestamp.toSec()>=3){ 
                     current_state = PT_state::STOP_AND_MEASURE;
                     cancel_navigation();
-                    if (verbose) ROS_WARN("[GSL-SurgeSpiral] New state --> STOP_AND_MEASURE");
+                    if (verbose) spdlog::warn("[GSL-SurgeSpiral] New state --> STOP_AND_MEASURE");
                     return;
                 }
                 lastUpdateTimestamp=ros::Time::now();
@@ -133,7 +133,7 @@ void ParticleFilter::checkState()
                 
                 //only send new goals it we are already moving                
                 if(dist>0.1){  
-                    if (verbose) ROS_WARN("[GSL-SurgeSpiral] More gas! Surge distance has been reset"); 
+                    if (verbose) spdlog::warn("[GSL-SurgeSpiral] More gas! Surge distance has been reset"); 
                     setSurgeGoal();
                     movingTimestamp=ros::Time::now();
                     movingPose=current_robot_pose;
@@ -160,13 +160,13 @@ void ParticleFilter::checkState()
         //We are trying to return to the plume
         if(get_average_vector(gasConcentration_v) > th_gas_present)
         {
-            if (verbose) ROS_INFO("Gas plume found! - Returning to UPWIND_SURGE movement!");
+            if (verbose) spdlog::info("Gas plume found! - Returning to UPWIND_SURGE movement!");
             gasHit=true;
             cancel_navigation();                //Stop Robot
             previous_state = PT_state::CROSSWIND_CAST;
             current_state = PT_state::STOP_AND_MEASURE;
             resetSpiral();
-            if (verbose) ROS_WARN("[GSL-ParticleFilter] New state --> STOP_AND_MEASURE");
+            if (verbose) spdlog::warn("[GSL-ParticleFilter] New state --> STOP_AND_MEASURE");
         }   
         else{
             if(ros::Time::now().toSec()-lastUpdateTimestamp.toSec()>=deltaT){
@@ -181,7 +181,7 @@ void ParticleFilter::checkState()
     default:
         current_state = PT_state::STOP_AND_MEASURE;
         cancel_navigation();
-        ROS_ERROR("ERROR: State undefined!");
+        spdlog::error("ERROR: State undefined!");
     }
 }
 
@@ -191,14 +191,14 @@ void ParticleFilter::checkState()
 
 //-----------------------------
 
-Eigen::Vector2d ParticleFilter::average_vector(std::vector<Eigen::Vector2d> &data){
+Utils::Vector2 ParticleFilter::average_vector(std::vector<Utils::Vector2> &data){
     double sumX=0;
     double sumY=0;
-    for(Eigen::Vector2d &vec : data){
-        sumX+=vec.x();
-        sumY+=vec.y();
+    for(Utils::Vector2 &vec : data){
+        sumX+=vec.x;
+        sumY+=vec.y;
     }
-    return Eigen::Vector2d(sumX/data.size(),sumY/data.size());
+    return Utils::Vector2(sumX/data.size(),sumY/data.size());
 }
 
 
@@ -216,15 +216,15 @@ bool ParticleFilter::cellIsFree(double x, double y){
     return map_.data[v*map_.info.width+h]==0;
 }
 
-Eigen::Vector2d ParticleFilter::standardDeviationWind(int first){
+Utils::Vector2 ParticleFilter::standardDeviationWind(int first){
     int n = historicWind.size();
-    Eigen::Vector2d average=average_vector(historicWind);
+    Utils::Vector2 average=average_vector(historicWind);
     double sumX=0, sumY=0;
     for(int i=first; i<historicWind.size();i++){
-        sumX+=pow(historicWind[i].x()-average.x(),2);
-        sumY+=pow(historicWind[i].y()-average.y(),2);
+        sumX+=pow(historicWind[i].x-average.x,2);
+        sumY+=pow(historicWind[i].y-average.y,2);
     }
-    return Eigen::Vector2d(sqrt(sumX/n),sqrt(sumY/n));
+    return Utils::Vector2(sqrt(sumX/n),sqrt(sumY/n));
     
 }
 
@@ -279,10 +279,10 @@ void ParticleFilter::generateParticles(visualization_msgs::Marker &points){
     std::mt19937 gen(rd()); 
     std::normal_distribution<double> dist(0, 1);
 
-    std::vector<Eigen::Vector2d> stDev;
-    std::vector<Eigen::Vector2d> estSourcePos;
-    estSourcePos.push_back(Eigen::Vector2d(current_robot_pose.pose.pose.position.x,current_robot_pose.pose.pose.position.y));
-    stDev.push_back(Eigen::Vector2d(0.1,0.1));
+    std::vector<Utils::Vector2> stDev;
+    std::vector<Utils::Vector2> estSourcePos;
+    estSourcePos.push_back(Utils::Vector2(current_robot_pose.pose.pose.position.x,current_robot_pose.pose.pose.position.y));
+    stDev.push_back(Utils::Vector2(0.1,0.1));
     for(int i = historicWind.size() ; i>=0; i--){       
             stDev.push_back(standardDeviationWind(i));
             estSourcePos.push_back(estSourcePos.back()-historicWind[i]*deltaT);
@@ -291,8 +291,8 @@ void ParticleFilter::generateParticles(visualization_msgs::Marker &points){
     while(particles.size()<numberOfParticles){ //Keep generating until we get the desired amount of particles
         int i = rand() % (estSourcePos.size()); //choose which OS to use with uniform probability
         geometry_msgs::Point p;
-            p.x=estSourcePos[i].x()+dist(gen)*stDev[i].x(); //generate a point in that OS according to a gaussian
-            p.y=estSourcePos[i].y()+dist(gen)*stDev[i].y();
+            p.x=estSourcePos[i].x+dist(gen)*stDev[i].x; //generate a point in that OS according to a gaussian
+            p.y=estSourcePos[i].y+dist(gen)*stDev[i].y;
             p.z=0;
 
         if(cellIsFree(p.x, p.y)){ //no particles outside of the map nor inside obstacles
@@ -305,22 +305,22 @@ void ParticleFilter::generateParticles(visualization_msgs::Marker &points){
 
 double ParticleFilter::probability(bool hit, Particle &particle){
     double total=1;
-    Eigen::Vector2d stDev=standardDeviationWind(0);
+    Utils::Vector2 stDev=standardDeviationWind(0);
 
     for(int windIndex=0; windIndex< historicWind.size(); windIndex++){
 
         double sx=0, sy=0;
         for(int j=windIndex;j<historicWind.size();j++){
-            sx+=historicWind[j].x()*deltaT;
-            sy+=historicWind[j].y()*deltaT;
+            sx+=historicWind[j].x*deltaT;
+            sy+=historicWind[j].y*deltaT;
         }
 
         double deltaIX = current_robot_pose.pose.pose.position.x-particle.x-sx;
         double deltaIY = current_robot_pose.pose.pose.position.y-particle.y-sy;
-        double t1=exp(-pow(deltaIX,2) / (2*pow(stDev.x(),2)*(historicWind.size()-windIndex)*deltaT));
-        double t2=exp(-pow(deltaIY,2) / (2*pow(stDev.y(),2)*(historicWind.size()-windIndex)*deltaT));
+        double t1=exp(-pow(deltaIX,2) / (2*pow(stDev.x,2)*(historicWind.size()-windIndex)*deltaT));
+        double t2=exp(-pow(deltaIY,2) / (2*pow(stDev.y,2)*(historicWind.size()-windIndex)*deltaT));
 
-        double density = 1.0/(2*M_PI*stDev.x()*stDev.y()*(historicWind.size()-windIndex)*deltaT)   *t1*t2;
+        double density = 1.0/(2*M_PI*stDev.x*stDev.y*(historicWind.size()-windIndex)*deltaT)   *t1*t2;
         total=total*(1-mu*Sp*density);
     }
 
@@ -378,13 +378,13 @@ bool ParticleFilter::isDegenerated(){
         sum+=p.weight;
     }
     double effectiveP=1.0/neff;
-    ROS_INFO("Effective particles %d\nTotal particles: %d\n", (int)effectiveP, particles.size());
+    spdlog::info("Effective particles {}Total particles: {}", (int)effectiveP, particles.size());
 
     return effectiveP<particles.size()*0.25||std::isnan(effectiveP);
 }
 
 void ParticleFilter::resample(){
-    if (verbose) ROS_WARN("[Particle Filter] Resampling\n"); 
+    if (verbose) spdlog::warn("[Particle Filter] Resampling"); 
     std::vector<Particle> newParticles;
 
     std::random_device rd; 
@@ -429,15 +429,15 @@ void ParticleFilter::resample(){
 }
 
 bool ParticleFilter::particlesConverge(){
-    Eigen::Vector2d average(0,0);
+    Utils::Vector2 average(0,0);
 
     for(const Particle &p : particles){
-        average[0]+=p.weight*p.x;
-        average[1]+=p.weight*p.y;
+        average.x+=p.weight*p.x;
+        average.y+=p.weight*p.y;
     }
     double var=0;
     for(const Particle &p : particles){
-        var+=pow((Eigen::Vector2d(p.x,p.y)-average).norm(),2)*p.weight;
+        var+=pow((Utils::Vector2(p.x,p.y)-average).norm(),2)*p.weight;
     }
     return true;//sqrt(var)<=Rconv;
 }
@@ -464,22 +464,22 @@ void ParticleFilter::estimateLocation(){
     }
 
     if(!std::isnan(averageX)&&!std::isnan(averageY)){
-        estimatedLocations.push_back(Eigen::Vector2d(averageX, averageY));
-        allEstimations.push_back(Eigen::Vector2d(averageX, averageY));
+        estimatedLocations.push_back(Utils::Vector2(averageX, averageY));
+        allEstimations.push_back(Utils::Vector2(averageX, averageY));
         if(estimatedLocations.size()>maxEstimations){
             estimatedLocations.erase(estimatedLocations.begin());
         }
     }
     
-    for(const Eigen::Vector2d &est:estimatedLocations){
+    for(const Utils::Vector2 &est:estimatedLocations){
         geometry_msgs::Point p;
-        p.x=est.x(); p.y=est.y();
+        p.x=est.x; p.y=est.y;
         estimation.points.push_back(p);
     }
     estimation_markers.publish(estimation); 
 }
 
-Eigen::Vector2d ParticleFilter::sourceLocalizationEstimation(){
+Utils::Vector2 ParticleFilter::sourceLocalizationEstimation(){
     return average_vector(estimatedLocations);
 }
 
@@ -495,12 +495,12 @@ int ParticleFilter::checkSourceFound()
         if (time_spent.toSec() > max_search_time)
         {
             //Report failure, we were too slow
-            ROS_INFO("[PlumeTracking] - FAILURE-> Time spent (%.3f s) > max_search_time = %.3f", time_spent.toSec(), max_search_time);
+            spdlog::info("- FAILURE-> Time spent ({} s) > max_search_time = {}", time_spent.toSec(), max_search_time);
             save_results_to_file(0);
             return 0;
         }
 
-        Eigen::Vector2d average=average_vector(estimatedLocations);
+        Utils::Vector2 average=average_vector(estimatedLocations);
         visualization_msgs::Marker estimation;
                     estimation.header.frame_id="map";
                     estimation.header.stamp=ros::Time::now();
@@ -513,12 +513,12 @@ int ParticleFilter::checkSourceFound()
                     estimation.scale.x=0.1;
                     estimation.scale.y=0.1;
         geometry_msgs::Point p;
-            p.x=average.x(), p.y=average.y();
+            p.x=average.x, p.y=average.y;
 
         estimation.points.push_back(p);
         average_estimation_marker.publish(estimation);
 
-        for(const Eigen::Vector2d& vec : estimatedLocations){
+        for(const Utils::Vector2& vec : estimatedLocations){
             if((vec-average).norm()>convergenceThr){
                 return -1;
             }
@@ -528,7 +528,7 @@ int ParticleFilter::checkSourceFound()
         if (dist<distance_found && cellIsFree(p.x, p.y))
         {
             //GSL has finished with success!
-            ROS_INFO("[PlumeTracking] - SUCCESS -> Time spent (%.3f s)", time_spent.toSec());
+            spdlog::info("- SUCCESS -> Time spent ({} s)", time_spent.toSec());
             save_results_to_file(1);
             return 1;
         }
@@ -580,9 +580,9 @@ void ParticleFilter::save_results_to_file(int result)
     mb_srv.request.goal = source_pose;
 
     // Get path
-    if( !mb_client.call(mb_srv) )
+    if( !make_plan_client.call(mb_srv) )
     {
-        ROS_ERROR("[GSL-PlumeTracking] Unable to GetPath from MoveBase");
+        spdlog::error(" Unable to GetPath from MoveBase");
         nav_d = -1;
     }
     else
@@ -608,8 +608,8 @@ void ParticleFilter::save_results_to_file(int result)
 
     // 4. Nav time
     double nav_t = nav_d/0.4;   //assumming a cte speed of 0.4m/s
-    std::string str = boost::str(boost::format("[PlumeTracking] RESULT IS: Success=%u, Search_d=%.3f, Nav_d=%.3f, Search_t=%.3f, Nav_t=%.3f") % result % search_d % nav_d % search_t % nav_t).c_str();
-    ROS_INFO(str.c_str());
+    std::string str = fmt::format("RESULT IS: Success=%u, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}", result, search_d, nav_d, search_t, nav_t);
+    spdlog::info(str);
 
 
     //Save to file
@@ -621,11 +621,11 @@ void ParticleFilter::save_results_to_file(int result)
             fprintf(output_file, "%f, %f\n", p.pose.pose.position.x, p.pose.pose.position.y);
         }
         fprintf(output_file,"%s", "pred\n");
-        for(Eigen::Vector2d p : allEstimations){
-            fprintf(output_file, "%f, %f\n", p[0], p[1]);
+        for(Utils::Vector2 p : allEstimations){
+            fprintf(output_file, "%f, %f\n", p.x, p.y);
         }
         fclose(output_file);
     }
     else
-        ROS_ERROR("Unable to open Results file at: %s", results_file.c_str());
+        spdlog::error("Unable to open Results file at: {}", results_file.c_str());
 }

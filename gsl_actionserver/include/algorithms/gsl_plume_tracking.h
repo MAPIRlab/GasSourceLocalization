@@ -1,6 +1,4 @@
-#ifndef PLUME_TRACKING
-#define PLUME_TRACKING
-#include <boost/format.hpp>
+#pragma once
 
 #include <vector>
 #include <list>
@@ -13,7 +11,7 @@
 #include <gsl_algorithm.h>
 
 
-typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
+typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
 enum class PT_state {WAITING_FOR_MAP, EXPLORATION, STOP_AND_MEASURE, INSPECTION, UPWIND_SURGE, CROSSWIND_CAST};
 
 class PlumeTracking:public GSLAlgorithm
@@ -79,7 +77,5 @@ protected:
     float get_average_wind_direction(std::vector<float> const &v);
     
     //Actionlib callbacks (move_base)
-    void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const move_base_msgs::MoveBaseResultConstPtr &result) override;
+    void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result) override;
 };
-
-#endif

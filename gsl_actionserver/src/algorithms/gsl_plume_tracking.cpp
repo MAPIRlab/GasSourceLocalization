@@ -32,7 +32,7 @@ PlumeTracking::PlumeTracking(ros::NodeHandle *nh) :
     // Init State
     previous_state = PT_state::WAITING_FOR_MAP;
     current_state = PT_state::WAITING_FOR_MAP;
-    ROS_INFO("[PlumeTracking] INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
+    spdlog::info("INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
     gasHit= false;
     gasFound=false;
 
@@ -43,7 +43,7 @@ PlumeTracking::PlumeTracking(ros::NodeHandle *nh) :
 
 PlumeTracking::~PlumeTracking()
 {
-    ROS_INFO("[PlumeTracking] - Closing...");
+    spdlog::info("- Closing...");
 }
 
 
@@ -55,7 +55,7 @@ PlumeTracking::~PlumeTracking()
 //------------------------
 void PlumeTracking::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
 {
-    //ROS_INFO("PlumeTracking - %s - Got a new gas observation!", __FUNCTION__);
+    //spdlog::info("PlumeTracking - {} - Got a new gas observation!", __FUNCTION__);
 
     //[always] Add obs to the vector of the last N gas concentrations
     *gas_it = msg->raw;
@@ -70,12 +70,12 @@ void PlumeTracking::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
     }
     if(!gasFound&&msg->raw>th_gas_present){
         gasFound=true;
-        if (verbose) ROS_INFO("GAS HIT!");
+        if (verbose) spdlog::info("GAS HIT!");
         gasHit=true;
         cancel_navigation();                //Stop Robot
         previous_state = current_state;
         current_state = PT_state::STOP_AND_MEASURE;
-        if (verbose) ROS_WARN("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+        if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
     }
 }
 
@@ -102,11 +102,11 @@ void PlumeTracking::windCallback(const olfaction_msgs::anemometerPtr& msg)
         anemometer_downWind_pose.pose.position.z = 0.0;
         anemometer_downWind_pose.pose.orientation = tf::createQuaternionMsgFromYaw(downWind_direction);
 
-        tf_.transformPose("map", anemometer_downWind_pose, map_downWind_pose);
+        tf_listener.transformPose("map", anemometer_downWind_pose, map_downWind_pose);
     }
     catch(tf::TransformException &ex)
     {
-        ROS_ERROR("SurgeCastPT - %s - Error: %s", __FUNCTION__, ex.what());
+        spdlog::error("SurgeCastPT - {} - Error: {}", __FUNCTION__, ex.what());
         return;
     }
 
@@ -134,14 +134,14 @@ void PlumeTracking::windCallback(const olfaction_msgs::anemometerPtr& msg)
 
 void PlumeTracking::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    if (verbose) ROS_INFO("[PlumeTracking] - %s - Got the map of the environment!", __FUNCTION__);
+    if (verbose) spdlog::info("- {} - Got the map of the environment!", __FUNCTION__);
     //ROS convention is to consider cell [0,0] as the lower-left corner (see http://docs.ros.org/api/nav_msgs/html/msg/MapMetaData.html)
     map_ = *msg;
 
-    if (verbose) ROS_INFO("--------------GSL---------------");
-    if (verbose) ROS_INFO("Occupancy Map dimensions:");
-    if (verbose) ROS_INFO("x_min:%.2f x_max:%.2f   -   y_min:%.2f y_max:%.2f",map_.info.origin.position.x, map_.info.origin.position.x+map_.info.width*map_.info.resolution, map_.info.origin.position.y,map_.info.origin.position.y+map_.info.height*map_.info.resolution);
-    if (verbose)  ROS_INFO("--------------------------------");
+    if (verbose) spdlog::info("--------------GSL---------------");
+    if (verbose) spdlog::info("Occupancy Map dimensions:");
+    if (verbose) spdlog::info("x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}",map_.info.origin.position.x, map_.info.origin.position.x+map_.info.width*map_.info.resolution, map_.info.origin.position.y,map_.info.origin.position.y+map_.info.height*map_.info.resolution);
+    if (verbose)  spdlog::info("--------------------------------");
 
     //Start the fun!!
     cancel_navigation();
@@ -151,27 +151,27 @@ void PlumeTracking::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     robot_poses_vector.clear();         //start measuring distance
     inExecution = true;
     inMotion = false;
-    ROS_WARN("[PlumeTracking] STARTING THE SEARCH --> STOP_AND_MEASURE");
+    spdlog::warn("STARTING THE SEARCH --> STOP_AND_MEASURE");
 }
 
 
 // Move Base CallBacks
-void PlumeTracking::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const move_base_msgs::MoveBaseResultConstPtr &result)
+void PlumeTracking::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result)
 {
     if(state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED)
     {
-        ROS_DEBUG("PlumeTracking - %s - Target achieved!", __FUNCTION__);
+        spdlog::debug("PlumeTracking - {} - Target achieved!", __FUNCTION__);
         // This makes the search slower, but more robust!
         if (current_state != PT_state::CROSSWIND_CAST)
         {
             cancel_navigation();
             previous_state = current_state;
             current_state = PT_state::STOP_AND_MEASURE;
-            ROS_WARN("[PlumeTracking] New state --> STOP_AND_MEASURE");
+            spdlog::warn("New state --> STOP_AND_MEASURE");
         }
     }
     else if(state.state_ == actionlib::SimpleClientGoalState::ABORTED)
-        ROS_DEBUG("PlumeTracking - %s - UPS! Couldn't reach the target.", __FUNCTION__);
+        spdlog::debug("PlumeTracking - {} - UPS! Couldn't reach the target.", __FUNCTION__);
 
     //Notify that the objective has been reached
     inMotion = false;
@@ -229,7 +229,7 @@ void PlumeTracking::getGasWindObservations()
 
 
         //Check thresholds and set new search-state
-        if (verbose) ROS_INFO("[GSL-PlumeTracking]   avg_gas=%.3f    avg_wind_speed=%.3f     avg_wind_dir=%.3f",
+        if (verbose) spdlog::info("avg_gas={:.2}    avg_wind_speed={:.2}     avg_wind_dir={:.2}",
                  average_concentration,
                  average_wind_spped,
                  average_wind_direction);
@@ -239,7 +239,7 @@ void PlumeTracking::getGasWindObservations()
             //Gas & wind
             previous_state = current_state;
             current_state = PT_state::UPWIND_SURGE;
-            if (verbose) ROS_WARN("[PlumeTracking] New state --> UPWIND_SURGE");
+            if (verbose) spdlog::warn("New state --> UPWIND_SURGE");
         }
         else if (average_concentration > th_gas_present)
         {
@@ -247,7 +247,7 @@ void PlumeTracking::getGasWindObservations()
             previous_state = current_state;
             current_state = PT_state::INSPECTION;
             inspection_iter = 0;
-            if (verbose) ROS_WARN("[PlumeTracking] New state --> INSPECTION");
+            if (verbose) spdlog::warn("New state --> INSPECTION");
         }
         else if (average_wind_spped > th_wind_present)
         {
@@ -256,20 +256,20 @@ void PlumeTracking::getGasWindObservations()
             {
                 previous_state = current_state;
                 current_state = PT_state::CROSSWIND_CAST;
-                if (verbose) ROS_WARN("[PlumeTracking] New state --> CROSSWIND_CAST");
+                if (verbose) spdlog::warn("New state --> CROSSWIND_CAST");
             }
             else
             {
                 if(gasHit){
                     previous_state = current_state;
                     current_state = PT_state::CROSSWIND_CAST;
-                    if (verbose) ROS_WARN("[PlumeTracking] New state --> CROSSWIND_CAST");
+                    if (verbose) spdlog::warn("New state --> CROSSWIND_CAST");
                     gasHit=false;
                 }
                 else{
                     previous_state = current_state;
                     current_state = PT_state::EXPLORATION;
-                    if (verbose) ROS_WARN("[PlumeTracking] New state --> EXPLORATION");
+                    if (verbose) spdlog::warn("New state --> EXPLORATION");
                 }          
             }
         }
@@ -278,7 +278,7 @@ void PlumeTracking::getGasWindObservations()
             //Nothing
             previous_state = current_state;
             current_state = PT_state::EXPLORATION;
-            if (verbose) ROS_WARN("[PlumeTracking] New state --> EXPLORATION - no gas or wind found");
+            if (verbose) spdlog::warn("New state --> EXPLORATION - no gas or wind found");
         }
     }
 }
@@ -299,7 +299,7 @@ void PlumeTracking::setInspectionGoal()
 {
     if (inspection_iter < 4)
     {
-        move_base_msgs::MoveBaseGoal goal;
+        navigation_assistant::nav_assistantGoal goal;
         current_step = inspection_radius;   //meters
         do
         {
@@ -328,7 +328,7 @@ void PlumeTracking::setInspectionGoal()
                 goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(3.14159/4);
                 break;
             default:
-                ROS_WARN("ERROR IN SEARCH-STATE INSPECTION");
+                spdlog::warn("ERROR IN SEARCH-STATE INSPECTION");
             }
 
             //reduce step (in case goal is an obstacle)
@@ -337,8 +337,8 @@ void PlumeTracking::setInspectionGoal()
         while(!checkGoal(&goal));
 
         //Send goal to the Move_Base node for execution
-        if (verbose) ROS_DEBUG("INSPECTION - Sending robot to %lf %lf", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-        mb_ac.sendGoal(goal, boost::bind(&PlumeTracking::goalDoneCallback, this,  _1, _2), boost::bind(&PlumeTracking::goalActiveCallback, this), boost::bind(&PlumeTracking::goalFeedbackCallback, this, _1));
+        if (verbose) spdlog::debug("INSPECTION - Sending robot to {} {}", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        mb_ac.sendGoal(goal, std::bind(&PlumeTracking::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&PlumeTracking::goalActiveCallback, this), std::bind(&PlumeTracking::goalFeedbackCallback, this, std::placeholders::_1));
         inMotion = true;
         inspection_iter++;
     }
@@ -348,7 +348,7 @@ void PlumeTracking::setInspectionGoal()
         cancel_navigation();
         previous_state = current_state;
         current_state = PT_state::STOP_AND_MEASURE;
-        if (verbose) ROS_WARN("[PlumeTracking] New state --> STOP_AND_MEASURE");
+        if (verbose) spdlog::warn("New state --> STOP_AND_MEASURE");
     }
 }
 
@@ -356,19 +356,19 @@ void PlumeTracking::setInspectionGoal()
 //Set a random goal within the map (EXPLORATION)
 void PlumeTracking::setRandomGoal()
 {
-    move_base_msgs::MoveBaseGoal goal;
+    navigation_assistant::nav_assistantGoal goal;
     goal.target_pose = get_random_pose_environment();
 
     //Send goal to the Move_Base node for execution
-    if (verbose) ROS_INFO("[PlumeTracking] - %s - Sending robot to %lf %lf", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, boost::bind(&PlumeTracking::goalDoneCallback, this,  _1, _2), boost::bind(&PlumeTracking::goalActiveCallback, this), boost::bind(&PlumeTracking::goalFeedbackCallback, this, _1));
+    if (verbose) spdlog::info("- {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    mb_ac.sendGoal(goal, std::bind(&PlumeTracking::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&PlumeTracking::goalActiveCallback, this), std::bind(&PlumeTracking::goalFeedbackCallback, this, std::placeholders::_1));
     inMotion = true;
 }
 
 geometry_msgs::PoseStamped PlumeTracking::get_random_pose_environment()
 {
     int idx=0;
-    move_base_msgs::MoveBaseGoal goal;
+    navigation_assistant::nav_assistantGoal goal;
     geometry_msgs::PoseStamped p;
     p.header.frame_id = "map";
     p.header.stamp = ros::Time::now();
@@ -386,7 +386,7 @@ geometry_msgs::PoseStamped PlumeTracking::get_random_pose_environment()
     }while (!checkGoal(&goal));
    
     //show content
-    if (verbose) ROS_INFO("[Plume-Tracking] Random Goal pose =[%.2f, %.2f, %.2f]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
+    if (verbose) spdlog::info("[Plume-Tracking] Random Goal pose =[{:.2}, {:.2}, {:.2}]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
     return p;
 }
 

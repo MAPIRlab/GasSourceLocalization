@@ -25,7 +25,7 @@ SurgeCastPT::SurgeCastPT(ros::NodeHandle *nh) :
 
 SurgeCastPT::~SurgeCastPT()
 {
-    ROS_INFO("[PlumeTracking] - Closing...");
+    spdlog::info("- Closing...");
 }
 
 
@@ -41,10 +41,10 @@ void SurgeCastPT::setSurgeGoal()
 {
     // Initially, get Upwind direction with respect reference /map
     double upwind_dir = angles::normalize_angle(average_wind_direction + 3.14159);
-    //ROS_INFO("[DEBUG] movement_dir in map frame = %.3f", movement_dir);
+    //spdlog::info("[DEBUG] movement_dir in map frame = {}", movement_dir);
 
     //Set goal in the Upwind direction
-    move_base_msgs::MoveBaseGoal goal;
+    navigation_assistant::nav_assistantGoal goal;
     current_step = step;
     double movement_dir = upwind_dir;
     do
@@ -65,15 +65,15 @@ void SurgeCastPT::setSurgeGoal()
 
         if (current_step<=0.0)
         {
-            ROS_ERROR("SurgeCastPT - %s - ERROR: Cannot move further Upwind!", __FUNCTION__);
+            spdlog::error("SurgeCastPT - {} - ERROR: Cannot move further Upwind!", __FUNCTION__);
             return;
         }
     }
     while(!checkGoal(&goal));
 
     //Send goal to the Move_Base node for execution
-    if (verbose) ROS_DEBUG("SurgeCastPT - %s - Sending robot to %lf %lf", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, boost::bind(&SurgeCastPT::goalDoneCallback, this,  _1, _2), boost::bind(&SurgeCastPT::goalActiveCallback, this), boost::bind(&SurgeCastPT::goalFeedbackCallback, this, _1));
+    if (verbose) spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    mb_ac.sendGoal(goal, std::bind(&SurgeCastPT::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SurgeCastPT::goalActiveCallback, this), std::bind(&SurgeCastPT::goalFeedbackCallback, this, std::placeholders::_1));
     inMotion = true;
     
 }
@@ -101,16 +101,16 @@ void SurgeCastPT::setCastGoal()
     else
     {
         //end of cast        
-        if (verbose) ROS_INFO("Gas plume completely Lost!");
+        if (verbose) spdlog::info("Gas plume completely Lost!");
         cancel_navigation();                //Stop Robot
         previous_state = current_state;
         current_state = PT_state::STOP_AND_MEASURE;
-        if (verbose) ROS_WARN("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+        if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
         return;
     }
 
     //Set goal
-    move_base_msgs::MoveBaseGoal goal;
+    navigation_assistant::nav_assistantGoal goal;
     do
     {
         goal.target_pose.header.frame_id = "map";
@@ -121,21 +121,21 @@ void SurgeCastPT::setCastGoal()
         goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
         goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
-        //ROS_INFO("SurgeCastPT - %s - Testing %lf %lf...", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        //spdlog::info("SurgeCastPT - {} - Testing {} {}...", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
 
         //reduce step (in case goal is an obstacle or out of bounds)
         current_step = current_step-0.3;
         if (current_step<=0)
         {
-            if (verbose) ROS_INFO("SurgeCastPT - %s - ERROR: Cannot move further CrossWind!", __FUNCTION__);
+            if (verbose) spdlog::info("SurgeCastPT - {} - ERROR: Cannot move further CrossWind!", __FUNCTION__);
             return;
         }
     }
     while(!checkGoal(&goal));
 
     //Send goal to the Move_Base node for execution
-    if (verbose) ROS_DEBUG("SurgeCastPT - %s - Sending robot to %lf %lf", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, boost::bind(&SurgeCastPT::goalDoneCallback, this,  _1, _2), boost::bind(&SurgeCastPT::goalActiveCallback, this), boost::bind(&SurgeCastPT::goalFeedbackCallback, this, _1));
+    if (verbose) spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    mb_ac.sendGoal(goal, std::bind(&SurgeCastPT::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SurgeCastPT::goalActiveCallback, this), std::bind(&SurgeCastPT::goalFeedbackCallback, this, std::placeholders::_1));
     inMotion = true;
 }
 
@@ -151,12 +151,12 @@ void SurgeCastPT::checkState()
         //We are looking for gas clues
         if(gasFound&&*max_element(gasConcentration_v.begin(), gasConcentration_v.end()))
         {
-            if (verbose) ROS_INFO("GAS HIT!");
+            if (verbose) spdlog::info("GAS HIT!");
             gasHit=true;
             cancel_navigation();                //Stop Robot
             previous_state = current_state;
             current_state = PT_state::STOP_AND_MEASURE;
-            if (verbose) ROS_WARN("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+            if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
         }
         break;
     case PT_state::INSPECTION:
@@ -167,27 +167,27 @@ void SurgeCastPT::checkState()
         //We are moving within the gas plume
         if(*max_element(gasConcentration_v.begin(), gasConcentration_v.end()) < th_gas_present)
         {
-            if (verbose) ROS_INFO("Gas plume lost!");
+            if (verbose) spdlog::info("Gas plume lost!");
             cancel_navigation();                //Stop Robot
             previous_state = current_state;
             current_state = PT_state::STOP_AND_MEASURE;
-            if (verbose) ROS_WARN("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+            if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
         }
         break;
     case PT_state::CROSSWIND_CAST:
         //We are trying to return to the plume
-        if(*max_element(gasConcentration_v.begin(), gasConcentration_v.end()) >= th_gas_present)
+        if(get_average_vector(gasConcentration_v) >= th_gas_present)
         {
-            if (verbose) ROS_INFO("Gas plume found! - Returning to UPWIND_SURGE movement!");
+            if (verbose) spdlog::info("Gas plume found! - Returning to UPWIND_SURGE movement!");
             gasHit=true;
             cancel_navigation();                //Stop Robot
             previous_state = current_state;
             current_state = PT_state::STOP_AND_MEASURE;
-            if (verbose) ROS_WARN("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+            if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
         }        
         break;
     default:
-        ROS_ERROR("ERROR: State undefined!");
+        spdlog::error("ERROR: State undefined!");
     }
 }
 
@@ -202,6 +202,7 @@ void SurgeCastPT::save_results_to_file(int result)
     std::ofstream file;
     file.open(results_file, std::ios_base::app);
 
+    file<<search_t<<"\n\n\n";
     for(geometry_msgs::PoseWithCovarianceStamped p : robot_poses_vector){
        file<<p.pose.pose.position.x<<", "<<p.pose.pose.position.y<<"\n";
     }

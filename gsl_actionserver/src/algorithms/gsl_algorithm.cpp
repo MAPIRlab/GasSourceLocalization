@@ -2,20 +2,20 @@
 
 GSLAlgorithm::GSLAlgorithm(ros::NodeHandle *nh) :
     nh_(nh),
-    mb_ac("move_base", true)
+    mb_ac("nav_assistant")
 {
     srand(time(NULL));      //initialize random seed
 
-    ROS_INFO("[GSL_NODE] Waiting for the move_base action server to come online...");
+    spdlog::info("[GSL_NODE] Waiting for the move_base action server to come online...");
     bool mb_aconline = false;
-    for(int i=0 ; i<10 ; i++)
+    for(int i=0 ; i<100 ; i++)
     {
         if(mb_ac.waitForServer(ros::Duration(1.0)))
         {
             mb_aconline = true;
             break;
         }
-        ROS_INFO("[GSL_NODE] Unable to find the move_base action server, retrying...");
+        spdlog::info("[GSL_NODE] Unable to find the move_base action server, retrying...");
     }
 
     if(!mb_aconline)
@@ -24,7 +24,7 @@ GSLAlgorithm::GSLAlgorithm(ros::NodeHandle *nh) :
         ROS_BREAK();
         return;
     }
-    ROS_INFO("[GSL_NODE] Found MoveBase! Initializing module...");
+    spdlog::info("[GSL_NODE] Found MoveBase! Initializing module...");
 
 
     // Load Parameters
@@ -36,6 +36,7 @@ GSLAlgorithm::GSLAlgorithm(ros::NodeHandle *nh) :
     nh->param<std::string>("anemometer_topic", anemometer_topic, "/Anemometer/WindSensor_reading");
     nh->param<std::string>("robot_location_topic", robot_location_topic, "/amcl_pose");
     nh->param<std::string>("map_topic", map_topic, "/map");
+    nh->param<std::string>("costmap_topic", costmap_topic, "/move_base/global_costmap/costmap");
 
     nh->param<double>("max_search_time", max_search_time, 300.0);
     nh->param<double>("distance_found", distance_found, 0.5);
@@ -51,14 +52,14 @@ GSLAlgorithm::GSLAlgorithm(ros::NodeHandle *nh) :
     gas_sub_ = nh->subscribe(enose_topic,1,&GSLAlgorithm::gasCallback, this);
     wind_sub_ = nh->subscribe(anemometer_topic,1,&GSLAlgorithm::windCallback, this);
     map_sub_ = nh->subscribe(map_topic, 1, &GSLAlgorithm::mapCallback, this);
+    costmap_sub_ = nh->subscribe(costmap_topic, 1, &GSLAlgorithm::costmapCallback, this);
     localization_sub_ = nh_->subscribe(robot_location_topic,100,&GSLAlgorithm::localizationCallback,this);
 
     // Services
     //-----------
-    mb_client = nh_->serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
-
+    make_plan_client = nh_->serviceClient<nav_msgs::GetPlan>("/move_base/NavfnROS/make_plan");
     // Init State
-    ROS_INFO("[GSL NODE] INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
+    spdlog::info("[GSL NODE] INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
     inMotion = false;
     inExecution = false;
 
@@ -82,23 +83,26 @@ void GSLAlgorithm::localizationCallback(const geometry_msgs::PoseWithCovarianceS
 
 }
 
+void GSLAlgorithm::costmapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg){
+    costmap_ = *msg;
+}
 
 // Move Base CallBacks
-void GSLAlgorithm::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const move_base_msgs::MoveBaseResultConstPtr &result)
+void GSLAlgorithm::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result)
 {
     if(state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED)
     {
-        ROS_DEBUG("PlumeTracking - %s - Target achieved!", __FUNCTION__);
+        //spdlog::debug("PlumeTracking - {} - Target achieved!", __FUNCTION__);
     }
     else if(state.state_ == actionlib::SimpleClientGoalState::ABORTED)
-        ROS_DEBUG("PlumeTracking - %s - UPS! Couldn't reach the target.", __FUNCTION__);
+        spdlog::debug("PlumeTracking - {} - UPS! Couldn't reach the target.", __FUNCTION__);
 
     //Notify that the objective has been reached
     inMotion = false;
 }
 
 void GSLAlgorithm::goalActiveCallback(){}
-void GSLAlgorithm::goalFeedbackCallback(const move_base_msgs::MoveBaseFeedbackConstPtr &feedback){}
+void GSLAlgorithm::goalFeedbackCallback(const navigation_assistant::nav_assistantFeedbackConstPtr &feedback){}
 
 
 //-----------------
@@ -124,46 +128,34 @@ float GSLAlgorithm::get_average_vector(std::vector<float> const &v)
 }
 
 
-bool GSLAlgorithm::checkGoal(move_base_msgs::MoveBaseGoal * goal)
+bool GSLAlgorithm::checkGoal(navigation_assistant::nav_assistantGoal* goal)
 {
-    //ROS_INFO("[DEBUG] Checking Goal [%.2f, %.2f] in map frame", goal->target_pose.pose.position.x, goal->target_pose.pose.position.y);
-
-    //1. Get dimensions of OccupancyMap
-    float map_min_x = map_.info.origin.position.x;
-    float map_max_x = map_.info.origin.position.x + map_.info.width*map_.info.resolution;
-    float map_min_y = map_.info.origin.position.y;
-    float map_max_y = map_.info.origin.position.y + map_.info.height*map_.info.resolution;
-
-    //2. Check that goal falls inside the map
-    if (goal->target_pose.pose.position.x < map_min_x ||
-        goal->target_pose.pose.position.x > map_max_x ||
-        goal->target_pose.pose.position.y < map_min_y ||
-        goal->target_pose.pose.position.y > map_max_y)
+    //spdlog::info("[DEBUG] Checking Goal [{:.2}, {:.2}] in map frame", goal->target_pose.pose.position.x, goal->target_pose.pose.position.y);
+    double pos_x = goal->target_pose.pose.position.x;
+    double pos_y = goal->target_pose.pose.position.y;
+    if(!isPointInsideMapBounds({pos_x, pos_y}))
     {
-        if (verbose) ROS_INFO("[DEBUG] Goal is out of map dimensions");
+        if (verbose) spdlog::info("[DEBUG] Goal is out of map dimensions");
+        return false;
+    }
+    
+    nav_msgs::GetPlan serviceArgs;
+    serviceArgs.request.start.header.frame_id = "map";
+    serviceArgs.request.start.header.stamp  = ros::Time::now();
+    serviceArgs.request.start.pose = current_robot_pose.pose.pose;
+
+    serviceArgs.request.goal = goal->target_pose;
+    
+    if(!make_plan_client.call(serviceArgs))
+    {
+        spdlog::error("Unable to call make_plan!");
         return false;
     }
 
-    //3. Use Move Base Service to declare a valid navigation goal
-    nav_msgs::GetPlan mb_srv;
-    geometry_msgs::PoseStamped start_point;
-    start_point.header.frame_id = "map";
-    start_point.header.stamp = ros::Time::now();
-    start_point.pose = current_robot_pose.pose.pose;
-    mb_srv.request.start = start_point;
-    mb_srv.request.tolerance=0.0;
-    mb_srv.request.start.header.frame_id = "map";
-    mb_srv.request.goal = goal->target_pose;
-    //get path from robot to candidate.
-    if( mb_client.call(mb_srv) && mb_srv.response.plan.poses.size()>1)
-    {
-        return true;
-    }
+    if(serviceArgs.response.plan.poses.empty())
+        return false;
     else
-    {
-        if (verbose) ROS_INFO("[DEBUG] Unable to reach  [%.2f, %.2f] with MoveBase", goal->target_pose.pose.position.x, goal->target_pose.pose.position.y);
-        return false;
-    }
+        return true;
 }
 
 
@@ -176,7 +168,7 @@ int GSLAlgorithm::checkSourceFound()
         if (time_spent.toSec() > max_search_time)
         {
             //Report failure, we were too slow
-            ROS_INFO("[PlumeTracking] - FAILURE-> Time spent (%.3f s) > max_search_time = %.3f", time_spent.toSec(), max_search_time);
+            spdlog::info("- FAILURE-> Time spent ({} s) > max_search_time = {}", time_spent.toSec(), max_search_time);
             save_results_to_file(0);
             return 0;
         }
@@ -188,7 +180,7 @@ int GSLAlgorithm::checkSourceFound()
         if (dist < distance_found)
         {
             //GSL has finished with success!
-            ROS_INFO("[PlumeTracking] - SUCCESS -> Time spent (%.3f s)", time_spent.toSec());
+            spdlog::info("- SUCCESS -> Time spent ({} s)", time_spent.toSec());
             save_results_to_file(1);
             return 1;
         }
@@ -240,9 +232,9 @@ void GSLAlgorithm::save_results_to_file(int result)
     mb_srv.request.goal = source_pose;
 
     // Get path
-    if( !mb_client.call(mb_srv) )
+    if( !make_plan_client.call(mb_srv) )
     {
-        ROS_ERROR("[GSL-PlumeTracking] Unable to GetPath from MoveBase");
+        spdlog::error(" Unable to GetPath from MoveBase");
         nav_d = -1;
     }
     else
@@ -268,8 +260,8 @@ void GSLAlgorithm::save_results_to_file(int result)
 
     // 4. Nav time
     double nav_t = nav_d/0.4;   //assumming a cte speed of 0.4m/s
-    std::string str = boost::str(boost::format("[PlumeTracking] RESULT IS: Success=%u, Search_d=%.3f, Nav_d=%.3f, Search_t=%.3f, Nav_t=%.3f\n") % result % search_d % nav_d % search_t % nav_t).c_str();
-    ROS_INFO(str.c_str());
+    std::string str = fmt::format("RESULT IS: Success={}, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}\n", result, search_d, nav_d, search_t, nav_t);
+    spdlog::info(str.c_str());
 
 
     //Save to file
@@ -283,5 +275,15 @@ void GSLAlgorithm::save_results_to_file(int result)
         fclose(output_file);
     }
     else
-        ROS_ERROR("Unable to open Results file at: %s", results_file.c_str());
+        spdlog::error("Unable to open Results file at: {}", results_file.c_str());
 }
+
+bool GSLAlgorithm::isPointInsideMapBounds(const Utils::Vector2& point) const
+{
+    const static Utils::Vector2 mapStart = (Utils::Vector2) map_.info.origin.position;
+    const static Utils::Vector2 mapEnd = mapStart + Utils::Vector2(map_.info.width, map_.info.height) * map_.info.resolution;
+    
+    return point.x >= mapStart.x &&  point.x < mapEnd.x
+    && point.y >= mapStart.y &&  point.y < mapEnd.y;
+}
+

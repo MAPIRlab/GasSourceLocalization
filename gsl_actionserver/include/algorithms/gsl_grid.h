@@ -1,26 +1,36 @@
 #include <gsl_algorithm.h>
+#include <Utils/Utils.h>
 #include <fstream>      // std::ofstream
 #include <iostream>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <eigen3/Eigen/Dense>
-#include <math.h>
+#include <cmath>
 #include <bits/stdc++.h>
 #include <unordered_set>
+#include <std_msgs/String.h>
+#include <deque>
 
 #include <gmrf_wind_mapping/WindEstimation.h>
 
-typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
-enum class Grid_state {WAITING_FOR_MAP, EXPLORATION, STOP_AND_MEASURE, MOVING};
+namespace Grid{
+
+typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
+typedef Utils::Vector2Int Vector2Int;
+typedef std::unordered_set<Vector2Int, Vector2Int::Vec2IntHash, Vector2Int::Vec2IntCompare > hashSet;
+enum class Grid_state {WAITING_FOR_MAP, INITIALIZING, EXPLORATION, STOP_AND_MEASURE, MOVING};
 
 class Cell{
     public:
-        Cell(bool free, double x, double y, double weight);
+        Cell(bool free, double weight);
         ~Cell();
         bool free;
-        double x, y, weight, auxWeight;
+        double weight;
+        double auxWeight, originalPropagatedWeight;
         double distance;        
 };
+
+
 
 struct WindVector{
     int i;
@@ -36,8 +46,9 @@ class GridGSL:public GSLAlgorithm
         ~GridGSL();
         void getGasWindObservations();
         Grid_state getState();
-        void setGoal();
         int checkSourceFound() override;
+        void showWeights();
+        virtual void setGoal();
 
     protected:
 
@@ -45,7 +56,7 @@ class GridGSL:public GSLAlgorithm
         void gasCallback(const olfaction_msgs::gas_sensorPtr& msg) override;
         void windCallback(const olfaction_msgs::anemometerPtr& msg) override;
         void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg) override;
-        void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const move_base_msgs::MoveBaseResultConstPtr &result) override;
+        void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result) override;
             
         Grid_state previous_state, current_state;
 
@@ -55,6 +66,7 @@ class GridGSL:public GSLAlgorithm
         bool gasHit;
         double th_gas_present;
         double th_wind_present;
+        ros::Publisher gas_type_pub;
 
         std::vector<float> stop_and_measure_gas_v;
         std::vector<float> stop_and_measure_windS_v;
@@ -65,43 +77,41 @@ class GridGSL:public GSLAlgorithm
         //Estimations
         double stdev_hit;
         double stdev_miss;
-        void estimateProbabilities(std::vector<std::vector<Cell> >& map,
+        void estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell> >& map,
                                     bool hit,
+                                    bool advection,
                                     double wind_direction,
-                                    Eigen::Vector2i robot_pos);
+                                    Vector2Int robot_pos);
         void propagateProbabilities(std::vector<std::vector<Cell> >& map,
-                                    std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& openSet,
-                                    std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& closedSet,
-                                    std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& activeSet);
+                                    hashSet& openSet,
+                                    hashSet& closedSet,
+                                    hashSet& activeSet);
 
-        void calculateWeight(std::vector<std::vector<Cell> >& map,
-                                int i, int j, std::pair<int,int> p,
-                                std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& openSet,
-                                std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& closedSet,
-                                std::unordered_set<std::pair<int, int>, boost::hash< std::pair<int, int> > >& activeSet);
+        void calculateWeight(std::vector<std::vector<Cell> >& map, int i, int j, Vector2Int p, 
+                                    hashSet& openPropagationSet,
+                                    hashSet& closedPropagationSet,
+                                    hashSet& activePropagationSet);
         void normalizeWeights(std::vector<std::vector<Cell> >& map);
 
         
         //Movement
         bool infoTaxis;
-        void moveTo(int i, int j);
-        void cancel_navigation(); 
-        
+        bool allowMovementRepetition;
+        void moveTo(navigation_assistant::nav_assistantGoal goal);
+        navigation_assistant::nav_assistantGoal indexToGoal(int i, int j);
+        void cancel_navigation();
+
         Eigen::Vector2d previous_robot_pose;
 
-        std::unordered_set< 
-            std::pair<int, int>, 
-            boost::hash< std::pair<int, int> > 
-        > openMoveSet;
-        std::unordered_set< 
-            std::pair<int, int>, 
-            boost::hash< std::pair<int, int> > 
-        > closedMoveSet;
+        hashSet openMoveSet;
+        hashSet closedMoveSet;
         
         void updateSets();
 
         //Infotaxis
-        double entropy(int i, int j, Eigen::Vector2d wind);
+        bool computingInfoGain = false;
+        double informationGain(WindVector windVec);
+        double KLD(std::vector<std::vector<Cell> >& a, std::vector<std::vector<Cell> >& b);
         ros::ServiceClient clientW;
         std::vector<WindVector> estimateWind();
 
@@ -110,20 +120,39 @@ class GridGSL:public GSLAlgorithm
         int numCells;
         std::vector<std::vector<Cell> > cells;
         ros::Publisher probability_markers;
-        Eigen::Vector2i currentPosIndex;
+        ros::Publisher estimation_markers;
+        Vector2Int currentPosIndex;
+        virtual double probability(const Vector2Int& indices);
         
         //Auxiliary functions
         visualization_msgs::Marker emptyMarker();
-        void showWeights();
+        double markers_height;
         Eigen::Vector3d valueToColor(double val, double low, double high);
-        Eigen::Vector2i coordinatesToIndex(double x, double y);
+        Vector2Int coordinatesToIndex(double x, double y);
         Eigen::Vector2d indexToCoordinates(double i, double j);
         double gaussian(double distance, double sigma);
         
         //Termination condition
+        int exploredCells;
         bool reached;
         double t1;
+        int convergence_steps;
         double convergence_thr;
         double ground_truth_x, ground_truth_y;
-        void save_results_to_file(int result, int i, int j);
+        std::deque<Eigen::Vector2d> estimatedSourceLocations;
+        std::vector<double> errorOverTimeAll;
+        std::vector<double> errorOverTime;
+        Eigen::Vector2d expectedValueSource(double proportionBest);
+        double varianceSourcePosition();
+        void save_results_to_file(int result, double i, double j, double allI, double allJ);
 };
+
+struct CellData{
+    Vector2Int indices;
+    double probability;
+    CellData(Vector2Int ind, double prob){
+        indices = ind; probability = prob;
+    }
+    ~CellData(){}
+};
+}

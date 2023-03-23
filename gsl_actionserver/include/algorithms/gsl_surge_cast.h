@@ -1,3 +1,4 @@
+#pragma once
 #include <gsl_plume_tracking.h>
 /*   DESCRIPTION OF SEARCH STATES
  * --------------------------------

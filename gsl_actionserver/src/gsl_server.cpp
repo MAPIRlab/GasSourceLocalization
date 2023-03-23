@@ -2,21 +2,34 @@
 #include "gsl_spiral.h"
 #include "gsl_particle_filter.h"
 #include "gsl_surge_cast.h"
+#include "PMFS.h"
 #include "gsl_grid.h"
+#include "gsl_imgui.h"
+#include "gsl_implot.h"
 
-// GAS SOURCE LOCALIZATION BASED ON SEMANTIC KNOWLEDGE
+#include <thread>
+
+#ifdef TRACY_ENABLE
+#include <tracy/Tracy.hpp>
+#include <tracy/TracyC.h>
+
+void enableTracy() //this does nothing except make sure that the compiler optimizations don't disable tracy
+{
+    ZoneScoped;
+}
+#endif
+
 int CGSLServer::doSurgeCast()
 {
-    ROS_INFO("[GSL-PlumeTracking] New Action request. Initializing Plume Tracking algorithm.");
+    spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
     // Create object implementing Plume Tracking
     ros::NodeHandle pn_("~");
     SurgeCastPT pt(&pn_);
 
-    ROS_DEBUG("[GSL-PlumeTracking] inMotion = %s", pt.get_inMotion() ? "true" : "false");
-    ROS_DEBUG("[GSL-PlumeTracking] GSLState = %d", pt.get_state());
+    spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
     //Loop
-    ROS_INFO("[GSL-PlumeTracking] Staring Plume Tracking Loop");
+    spdlog::info(" Staring Plume Tracking Loop");
     ros::Rate loop_rate(10);
     size_t num_iterations = 10;
     size_t iter_i = 0;
@@ -32,7 +45,7 @@ int CGSLServer::doSurgeCast()
         //Check if AS is preempted
         if (as_.isPreemptRequested() || !ros::ok())
         {
-            ROS_INFO("[GSL-PlumeTracking] %s: Preempted", action_name_.c_str());
+            spdlog::info(" {}: Preempted", action_name_.c_str());
             //Cancell the current search
             pt.cancel_navigation();
             // set the action state to preempted, and return failure
@@ -66,10 +79,10 @@ int CGSLServer::doSurgeCast()
                 pt.setCastGoal();
                 break;
             case PT_state::WAITING_FOR_MAP:
-                ROS_INFO("[GSL-PlumeTracking] Waiting for the map of the environment!....");    //Waiting call back function
+                spdlog::info(" Waiting for the map of the environment!....");    //Waiting call back function
                 break;
             default:
-                ROS_ERROR("[GSL-PlumeTracking] Search state is undefined!");
+                spdlog::error(" Search state is undefined!");
             }
         }
 
@@ -94,7 +107,7 @@ int CGSLServer::doSpiral()
         {
             switch(spiral.getCurrentState()){
                 case(SPIRAL_state::WAITING_FOR_MAP):
-                    ROS_INFO("[SPIRAL_SEARCH] Waiting for the map of the environment!...."); 
+                    spdlog::info("[SPIRAL_SEARCH] Waiting for the map of the environment!...."); 
                     break;
                 case(SPIRAL_state::STOP_AND_MEASURE):
                     spiral.getGasObservations();
@@ -110,7 +123,7 @@ int CGSLServer::doSpiral()
                     }
                     break;
                 default:
-                ROS_ERROR("[SPIRAL_SEARCH] Undefined state");
+                spdlog::error("[SPIRAL_SEARCH] Undefined state");
             }
         }
         ros::spinOnce();
@@ -121,16 +134,15 @@ int CGSLServer::doSpiral()
 
 int CGSLServer::doSurgeSpiral()
 {
-    ROS_INFO("[GSL-PlumeTracking] New Action request. Initializing Plume Tracking algorithm.");
+    spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
     // Create object implementing Plume Tracking
     ros::NodeHandle pn_("~");
     SurgeSpiralPT pt(&pn_);
 
-    ROS_DEBUG("[GSL-PlumeTracking] inMotion = %s", pt.get_inMotion() ? "true" : "false");
-    ROS_DEBUG("[GSL-PlumeTracking] GSLState = %d", pt.get_state());
+    spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
     //Loop
-    ROS_INFO("[GSL-PlumeTracking] Staring Plume Tracking Loop");
+    spdlog::info(" Staring Plume Tracking Loop");
     ros::Rate loop_rate(10);
     size_t num_iterations = 10;
     size_t iter_i = 0;
@@ -146,7 +158,7 @@ int CGSLServer::doSurgeSpiral()
         //Check if AS is preempted
         if (as_.isPreemptRequested() || !ros::ok())
         {
-            ROS_INFO("[GSL-PlumeTracking] %s: Preempted", action_name_.c_str());
+            spdlog::info(" {}: Preempted", action_name_.c_str());
             //Cancell the current search
             pt.cancel_navigation();
             // set the action state to preempted, and return failure
@@ -180,10 +192,10 @@ int CGSLServer::doSurgeSpiral()
                 pt.setCastGoal();
                 break;
             case PT_state::WAITING_FOR_MAP:
-                ROS_INFO("[GSL-PlumeTracking] Waiting for the map of the environment!....");    //Waiting call back function
+                spdlog::info(" Waiting for the map of the environment!....");    //Waiting call back function
                 break;
             default:
-                ROS_ERROR("[GSL-PlumeTracking] Search state is undefined!");
+                spdlog::error(" Search state is undefined!");
             }
         }
 
@@ -193,7 +205,7 @@ int CGSLServer::doSurgeSpiral()
 
 int CGSLServer::doParticleFilter()
 {
-    ROS_INFO("[GSL-ParticleFilter] New Action request. Initializing Plume Tracking algorithm.");
+    spdlog::info("[GSL-ParticleFilter] New Action request. Initializing Plume Tracking algorithm.");
     // Create object implementing Plume Tracking
     ros::NodeHandle pn_("~");
     ParticleFilter pt(&pn_);
@@ -203,11 +215,10 @@ int CGSLServer::doParticleFilter()
     pn_.param<std::string>("resultsFile", resultsFile, "");
     pn_.param<double>("source_pose_x", source_poseX, 0.0);
     pn_.param<double>("source_pose_y", source_poseY, 0.0);
-    ROS_DEBUG("[GSL-ParticleFilter] inMotion = %s", pt.get_inMotion() ? "true" : "false");
-    ROS_DEBUG("[GSL-ParticleFilter] GSLState = %d", pt.get_state());
+    spdlog::debug("[GSL-ParticleFilter] inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
     //Loop
-    ROS_INFO("[GSL-ParticleFilter] Staring Plume Tracking Loop");
+    spdlog::info("[GSL-ParticleFilter] Staring Plume Tracking Loop");
     ros::Rate loop_rate(10);
     size_t num_iterations = 10;
     size_t iter_i = 0;
@@ -221,7 +232,7 @@ int CGSLServer::doParticleFilter()
         //Check if AS is preempted
         if (as_.isPreemptRequested() || !ros::ok())
         {
-            ROS_INFO("[GSL-ParticleFilter] %s: Preempted", action_name_.c_str());
+            spdlog::info("[GSL-ParticleFilter] {}: Preempted", action_name_.c_str());
             //Cancel the current search
             pt.cancel_navigation();
             // set the action state to preempted, and return failure
@@ -289,10 +300,10 @@ int CGSLServer::doParticleFilter()
                 pt.setCastGoal();
                 break;
             case PT_state::WAITING_FOR_MAP:
-                ROS_INFO("[GSL-ParticleFilter] Waiting for the map of the environment!....");    //Waiting call back function
+                spdlog::info("[GSL-ParticleFilter] Waiting for the map of the environment!....");    //Waiting call back function
                 break;
             default:
-                ROS_ERROR("[GSL-ParticleFilter] Search state is undefined!");
+                spdlog::error("[GSL-ParticleFilter] Search state is undefined!");
             }
         }
 
@@ -302,33 +313,92 @@ int CGSLServer::doParticleFilter()
 
 int CGSLServer::doGrid()
 {
+    using namespace Grid;
     ros::NodeHandle nh("~");
     GridGSL grid(&nh);
-    ros::Rate loop_rate(10);
-    while(ros::ok()&&grid.checkSourceFound()==-1)
+    ros::Rate loop_rate(2);
+    int sourceFound = -1;
+    double startTime = ros::Time::now().toSec();
+
+    while(ros::ok()&&sourceFound==-1 && ros::Time::now().toSec()-startTime<grid.max_search_time*1.2)
     {
-        ros::spinOnce();
         if(!grid.get_inMotion()){
             switch(grid.getState()){
-                case Grid_state::WAITING_FOR_MAP:
-                    ROS_INFO("[GSL-PlumeTracking] Waiting for the map of the environment!...."); 
-                    break;
                 case Grid_state::STOP_AND_MEASURE:
                     grid.getGasWindObservations();
+                    grid.showWeights();
                     break;
                 case Grid_state::MOVING:
+                    sourceFound = grid.checkSourceFound();
                     grid.setGoal();
+
+                    grid.showWeights();
                     break;
                 case Grid_state::EXPLORATION:
                     break;
                 default:
-                    ROS_ERROR("[GSL-Grid] Search state is undefined!");
+                    spdlog::error("[GSL-Grid] Search state is undefined!");
             }
         }
         
         loop_rate.sleep();
+        ros::spinOnce();
     }
     return 1;
+}
+
+int CGSLServer::doHitmapGrid()
+{
+    using namespace PMFS;
+    ros::NodeHandle nh("~");
+    PMFS_GSL grid(&nh);
+    ros::Rate loop_rate(2);
+    int sourceFound = -1;
+    double startTime = ros::Time::now().toSec();
+    bool initializationStarted = false;
+
+    while(grid.getState() == Grid_state::WAITING_FOR_MAP){
+        ros::spinOnce();
+        loop_rate.sleep();
+    }
+    
+    grid.initialize();
+    
+    std::thread renderThread = std::thread(&PMFS_GSL::renderImgui, &grid);
+
+    while(ros::ok()&&sourceFound==-1 && ros::Time::now().toSec()-startTime<grid.max_search_time*1.2)
+    {
+        grid.runSubmitedQueue();
+        if(!grid.get_inMotion() && !grid.debugStuff.paused){
+            PMFS::Grid_state state = grid.getState();
+
+            if(state == Grid_state::STOP_AND_MEASURE)
+                    grid.processGasWindObservations();
+            else if( state == Grid_state::MOVING || state == Grid_state::EXPLORATION)
+            {
+                sourceFound = grid.checkSourceFound();
+                grid.setGoal();
+
+                grid.showWeights();
+                grid.showDebugInfo();
+                grid.plotWindVectors();
+            }
+            else
+                spdlog::error("[GSL-Grid] Search state is undefined!");
+        }
+        else if(grid.debugStuff.paused){
+            grid.showWeights();
+            grid.showDebugInfo();   
+            grid.plotWindVectors();
+        }
+
+        loop_rate.sleep();
+        ros::spinOnce();
+    }
+    
+    grid.finished = true;
+    renderThread.join();
+    return sourceFound;
 }
 
 //=======================================================
@@ -356,8 +426,11 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
     else if(goal->gsl_method == "grid"){
         res=doGrid();
     }
+    else if(goal->gsl_method == "PMFS"){
+        res=doHitmapGrid();
+    }
     else
-        ROS_ERROR("[GSL_server] Invalid GSL method: %s, candidates are: 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter", goal->gsl_method.c_str());
+        spdlog::error("[GSL_server] Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal->gsl_method.c_str());
 
 
     //2. Return result
@@ -365,21 +438,21 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
     if (res == 1) // Completed
     {
         result_.success = 1;
-        ROS_INFO("[GSL_server]%s: I found the emission source! ", action_name_.c_str());
+        spdlog::info("[GSL_server]{}: I found the emission source! ", action_name_.c_str());
         // set the action state to succeeded
         as_.setSucceeded(result_);
     }
     else if (res==0)  // Canceled/Preempted by user?
     {
         result_.success = 0;
-        ROS_INFO("[GSL_server] %s: Action cancelled/preemted", action_name_.c_str());
+        spdlog::info("[GSL_server] {}: Action cancelled/preemted", action_name_.c_str());
         // set the action state to succeeded (end)
         as_.setPreempted(result_);
     }
     else //failure (-1)
     {
         result_.success = 0;
-        ROS_INFO("[GSL_server] %s: Couldn't find the gas source! SORRY!", action_name_.c_str());
+        spdlog::info("[GSL_server] {}: Couldn't find the gas source! SORRY!", action_name_.c_str());
         // set the action state to succeeded (end)
         as_.setSucceeded(result_);
     }
@@ -391,10 +464,15 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
 //===================================================================================
 int main(int argc, char** argv)
 {
+
+#ifdef TRACY_ENABLE
+    enableTracy();
+#endif
+    spdlog::set_pattern("[%^%l%$] (%T) [GSL] %v");
     ros::init(argc,argv,"gsl_ac");
 
     CGSLServer gsl_node("gsl");
-    ROS_INFO("[GSL_server] GSL action server is ready for action!...");
+    spdlog::info("[GSL_server] GSL action server is ready for action!...");
 
     ros::spin();
 
