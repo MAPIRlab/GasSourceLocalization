@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.1.2 commit date:2022-03-31, commit time:17:40, hash:cc66d1020c3b</authoring_tool>
+    </contributor>
+    <created>2022-05-03T10:09:44</created>
+    <modified>2022-05-03T10:09:44</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_images/>
+  <library_geometries>
+    <geometry id="ROOMS-outlet-6-mesh" name="ROOMS-outlet-6">
+      <mesh>
+        <source id="ROOMS-outlet-6-mesh-positions">
+          <float_array id="ROOMS-outlet-6-mesh-positions-array" count="144">8.800001 0.3 0 8.800001 0.2 0 7.3 0.3 0 7.3 0.2 0 7.3 0.3 3 8.800001 0.3 3 8.800001 0.2 3 7.3 0.2 3 4.4388 9.7 0 3.4388 9.7 0 4.4388 9.800001 0 3.4388 9.800001 0 4.4388 9.800001 3 4.4388 9.7 3 3.4388 9.7 3 3.4388 9.800001 3 9.7 8.100001 3 9.7 9.2 3 9.7 8.100001 0 9.7 9.2 0 9.800001 9.2 0 9.800001 8.100001 0 9.800001 9.2 3 9.800001 8.100001 3 0.3 3.7 0 0.3 2.7 0 0.2 3.7 0 0.2 2.7 0 0.3 2.7 3 0.3 3.7 3 0.2 2.7 3 0.2 3.7 3 9.7 4.3 0 9.800001 4.3 0 9.7 3.5 0 9.800001 3.5 0 9.800001 4.3 3 9.7 4.3 3 9.800001 3.5 3 9.7 3.5 3 2.7 0.2 3 2.7 0.3 3 1.2 0.2 3 1.2 0.3 3 2.7 0.3 0 2.7 0.2 0 1.2 0.3 0 1.2 0.2 0</float_array>
+          <technique_common>
+            <accessor source="#ROOMS-outlet-6-mesh-positions-array" count="48" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="ROOMS-outlet-6-mesh-normals">
+          <float_array id="ROOMS-outlet-6-mesh-normals-array" count="18">0 0 -1 0 1 0 0 0 1 1 0 0 -1 0 0 0 -1 0</float_array>
+          <technique_common>
+            <accessor source="#ROOMS-outlet-6-mesh-normals-array" count="6" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="ROOMS-outlet-6-mesh-vertices">
+          <input semantic="POSITION" source="#ROOMS-outlet-6-mesh-positions"/>
+        </vertices>
+        <triangles count="72">
+          <input semantic="VERTEX" source="#ROOMS-outlet-6-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#ROOMS-outlet-6-mesh-normals" offset="1"/>
+          <p>0 0 1 0 2 0 1 0 3 0 2 0 4 1 5 1 2 1 5 1 0 1 2 1 6 2 5 2 7 2 5 2 4 2 7 2 5 3 6 3 0 3 6 3 1 3 0 3 7 4 4 4 3 4 4 4 2 4 3 4 6 5 7 5 1 5 7 5 3 5 1 5 8 0 9 0 10 0 9 0 11 0 10 0 12 3 13 3 10 3 13 3 8 3 10 3 13 5 14 5 8 5 14 5 9 5 8 5 15 1 12 1 11 1 12 1 10 1 11 1 14 2 13 2 15 2 13 2 12 2 15 2 14 4 15 4 9 4 15 4 11 4 9 4 16 4 17 4 18 4 17 4 19 4 18 4 19 0 20 0 18 0 20 0 21 0 18 0 17 1 22 1 19 1 22 1 20 1 19 1 22 2 17 2 23 2 17 2 16 2 23 2 23 5 16 5 21 5 16 5 18 5 21 5 22 3 23 3 20 3 23 3 21 3 20 3 24 0 25 0 26 0 25 0 27 0 26 0 28 2 29 2 30 2 29 2 31 2 30 2 31 1 29 1 26 1 29 1 24 1 26 1 29 3 28 3 24 3 28 3 25 3 24 3 30 4 31 4 27 4 31 4 26 4 27 4 28 5 30 5 25 5 30 5 27 5 25 5 32 0 33 0 34 0 33 0 35 0 34 0 36 2 37 2 38 2 37 2 39 2 38 2 39 4 37 4 34 4 37 4 32 4 34 4 37 1 36 1 32 1 36 1 33 1 32 1 38 5 39 5 35 5 39 5 34 5 35 5 36 3 38 3 33 3 38 3 35 3 33 3 40 2 41 2 42 2 41 2 43 2 42 2 41 3 40 3 44 3 40 3 45 3 44 3 44 0 45 0 46 0 45 0 47 0 46 0 42 4 43 4 47 4 43 4 46 4 47 4 43 1 41 1 46 1 41 1 44 1 46 1 40 5 42 5 45 5 42 5 47 5 45 5</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="ROOMS-outlets" name="ROOMS-outlets" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <instance_geometry url="#ROOMS-outlet-6-mesh" name="ROOMS-outlets"/>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>

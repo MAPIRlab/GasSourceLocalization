@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<robot name="giraff">
+
+  ### Define colors
+  <material name="blue">
+    <color rgba="0.41 0.83 0.96 1"/>
+  </material>
+  <material name="black">
+    <color rgba="0 0 0 1"/>
+  </material>
+  <material name="white">
+    <color rgba="1 1 1 1"/>
+  </material>
+    <material name="grey">
+    <color rgba="0.5 0.5 0.5 1"/>
+  </material>
+  <material name="red">
+    <color rgba="0.9 0.0 0.0 1"/>
+  </material>
+  <material name="green">
+    <color rgba="0.0 0.9 0.0 1"/>
+  </material>
+
+  # Base
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.13" radius="0.1"/>
+      </geometry>
+      <material name="blue"/>
+      <origin xyz="0 0 0.15"/>
+    </visual>
+  </link>
+
+  # Right wheel
+  <link name="right_wheel">
+    <visual>
+      <origin rpy="1.57075 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.03" radius="0.05"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+  </link>
+  
+  <joint name="base_to_right_wheel_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="right_wheel"/>
+    <origin rpy="0 0 0" xyz="0 0.1 0.1"/>
+  </joint>
+
+
+  #Left wheel
+  <link name="left_wheel">
+    <visual>
+      <origin rpy="1.57075 0 0" xyz="0 0 0"/>
+      <geometry>
+        <cylinder length="0.03" radius="0.05"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+  </link>
+  
+  <joint name="base_to_left_wheel_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="left_wheel"/>
+    <origin rpy="0 0 0" xyz="0 -0.1 0.1"/>
+  </joint>
+
+</robot>

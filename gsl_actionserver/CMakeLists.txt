@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -fopenmp ${CMAKE_CXX_FLAGS}")
 ##############################################################################
 set(GSL_DEBUG OFF) #debug mode disables all optimizations and activates a bunch of assertions in the code.
 
-set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
+set(USE_GADEN OFF) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 
 #profiler (tracy)
 set(TRACY_ENABLE OFF) # compiles and links with support for the profiler Tracy. If you disable this option, you dont need to install tracy at all
