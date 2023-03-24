@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package>
+  <name>GrGSL_env</name>
+  <version>0.0.0</version>
+  <description>Config</description><maintainer email="aaa@bbb.com"> </maintainer>
+
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>GPLv3</license>
+  
+ 
+</package>
