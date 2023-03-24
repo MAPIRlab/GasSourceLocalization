@@ -46,7 +46,7 @@
     <param name="use_sim_time" value="true" />
 
 
-    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" args="$(find my_env)/$(arg scenario)/launch/ros/stage.world" >
+    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" args="$(find GrGSL_env)/$(arg scenario)/launch/ros/stage.world" >
         <param name="laser_scan_topic" value="/laser_scan"/>
         <param name="laser_frame_id" value="laser_stage" />
         <param name="odom_topic" value="/odom"/>
@@ -55,14 +55,14 @@
     </node>
 
     ### URDF MODEL ###
-    <param name="robot_description" textfile="$(find my_env)/$(arg scenario)/launch/ros/giraff.urdf" />
+    <param name="robot_description" textfile="$(find GrGSL_env)/$(arg scenario)/launch/ros/giraff.urdf" />
     <param name="use_gui" value="False"/>
 
     ### NAVIGATION ###
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find my_env)/$(arg scenario)/occupancy.yaml">
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find GrGSL_env)/$(arg scenario)/occupancy.yaml">
       <param name="frame_id" value="map"/>
     </node> 
-    <include file="$(find my_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" >
+    <include file="$(find GrGSL_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" >
       <arg name="scenario" value="$(arg scenario)"/>
       <arg name="global_planner_plugin" value="navfn/NavfnROS"/>
     </include>  
@@ -90,8 +90,8 @@
 
 
     ### RVIZ ###
-    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find my_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
-    <node name="rviz_player_2" pkg="rviz" type="rviz" args="-d $(find my_env)/$(arg scenario)/launch/ros/hitOnly.rviz"/>
+    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
+    <node name="rviz_player_2" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/$(arg scenario)/launch/ros/hitOnly.rviz"/>
           <!--args="-d $(find vimantic)/launch/ViMantic_virtualHome_detectron.rviz"/-->
 
 # ===================== GADEN =====================================
@@ -105,15 +105,15 @@
         # Plot CAD models (Collada format .dae)
         <param name="number_of_CAD" value="2"/>
         <rosparam subst_value="True">
-            CAD_0: package://my_env/$(arg scenario)/cad_models/$(arg scenario).dae
+            CAD_0: package://GrGSL_env/$(arg scenario)/cad_models/$(arg scenario).dae
             CAD_0_color: [1.0, 0.2, 0.2]
-            CAD_1: package://my_env/$(arg scenario)/cad_models/ROOMS-walls.dae
+            CAD_1: package://GrGSL_env/$(arg scenario)/cad_models/ROOMS-walls.dae
             CAD_1_color: [1, 1, 1]
             
         </rosparam>
 	            
         # Plot 3D OccupancyGridmap
-        <param name="occupancy3D_data" value="$(find my_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancy3D_data" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 
         # Plot gas sources
         <param name="number_of_sources" value="1"/>
@@ -137,14 +137,14 @@
 	    <param name="num_simulators" value="1" />      ### Number of simulations to load [1-inf] (useful for multiple sources and gases)
     
         # Data from the "filament_simulator" pkg. Multiple sources can be set here
-        <param name="simulation_data_0" value="$(find my_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_1_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
+        <param name="simulation_data_0" value="$(find GrGSL_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_1_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
         
         # Loop options
         <param name="allow_looping" value="true" />
         <param name="loop_from_iteration" value="900" />
         <param name="loop_to_iteration" value="1000" />
         
-        <param name="occupancyFile" value="$(find my_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancyFile" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
         
     </node>
   

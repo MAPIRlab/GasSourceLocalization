@@ -17,7 +17,7 @@
 
 
     ### RVIZ ###
-    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find my_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
+    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
           <!--args="-d $(find vimantic)/launch/ViMantic_virtualHome_detectron.rviz"/-->
 
 # ===================== GADEN =====================================
@@ -31,13 +31,13 @@
         # Plot CAD models (Collada format .dae)
         <param name="number_of_CAD" value="1"/>
         <rosparam subst_value="True">
-            CAD_0: package://my_env/$(arg scenario)/cad_models/$(arg scenario).dae
+            CAD_0: package://GrGSL_env/$(arg scenario)/cad_models/$(arg scenario).dae
             CAD_0_color: [0.52, 0.76, 0.52]
             
         </rosparam>
 	            
         # Plot 3D OccupancyGridmap
-        <param name="occupancy3D_data" value="$(find my_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancy3D_data" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 
         # Plot gas sources
         <param name="number_of_sources" value="1"/>
@@ -61,17 +61,17 @@
 	    <param name="num_simulators" value="1" />      ### Number of simulations to load [1-inf] (useful for multiple sources and gases)
     
         # Data from the "filament_simulator" pkg. Multiple sources can be set here
-        <param name="simulation_data_0" value="$(find my_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_0_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
+        <param name="simulation_data_0" value="$(find GrGSL_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_0_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
         
         # Loop options        
         <param name="allow_looping" value="false" />
         <param name="loop_from_iteration" value="280" />
         <param name="loop_to_iteration" value="288" />
         
-        <param name="occupancyFile" value="$(find my_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancyFile" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 
         <param name="createHeatmapImage" value="true" />
-        <param name="heatmapPath" value="$(find my_env)/$(arg scenario)/$(arg simulation)__sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z).png" />
+        <param name="heatmapPath" value="$(find GrGSL_env)/$(arg scenario)/$(arg simulation)__sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z).png" />
         <param name="heatmapHeight" value="0.5" />
         <param name="heatmapThreshold" value="0.5" />
         <param name="heatMapIterations" value="100" />

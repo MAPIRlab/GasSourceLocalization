@@ -12,29 +12,29 @@
         
         #CAD models of the enviroment (.stl)
         <param name="number_of_models" value="1"/>
-        <param name="model_0" value="$(find my_env)/$(arg scenario)/cad_models/ROOMS-walls.stl"/>
+        <param name="model_0" value="$(find GrGSL_env)/$(arg scenario)/cad_models/ROOMS-walls.stl"/>
                 
         #CAD model of the outlets (.stl)
         <param name="number_of_outlet_models" value="5"/>
-        <param name="outlets_model_0" value="$(find my_env)/$(arg scenario)/cad_models/ROOMS-outlet-2.stl"/>
-        <param name="outlets_model_1" value="$(find my_env)/$(arg scenario)/cad_models/ROOMS-outlet-6.stl"/>
-        <param name="outlets_model_2" value="$(find my_env)/$(arg scenario)/cad_models/ROOMS-outlet-1.stl"/>
-        <param name="outlets_model_3" value="$(find my_env)/$(arg scenario)/cad_models/ROOMS-outlet-5.stl"/>
-        <param name="outlets_model_4" value="$(find my_env)/$(arg scenario)/cad_models/ROOMS-outlet-3.stl"/>
+        <param name="outlets_model_0" value="$(find GrGSL_env)/$(arg scenario)/cad_models/ROOMS-outlet-2.stl"/>
+        <param name="outlets_model_1" value="$(find GrGSL_env)/$(arg scenario)/cad_models/ROOMS-outlet-6.stl"/>
+        <param name="outlets_model_2" value="$(find GrGSL_env)/$(arg scenario)/cad_models/ROOMS-outlet-1.stl"/>
+        <param name="outlets_model_3" value="$(find GrGSL_env)/$(arg scenario)/cad_models/ROOMS-outlet-5.stl"/>
+        <param name="outlets_model_4" value="$(find GrGSL_env)/$(arg scenario)/cad_models/ROOMS-outlet-3.stl"/>
         
         #3D Location of a point in free-space
         <param name="empty_point_x" value="1.7"/>      ### (m)
         <param name="empty_point_y" value="8.6"/>      ### (m)
         <param name="empty_point_z" value="1.3"/>      ### (m)
             
-        <param name="worldFile" value="$(find my_env)/$(arg scenario)/launch/ros/stage.world"/>      ### (m)
+        <param name="worldFile" value="$(find GrGSL_env)/$(arg scenario)/launch/ros/stage.world"/>      ### (m)
 
         #Wind Data (the node will append _i.csv to the name that is specified here)
         <param name="uniformWind" value="false"/>
-        <param name="wind_files" value="$(find my_env)/$(arg scenario)/wind_simulations/1,2,3-5,6"/>
+        <param name="wind_files" value="$(find GrGSL_env)/$(arg scenario)/wind_simulations/1,2,3-5,6"/>
 
         #Where to write the output files
-        <param name="output_path" value="$(find my_env)/$(arg scenario)" />
+        <param name="output_path" value="$(find GrGSL_env)/$(arg scenario)" />
     </node>
 </launch>
 
