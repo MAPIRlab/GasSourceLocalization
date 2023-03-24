@@ -4,16 +4,30 @@ Implementations of several GSL methods for ROS.
 To use one of the implemented algorithms, simply launch gsl_actionserver_node and create an ActionClient to send a message with the name of the chosen algorithm (see gsl_server_call.cpp for an example).
 Currently available algorithms include:
 
+
+"PMFS"
+(currently under review)
+
+"grid"
+(See paper: https://ieeexplore.ieee.org/document/9347683)
+
 "surge_cast"
 "surge_spiral"
 "spiral"
 "particle_filter"
 (See paper: https://dl.acm.org/doi/10.1145/3378184.3378220)
 
-"grid"
-(See paper: https://ieeexplore.ieee.org/document/9347683)
+# Installing and building
+You can download this package by navigating to your catkin workspace and running:
+`git clone --recursive git@github.com:MAPIRlab/Gas-Source-Localization.git GSL`
 
-Make sure to set move_base to use the global_planner/GlobalPlanner plugin rather than navfn, since the implementations of the algorithms utilize the make_plan service.
+This will get you the source code of the GSL algorithms and some additional dependencies (under gsl_actionserver/third_party). However, due to the nature of how ROS code is organized in semi-independent packages, it does not quite make sense for this repository to include other catkin packages (which you might already have in the same workspace for something else) as submodules. You will need to install those separately:
 
+## Dependencies
 
-The implementation of the grid_gsl algorithm depends on this project for the infotaxis version: https://github.com/MAPIRlab/GMRF-wind Install this in your catkin_ws if you are getting the error "gmrf_wind_mapping/WindEstimation.h: No such file or directory".
+[GMRF-wind](https://github.com/MAPIRlab/GMRF-wind)
+[Nav-assistant](https://github.com/MAPIRlab/navigation-assistant)
+[Olfaction msgs](https://github.com/MAPIRlab/olfaction_msgs)
+(Optional)[Gaden](https://github.com/MAPIRlab/gaden)
+
+If you don't want to use Gaden for your experiments you can omit it and set the `USE_GADEN` option in the [CMakeLists.txt](gsl_actionserver/CMakeLists.txt) file to `OFF` to compile without the corresponding dependency.
