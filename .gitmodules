@@ -14,15 +14,6 @@
 [submodule "gas_distribution_mapping/gmrf_wind"]
 	path = gas_distribution_mapping/gmrf_wind
 	url = git@github.com:MAPIRlab/GMRF-wind.git
-[submodule "navigation-assistant"]
-	path = navigation-assistant
-	url = git@github.com:MAPIRlab/navigation-assistant.git
 [submodule "gsl_actionserver/third_party/glfw"]
 	path = gsl_actionserver/third_party/glfw
 	url = git@github.com:glfw/glfw.git
-[submodule "olfaction_msgs"]
-	path = olfaction_msgs
-	url = git@github.com:MAPIRlab/olfaction_msgs.git
-[submodule "GMRF-wind"]
-	path = GMRF-wind
-	url = git@github.com:MAPIRlab/GMRF-wind.git
