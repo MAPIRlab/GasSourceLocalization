@@ -17,6 +17,7 @@
 #include <olfaction_msgs/gas_sensor_array.h>
 #include <olfaction_msgs/gas_sensor.h>
 #include <olfaction_msgs/anemometer.h>
+#include <boost/format.hpp>
 
 typedef actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> MoveBaseClient;
 class GSLAlgorithm
