@@ -8,23 +8,9 @@
 
 <launch>
     
-    <arg name="scenario" default="Exp_C" />
+    <arg name="scenario" default="A" />
     <arg name="simulation" default="1,2,3-5,6" />
 
-<!--
-    <arg name="source_location_x" default="1.75" />
-    <arg name="source_location_y" default="8.60" />
-    <arg name="source_location_z" default="0.50" />
-
--->
-
-<!--
-    <arg name="source_location_x" default="5.00" />
-    <arg name="source_location_y" default="3.20" />
-    <arg name="source_location_z" default="0.50" />
-
-
--->
     <arg name="source_location_x" default="5.00" />
     <arg name="source_location_y" default="6.20" />
     <arg name="source_location_z" default="0.50" />
@@ -46,7 +32,7 @@
     <param name="use_sim_time" value="true" />
 
 
-    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" args="$(find GrGSL_env)/$(arg scenario)/launch/ros/stage.world" >
+    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" args="$(find pmfs_env)/$(arg scenario)/launch/ros/stage.world" >
         <param name="laser_scan_topic" value="/laser_scan"/>
         <param name="laser_frame_id" value="laser_stage" />
         <param name="odom_topic" value="/odom"/>
@@ -55,14 +41,14 @@
     </node>
 
     ### URDF MODEL ###
-    <param name="robot_description" textfile="$(find GrGSL_env)/$(arg scenario)/launch/ros/giraff.urdf" />
+    <param name="robot_description" textfile="$(find pmfs_env)/$(arg scenario)/launch/ros/giraff.urdf" />
     <param name="use_gui" value="False"/>
 
     ### NAVIGATION ###
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find GrGSL_env)/$(arg scenario)/occupancy.yaml">
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find pmfs_env)/$(arg scenario)/occupancy.yaml">
       <param name="frame_id" value="map"/>
     </node> 
-    <include file="$(find GrGSL_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" >
+    <include file="$(find pmfs_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" >
       <arg name="scenario" value="$(arg scenario)"/>
       <arg name="global_planner_plugin" value="navfn/NavfnROS"/>
     </include>  
@@ -90,8 +76,8 @@
 
 
     ### RVIZ ###
-    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
-    <node name="rviz_player_2" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/$(arg scenario)/launch/ros/hitOnly.rviz"/>
+    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find pmfs_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
+    <node name="rviz_player_2" pkg="rviz" type="rviz" args="-d $(find pmfs_env)/$(arg scenario)/launch/ros/hitOnly.rviz"/>
           <!--args="-d $(find vimantic)/launch/ViMantic_virtualHome_detectron.rviz"/-->
 
 # ===================== GADEN =====================================
@@ -105,15 +91,15 @@
         # Plot CAD models (Collada format .dae)
         <param name="number_of_CAD" value="2"/>
         <rosparam subst_value="True">
-            CAD_0: package://GrGSL_env/$(arg scenario)/cad_models/$(arg scenario).dae
+            CAD_0: package://pmfs_env/$(arg scenario)/cad_models/$(arg scenario).dae
             CAD_0_color: [1.0, 0.2, 0.2]
-            CAD_1: package://GrGSL_env/$(arg scenario)/cad_models/ROOMS-walls.dae
+            CAD_1: package://pmfs_env/$(arg scenario)/cad_models/ROOMS-walls.dae
             CAD_1_color: [1, 1, 1]
             
         </rosparam>
 	            
         # Plot 3D OccupancyGridmap
-        <param name="occupancy3D_data" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancy3D_data" value="$(find pmfs_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 
         # Plot gas sources
         <param name="number_of_sources" value="1"/>
@@ -137,14 +123,14 @@
 	    <param name="num_simulators" value="1" />      ### Number of simulations to load [1-inf] (useful for multiple sources and gases)
     
         # Data from the "filament_simulator" pkg. Multiple sources can be set here
-        <param name="simulation_data_0" value="$(find GrGSL_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_1_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
+        <param name="simulation_data_0" value="$(find pmfs_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_0_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
         
         # Loop options
         <param name="allow_looping" value="true" />
         <param name="loop_from_iteration" value="900" />
         <param name="loop_to_iteration" value="1000" />
         
-        <param name="occupancyFile" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancyFile" value="$(find pmfs_env)/$(arg scenario)/OccupancyGrid3D.csv" />
         
     </node>
   
@@ -218,11 +204,11 @@
 
     <param name="convergence_thr" value="1"/> 
     <param name="convergence_steps" value="5"/>
-    #Old
+    #grgsl
     <param name="stdev_hit" value="1.0"/>
     <param name="stdev_miss" value="1.2"/>
 
-    #New
+    #PMFS
     <param name="max_updates_per_stop" value="5"/>
 
     <param name="kernel_sigma" value="1.5"/>
@@ -243,14 +229,6 @@
     <param name="noiseSTDev" value="0.5"/>
     <param name="iterationsToRecord" value="200"/>
     <param name="maxWarmupIterations" value="500"/>
-
-    #Surge-Cast
-    <param name="step" value="0.7"/>
-    <param name="moving_average_size" value="25"/>
-
-    #Semantic Grid
-    <param name="ontology_file" value="/home/pepe/ontologies/Detectron.owl"/>
-    <param name="gas_type" value=""/>
   </node> 
   
   ## GMRF

@@ -4,14 +4,17 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
         - /Local Map1
         - /Global Map1
         - /Global Map1/Planner1
         - /TF1/Frames1
         - /TF1/Tree1
+        - /Filaments_Dispersion1
+        - /Gas_Sources1
         - /Anemometer1/Namespaces1
-      Splitter Ratio: 0.710594296
-    Tree Height: 773
+      Splitter Ratio: 0.7105942964553833
+    Tree Height: 796
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -20,19 +23,20 @@ Panels:
       - /2D Nav Goal1
       - /Publish Point1
     Name: Tool Properties
-    Splitter Ratio: 0.588679016
+    Splitter Ratio: 0.5886790156364441
   - Class: rviz/Views
     Expanded:
       - /Current View1
     Name: Views
     Splitter Ratio: 0.5
   - Class: rviz/Time
-    Experimental: false
     Name: Time
     SyncMode: 0
     SyncSource: ""
   - Class: rviz/Help
     Name: Help
+Preferences:
+  PromptSaveOnExit: true
 Toolbars:
   toolButtonStyle: 2
 Visualization Manager:
@@ -44,7 +48,7 @@ Visualization Manager:
       Color: 160; 160; 164
       Enabled: false
       Line Style:
-        Line Width: 0.0299999993
+        Line Width: 0.029999999329447746
         Value: Lines
       Name: Grid
       Normal Cell Count: 0
@@ -56,7 +60,7 @@ Visualization Manager:
       Plane Cell Count: 200
       Reference Frame: <Fixed Frame>
       Value: false
-    - Alpha: 0.699999988
+    - Alpha: 0.699999988079071
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
@@ -68,7 +72,7 @@ Visualization Manager:
       Value: false
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.699999988
+        - Alpha: 0.699999988079071
           Class: rviz/Map
           Color Scheme: costmap
           Draw Behind: false
@@ -83,11 +87,11 @@ Visualization Manager:
           Class: rviz/Path
           Color: 0; 12; 255
           Enabled: true
-          Head Diameter: 0.300000012
-          Head Length: 0.200000003
-          Length: 0.300000012
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
           Line Style: Lines
-          Line Width: 0.0299999993
+          Line Width: 0.029999999329447746
           Name: Planner
           Offset:
             X: 0
@@ -95,9 +99,10 @@ Visualization Manager:
             Z: 0
           Pose Color: 255; 85; 255
           Pose Style: None
-          Radius: 0.0299999993
-          Shaft Diameter: 0.100000001
-          Shaft Length: 0.100000001
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
           Topic: /move_base/DWAPlannerROS/local_plan
           Unreliable: false
           Value: true
@@ -105,7 +110,7 @@ Visualization Manager:
       Name: Local Map
     - Class: rviz/Group
       Displays:
-        - Alpha: 0.699999988
+        - Alpha: 0.699999988079071
           Class: rviz/Map
           Color Scheme: costmap
           Draw Behind: true
@@ -120,11 +125,11 @@ Visualization Manager:
           Class: rviz/Path
           Color: 255; 0; 0
           Enabled: true
-          Head Diameter: 0.300000012
-          Head Length: 0.200000003
-          Length: 0.300000012
+          Head Diameter: 0.30000001192092896
+          Head Length: 0.20000000298023224
+          Length: 0.30000001192092896
           Line Style: Lines
-          Line Width: 0.0299999993
+          Line Width: 0.029999999329447746
           Name: Planner
           Offset:
             X: 0
@@ -132,34 +137,37 @@ Visualization Manager:
             Z: 0
           Pose Color: 255; 85; 255
           Pose Style: None
-          Radius: 0.0299999993
-          Shaft Diameter: 0.100000001
-          Shaft Length: 0.100000001
+          Queue Size: 10
+          Radius: 0.029999999329447746
+          Shaft Diameter: 0.10000000149011612
+          Shaft Length: 0.10000000149011612
           Topic: /move_base/GlobalPlanner/plan
           Unreliable: false
           Value: true
-      Enabled: true
+      Enabled: false
       Name: Global Map
     - Alpha: 1
       Axes Length: 1
-      Axes Radius: 0.100000001
+      Axes Radius: 0.10000000149011612
       Class: rviz/Pose
       Color: 255; 25; 0
-      Enabled: true
-      Head Length: 0.300000012
-      Head Radius: 0.100000001
+      Enabled: false
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
       Name: Goal
+      Queue Size: 10
       Shaft Length: 1
-      Shaft Radius: 0.0500000007
+      Shaft Radius: 0.05000000074505806
       Shape: Arrow
       Topic: /move_base/current_goal
       Unreliable: false
-      Value: true
+      Value: false
     - Class: rviz/TF
       Enabled: false
       Frame Timeout: 15
       Frames:
         All Enabled: false
+      Marker Alpha: 1
       Marker Scale: 1
       Name: TF
       Show Arrows: true
@@ -184,15 +192,13 @@ Visualization Manager:
       Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
-      Max Intensity: 1
       Min Color: 255; 170; 0
-      Min Intensity: 1
       Name: LaserScan
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.100000001
+      Size (m): 0.10000000149011612
       Style: Squares
       Topic: /laser_scan
       Unreliable: false
@@ -249,20 +255,72 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        body:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        green_button:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        head:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hokuyo_front:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        neck:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        red_button:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        screen:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
       Name: RobotModel
       Robot Description: robot_description
       TF Prefix: ""
       Update Interval: 0
       Value: true
       Visual Enabled: true
-    - Class: rviz/Axes
+    - Alpha: 1
+      Class: rviz/Axes
       Enabled: false
       Length: 1
       Name: Axes
-      Radius: 0.100000001
+      Radius: 0.10000000149011612
       Reference Frame: <Fixed Frame>
+      Show Trail: false
       Value: false
-    - Angle Tolerance: 0.100000001
+    - Angle Tolerance: 0.10000000149011612
       Class: rviz/Odometry
       Covariance:
         Orientation:
@@ -274,7 +332,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Position:
-          Alpha: 0.300000012
+          Alpha: 0.30000001192092896
           Color: 204; 51; 204
           Scale: 1
           Value: true
@@ -282,40 +340,49 @@ Visualization Manager:
       Enabled: false
       Keep: 10000
       Name: Odometry
-      Position Tolerance: 0.100000001
+      Position Tolerance: 0.10000000149011612
+      Queue Size: 10
       Shape:
         Alpha: 1
         Axes Length: 0
-        Axes Radius: 0.100000001
+        Axes Radius: 0.10000000149011612
         Color: 255; 25; 0
-        Head Length: 0.300000012
-        Head Radius: 0.100000001
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
         Shaft Length: 1
-        Shaft Radius: 0.0500000007
+        Shaft Radius: 0.05000000074505806
         Value: Axes
       Topic: /base_pose_ground_truth
       Unreliable: false
       Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /Anemometer/WindSensor_display
       Name: DownWindMarker
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /gsl_node/probability_markers
-      Name: Cells
+      Name: sourceProbability
+      Namespaces:
+        cells: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /gsl_node/hitProbabilityMarkers
+      Name: hitProbability
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
+      Value: false
+    - Class: rviz/Marker
       Enabled: false
-      Marker Topic: /gmrf/wind_array_pub
-      Name: GMRF_wind
+      Marker Topic: /gsl_node/confidenceMarkers
+      Name: Confidence
       Namespaces:
         {}
       Queue Size: 100
@@ -332,9 +399,65 @@ Visualization Manager:
       Transport Hint: raw
       Unreliable: false
       Value: false
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /gsl_node/arrowMarkers
+      Name: Wind vectors
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /gsl_node/gradientMarkers
+      Name: Gradients
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /gsl_node/explorationValue
+      Name: ExplorationV
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /gsl_node/varianceHit
+      Name: Variance
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /gsl_node/quadtree
+      Name: quadtree
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /gsl_node/movementSets
+      Name: MovementSets
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /tdlas/arrow
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
-    Background Color: 190; 184; 177
+    Background Color: 183; 194; 217
     Default Light: true
     Fixed Frame: map
     Frame Rate: 30
@@ -345,7 +468,10 @@ Visualization Manager:
       Hide Inactive Objects: true
     - Class: rviz/Select
     - Class: rviz/SetInitialPose
+      Theta std deviation: 0.2617993950843811
       Topic: /initialpose
+      X std deviation: 0.5
+      Y std deviation: 0.5
     - Class: rviz/SetGoal
       Topic: /move_base_simple/goal
     - Class: rviz/Measure
@@ -355,38 +481,32 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/ThirdPersonFollower
-      Distance: 8.06653214
+      Angle: 0
+      Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
-        Stereo Eye Separation: 0.0599999987
+        Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: -1.82370329
-        Y: -1.29221225
-        Z: 2.38418579e-06
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
-      Near Clip Distance: 0.00999999978
-      Pitch: 1.10539865
+      Near Clip Distance: 0.009999999776482582
+      Scale: 78.94900512695312
       Target Frame: <Fixed Frame>
-      Value: ThirdPersonFollower (rviz)
-      Yaw: 2.32358885
+      X: -3.0493526458740234
+      Y: -2.4425108432769775
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1023
+  Height: 1022
   Help:
     collapsed: false
   Hide Left Dock: false
-  Hide Right Dock: true
+  Hide Right Dock: false
   Image:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000016a000003a0fc0200000007fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000006200fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003e000003a0000000d600fffffffa000000020100000003fb0000000a0049006d0061006700650000000000ffffffff0000005e00fffffffb0000000a0049006d0061006700650000000000ffffffff0000000000000000fb000000100044006900730070006c00610079007301000000000000016a0000016a00fffffffb0000001800440065007000740068002d00430061006d0065007200610000000302000000c90000000000000000fb0000000800480065006c00700000000274000000b30000007400ffffff000000010000010f000002e9fc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb00000014005200470042002d00430061006d0065007200610000000043000003880000000000000000fb0000000a00560069006500770073000000003e000002e9000000b400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000690000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004a00000003efc0100000002fb0000000800540069006d00650000000000000004a00000027100fffffffb0000000800540069006d0065010000000000000450000000000000000000000610000003a000000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd00000004000000000000016a000003a8fc0200000007fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afc0000003b000003a8000000c700fffffffa000000020100000003fb0000000a0049006d0061006700650000000000ffffffff0000005a00fffffffb0000000a0049006d0061006700650000000000ffffffff0000000000000000fb000000100044006900730070006c00610079007301000000000000016a0000015600fffffffb0000001800440065007000740068002d00430061006d0065007200610000000302000000c90000000000000000fb0000000800480065006c00700000000274000000b30000006e00ffffff000000010000010f000003a8fc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb00000014005200470042002d00430061006d0065007200610000000043000003880000000000000000fb0000000a00560069006500770073010000003b000003a8000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000690000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004a00000003efc0100000002fb0000000800540069006d00650000000000000004a00000035c00fffffffb0000000800540069006d00650100000000000004500000000000000000000004f9000003a800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -394,7 +514,7 @@ Window Geometry:
   Tool Properties:
     collapsed: false
   Views:
-    collapsed: true
-  Width: 1920
+    collapsed: false
+  Width: 1918
   X: 0
   Y: 0

@@ -1,10 +1,10 @@
 <launch>
-   <arg name="scenario" default="House02" />
-   <arg name="simulation" default="4,5-3_fast" />
-   <arg name="source_location_x" default="1.00" />
-   <arg name="source_location_y" default="-2.30" />
-   <arg name="source_location_z" default="-0.10" />
-   <arg name="gas_type" default="13" />
+   <arg name="scenario" default="C" />
+   <arg name="simulation" default="3,5-1_fast" />
+   <arg name="source_location_x" default="0.00" />
+   <arg name="source_location_y" default="-1.00" />
+   <arg name="source_location_z" default="0.20" />
+   <arg name="gas_type" default="10" />
     ### NODE environment (for RVIZ visualization) ###
     <node pkg="gaden_environment" type="environment" name="environment" output="screen">
         <param name="verbose" value="false"/>
@@ -14,13 +14,13 @@
         # Plot CAD models (Collada format .dae)
         <param name="number_of_CAD" value="1"/>
         <rosparam subst_value="True">
-            CAD_0: package://GrGSL_env/$(arg scenario)/cad_models/$(arg scenario).dae
+            CAD_0: package://pmfs_env/$(arg scenario)/cad_models/$(arg scenario).dae
             CAD_0_color: [0.52, 0.52, 0.52]
             
         </rosparam>
 	            
         # Plot 3D OccupancyGridmap
-        <param name="occupancy3D_data" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancy3D_data" value="$(find pmfs_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 
         # Plot gas sources
         <param name="number_of_sources" value="1"/>
@@ -53,11 +53,11 @@
 	    <param name="concentration_unit_choice" value="1"/>      ### 0=molecules/cm3, 1=ppm (when ppm is used, set temp and pressure accordingly)
 
 	    # In the occupancyGrid.csv file we set: cell_size, num_cells, etc. which come from the CFD wind simulation
-	    <param name="occupancy3D_data" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+	    <param name="occupancy3D_data" value="$(find pmfs_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 	    <param name="fixed_frame" value="map"/>
 
 	    # WindFlow data (from CFD)
-	    <param name="wind_data" value="$(find GrGSL_env)/$(arg scenario)/wind_simulations/$(arg simulation)/$(arg simulation)_" />
+	    <param name="wind_data" value="$(find pmfs_env)/$(arg scenario)/wind_simulations/$(arg simulation)/$(arg simulation)_" />
 	    <param name="wind_time_step" value="1" />                ### (sec) time increment between Wind snapshots
 	    # Loop options
         <param name="allow_looping" value="true" />
@@ -73,10 +73,10 @@
 	    <param name="results_time_step" value="0.5" />           #(sec) Time increment between saving state to file
 	    <param name="results_min_time" value="0.0" />            #(sec) Time to start saving results to file
 	    <param name="writeConcentrations" value="false" />
-	    <param name="results_location" value="$(find GrGSL_env)/$(arg scenario)/gas_simulations/$(arg simulation)" />
+	    <param name="results_location" value="$(find pmfs_env)/$(arg scenario)/gas_simulations/$(arg simulation)" />
     </node>
 
     ### RVIZ ###
-    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find pmfs_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
  
 </launch>

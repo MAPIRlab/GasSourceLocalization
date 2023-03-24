@@ -8,25 +8,14 @@
 
 <launch>
     
-   <arg name="scenario" default="House01" />
-<!--
-
-   <arg name="simulation" default="2,4-1_fast" />
-   <arg name="source_location_x" default="-0.40" />
-   <arg name="source_location_y" default="-2.90" />
-   <arg name="source_location_z" default="-0.30" />
+   <arg name="scenario" default="C" />
+   <arg name="simulation" default="3,5-1_fast" />
+   <arg name="source_location_x" default="0.00" />
+   <arg name="source_location_y" default="-1.00" />
+   <arg name="source_location_z" default="0.20" />
    <arg name="gas_type" default="10" />
 
--->
-   <arg name="simulation" default="1,3-2,4_fast" />
-   <arg name="source_location_x" default="-0.60" />
-   <arg name="source_location_y" default="1.95" />
-   <arg name="source_location_z" default="0.40" />
-   <arg name="gas_type" default="13" />
- 
- 
- 
- 
+
     <arg name="floor_height" default="-0.7" />
     <arg name="info" default="true" />
     <arg name="stopTime" default="2" />
@@ -47,7 +36,7 @@
     <param name="use_sim_time" value="true" />
 
 
-    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" args="$(find GrGSL_env)/$(arg scenario)/launch/ros/stage.world" >
+    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" args="$(find pmfs_env)/$(arg scenario)/launch/ros/stage.world" >
         <param name="laser_scan_topic" value="/laser_scan"/>
         <param name="laser_frame_id" value="laser_stage" />
         <param name="odom_topic" value="/odom"/>
@@ -56,14 +45,15 @@
     </node>
 
     ### URDF MODEL ###
-    <param name="robot_description" textfile="$(find GrGSL_env)/$(arg scenario)/launch/ros/giraff.urdf" />
+    <param name="robot_description" textfile="$(find pmfs_env)/$(arg scenario)/launch/ros/giraff.urdf" />
     <param name="use_gui" value="False"/>
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
 
     ### NAVIGATION ###
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find GrGSL_env)/$(arg scenario)/occupancy.yaml">
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find pmfs_env)/$(arg scenario)/occupancy.yaml">
       <param name="frame_id" value="map"/>
     </node> 
-    <include file="$(find GrGSL_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" >
+    <include file="$(find pmfs_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" >
       <arg name="scenario" value="$(arg scenario)"/>
       <arg name="global_planner_plugin" value="navfn/NavfnROS"/>
     </include>  
@@ -74,25 +64,24 @@
         <param name="base_frame_id" value="base_link"/>
     </node>
 
-    #### NAV ASSISTANT ###
-    <node pkg="topology_graph" type="topology_graph" name="topology_graph" respawn="false" >
-          <param name="verbose" value="False" />        
-    </node>
-    <node pkg="navigation_assistant" type="nav_assistant_node" name="nav_assistant" respawn="false">
-          <param name="use_CNP" value="False" />
-        
-          # Save/Load from File
-          <param name="init_from_file" value="" />          # Leave empty to start with an clean graph
-          <param name="save_to_file" value="" />             # Leave empty to NOT save the graph to file
-          <param name="verbose" value="false"/>
-    </node>
-    <node pkg="navigation_assistant" type="nav_assistant_functions.py" name="nav_assistant_functions" respawn="false" >
+  #### NAV ASSISTANT ###
+  <node pkg="topology_graph" type="topology_graph" name="topology_graph" respawn="false" >
+        <param name="verbose" value="False" />        
+  </node>
+  <node pkg="navigation_assistant" type="nav_assistant_node" name="nav_assistant" respawn="false" >
+        <param name="use_CNP" value="False" />
+      
+        # Save/Load from File
+        <param name="init_from_file" value="" />          # Leave empty to start with an clean graph
+        <param name="save_to_file" value="" />             # Leave empty to NOT save the graph to file
+  </node>
+  <node pkg="navigation_assistant" type="nav_assistant_functions.py" name="nav_assistant_functions" respawn="false" >
         <param name="verbose" value="False" />
     </node>
 
-
+    
     ### RVIZ ###
-    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/Exp_C/launch/ros/gaden.rviz"/>
+    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find pmfs_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
           <!--args="-d $(find vimantic)/launch/ViMantic_virtualHome_detectron.rviz"/-->
 
 # ===================== GADEN =====================================
@@ -106,13 +95,13 @@
         # Plot CAD models (Collada format .dae)
         <param name="number_of_CAD" value="1"/>
         <rosparam subst_value="True">
-            CAD_0: package://GrGSL_env/$(arg scenario)/cad_models/$(arg scenario).dae
-            CAD_0_color: [0.6, 0.6, 0.65]
+            CAD_0: package://pmfs_env/$(arg scenario)/cad_models/$(arg scenario).dae
+            CAD_0_color: [0.5, 0.5, 0.5]
             
         </rosparam>
 	            
         # Plot 3D OccupancyGridmap
-        <param name="occupancy3D_data" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancy3D_data" value="$(find pmfs_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 
         # Plot gas sources
         <param name="number_of_sources" value="1"/>
@@ -129,21 +118,21 @@
 
     ### NODE PLAYER ###
     #-------------------
-    <node pkg="gaden_player" type="gaden_player" name="gaden_player" output="screen">
+    <node pkg="gaden_player" type="gaden_player" name="gaden_player" output="screen" >
         <param name="verbose" value="false" />
 	    <param name="player_freq" value="2" />         ###(Hz) Freq for loading the simulation log_files
-	    <param name="initial_iteration" value="600" />
+	    <param name="initial_iteration" value="500" />
 	    <param name="num_simulators" value="1" />      ### Number of simulations to load [1-inf] (useful for multiple sources and gases)
     
         # Data from the "filament_simulator" pkg. Multiple sources can be set here
-        <param name="simulation_data_0" value="$(find GrGSL_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_$(arg gas_type)_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
+        <param name="simulation_data_0" value="$(find pmfs_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_$(arg gas_type)_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
         
-        # Loop options
+        # Loop options        
         <param name="allow_looping" value="true" />
         <param name="loop_from_iteration" value="900" />
         <param name="loop_to_iteration" value="1000" />
         
-        <param name="occupancyFile" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancyFile" value="$(find pmfs_env)/$(arg scenario)/OccupancyGrid3D.csv" />
         
     </node>
   
@@ -171,14 +160,13 @@
       <param name="/use_map_ref_system" value="false"/>
     </node>
   </group>
-  <node pkg="tf" type="static_transform_publisher" name="anemometer_broadcaster" args="0.0 0.0 0.0 0 0 0 offset_frame anemometer_frame 100" />
+  <node pkg="tf" type="static_transform_publisher" name="anemometer_broadcaster" args="0.0 0.0 0.5 0 0 0 offset_frame anemometer_frame 100" />
+
 
  <!--include file="$(find kernel_dmv_mapping)/roslaunch/create_dmv_maps.launch" /-->
 
   ## GSL ##
-  <!--launch-prefix="xterm -e gdb -args"-->
-  <!--launch-prefix="gdb -ex run -args" -->
- 
+
   <node pkg="gsl_actionserver" type="gsl_actionserver_node" name="gsl_node" output="screen" required="true" > 
     #Common
     <param name="robot_location_topic" value="/amcl_pose_with_offset"/>
@@ -225,7 +213,7 @@
     <param name="confidence_measurement_weight" value="0.5"/>
     
 
-    <param name="maxRegionSize" value="1"/>
+    <param name="maxRegionSize" value="5"/>
     
     <param name="useWindGroundTruth" value="false"/>
     <param name="sourceDiscriminationPower" value="0.2"/> #higher value to increase the difference in the probability of "good cells" and "bad cells"

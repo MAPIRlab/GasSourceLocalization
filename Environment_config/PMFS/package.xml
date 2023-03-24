@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>PMFS_env</name>
+  <name>pmfs_env</name>
   <version>0.0.0</version>
   <description>Config</description><maintainer email="aaa@bbb.com"> </maintainer>
 
