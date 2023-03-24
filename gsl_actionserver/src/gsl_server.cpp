@@ -9,15 +9,6 @@
 
 #include <thread>
 
-#ifdef TRACY_ENABLE
-#include <tracy/Tracy.hpp>
-#include <tracy/TracyC.h>
-
-void enableTracy() //this does nothing except make sure that the compiler optimizations don't disable tracy
-{
-    ZoneScoped;
-}
-#endif
 
 int CGSLServer::doSurgeCast()
 {
@@ -464,10 +455,6 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
 //===================================================================================
 int main(int argc, char** argv)
 {
-
-#ifdef TRACY_ENABLE
-    enableTracy();
-#endif
     spdlog::set_pattern("[%^%l%$] (%T) [GSL] %v");
     ros::init(argc,argv,"gsl_ac");
 

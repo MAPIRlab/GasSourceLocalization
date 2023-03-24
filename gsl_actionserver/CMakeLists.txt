@@ -11,11 +11,6 @@ set(GSL_DEBUG OFF) #debug mode disables all optimizations and activates a bunch 
 
 set(USE_GADEN OFF) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 
-#profiler (tracy)
-set(TRACY_ENABLE OFF) # compiles and links with support for the profiler Tracy. If you disable this option, you dont need to install tracy at all
-set(TRACY_SAMPLING OFF) # if you want to use sample profiling, you'll need to run as root. Use sudo -s -E before running roslaunch
-
-
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
 
@@ -57,19 +52,6 @@ else()
   set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif(GSL_DEBUG)
 
-
-if(TRACY_ENABLE)
-  add_definitions(-DTRACY_ENABLE)
-
-  if(TRACY_SAMPLING)
-    add_definitions(-DTRACY_CALLSTACK)
-  else()
-    add_definitions(-DTRACY_NO_CALLSTACK)
-    add_definitions(-DTRACY_NO_SAMPLING)
-    set(CMAKE_CXX_FLAGS "-g -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
-  endif(TRACY_SAMPLING)
-
-endif(TRACY_ENABLE)
 
 
 
@@ -236,10 +218,4 @@ if(USE_GUI)
   OpenGL
   )
 endif(USE_GUI)
-
-if(TRACY_ENABLE)
-  target_link_libraries(gsl_actionserver_node 
-    TracyClient
-  )
-endif(TRACY_ENABLE)
 
