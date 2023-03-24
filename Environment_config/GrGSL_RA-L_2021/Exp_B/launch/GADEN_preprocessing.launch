@@ -27,7 +27,7 @@
             
 
         #Wind Data (the node will append _i.csv to the name that is specified here)
-        <param name="wind_files" value="$(find GrGSL_env)/$(arg scenario)/wind_simulations/$(arg simulation)/wind_at_cell_centers.csv"/>
+        <param name="wind_files" value="$(find GrGSL_env)/$(arg scenario)/wind_simulations/$(arg simulation)/wind_at_cell_centers"/>
         <param name="uniformWind" value="false"/>
         #Where to write the output files
         <param name="output_path" value="$(find GrGSL_env)/$(arg scenario)" />
