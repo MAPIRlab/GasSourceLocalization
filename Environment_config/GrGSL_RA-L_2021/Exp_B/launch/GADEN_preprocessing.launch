@@ -13,12 +13,12 @@
         
         #CAD models of the enviroment (.stl)
         <param name="number_of_models" value="1"/>
-        <param name="model_0" value="$(find GrGSL_env)/$(arg scenario)/cad_models/10x6_walls.stl"/>
+        <param name="model_0" value="$(find grgsl_env)/$(arg scenario)/cad_models/10x6_walls.stl"/>
                 
         #CAD model of the outlets (.stl)
         <param name="number_of_outlet_models" value="2"/>
-        <param name="outlets_model_1" value="$(find GrGSL_env)/$(arg scenario)/cad_models/10x6_door_left.stl"/>
-        <param name="outlets_model_0" value="$(find GrGSL_env)/$(arg scenario)/cad_models/10x6_door_right.stl"/>
+        <param name="outlets_model_1" value="$(find grgsl_env)/$(arg scenario)/cad_models/10x6_door_left.stl"/>
+        <param name="outlets_model_0" value="$(find grgsl_env)/$(arg scenario)/cad_models/10x6_door_right.stl"/>
         
         #3D Location of a point in free-space
         <param name="empty_point_x" value="1.0"/>      ### (m)
@@ -27,10 +27,10 @@
             
 
         #Wind Data (the node will append _i.csv to the name that is specified here)
-        <param name="wind_files" value="$(find GrGSL_env)/$(arg scenario)/wind_simulations/$(arg simulation)/wind_at_cell_centers"/>
+        <param name="wind_files" value="$(find grgsl_env)/$(arg scenario)/wind_simulations/$(arg simulation)/wind_at_cell_centers"/>
         <param name="uniformWind" value="false"/>
         #Where to write the output files
-        <param name="output_path" value="$(find GrGSL_env)/$(arg scenario)" />
+        <param name="output_path" value="$(find grgsl_env)/$(arg scenario)" />
     </node>
 </launch>
 

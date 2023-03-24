@@ -19,7 +19,7 @@
     <param name="use_sim_time" value="true" />
 
 
-    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" output="screen" args="$(find GrGSL_env)/$(arg scenario)/launch/ros/stage.world" >
+    <node pkg="stage_ros" type="stageros" name="stage_ros" respawn="false" output="screen" args="$(find grgsl_env)/$(arg scenario)/launch/ros/stage.world" >
         <param name="laser_scan_topic" value="/laser_scan"/>
         <param name="laser_frame_id" value="laser_stage" />
         <param name="odom_topic" value="/odom"/>
@@ -28,13 +28,13 @@
     </node>
 
     ### URDF MODEL ###
-    <param name="robot_description" textfile="$(find GrGSL_env)/$(arg scenario)/launch/ros/giraff.urdf" />
+    <param name="robot_description" textfile="$(find grgsl_env)/$(arg scenario)/launch/ros/giraff.urdf" />
 
     ### NAVIGATION ###
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find GrGSL_env)/$(arg scenario)/occupancy.yaml">
+    <node name="map_server" pkg="map_server" type="map_server" args="$(find grgsl_env)/$(arg scenario)/occupancy.yaml">
       <param name="frame_id" value="map"/>
     </node>  
-    <include file="$(find GrGSL_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" />  
+    <include file="$(find grgsl_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" />  
     
     <node pkg="fake_localization" type="fake_localization" name="fake_localization">	    
         <param name="odom_frame_id" value="odom"/>
@@ -44,7 +44,7 @@
 
 
     ### RVIZ ###
-  <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find GrGSL_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
+  <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find grgsl_env)/$(arg scenario)/launch/ros/gaden.rviz"/>
   
   
 # ===================== GADEN =====================================
@@ -58,21 +58,21 @@
         # Plot CAD models (Collada format .dae)
         <param name="number_of_CAD" value="4"/>
 	      <rosparam subst_value="True">
-            CAD_0: package://GrGSL_env/$(arg scenario)/cad_models/10x6_walls.dae
+            CAD_0: package://grgsl_env/$(arg scenario)/cad_models/10x6_walls.dae
             CAD_0_color: [0.32, 0.36, 0.36]
             
-            CAD_1: package://GrGSL_env/$(arg scenario)/cad_models/10x6_central_obstacle.dae
+            CAD_1: package://grgsl_env/$(arg scenario)/cad_models/10x6_central_obstacle.dae
             CAD_1_color: [0.32, 0.36, 0.36]
             
-            CAD_2: package://GrGSL_env/$(arg scenario)/cad_models/10x6_door_left.dae
+            CAD_2: package://grgsl_env/$(arg scenario)/cad_models/10x6_door_left.dae
             CAD_2_color: [0.96, 0.17, 0.3]
             
-            CAD_3: package://GrGSL_env/$(arg scenario)/cad_models/10x6_door_right.dae
+            CAD_3: package://grgsl_env/$(arg scenario)/cad_models/10x6_door_right.dae
             CAD_3_color: [0.96, 0.17, 0.3]
         </rosparam>
 	            
         # Plot 3D OccupancyGridmap
-        <param name="occupancy3D_data" value="$(find GrGSL_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancy3D_data" value="$(find grgsl_env)/$(arg scenario)/OccupancyGrid3D.csv" />
 
         # Plot gas sources
         <param name="number_of_sources" value="1"/>
@@ -95,9 +95,9 @@
 	    <param name="num_simulators" value="1" />      ### Number of simulations to load [1-inf] (useful for multiple sources and gases)
     
         # Data from the "filament_simulator" pkg. Multiple sources can be set here
-        <param name="simulation_data_0" value="$(find GrGSL_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_0_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
+        <param name="simulation_data_0" value="$(find grgsl_env)/$(arg scenario)/gas_simulations/$(arg simulation)/FilamentSimulation_gasType_0_sourcePosition_$(arg source_location_x)_$(arg source_location_y)_$(arg source_location_z)" />
 
-        <param name="occupancyFile" value="$(find my_env)/$(arg scenario)/OccupancyGrid3D.csv" />
+        <param name="occupancyFile" value="$(find grgsl_env)/$(arg scenario)/OccupancyGrid3D.csv" />
         # Loop options        
         <param name="allow_looping" value="true" />
         <param name="loop_from_iteration" value="40" />

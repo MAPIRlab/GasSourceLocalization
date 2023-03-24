@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>GrGSL_env</name>
+  <name>grgsl_env</name>
   <version>0.0.0</version>
   <description>Config</description><maintainer email="aaa@bbb.com"> </maintainer>
 
