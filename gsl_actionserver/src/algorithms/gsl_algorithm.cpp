@@ -131,8 +131,8 @@ float GSLAlgorithm::get_average_vector(std::vector<float> const &v)
 bool GSLAlgorithm::checkGoal(navigation_assistant::nav_assistantGoal* goal)
 {
     //spdlog::info("[DEBUG] Checking Goal [{:.2}, {:.2}] in map frame", goal->target_pose.pose.position.x, goal->target_pose.pose.position.y);
-    double pos_x = goal->target_pose.pose.position.x;
-    double pos_y = goal->target_pose.pose.position.y;
+    float pos_x = goal->target_pose.pose.position.x;
+    float pos_y = goal->target_pose.pose.position.y;
     if(!isPointInsideMapBounds({pos_x, pos_y}))
     {
         if (verbose) spdlog::info("[DEBUG] Goal is out of map dimensions");

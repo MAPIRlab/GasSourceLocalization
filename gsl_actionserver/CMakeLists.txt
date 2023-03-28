@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_actionserver)
 set(CMAKE_BUILD_TYPE "None") 
-set(CMAKE_CXX_FLAGS "-std=c++17 -fopenmp ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++17 -fopenmp -g ${CMAKE_CXX_FLAGS}")
 
 
 
 #OPTIONS
 ##############################################################################
-set(GSL_DEBUG OFF) #debug mode disables all optimizations and activates a bunch of assertions in the code.
+set(GSL_DEBUG OFF) #debug mode disables optimizations and activates a bunch of assertions in the code.
 
 set(USE_GADEN OFF) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 
@@ -47,7 +47,7 @@ endif(USE_GUI)
 
 if(GSL_DEBUG)
   add_definitions(-DGSL_DEBUG)
-  set(CMAKE_CXX_FLAGS "-g -Og ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "-Og ${CMAKE_CXX_FLAGS}")
 else()
   set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif(GSL_DEBUG)
@@ -111,7 +111,7 @@ add_subdirectory(third_party/spdlog)
 
 if(USE_GUI)
   add_subdirectory(third_party/glfw)
-  set(CONDITIONAL_GLFW)
+  set(CONDITIONAL_GLFW "glfw")
 endif(USE_GUI)
 
 
