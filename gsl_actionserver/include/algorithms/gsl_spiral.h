@@ -7,7 +7,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <gsl_algorithm.h>
+#include <algorithms/gsl_algorithm.h>
 
 typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
 enum class SPIRAL_state {WAITING_FOR_MAP, STOP_AND_MEASURE, SPIRAL};

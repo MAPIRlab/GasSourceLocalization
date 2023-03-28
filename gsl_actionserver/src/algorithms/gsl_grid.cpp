@@ -1,4 +1,4 @@
-#include <gsl_grid.h>
+#include <algorithms/gsl_grid.h>
 
 namespace Grid{
 

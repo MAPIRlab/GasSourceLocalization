@@ -7,7 +7,7 @@
 #include <eigen3/Eigen/Dense>
 #include <numeric>
 #include <random>
-#include <gsl_surge_spiral.h>
+#include <algorithms/gsl_surge_spiral.h>
 
 class Particle{
     public:

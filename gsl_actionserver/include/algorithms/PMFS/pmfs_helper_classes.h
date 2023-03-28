@@ -4,7 +4,7 @@
 #include <Utils/Utils.h>
 #include <Utils/Time.h>
 #include "spdlog/spdlog.h"
-#include <NQAQuadtree.h>
+#include <NQA/NQAQuadtree.h>
 
 namespace PMFS{
 

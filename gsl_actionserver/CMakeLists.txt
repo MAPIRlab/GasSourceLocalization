@@ -122,11 +122,7 @@ endif(USE_GUI)
 
 include_directories(
   include
-  include/algorithms
   Utils
-  Utils/segmentation/src
-  Utils/Quadtree
-  include/algorithms/PMFS
   ${catkin_INCLUDE_DIRS}
   
   third_party/imgui
@@ -134,8 +130,6 @@ include_directories(
 
   third_party/implot
   third_party/spdlog/include
-
-  third_party/StateMachines/include
 )
 
 ###########
@@ -160,7 +154,7 @@ endif(USE_GUI)
   
 set(SOURCES_node 
   Utils/Utils/Utils.cpp
-  Utils/Quadtree/NQAQuadtree.cpp
+  Utils/NQA/NQAQuadtree.cpp
 
   src/gsl_server.cpp 
   src/gsl_imgui.cpp

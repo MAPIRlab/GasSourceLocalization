@@ -8,7 +8,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <gsl_algorithm.h>
+#include <algorithms/gsl_algorithm.h>
 
 
 typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;

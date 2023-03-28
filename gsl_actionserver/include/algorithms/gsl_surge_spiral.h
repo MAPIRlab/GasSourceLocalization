@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_plume_tracking.h>
+#include <algorithms/gsl_plume_tracking.h>
 /*   DESCRIPTION OF SEARCH STATES
  * --------------------------------
  * WAITING_FOR_MAP: No map is available, waiting for map_server to provide one.

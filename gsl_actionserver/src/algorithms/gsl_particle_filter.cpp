@@ -1,4 +1,4 @@
-#include "gsl_particle_filter.h"
+#include "algorithms/gsl_particle_filter.h"
 
 Particle::Particle(double a, double b, double c){
     x=a; y=b, weight=c;

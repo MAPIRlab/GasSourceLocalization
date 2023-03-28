@@ -1,14 +1,14 @@
 #pragma once
-#include <gsl_algorithm.h>
-#include <pmfs_helper_classes.h>
-#include <pmfs_settings.h>
-#include <pmfs_publishers_and_subscribers.h>
-#include <pmfs_UI.h>
-#include <pmfs_simulations.h>
+#include <algorithms/gsl_algorithm.h>
+#include <algorithms/PMFS/pmfs_helper_classes.h>
+#include <algorithms/PMFS/pmfs_settings.h>
+#include <algorithms/PMFS/pmfs_publishers_and_subscribers.h>
+#include <algorithms/PMFS/pmfs_UI.h>
+#include <algorithms/PMFS/pmfs_simulations.h>
 #include <gsl_imgui.h>
 #include <gsl_implot.h>
 
-#include <NQAQuadtree.h>
+#include <NQA/NQAQuadtree.h>
 #include <fstream>      // std::ofstream
 #include <iostream>
 #include <cmath>

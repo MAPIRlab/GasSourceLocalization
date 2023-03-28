@@ -1,4 +1,4 @@
-#include <gsl_surge_spiral.h>
+#include <algorithms/gsl_surge_spiral.h>
 
 /*   DESCRIPTION OF SEARCH STATES
  * --------------------------------

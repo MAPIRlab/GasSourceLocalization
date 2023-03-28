@@ -1,4 +1,4 @@
-#include <gsl_plume_tracking.h>
+#include <algorithms/gsl_plume_tracking.h>
 
 PlumeTracking::PlumeTracking(ros::NodeHandle *nh) :
     GSLAlgorithm(nh)

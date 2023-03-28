@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_algorithm.h>
+#include <algorithms/gsl_algorithm.h>
 #include <gmrf_wind_mapping/WindEstimation.h>
 
 #ifdef USE_GADEN

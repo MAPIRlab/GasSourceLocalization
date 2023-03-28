@@ -1,4 +1,4 @@
-#include "gsl_spiral.h"
+#include "algorithms/gsl_spiral.h"
 
 
 SpiralSearcher::SpiralSearcher(ros::NodeHandle *nh) :

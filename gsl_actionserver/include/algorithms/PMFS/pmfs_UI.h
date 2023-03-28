@@ -2,7 +2,7 @@
 #ifdef USE_GUI
 
 #include <imgui.h>
-#include <pmfs_helper_classes.h>
+#include <algorithms/PMFS/pmfs_helper_classes.h>
 namespace PMFS{
 
 class GridUI{

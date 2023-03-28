@@ -1,4 +1,4 @@
-#include <NQAQuadtree.h>
+#include <NQA/NQAQuadtree.h>
 #include <unordered_map>
 #include <unordered_set>
 

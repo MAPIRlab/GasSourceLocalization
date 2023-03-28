@@ -1,4 +1,4 @@
-#include <gsl_surge_cast.h>
+#include <algorithms/gsl_surge_cast.h>
 
 /*   DESCRIPTION OF SEARCH STATES
  * --------------------------------
