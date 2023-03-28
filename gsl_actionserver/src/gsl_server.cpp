@@ -338,7 +338,7 @@ int CGSLServer::doGrid()
     return 1;
 }
 
-int CGSLServer::doHitmapGrid()
+int CGSLServer::doPMFS()
 {
     using namespace PMFS;
     ros::NodeHandle nh("~");
@@ -418,7 +418,7 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
         res=doGrid();
     }
     else if(goal->gsl_method == "PMFS"){
-        res=doHitmapGrid();
+        res=doPMFS();
     }
     else
         spdlog::error("[GSL_server] Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal->gsl_method.c_str());
