@@ -204,7 +204,8 @@
 
     <param name="convergence_thr" value="1"/> 
     <param name="convergence_steps" value="5"/>
-    #grgsl
+    
+    #GrGSL
     <param name="stdev_hit" value="1.0"/>
     <param name="stdev_miss" value="1.2"/>
 
