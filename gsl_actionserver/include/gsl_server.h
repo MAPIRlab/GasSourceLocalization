@@ -1,3 +1,4 @@
+#pragma once
 #include <ros/ros.h>
 #include <fstream>      // std::ofstream
 #include <actionlib/server/simple_action_server.h>
@@ -18,7 +19,7 @@ protected:
 
 public:
     CGSLServer(std::string name) :
-        as_(nh_, name, boost::bind(&CGSLServer::executeCB, this, _1),false),
+        as_(nh_, name, std::bind(&CGSLServer::executeCB, this, std::placeholders::_1),false),
         action_name_(name)
     {
        
@@ -30,11 +31,12 @@ public:
     void executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &goal);
 private:
 
-    //Implement here all the GSL methods: semantics, CFD, plume_tracking, etc.
+    //Implement here all the GSL methods: CFD, plume_tracking, etc.
     int doSurgeCast();
     int doSpiral();
     int doSurgeSpiral();
     int doParticleFilter();
+    int doPMFS();
     int doGrid();
     int gsl_approach;
     std::string resultsFile;

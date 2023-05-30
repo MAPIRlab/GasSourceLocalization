@@ -1,0 +1,19 @@
+[submodule "gsl_actionserver/third_party/imgui"]
+	path = gsl_actionserver/third_party/imgui
+	url = git@github.com:ocornut/imgui.git
+	branch = docking
+[submodule "gsl_actionserver/third_party/implot"]
+	path = gsl_actionserver/third_party/implot
+	url = git@github.com:epezent/implot.git
+[submodule "gsl_actionserver/third_party/spdlog"]
+	path = gsl_actionserver/third_party/spdlog
+	url = git@github.com:gabime/spdlog.git
+[submodule "gaden"]
+	path = gaden
+	url = git@github.com:MAPIRlab/gaden.git
+[submodule "gas_distribution_mapping/gmrf_wind"]
+	path = gas_distribution_mapping/gmrf_wind
+	url = git@github.com:MAPIRlab/GMRF-wind.git
+[submodule "gsl_actionserver/third_party/glfw"]
+	path = gsl_actionserver/third_party/glfw
+	url = git@github.com:glfw/glfw.git
