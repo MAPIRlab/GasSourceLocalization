@@ -10,7 +10,7 @@ namespace PMFS{
 
 typedef Utils::Vector2Int Vector2Int;
 typedef std::unordered_set<Vector2Int, Vector2Int::Vec2IntHash, Vector2Int::Vec2IntCompare > hashSet;
-enum class Grid_state {WAITING_FOR_MAP, INITIALIZING, EXPLORATION, STOP_AND_MEASURE, MOVING};
+enum class State {WAITING_FOR_MAP, INITIALIZING, EXPLORATION, STOP_AND_MEASURE, MOVING};
 
 class Cell{
     public:

@@ -13,12 +13,12 @@
 
 #include <gmrf_wind_mapping/WindEstimation.h>
 
-namespace Grid{
+namespace GrGSL{
 
 typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
 typedef Utils::Vector2Int Vector2Int;
 typedef std::unordered_set<Vector2Int, Vector2Int::Vec2IntHash, Vector2Int::Vec2IntCompare > hashSet;
-enum class Grid_state {WAITING_FOR_MAP, INITIALIZING, EXPLORATION, STOP_AND_MEASURE, MOVING};
+enum class State {WAITING_FOR_MAP, INITIALIZING, EXPLORATION, STOP_AND_MEASURE, MOVING};
 
 class Cell{
     public:
@@ -39,13 +39,13 @@ struct WindVector{
     double angle;
 };
 
-class GridGSL:public GSLAlgorithm
+class GrGSL:public GSLAlgorithm
 {
     public:
-        GridGSL(ros::NodeHandle *nh);
-        ~GridGSL();
+        GrGSL(ros::NodeHandle *nh);
+        ~GrGSL();
         void getGasWindObservations();
-        Grid_state getState();
+        State getState();
         int checkSourceFound() override;
         void showWeights();
         virtual void setGoal();
@@ -58,7 +58,7 @@ class GridGSL:public GSLAlgorithm
         void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg) override;
         void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result) override;
             
-        Grid_state previous_state, current_state;
+        State previous_state, current_state;
 
         //Measurements
         ros::Time time_stopped; 

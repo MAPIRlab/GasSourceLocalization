@@ -3,7 +3,7 @@
 #include "algorithms/gsl_particle_filter.h"
 #include "algorithms/gsl_surge_cast.h"
 #include "algorithms/PMFS/PMFS.h"
-#include "algorithms/gsl_grid.h"
+#include "algorithms/gsl_GrGSL.h"
 #include "gsl_imgui.h"
 #include "gsl_implot.h"
 
@@ -302,30 +302,30 @@ int CGSLServer::doParticleFilter()
     }
 }
 
-int CGSLServer::doGrid()
+int CGSLServer::doGrGSL()
 {
-    using namespace Grid;
+    using namespace GrGSL;
     ros::NodeHandle nh("~");
-    GridGSL grid(&nh);
+    GrGSL::GrGSL grgsl(&nh);
     ros::Rate loop_rate(2);
     int sourceFound = -1;
     double startTime = ros::Time::now().toSec();
 
-    while(ros::ok()&&sourceFound==-1 && ros::Time::now().toSec()-startTime<grid.max_search_time*1.2)
+    while(ros::ok()&&sourceFound==-1 && ros::Time::now().toSec()-startTime<grgsl.max_search_time*1.2)
     {
-        if(!grid.get_inMotion()){
-            switch(grid.getState()){
-                case Grid_state::STOP_AND_MEASURE:
-                    grid.getGasWindObservations();
-                    grid.showWeights();
+        if(!grgsl.get_inMotion()){
+            switch(grgsl.getState()){
+                case State::STOP_AND_MEASURE:
+                    grgsl.getGasWindObservations();
+                    grgsl.showWeights();
                     break;
-                case Grid_state::MOVING:
-                    sourceFound = grid.checkSourceFound();
-                    grid.setGoal();
+                case State::MOVING:
+                    sourceFound = grgsl.checkSourceFound();
+                    grgsl.setGoal();
 
-                    grid.showWeights();
+                    grgsl.showWeights();
                     break;
-                case Grid_state::EXPLORATION:
+                case State::EXPLORATION:
                     break;
                 default:
                     spdlog::error("[GSL-Grid] Search state is undefined!");
@@ -348,7 +348,7 @@ int CGSLServer::doPMFS()
     double startTime = ros::Time::now().toSec();
     bool initializationStarted = false;
 
-    while(grid.getState() == Grid_state::WAITING_FOR_MAP){
+    while(grid.getState() == State::WAITING_FOR_MAP){
         ros::spinOnce();
         loop_rate.sleep();
     }
@@ -361,11 +361,11 @@ int CGSLServer::doPMFS()
     {
         grid.runSubmitedQueue();
         if(!grid.get_inMotion() && !grid.debugStuff.paused){
-            PMFS::Grid_state state = grid.getState();
+            PMFS::State state = grid.getState();
 
-            if(state == Grid_state::STOP_AND_MEASURE)
+            if(state == State::STOP_AND_MEASURE)
                     grid.processGasWindObservations();
-            else if( state == Grid_state::MOVING || state == Grid_state::EXPLORATION)
+            else if( state == State::MOVING || state == State::EXPLORATION)
             {
                 sourceFound = grid.checkSourceFound();
                 grid.setGoal();
@@ -414,8 +414,8 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
     else if(goal->gsl_method == "particle_filter"){
         res=doParticleFilter();
     }
-    else if(goal->gsl_method == "grid"){
-        res=doGrid();
+    else if(goal->gsl_method == "GrGSL"){
+        res=doGrGSL();
     }
     else if(goal->gsl_method == "PMFS"){
         res=doPMFS();

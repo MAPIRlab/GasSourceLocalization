@@ -33,13 +33,31 @@
     ### NAVIGATION ###
     <node name="map_server" pkg="map_server" type="map_server" args="$(find grgsl_env)/$(arg scenario)/occupancy.yaml">
       <param name="frame_id" value="map"/>
-    </node>  
-    <include file="$(find grgsl_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" />  
+    </node> 
+    <include file="$(find grgsl_env)/$(arg scenario)/launch/ros/simbot_move_base.launch" >
+      <arg name="scenario" value="$(arg scenario)"/>
+      <arg name="global_planner_plugin" value="navfn/NavfnROS"/>
+    </include>  
     
     <node pkg="fake_localization" type="fake_localization" name="fake_localization">	    
         <param name="odom_frame_id" value="odom"/>
         <param name="global_frame_id" value="map"/>
         <param name="base_frame_id" value="base_link"/>
+    </node>
+
+    #### NAV ASSISTANT ###
+    <node pkg="topology_graph" type="topology_graph" name="topology_graph" respawn="false" >
+          <param name="verbose" value="False" />        
+    </node>
+    <node pkg="navigation_assistant" type="nav_assistant_node" name="nav_assistant" respawn="false">
+          <param name="use_CNP" value="False" />
+        
+          # Save/Load from File
+          <param name="init_from_file" value="" />          # Leave empty to start with an clean graph
+          <param name="save_to_file" value="" />             # Leave empty to NOT save the graph to file
+    </node>
+    <node pkg="navigation_assistant" type="nav_assistant_functions.py" name="nav_assistant_functions" respawn="false" >
+        <param name="verbose" value="False" />
     </node>
 
     ### RVIZ ###
@@ -129,7 +147,7 @@
   ## GSL ##
 
   <node pkg="gsl_actionserver" type="gsl_actionserver_call" name="gsl_call" output="screen"> 
-    <param name="method" value="grid"/>
+    <param name="method" value="GrGSL"/>
   </node> 
   <node pkg="gsl_actionserver" type="gsl_actionserver_node" name="gsl_node" output="screen" required="true">
     #Common

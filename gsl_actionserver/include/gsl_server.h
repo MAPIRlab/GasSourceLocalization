@@ -37,7 +37,7 @@ private:
     int doSurgeSpiral();
     int doParticleFilter();
     int doPMFS();
-    int doGrid();
+    int doGrGSL();
     int gsl_approach;
     std::string resultsFile;
 };

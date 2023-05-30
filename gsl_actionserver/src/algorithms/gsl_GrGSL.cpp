@@ -1,6 +1,6 @@
-#include <algorithms/gsl_grid.h>
+#include <algorithms/gsl_GrGSL.h>
 
-namespace Grid{
+namespace GrGSL{
 
 Cell::Cell(bool _free, double _weight){
     free = _free;
@@ -11,7 +11,7 @@ Cell::Cell(bool _free, double _weight){
 
 Cell::~Cell(){}
 
-GridGSL::GridGSL(ros::NodeHandle *nh) :
+GrGSL::GrGSL(ros::NodeHandle *nh) :
     GSLAlgorithm(nh)
 {
 
@@ -23,17 +23,17 @@ GridGSL::GridGSL(ros::NodeHandle *nh) :
 
     // Subscribers
     //------------
-    gas_sub_ = nh->subscribe(enose_topic,1,&GridGSL::gasCallback, this);
-    wind_sub_ = nh->subscribe(anemometer_topic,1,&GridGSL::windCallback, this);
-    map_sub_ = nh->subscribe(map_topic, 1, &GridGSL::mapCallback, this);
+    gas_sub_ = nh->subscribe(enose_topic,1,&GrGSL::gasCallback, this);
+    wind_sub_ = nh->subscribe(anemometer_topic,1,&GrGSL::windCallback, this);
+    map_sub_ = nh->subscribe(map_topic, 1, &GrGSL::mapCallback, this);
 
     probability_markers = nh->advertise<visualization_msgs::Marker>("probability_markers", 10);
     estimation_markers = nh->advertise<visualization_msgs::Marker>("estimation_markers", 10);
     gas_type_pub = nh->advertise<std_msgs::String>("gas_type", 10);
 
     // Init State
-    previous_state = Grid_state::WAITING_FOR_MAP;
-    current_state = Grid_state::WAITING_FOR_MAP;
+    previous_state = State::WAITING_FOR_MAP;
+    current_state = State::WAITING_FOR_MAP;
     spdlog::info("INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
     gasHit= false;
 
@@ -64,7 +64,7 @@ GridGSL::GridGSL(ros::NodeHandle *nh) :
 }
 
 
-GridGSL::~GridGSL()
+GrGSL::~GrGSL()
 {
     spdlog::info("- Closing...");
 }
@@ -73,9 +73,9 @@ GridGSL::~GridGSL()
     //CALLBACKS
 //------------------
 
-void GridGSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+void GrGSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    if (current_state!=Grid_state::WAITING_FOR_MAP){
+    if (current_state!=State::WAITING_FOR_MAP){
         return;
     }
     
@@ -159,7 +159,7 @@ void GridGSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 
     normalizeWeights(cells);
     //Start the fun!!
-    current_state=Grid_state::EXPLORATION;
+    current_state=State::EXPLORATION;
     start_time = ros::Time::now();     //start measuring time
     robot_poses_vector.clear();         //start measuring distance
     inExecution = true;
@@ -167,10 +167,10 @@ void GridGSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 }
 
 
-void GridGSL::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
+void GrGSL::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
 {
     //Only if we are in the Stop_and_Measure
-    if (current_state == Grid_state::STOP_AND_MEASURE)
+    if (current_state == State::STOP_AND_MEASURE)
     {
         float raw = 0;
         //extract ppm reading from MOX sensors
@@ -183,7 +183,7 @@ void GridGSL::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
         }
         stop_and_measure_gas_v.push_back(raw);
     }
-    else if(current_state == Grid_state::EXPLORATION){
+    else if(current_state == State::EXPLORATION){
         if(msg->raw>th_gas_present){
             cancel_navigation();
             
@@ -194,7 +194,7 @@ void GridGSL::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
     }
 }
 
-void GridGSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
+void GrGSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
 {
     //1. Add obs to the vector of the last N wind speeds
     float downWind_direction = angles::normalize_angle(msg->wind_direction);
@@ -218,7 +218,7 @@ void GridGSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
 
 
     //Only if we are in the Stop_and_Measure
-    if (this->current_state == Grid_state::STOP_AND_MEASURE)
+    if (this->current_state == State::STOP_AND_MEASURE)
     {
         stop_and_measure_windS_v.push_back(msg->wind_speed);
         stop_and_measure_windD_v.push_back(tf::getYaw(map_downWind_pose.pose.orientation));
@@ -226,7 +226,7 @@ void GridGSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
 
 }
 
-void GridGSL::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result)
+void GrGSL::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result)
 {
     if(state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED)
     {
@@ -243,7 +243,7 @@ void GridGSL::goalDoneCallback(const actionlib::SimpleClientGoalState &state, co
     //ESTIMATE
 //---------------
 
-void GridGSL::getGasWindObservations()
+void GrGSL::getGasWindObservations()
 {
 
     if( (ros::Time::now() - time_stopped).toSec() >= stop_and_measure_time )
@@ -272,7 +272,7 @@ void GridGSL::getGasWindObservations()
             estimateProbabilitiesfromGasAndWind(cells, true, true, average_wind_direction, currentPosIndex);
             if (verbose) spdlog::warn(" GAS HIT\nNew state --> MOVING");
             previous_state=current_state;
-            current_state=Grid_state::MOVING;
+            current_state=State::MOVING;
         }
         else if (average_concentration > th_gas_present)
         {
@@ -284,17 +284,17 @@ void GridGSL::getGasWindObservations()
 
             if (verbose) spdlog::warn(" GAS, BUT NO WIND\n New state --> MOVING");
             previous_state=current_state;
-            current_state=Grid_state::MOVING;
+            current_state=State::MOVING;
         }
         else if (average_wind_speed > th_wind_present)
         {
-            if(previous_state!=Grid_state::EXPLORATION){
+            if(previous_state!=State::EXPLORATION){
                 //Only Wind
                 gasHit=false;
                 estimateProbabilitiesfromGasAndWind(cells, false, true, average_wind_direction, currentPosIndex);
                 if (verbose) spdlog::warn(" NO GAS HIT\n New state --> MOVING");
                 previous_state=current_state;
-                current_state=Grid_state::MOVING;
+                current_state=State::MOVING;
             }else{
                 if (verbose) spdlog::warn(" NOTHING --> WAITING FOR GAS");
             }
@@ -307,13 +307,13 @@ void GridGSL::getGasWindObservations()
             estimateProbabilitiesfromGasAndWind(cells, false, true, average_wind_direction, currentPosIndex);
             if (verbose) spdlog::warn(" NOTHING\n New state --> MOVING");
             previous_state=current_state;
-            current_state=Grid_state::MOVING;
+            current_state=State::MOVING;
         }
         
     }
 }
 
-float GridGSL::get_average_wind_direction(std::vector<float> const &v)
+float GrGSL::get_average_wind_direction(std::vector<float> const &v)
 {
     //Average of wind direction, avoiding the problems of +/- pi angles.
     float x =0.0, y = 0.0;
@@ -328,7 +328,7 @@ float GridGSL::get_average_wind_direction(std::vector<float> const &v)
     return average_angle;
 }
 
-void GridGSL::estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell> >& map,
+void GrGSL::estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell> >& map,
                                     bool hit,
                                     bool advection,
                                     double wind_direction,
@@ -447,7 +447,7 @@ void GridGSL::estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell> 
 }
 
 
-void GridGSL::propagateProbabilities(std::vector<std::vector<Cell> >& map,
+void GrGSL::propagateProbabilities(std::vector<std::vector<Cell> >& map,
                                     hashSet& openPropagationSet,
                                     hashSet& closedPropagationSet,
                                     hashSet& activePropagationSet){
@@ -484,7 +484,7 @@ void GridGSL::propagateProbabilities(std::vector<std::vector<Cell> >& map,
 }
 
 
-void GridGSL::calculateWeight(std::vector<std::vector<Cell> >& map, int i, int j, Vector2Int p, 
+void GrGSL::calculateWeight(std::vector<std::vector<Cell> >& map, int i, int j, Vector2Int p, 
                                     hashSet& openPropagationSet,
                                     hashSet& closedPropagationSet,
                                     hashSet& activePropagationSet)
@@ -513,7 +513,7 @@ void GridGSL::calculateWeight(std::vector<std::vector<Cell> >& map, int i, int j
     }
 }
 
-void GridGSL::normalizeWeights(std::vector<std::vector<Cell> >& map){
+void GrGSL::normalizeWeights(std::vector<std::vector<Cell> >& map){
     double s=0.0;
     for(int i=0;i<map.size();i++){
         for(int j=0;j<map[0].size();j++){
@@ -535,7 +535,7 @@ void GridGSL::normalizeWeights(std::vector<std::vector<Cell> >& map){
     //NAVIGATION
 //----------------
 
-void GridGSL::cancel_navigation(){
+void GrGSL::cancel_navigation(){
     mb_ac.cancelAllGoals();               //Cancel current navigations
     inMotion = false;
 
@@ -546,11 +546,11 @@ void GridGSL::cancel_navigation(){
     time_stopped = ros::Time::now();    //Start timer for initial wind measurement
     
     previous_state = current_state;
-    current_state=Grid_state::STOP_AND_MEASURE;
+    current_state=State::STOP_AND_MEASURE;
 
 }
 
-void GridGSL::updateSets(){
+void GrGSL::updateSets(){
     int i=currentPosIndex.x, j=currentPosIndex.y;
 
     int oI=std::max(0,i-3);
@@ -571,7 +571,7 @@ void GridGSL::updateSets(){
 
 }
 
-void GridGSL::setGoal(){
+void GrGSL::setGoal(){
     updateSets();
 
     navigation_assistant::nav_assistantGoal goal;
@@ -642,13 +642,13 @@ void GridGSL::setGoal(){
     moveTo(goal);
 }
 
-void GridGSL::moveTo(navigation_assistant::nav_assistantGoal goal){
+void GrGSL::moveTo(navigation_assistant::nav_assistantGoal goal){
     
     inMotion=true;
 
-    spdlog::info(" MOVING TO %f,%f",goal.target_pose.pose.position.x,goal.target_pose.pose.position.y);
+    spdlog::info(" MOVING TO {},{}",goal.target_pose.pose.position.x,goal.target_pose.pose.position.y);
     
-    mb_ac.sendGoal(goal, std::bind(&GridGSL::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&GridGSL::goalActiveCallback, this), std::bind(&GridGSL::goalFeedbackCallback, this, std::placeholders::_1));
+    mb_ac.sendGoal(goal, std::bind(&GrGSL::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&GrGSL::goalActiveCallback, this), std::bind(&GrGSL::goalFeedbackCallback, this, std::placeholders::_1));
  
     currentPosIndex=coordinatesToIndex(goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
     //close nearby cells to avoid repeating the same pose with only minor variations
@@ -671,7 +671,7 @@ void GridGSL::moveTo(navigation_assistant::nav_assistantGoal goal){
     }
 }
 
-navigation_assistant::nav_assistantGoal GridGSL::indexToGoal(int i, int j){
+navigation_assistant::nav_assistantGoal GrGSL::indexToGoal(int i, int j){
     navigation_assistant::nav_assistantGoal goal;
     goal.target_pose.header.frame_id = "map";
     goal.target_pose.header.stamp = ros::Time::now();
@@ -691,7 +691,7 @@ navigation_assistant::nav_assistantGoal GridGSL::indexToGoal(int i, int j){
     //INFOTAXIS
 //----------------
 
-double GridGSL::informationGain(WindVector windVec){
+double GrGSL::informationGain(WindVector windVec){
     auto predictionCells=cells; //temp copy of the matrix of cells that we can modify to simulate the effect of a measurement
     
     double entH = 0;
@@ -708,7 +708,7 @@ double GridGSL::informationGain(WindVector windVec){
 }
 
 //Kullback-Leibler Divergence
-double GridGSL::KLD(std::vector<std::vector<Cell> >& a, std::vector<std::vector<Cell> >& b){
+double GrGSL::KLD(std::vector<std::vector<Cell> >& a, std::vector<std::vector<Cell> >& b){
     double total=0;
     for(int r =0 ; r<a.size();r++){
         for(int c=0; c<a[0].size();c++){
@@ -721,7 +721,7 @@ double GridGSL::KLD(std::vector<std::vector<Cell> >& a, std::vector<std::vector<
     return total;
 }
 
-std::vector<WindVector> GridGSL::estimateWind(){
+std::vector<WindVector> GrGSL::estimateWind(){
     //ask the gmrf_wind service for the estimated wind vector in cell i,j
     gmrf_wind_mapping::WindEstimation srv;
 
@@ -753,11 +753,11 @@ std::vector<WindVector> GridGSL::estimateWind(){
 //----------------
     //AUX
 //----------------
-double GridGSL::probability (const Vector2Int& indices){
+double GrGSL::probability (const Vector2Int& indices){
     return cells[indices.x][indices.y].weight;
 }
 
-void GridGSL::showWeights(){
+void GrGSL::showWeights(){
     visualization_msgs::Marker points=emptyMarker();
     
     for(int a=0;a<cells.size();a++){
@@ -780,17 +780,17 @@ void GridGSL::showWeights(){
     probability_markers.publish(points);
 }
 
-Vector2Int GridGSL::coordinatesToIndex(double x, double y){
+Vector2Int GrGSL::coordinatesToIndex(double x, double y){
     return Vector2Int((y-map_.info.origin.position.y)/(scale*map_.info.resolution),
                             (x-map_.info.origin.position.x)/(scale*map_.info.resolution));
 }
 
-Eigen::Vector2d GridGSL::indexToCoordinates(double i, double j){
+Eigen::Vector2d GrGSL::indexToCoordinates(double i, double j){
     return Eigen::Vector2d(map_.info.origin.position.x+(j+0.5)*scale*map_.info.resolution,
                             map_.info.origin.position.y+(i+0.5)*scale*map_.info.resolution);
 }
 
-double GridGSL::gaussian(double distance, double sigma){
+double GrGSL::gaussian(double distance, double sigma){
     return exp(-0.5*(
                     pow(distance,2)
                     /pow(sigma,2)
@@ -799,7 +799,7 @@ double GridGSL::gaussian(double distance, double sigma){
         /(sigma*sqrt(2*M_PI));
 }
 
-visualization_msgs::Marker GridGSL::emptyMarker(){
+visualization_msgs::Marker GrGSL::emptyMarker(){
     visualization_msgs::Marker points;
                         points.header.frame_id="map";
                         points.header.stamp=ros::Time::now();
@@ -818,7 +818,7 @@ visualization_msgs::Marker GridGSL::emptyMarker(){
     return points;
 }
 
-Eigen::Vector3d GridGSL::valueToColor(double val, double lowLimit, double highLimit){
+Eigen::Vector3d GrGSL::valueToColor(double val, double lowLimit, double highLimit){
     double r, g, b;
     val=log10(val);
     double range=(log10(highLimit)-log10(lowLimit))/4;
@@ -845,12 +845,12 @@ Eigen::Vector3d GridGSL::valueToColor(double val, double lowLimit, double highLi
     return Eigen::Vector3d(r,g,b);
 }
 
-Grid_state GridGSL::getState(){
+State GrGSL::getState(){
     return current_state;
 }
 
 
-Eigen::Vector2d GridGSL::expectedValueSource(double proportionBest){
+Eigen::Vector2d GrGSL::expectedValueSource(double proportionBest){
 
     std::vector<CellData> data;
     for(int i=0; i<cells.size();i++){
@@ -881,7 +881,7 @@ Eigen::Vector2d GridGSL::expectedValueSource(double proportionBest){
     return Eigen::Vector2d(averageX/sum, averageY/sum);
 }
 
-double GridGSL::varianceSourcePosition(){
+double GrGSL::varianceSourcePosition(){
     Eigen::Vector2d expected = expectedValueSource(1);
     double x=0, y=0;
     for(int i=0; i<cells.size();i++){
@@ -897,9 +897,9 @@ double GridGSL::varianceSourcePosition(){
     return x+y;
 }
 
-int GridGSL::checkSourceFound(){
+int GrGSL::checkSourceFound(){
 
-    if(current_state!=Grid_state::WAITING_FOR_MAP){
+    if(current_state!=State::WAITING_FOR_MAP){
         ros::Duration time_spent = ros::Time::now() - start_time;
         if(time_spent.toSec()>max_search_time){
             Eigen::Vector2d locationAll = expectedValueSource(1);
@@ -948,7 +948,7 @@ int GridGSL::checkSourceFound(){
     return -1;
 }
 
-void GridGSL::save_results_to_file(int result, double i, double j, double allI, double allJ)
+void GrGSL::save_results_to_file(int result, double i, double j, double allI, double allJ)
 {
     mb_ac.cancelAllGoals();
 

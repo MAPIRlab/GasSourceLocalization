@@ -45,7 +45,7 @@ class PMFS_GSL : public GSLAlgorithm
         void processGasWindObservations();
         
         //utils
-        Grid_state getState();
+        State getState();
         int checkSourceFound() override;
         void runSubmitedQueue();
         
@@ -71,7 +71,7 @@ class PMFS_GSL : public GSLAlgorithm
     protected:
 
         Utils::Time::Clock clock;
-        Grid_state previous_state, current_state;
+        State previous_state, current_state;
         GridSettings settings;
         PublishersAndSubscribers pubs;
 

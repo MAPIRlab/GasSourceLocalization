@@ -9,7 +9,7 @@ Currently available algorithms include:
 - "PMFS"
 
 ### (See paper: https://ieeexplore.ieee.org/document/9347683)
-- "grid"
+- "GrGSL"
 
 ### (See paper: https://dl.acm.org/doi/10.1145/3378184.3378220)
 - "surge_cast"

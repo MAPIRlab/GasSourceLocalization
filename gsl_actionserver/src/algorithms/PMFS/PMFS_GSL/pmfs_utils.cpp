@@ -10,7 +10,7 @@ double PMFS_GSL::sourceProbability (int i, int j){
 }
 
 
-Grid_state PMFS_GSL::getState(){
+State PMFS_GSL::getState(){
     return current_state;
 }
 
@@ -120,7 +120,7 @@ void PMFS_GSL::runSubmitedQueue()
 
 int PMFS_GSL::checkSourceFound(){
 
-    if(current_state!=Grid_state::WAITING_FOR_MAP){
+    if(current_state!=State::WAITING_FOR_MAP){
         ros::Duration time_spent = ros::Time::now() - start_time;
         if(time_spent.toSec()>max_search_time){
             Utils::Vector2 locationAll = expectedValueSource();

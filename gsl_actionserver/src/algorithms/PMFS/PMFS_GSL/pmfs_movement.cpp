@@ -18,7 +18,7 @@ void PMFS_GSL::cancel_navigation(bool succeeded){
     
     previous_state = current_state;
     if(succeeded)
-        current_state=Grid_state::STOP_AND_MEASURE;
+        current_state=State::STOP_AND_MEASURE;
     else{
         openMoveSet.erase(currentPosIndex);
         closedMoveSet.insert(currentPosIndex);
@@ -70,7 +70,7 @@ void PMFS_GSL::setGoal(){
             double explorationTerm = explorationValue(r,c);
             double varianceTerm = std::pow(simulations.varianceOfHitProb[r][c], 2.5) * (1-cells[r][c].hitProbability.confidence);
             
-            double this_interest = current_state == Grid_state::EXPLORATION || varianceTerm==0 || explorationC < settings.movement.explorationProbability?
+            double this_interest = current_state == State::EXPLORATION || varianceTerm==0 || explorationC < settings.movement.explorationProbability?
                                     explorationTerm:
                                     varianceTerm;
             

@@ -38,8 +38,8 @@ PMFS_GSL::PMFS_GSL(ros::NodeHandle *nh) :
     pubs.markers.debug.movementSets = nh->advertise<visualization_msgs::Marker>("movementSets", 1);
 
     // Init State
-    previous_state = Grid_state::WAITING_FOR_MAP;
-    current_state = Grid_state::WAITING_FOR_MAP;
+    previous_state = State::WAITING_FOR_MAP;
+    current_state = State::WAITING_FOR_MAP;
     spdlog::info("WAITING_FOR_MAP");
 
     nh->param<int>("scale", settings.scale, 65); //scale for dynamic map reduction

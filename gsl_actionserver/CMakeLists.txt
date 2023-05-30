@@ -165,7 +165,7 @@ set(SOURCES_node
   src/algorithms/gsl_surge_cast.cpp 
   src/algorithms/gsl_surge_spiral.cpp 
   src/algorithms/gsl_particle_filter.cpp 
-  src/algorithms/gsl_grid.cpp 
+  src/algorithms/gsl_GrGSL.cpp 
   
   src/algorithms/PMFS/pmfs_simulations.cpp
   src/algorithms/PMFS/pmfs_UI.cpp

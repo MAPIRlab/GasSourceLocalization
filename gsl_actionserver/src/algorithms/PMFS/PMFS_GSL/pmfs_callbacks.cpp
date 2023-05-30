@@ -8,7 +8,7 @@ namespace PMFS{
 
 void PMFS_GSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    if (current_state!=Grid_state::WAITING_FOR_MAP){
+    if (current_state!=State::WAITING_FOR_MAP){
         return;
     }
     
@@ -27,7 +27,7 @@ void PMFS_GSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     if (verbose) spdlog::info("x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}",map_.info.origin.position.x, map_.info.origin.position.x+map_.info.width*map_.info.resolution, map_.info.origin.position.y,map_.info.origin.position.y+map_.info.height*map_.info.resolution);
     if (verbose) spdlog::info("--------------------------------");
 
-    current_state = Grid_state::INITIALIZING;
+    current_state = State::INITIALIZING;
 }
 
 
@@ -35,7 +35,7 @@ void PMFS_GSL::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
 {
 
     //Only if we are in the Stop_and_Measure
-    if (current_state == Grid_state::STOP_AND_MEASURE)
+    if (current_state == State::STOP_AND_MEASURE)
     {
         stop_and_measure_gas_v.push_back(msg->raw);
     }
@@ -65,7 +65,7 @@ void PMFS_GSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
     }
 
     //Only if we are in the Stop_and_Measure
-    if (current_state == Grid_state::STOP_AND_MEASURE)
+    if (current_state == State::STOP_AND_MEASURE)
     {
         stop_and_measure_windS_v.push_back(msg->wind_speed);
         stop_and_measure_windD_v.push_back(angles::normalize_angle(tf::getYaw(map_upWind_pose.pose.orientation)+M_PI));
