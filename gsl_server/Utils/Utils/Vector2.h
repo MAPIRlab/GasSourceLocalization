@@ -1,6 +1,6 @@
 #pragma once
 #include <math.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/msg/point.hpp>
 
 namespace Utils{
     class Vector2;
@@ -18,7 +18,7 @@ namespace Utils{
                 this->y = y;
             }
 
-            explicit Vector2(const geometry_msgs::Point& point): x(point.x), y(point.y)
+            explicit Vector2(const geometry_msgs::msg::Point& point): x(point.x), y(point.y)
             {}
 
             inline Vector2 operator+(const Vector2& other) const{

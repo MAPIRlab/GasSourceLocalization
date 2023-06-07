@@ -228,7 +228,7 @@ void PMFS_GSL::normalizeSourceProb(std::vector<std::vector<Cell> >& variable){
 
 void PMFS_GSL::save_results_to_file(int result, double i, double j, double allI, double allJ)
 {
-    mb_ac.cancelAllGoals();
+    nav_client.cancelAllGoals();
 
     //1. Search time.
     ros::Duration time_spent = ros::Time::now() - start_time;

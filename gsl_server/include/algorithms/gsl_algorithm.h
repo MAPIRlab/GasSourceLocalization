@@ -1,33 +1,37 @@
 #pragma once
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
 
-#include <actionlib/client/simple_action_client.h>
-#include <nav_msgs/GetPlan.h>
-#include <navigation_assistant/nav_assistantAction.h>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <nav_assistant_msgs/srv/make_plan.hpp>
+#include <nav_assistant_msgs/action/nav_assistant.hpp>
 
-#include <nav_msgs/OccupancyGrid.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
-#include <geometry_msgs/Quaternion.h>
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
+#include <nav_msgs/msg/occupancy_grid.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+
 #include <angles/angles.h>
 
-#include <olfaction_msgs/gas_sensor_array.h>
-#include <olfaction_msgs/gas_sensor.h>
-#include <olfaction_msgs/anemometer.h>
+#include <olfaction_msgs/msg/gas_sensor_array.hpp>
+#include <olfaction_msgs/msg/gas_sensor.hpp>
+#include <olfaction_msgs/msg/anemometer.hpp>
 #include "spdlog/spdlog.h"
 #include "Utils/Utils.h"
 #include "gsl_macros.h"
 
-typedef geometry_msgs::Pose Pose;
-typedef geometry_msgs::Point Point;
-typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> NavAssistClient;
+typedef geometry_msgs::msg::Pose Pose;
+typedef geometry_msgs::msg::PoseWithCovarianceStamped PoseWithCovarianceStamped;
+typedef geometry_msgs::msg::Point Point;
+typedef nav_assistant_msgs::action::NavAssistant NavAssistant;
+typedef rclcpp_action::Client<NavAssistant>::SharedPtr NavAssistClient;
 
 class GSLAlgorithm
 {
     public:
-        GSLAlgorithm(ros::NodeHandle *nh);
+        GSLAlgorithm() = delete;
+        GSLAlgorithm(std::shared_ptr<rclcpp::Node> _node);
         ~GSLAlgorithm();
         bool get_inMotion();                //True if we have a movement target
         virtual int checkSourceFound();
@@ -37,7 +41,7 @@ class GSLAlgorithm
         bool isPointInsideMapBounds(const Utils::Vector2& point) const;
         
     protected:
-        ros::NodeHandle *nh_;                                                 //! Node handler.
+        std::shared_ptr<rclcpp::Node> node;
         bool inMotion;                                                      //! Determines if a goal has been set and we are moving towards it
         std::string enose_topic, anemometer_topic, robot_location_topic, map_topic, costmap_topic;
 
@@ -45,44 +49,45 @@ class GSLAlgorithm
 
         bool verbose;
         bool inExecution;
-        ros::Time start_time;
+        rclcpp::Time start_time;
         double distance_found;
-        std::vector<geometry_msgs::PoseWithCovarianceStamped> robot_poses_vector;
+        std::vector<PoseWithCovarianceStamped> robot_poses_vector;
         double source_pose_x, source_pose_y;
         double robot_pose_x, robot_pose_y;
         std::string results_file;
         std::string errors_file;
         std::string path_file;
     
-        nav_msgs::OccupancyGrid map_;                                       //! Map
-        nav_msgs::OccupancyGrid costmap_;                                       //! Map
-        geometry_msgs::PoseWithCovarianceStamped movingPose;        //! Robot pose on the global frame referential
-        geometry_msgs::PoseWithCovarianceStamped current_robot_pose;        //! Robot pose on the global frame referential
-        NavAssistClient mb_ac;                                               //! Move Base Action Server.
+        nav_msgs::msg::OccupancyGrid map_;                                       //! Map
+        nav_msgs::msg::OccupancyGrid costmap_;                                       //! Map
+        PoseWithCovarianceStamped movingPose;        //! Robot pose on the global frame referential
+        PoseWithCovarianceStamped current_robot_pose;        //! Robot pose on the global frame referential
+        NavAssistClient nav_client;                                               //! Move Base Action Server.
 
 
         //Subscriptions
-        ros::Publisher localizationOffset;
-        ros::Subscriber gas_sub_;                                           //! Gas readings subscriber
-        ros::Subscriber wind_sub_;                                          //! Wind readings subscriber
-        ros::Subscriber map_sub_;                                           //! Map subscriber.
-        ros::Subscriber costmap_sub_;                                       //! CostMap subscriber.
-        ros::Subscriber localization_sub_;
-        ros::ServiceClient make_plan_client;
-        tf::TransformListener tf_listener;
+        rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gas_sub_;                                           //! Gas readings subscriber
+        rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr wind_sub_;                                          //! Wind readings subscriber
+        rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;                                           //! Map subscriber.
+        rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_;                                       //! CostMap subscriber.
+        rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localization_sub_;
+        rclcpp::Client<nav_assistant_msgs::srv::MakePlan>::SharedPtr make_plan_client;
+        
+        std::unique_ptr<tf2_ros::Buffer> tf_buffer;
+        std::shared_ptr<tf2_ros::TransformListener> listener;
+
         //tf::MessageFilter<nav_msgs::Odometry> * tf_filter_;
 
         //CallBacks
-        virtual void gasCallback(const olfaction_msgs::gas_sensorPtr& msg)=0;
-        virtual void windCallback(const olfaction_msgs::anemometerPtr& msg)=0;
-        void costmapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-        virtual void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)=0;
-        void localizationCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr &msg);
-        virtual void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result);
-        virtual void goalActiveCallback();
-        virtual void goalFeedbackCallback(const navigation_assistant::nav_assistantFeedbackConstPtr &feedback);
+        virtual void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)=0;
+        virtual void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)=0;
+        void costmapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+        virtual void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)=0;
+        void localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg);
 
-        bool checkGoal(navigation_assistant::nav_assistantGoal * goal);
+        virtual void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result);
+
+        bool checkGoal(const NavAssistant::Goal& goal);
         float get_average_vector(std::vector<float> const &v);
         virtual void save_results_to_file(int result);
 };

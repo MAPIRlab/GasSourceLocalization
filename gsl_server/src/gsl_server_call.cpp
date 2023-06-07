@@ -1,46 +1,47 @@
-#include <ros/ros.h>
-#include <actionlib/client/simple_action_client.h>
-#include <actionlib/client/terminal_state.h>
-#include <gsl_actionserver/gsl_action_msgAction.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include <gsl_actions/action/do_gsl.hpp>
+
+using DoGSL = gsl_actions::action::DoGSL;
 
 int main (int argc, char **argv)
 {
-    ros::init(argc, argv, "Requesting_GSL");
+    rclcpp::init(argc, argv);
 
-    ros::NodeHandle private_nh("~");
+    rclcpp::Node::SharedPtr call_node = std::make_shared<rclcpp::Node>("gsl_call");
+    call_node->declare_parameter<std::string>("method", "surge_cast");
+    std::string method = call_node->get_parameter("method").as_string();
 
-    std::string method;
-    private_nh.param<std::string>("method", method, "surge_cast");
-    // create the action client
-    // true causes the client to spin its own thread
-    actionlib::SimpleActionClient<gsl_actionserver::gsl_action_msgAction> ac("gsl", true);
 
-    ros::Duration(2).sleep();
+    auto action_client = rclcpp_action::create_client<DoGSL>(call_node, "gsl");
 
-    ROS_INFO("Waiting for action server to start.");
-    // wait for the action server to start
 
-    ac.waitForServer(); //will wait for infinite time
+    RCLCPP_INFO(call_node->get_logger(), "Waiting for action server to start.");
+    
+    using namespace std::chrono_literals;
+    while (rclcpp::ok() && !action_client->wait_for_action_server(10s));
 
-    ROS_INFO("Action server started, sending goal.");
-    // send a goal to the action
-
-    // SIMULATE CALL
-    gsl_actionserver::gsl_action_msgGoal goal;
+    RCLCPP_INFO(call_node->get_logger(),"Action server started, sending goal.");
+    DoGSL::Goal goal;
     goal.gsl_method = method;
-    ac.sendGoal(goal);
-
-    //wait for the action to return
-    bool finished_before_timeout = ac.waitForResult();
-
-    if (finished_before_timeout)
+    rclcpp_action::Client<DoGSL>::SendGoalOptions options;
+    
+    
+    bool done = false;
+    options.result_callback = [&done](const rclcpp_action::ClientGoalHandle<DoGSL>::WrappedResult& result)
     {
-        actionlib::SimpleClientGoalState state = ac.getState();
-        ROS_INFO("Action finished: {}",state.toString().c_str());
-    }
-    else
-        ROS_INFO("Action did not finish before the time out.");
+        done = true;
+    };
+    action_client->async_send_goal(goal);
 
-   //exit
+    rclcpp::Rate rate(1);
+    while(!done)
+    {
+        rclcpp::spin_some(call_node);
+        rate.sleep();
+    }
+
+    RCLCPP_INFO(call_node->get_logger(), "GSL finished");
+
     return 0;
 }

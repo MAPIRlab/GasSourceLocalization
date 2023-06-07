@@ -1,6 +1,8 @@
 #include <NQA/NQAQuadtree.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <list>
+#include <set>
 
 namespace NQA{
     typedef Utils::Vector2Int Vector2Int;

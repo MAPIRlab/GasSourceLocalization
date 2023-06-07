@@ -1,4 +1,5 @@
 #include <Utils/Utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 using namespace Utils;
 
@@ -42,14 +43,14 @@ double Utils::logOddsToProbability(double lo){
 }
 
 
-visualization_msgs::Marker Utils::emptyMarker(Vector2 scale){
-    visualization_msgs::Marker points;
+visualization_msgs::msg::Marker Utils::emptyMarker(Vector2 scale, rclcpp::Clock& clock){
+    visualization_msgs::msg::Marker points;
                         points.header.frame_id="map";
-                        points.header.stamp=ros::Time::now();
+                        points.header.stamp=clock.now();
                         points.ns = "cells";
                         points.id = 0;
-                        points.type=visualization_msgs::Marker::POINTS;
-                        points.action=visualization_msgs::Marker::ADD;
+                        points.type=visualization_msgs::msg::Marker::POINTS;
+                        points.action=visualization_msgs::msg::Marker::ADD;
 
                         points.color = valueToColor(0.5, 0, 1, valueColorMode::Linear);
                         points.scale.x=scale.x;
@@ -57,7 +58,7 @@ visualization_msgs::Marker Utils::emptyMarker(Vector2 scale){
     return points;
 }
 
-std_msgs::ColorRGBA Utils::valueToColor(double val, double lowLimit, double highLimit, valueColorMode mode){
+std_msgs::msg::ColorRGBA Utils::valueToColor(double val, double lowLimit, double highLimit, valueColorMode mode){
     double r, g, b;
     double range;
     if(mode == valueColorMode::Logarithmic){
@@ -93,9 +94,9 @@ std_msgs::ColorRGBA Utils::valueToColor(double val, double lowLimit, double high
     return create_color(r,g,b,1);
 }
 
-std_msgs::ColorRGBA Utils::create_color(float r, float g, float b, float a)
+std_msgs::msg::ColorRGBA Utils::create_color(float r, float g, float b, float a)
 {
-    std_msgs::ColorRGBA color;
+    std_msgs::msg::ColorRGBA color;
         color.r=r;
         color.g=g;
         color.b=b;
@@ -103,19 +104,30 @@ std_msgs::ColorRGBA Utils::create_color(float r, float g, float b, float a)
     return color;
 }
 
-geometry_msgs::Pose Utils::compose(geometry_msgs::Pose referenceSystem, geometry_msgs::Pose pose){
-    double theta = tf::getYaw(referenceSystem.orientation);
-    double jones = tf::getYaw(pose.orientation);
-    geometry_msgs::Pose result;
-    result.position.x = referenceSystem.position.x + cos(theta) * pose.position.x -sin(theta) * pose.position.y;
-    result.position.y = referenceSystem.position.y + sin(theta) * pose.position.x +cos(theta) * pose.position.y;
-    result.orientation = tf::createQuaternionMsgFromYaw(theta+jones);
+double Utils::getYaw(const geometry_msgs::msg::Quaternion& quat)
+{
+    tf2::Quaternion tfquat;
+    tf2::fromMsg(quat, tfquat);
+    
+    tf2::Matrix3x3 m(tfquat);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    return yaw;
+}
+
+geometry_msgs::msg::Pose Utils::compose(geometry_msgs::msg::Pose referenceSystem, geometry_msgs::msg::Pose pose){
+    double theta1 = getYaw(referenceSystem.orientation);
+    double theta2 = getYaw(pose.orientation);
+    geometry_msgs::msg::Pose result;
+    result.position.x = referenceSystem.position.x + cos(theta1) * pose.position.x -sin(theta1) * pose.position.y;
+    result.position.y = referenceSystem.position.y + sin(theta1) * pose.position.x +cos(theta1) * pose.position.y;
+    result.orientation = tf2::toMsg(tf2::Quaternion(tf2::Vector3(0,0,1), theta1+theta2));
     return result;
 }
 
-geometry_msgs::Point Utils::rotateVector(geometry_msgs::Point p1, geometry_msgs::Pose ref){
-    double theta = tf::getYaw(ref.orientation);
-    geometry_msgs::Point result;
+geometry_msgs::msg::Point Utils::rotateVector(geometry_msgs::msg::Point p1, geometry_msgs::msg::Pose ref){
+    double theta = getYaw(ref.orientation);
+    geometry_msgs::msg::Point result;
     result.x = std::cos(theta) * p1.x -std::sin(theta) * p1.y;
     result.y = std::sin(theta) * p1.x +std::cos(theta) * p1.y;
     return result;

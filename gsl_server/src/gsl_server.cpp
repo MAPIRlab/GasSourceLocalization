@@ -13,18 +13,16 @@
 int CGSLServer::doSurgeCast()
 {
     spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
-    // Create object implementing Plume Tracking
-    ros::NodeHandle pn_("~");
-    SurgeCastPT pt(&pn_);
+    SurgeCastPT pt;
 
     spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
     //Loop
     spdlog::info(" Staring Plume Tracking Loop");
-    ros::Rate loop_rate(10);
+    rclcpp::Rate loop_rate(10);
     size_t num_iterations = 10;
     size_t iter_i = 0;
-    while(iter_i < num_iterations)
+    while(iter_i < num_iterations && rclcpp::ok())
     {
         // check if search ended
         if (pt.checkSourceFound() != -1)
@@ -33,19 +31,8 @@ int CGSLServer::doSurgeCast()
             return 1;
         }
 
-        //Check if AS is preempted
-        if (as_.isPreemptRequested() || !ros::ok())
-        {
-            spdlog::info(" {}: Preempted", action_name_.c_str());
-            //Cancell the current search
-            pt.cancel_navigation();
-            // set the action state to preempted, and return failure
-            as_.setPreempted();
-            return 0;
-        }
-
         //attend subscriptions
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
 
         //If moving towards a target location, check for gas hits
         if (pt.get_inMotion())
@@ -83,11 +70,10 @@ int CGSLServer::doSurgeCast()
 
 int CGSLServer::doSpiral()
 {
-    ros::NodeHandle nh("~");
-    SpiralSearcher spiral(&nh);
-    ros::Rate loop_rate(10);
+    SpiralSearcher spiral;
+    rclcpp::Rate loop_rate(10);
     bool blocked=false;
-    while(ros::ok()&&spiral.checkSourceFound()==-1)
+    while(rclcpp::ok()&&spiral.checkSourceFound()==-1)
     {
         if (spiral.checkSourceFound() != -1)
         {
@@ -117,7 +103,7 @@ int CGSLServer::doSpiral()
                 spdlog::error("[SPIRAL_SEARCH] Undefined state");
             }
         }
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
         loop_rate.sleep();
     }
     return 0;
@@ -126,18 +112,16 @@ int CGSLServer::doSpiral()
 int CGSLServer::doSurgeSpiral()
 {
     spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
-    // Create object implementing Plume Tracking
-    ros::NodeHandle pn_("~");
-    SurgeSpiralPT pt(&pn_);
+    SurgeSpiralPT pt;
 
     spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
     //Loop
     spdlog::info(" Staring Plume Tracking Loop");
-    ros::Rate loop_rate(10);
+    rclcpp::Rate loop_rate(10);
     size_t num_iterations = 10;
     size_t iter_i = 0;
-    while(iter_i < num_iterations)
+    while(iter_i < num_iterations && rclcpp::ok())
     {
         // check if search ended
         if (pt.checkSourceFound() != -1)
@@ -146,19 +130,8 @@ int CGSLServer::doSurgeSpiral()
             return 1;
         }
 
-        //Check if AS is preempted
-        if (as_.isPreemptRequested() || !ros::ok())
-        {
-            spdlog::info(" {}: Preempted", action_name_.c_str());
-            //Cancell the current search
-            pt.cancel_navigation();
-            // set the action state to preempted, and return failure
-            as_.setPreempted();
-            return 0;
-        }
-
         //attend subscriptions
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
 
         //If moving towards a target location, check for gas hits
         if (pt.get_inMotion())
@@ -197,42 +170,21 @@ int CGSLServer::doSurgeSpiral()
 int CGSLServer::doParticleFilter()
 {
     spdlog::info("[GSL-ParticleFilter] New Action request. Initializing Plume Tracking algorithm.");
-    // Create object implementing Plume Tracking
-    ros::NodeHandle pn_("~");
-    ParticleFilter pt(&pn_);
-
-    double source_poseX;
-    double source_poseY;
-    pn_.param<std::string>("resultsFile", resultsFile, "");
-    pn_.param<double>("source_pose_x", source_poseX, 0.0);
-    pn_.param<double>("source_pose_y", source_poseY, 0.0);
-    spdlog::debug("[GSL-ParticleFilter] inMotion = {}", pt.get_inMotion() ? "true" : "false");
+    ParticleFilter pt;
 
     //Loop
     spdlog::info("[GSL-ParticleFilter] Staring Plume Tracking Loop");
-    ros::Rate loop_rate(10);
+    rclcpp::Rate loop_rate(10);
     size_t num_iterations = 10;
     size_t iter_i = 0;
 
-    while(iter_i < num_iterations)
+    while(rclcpp::ok() && iter_i < num_iterations)
     {
         if(pt.checkSourceFound()!=-1){
             return 1;
         }
 
-        //Check if AS is preempted
-        if (as_.isPreemptRequested() || !ros::ok())
-        {
-            spdlog::info("[GSL-ParticleFilter] {}: Preempted", action_name_.c_str());
-            //Cancel the current search
-            pt.cancel_navigation();
-            // set the action state to preempted, and return failure
-            as_.setPreempted();
-            return 0;
-        }
-    
-        //attend subscriptions
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
 
         //If moving towards a target location, check for gas hits
         if (pt.get_inMotion())
@@ -250,7 +202,7 @@ int CGSLServer::doParticleFilter()
                 break;
             case PT_state::INSPECTION :
                 if(!pt.firstObserv){
-                    visualization_msgs::Marker points=pt.emptyMarker();
+                    visualization_msgs::msg::Marker points=pt.emptyMarker();
                     pt.generateParticles(points);
                     pt.firstObserv=true;
                 }else{
@@ -266,7 +218,7 @@ int CGSLServer::doParticleFilter()
                 break;
             case PT_state::UPWIND_SURGE :
                 if(!pt.firstObserv){
-                    visualization_msgs::Marker points=pt.emptyMarker();
+                    visualization_msgs::msg::Marker points=pt.emptyMarker();
                     pt.generateParticles(points);
                     pt.firstObserv=true;
                 }else{
@@ -305,13 +257,12 @@ int CGSLServer::doParticleFilter()
 int CGSLServer::doGrGSL()
 {
     using namespace GrGSL;
-    ros::NodeHandle nh("~");
-    GrGSL::GrGSL grgsl(&nh);
-    ros::Rate loop_rate(2);
+    GrGSL::GrGSL grgsl;
+    rclcpp::Rate loop_rate(2);
     int sourceFound = -1;
-    double startTime = ros::Time::now().toSec();
+    double startTime = now().seconds();
 
-    while(ros::ok()&&sourceFound==-1 && ros::Time::now().toSec()-startTime<grgsl.max_search_time*1.2)
+    while(rclcpp::ok()&&sourceFound==-1 && now().seconds()-startTime<grgsl.max_search_time*1.2)
     {
         if(!grgsl.get_inMotion()){
             switch(grgsl.getState()){
@@ -333,7 +284,7 @@ int CGSLServer::doGrGSL()
         }
         
         loop_rate.sleep();
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
     }
     return 1;
 }
@@ -341,15 +292,14 @@ int CGSLServer::doGrGSL()
 int CGSLServer::doPMFS()
 {
     using namespace PMFS;
-    ros::NodeHandle nh("~");
-    PMFS_GSL grid(&nh);
-    ros::Rate loop_rate(2);
+    PMFS_GSL grid;
+    rclcpp::Rate loop_rate(2);
     int sourceFound = -1;
-    double startTime = ros::Time::now().toSec();
+    double startTime = now().seconds();
     bool initializationStarted = false;
 
     while(grid.getState() == State::WAITING_FOR_MAP){
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
         loop_rate.sleep();
     }
     
@@ -357,7 +307,7 @@ int CGSLServer::doPMFS()
     
     std::thread renderThread = std::thread(&PMFS_GSL::renderImgui, &grid);
 
-    while(ros::ok()&&sourceFound==-1 && ros::Time::now().toSec()-startTime<grid.max_search_time*1.2)
+    while(rclcpp::ok()&&sourceFound==-1 && now().seconds()-startTime<grid.max_search_time*1.2)
     {
         grid.runSubmitedQueue();
         if(!grid.get_inMotion() && !grid.debugStuff.paused){
@@ -384,7 +334,7 @@ int CGSLServer::doPMFS()
         }
 
         loop_rate.sleep();
-        ros::spinOnce();
+        rclcpp::spin_some(shared_from_this());
     }
     
     grid.finished = true;
@@ -395,59 +345,60 @@ int CGSLServer::doPMFS()
 //=======================================================
 // Action Server Callback when Goal is received (START!)
 //=======================================================
-void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &goal)
+void CGSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
 {
     int res;
 
     //1. Start the localization of the gas source
 
-    if ( goal->gsl_method == "surge_cast" )
+    if ( goal_handle->get_goal()->gsl_method == "surge_cast" )
     {
         res = doSurgeCast();
     }
-    else if(goal->gsl_method == "spiral"){
+    else if(goal_handle->get_goal()->gsl_method == "spiral"){
         res = doSpiral();
     }
-    else if(goal->gsl_method == "surge_spiral"){
+    else if(goal_handle->get_goal()->gsl_method == "surge_spiral"){
         res = doSurgeSpiral();
     }
-    else if(goal->gsl_method == "particle_filter"){
+    else if(goal_handle->get_goal()->gsl_method == "particle_filter"){
         res=doParticleFilter();
     }
-    else if(goal->gsl_method == "GrGSL"){
+    else if(goal_handle->get_goal()->gsl_method == "GrGSL"){
         res=doGrGSL();
     }
-    else if(goal->gsl_method == "PMFS"){
+    else if(goal_handle->get_goal()->gsl_method == "PMFS"){
         res=doPMFS();
     }
     else
-        spdlog::error("[GSL_server] Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal->gsl_method.c_str());
+        spdlog::error("[GSL_server] Invalid GSL goal_handle->get_goal()->gsl_method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal_handle->get_goal()->gsl_method.c_str());
 
 
     //2. Return result
     // res: -1(fail) 0(cancelled) 1(sucess)
+    auto result = std::make_shared<DoGSL::Result>();
     if (res == 1) // Completed
     {
-        result_.success = 1;
+        result->success = 1;
         spdlog::info("[GSL_server]{}: I found the emission source! ", action_name_.c_str());
         // set the action state to succeeded
-        as_.setSucceeded(result_);
+        goal_handle->succeed(result);
     }
     else if (res==0)  // Canceled/Preempted by user?
     {
-        result_.success = 0;
+        result->success = 0;
         spdlog::info("[GSL_server] {}: Action cancelled/preemted", action_name_.c_str());
         // set the action state to succeeded (end)
-        as_.setPreempted(result_);
+        goal_handle->succeed(result);
     }
     else //failure (-1)
     {
-        result_.success = 0;
+        result->success = 0;
         spdlog::info("[GSL_server] {}: Couldn't find the gas source! SORRY!", action_name_.c_str());
         // set the action state to succeeded (end)
-        as_.setSucceeded(result_);
+        goal_handle->succeed(result);
     }
-    ros::shutdown();
+    rclcpp::shutdown();
 }
 
 //===================================================================================
@@ -456,12 +407,12 @@ void CGSLServer::executeCB(const gsl_actionserver::gsl_action_msgGoalConstPtr &g
 int main(int argc, char** argv)
 {
     spdlog::set_pattern("[%^%l%$] (%T) [GSL] %v");
-    ros::init(argc,argv,"gsl_ac");
+    rclcpp::init(argc,argv);
 
-    CGSLServer gsl_node("gsl");
+    CGSLServer::SharedPtr gsl_node = std::make_shared<CGSLServer>("gsl");
     spdlog::info("[GSL_server] GSL action server is ready for action!...");
 
-    ros::spin();
+    rclcpp::spin(gsl_node);
 
     return 0;
 }

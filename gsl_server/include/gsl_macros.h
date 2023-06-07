@@ -1,7 +1,7 @@
 #pragma once
 #include <spdlog/spdlog.h>
-#include <spdlog/fmt/bundled/color.h>
-#include <spdlog/fmt/bundled/format.h>
+#include <fmt/color.h>
+#include <fmt/format.h>
 #include <signal.h>
 
 #ifdef GSL_DEBUG

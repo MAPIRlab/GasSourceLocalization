@@ -1,9 +1,9 @@
 #pragma once
 
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <geometry_msgs/Quaternion.h>
-#include <tf/tf.h>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <geometry_msgs/msg/quaternion.hpp>
+#include <geometry_msgs/msg/pose.hpp>
 #include <random>
 
 #include <Utils/Vector2.h>
@@ -12,20 +12,22 @@
 
 #include <eigen3/Eigen/Dense>
 namespace Utils{
-    visualization_msgs::Marker emptyMarker(Vector2 scale);
+    visualization_msgs::msg::Marker emptyMarker(Vector2 scale, rclcpp::Clock& clock);
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);
     double clamp(double val, double min, double max);
     
     enum valueColorMode {Linear, Logarithmic};
-    std_msgs::ColorRGBA valueToColor(double val, double low, double high, valueColorMode mode);
-    std_msgs::ColorRGBA create_color(float r, float g, float b, float a);
+    std_msgs::msg::ColorRGBA valueToColor(double val, double low, double high, valueColorMode mode);
+    std_msgs::msg::ColorRGBA create_color(float r, float g, float b, float a);
     double evaluate1DGaussian(double distance, double sigma);
     double evaluate2DGaussian(const Vector2& sampleOffset, const Vector2& sigma, float distributionRotation);
     double logOddsToProbability(double l);
 
-    geometry_msgs::Pose compose(geometry_msgs::Pose referenceSystem, geometry_msgs::Pose pose);
-    geometry_msgs::Point rotateVector(geometry_msgs::Point vector, geometry_msgs::Pose reference);
+    geometry_msgs::msg::Pose compose(geometry_msgs::msg::Pose referenceSystem, geometry_msgs::msg::Pose pose);
+    geometry_msgs::msg::Point rotateVector(geometry_msgs::msg::Point vector, geometry_msgs::msg::Pose reference);
+
+    double getYaw(const geometry_msgs::msg::Quaternion& quat);
 
     double randomFromGaussian(double mean, double stdev);
     double uniformRandom(double min, double max);

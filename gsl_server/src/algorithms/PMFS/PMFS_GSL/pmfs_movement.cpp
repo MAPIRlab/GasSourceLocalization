@@ -7,7 +7,7 @@ namespace PMFS{
 //----------------
 
 void PMFS_GSL::cancel_navigation(bool succeeded){
-    mb_ac.cancelAllGoals();               //Cancel current navigations
+    nav_client.cancelAllGoals();               //Cancel current navigations
     inMotion = false;
 
     //Start a new measurement-phase while standing
@@ -96,7 +96,7 @@ void PMFS_GSL::setGoal(){
 void PMFS_GSL::moveTo(navigation_assistant::nav_assistantGoal goal){
     
     inMotion=true;
-    mb_ac.sendGoal(goal, std::bind(&PMFS_GSL::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&PMFS_GSL::goalActiveCallback, this), std::bind(&PMFS_GSL::goalFeedbackCallback, this, std::placeholders::_1));
+    nav_client.sendGoal(goal, std::bind(&PMFS_GSL::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&PMFS_GSL::goalActiveCallback, this), std::bind(&PMFS_GSL::goalFeedbackCallback, this, std::placeholders::_1));
 
     currentPosIndex=coordinatesToIndex(goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
     
