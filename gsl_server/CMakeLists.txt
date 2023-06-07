@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(gsl_actionserver)
+project(gsl_server)
 set(CMAKE_BUILD_TYPE "None") 
 set(CMAKE_CXX_FLAGS "-std=c++17 -fopenmp -g ${CMAKE_CXX_FLAGS}")
 
@@ -54,60 +54,31 @@ endif(GSL_DEBUG)
 
 
 
+#ament packages
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_action REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(olfaction_msgs REQUIRED)
+find_package(gmrf_wind_mapping REQUIRED)
+find_package(navigation_assistant REQUIRED)
+find_package(gsl_actions REQUIRED)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-
-find_package(
-  catkin REQUIRED COMPONENTS
-    roscpp
-    std_msgs
-    sensor_msgs
-    genmsg
-    actionlib_msgs
-    actionlib
-    nav_msgs
-    move_base
-    tf
-    )
-    
-## is used, also find other catkin packages
-## Generate actions in the 'action' folder
-add_action_files(
-  DIRECTORY action
-  FILES
-  gsl_action_msg.action
-)
-  
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  actionlib_msgs std_msgs sensor_msgs # Or other packages containing msgs
-)
 
 
 if(USE_GADEN)
-  add_definitions(-DUSE_GADEN)
-  set(CONDITIONAL_GADEN_PLAYER "gaden_player")  
+add_definitions(-DUSE_GADEN)
+find_package(gaden_player REQUIRED)
 endif(USE_GADEN)
-  set(CONDITIONAL_GADEN_PLAYER "")  
-
-
-catkin_package(
-  DEPENDS CATKIN
-  CATKIN_DEPENDS gmrf_wind_mapping olfaction_msgs ${CONDITIONAL_GADEN_PLAYER}
-)
+set(CONDITIONAL_GADEN_PLAYER "")  
 
 
 
 
-
-
-
-
-## Find packages
-find_package(OpenCV)
-add_subdirectory(third_party/spdlog)
+#other stuff
+find_package(spdlog REQUIRED)
+find_package(OpenCV REQUIRED)
 
 if(USE_GUI)
   add_subdirectory(third_party/glfw)
@@ -123,13 +94,11 @@ endif(USE_GUI)
 include_directories(
   include
   Utils
-  ${catkin_INCLUDE_DIRS}
   
   third_party/imgui
   third_party/imgui/backends
 
   third_party/implot
-  third_party/spdlog/include
 )
 
 ###########
@@ -186,19 +155,31 @@ set(SOURCES_node
 
 add_executable(gsl_actionserver_node ${SOURCES_node})
 add_executable(gsl_actionserver_call src/gsl_server_call.cpp)
-add_dependencies(gsl_actionserver_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} spdlog ${CONDITIONAL_GLFW})
-add_dependencies(gsl_actionserver_call ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_dependencies(gsl_actionserver_node ${CONDITIONAL_GLFW})
+
+ament_target_dependencies( gsl_actionserver_node
+    rclcpp
+    rclcpp_action
+    tf2
+    tf2_ros
+    tf2_geometry_msgs
+    olfaction_msgs
+    gmrf_wind_mapping
+    navigation_assistant
+    gsl_actions
+)
+
+ament_target_dependencies( gsl_actionserver_call
+    rclcpp
+    rclcpp_action
+    gsl_actions
+)
 
 ###########
 #LINK
 ###########
-target_link_libraries(gsl_actionserver_call
-  ${catkin_LIBRARIES}
-)
-
 target_link_libraries(gsl_actionserver_node  
-  ${catkin_LIBRARIES}
   ${OpenCV_LIBS}
   spdlog::spdlog
   ${CMAKE_DL_LIBS}
@@ -213,3 +194,10 @@ if(USE_GUI)
   )
 endif(USE_GUI)
 
+
+install(
+  TARGETS gsl_actionserver_node  gsl_actionserver_call
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+ament_package()
