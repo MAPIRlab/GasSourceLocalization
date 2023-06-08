@@ -4,19 +4,18 @@
 #include <fstream>      // std::ofstream
 #include <iostream>
 
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 #include <algorithms/gsl_algorithm.h>
 
-typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
 enum class SPIRAL_state {WAITING_FOR_MAP, STOP_AND_MEASURE, SPIRAL};
 
 class SpiralSearcher:public GSLAlgorithm
 {   
 public:
 
-    SpiralSearcher(ros::NodeHandle *nh);
+    SpiralSearcher(std::shared_ptr<rclcpp::Node> _node);
     ~SpiralSearcher();
 
     //void checkState();
@@ -28,21 +27,21 @@ public:
     double fRand(double fMin, double fMax);
     double getSumOfLocalMaxima(std::vector<std::vector<double> > const &v);
     //movement functions
-    geometry_msgs::PoseStamped get_random_pose_environment();
+    NavAssistant::Goal get_random_pose_environment();
     void setRandomGoal();
     void resetSpiral();
-    navigation_assistant::nav_assistantGoal nextGoalSpiral(geometry_msgs::Pose initial);
+    NavAssistant::Goal nextGoalSpiral(Pose initial);
     bool doSpiral();
 
     SPIRAL_state getPreviousState();
     SPIRAL_state getCurrentState();
     double getPI();
-
-    void save_results_to_file(int result);
     
 private:
     SPIRAL_state current_state;
     SPIRAL_state previous_state;
+
+    void declareParameters() override;
 
     //Variables for controlling when to reset spiral
     double Kmu; //constants
@@ -52,7 +51,7 @@ private:
 
     double intervalLength; //divides the stop-and-measure into smaller intervals (used to calculate the PI)
     int currentInterval; //index 
-    ros::Time lastInterval; //when did the last interval end
+    rclcpp::Time lastInterval; //when did the last interval end
     
     double previousPI;  //if new PI is better than this, we consider that a hit
     double minPI;   //used to reset the PI after a large number of misses
@@ -60,7 +59,7 @@ private:
     int spiral_iter;
     
     //Stop_and_measure
-    ros::Time time_stopped;                                             //! Used to measure while robot is stopped
+    rclcpp::Time time_stopped;                                             //! Used to measure while robot is stopped
     double average_concentration;
     std::vector<std::vector<double> > stop_and_measure_gas_v;
 
@@ -72,7 +71,7 @@ private:
     //-------------------
     // CallBack functions
     //-------------------
-    void gasCallback(const olfaction_msgs::gas_sensorPtr& msg) override;
-    void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg) override;
-    void windCallback(const olfaction_msgs::anemometerPtr& msg) override;
+    void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
+    void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
+    void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
 };

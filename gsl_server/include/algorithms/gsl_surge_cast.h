@@ -14,7 +14,7 @@ class SurgeCastPT:public PlumeTracking
 {
 
 public:
-    SurgeCastPT(ros::NodeHandle *nh);
+    SurgeCastPT(std::shared_ptr<rclcpp::Node> _node);
     ~SurgeCastPT();
 
     void checkState() override;                  //Check gas/wind to see if a state transition is necessary

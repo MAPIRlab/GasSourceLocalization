@@ -11,8 +11,8 @@ Cell::Cell(bool _free, double _weight){
 
 Cell::~Cell(){}
 
-GrGSL::GrGSL(ros::NodeHandle *nh) :
-    GSLAlgorithm(nh)
+GrGSL::GrGSL(std::shared_ptr<rclcpp::Node> _node) :
+    GSLAlgorithm(_node)
 {
 
     // Load Parameters
@@ -27,8 +27,8 @@ GrGSL::GrGSL(ros::NodeHandle *nh) :
     wind_sub_ = nh->subscribe(anemometer_topic,1,&GrGSL::windCallback, this);
     map_sub_ = nh->subscribe(map_topic, 1, &GrGSL::mapCallback, this);
 
-    probability_markers = nh->advertise<visualization_msgs::Marker>("probability_markers", 10);
-    estimation_markers = nh->advertise<visualization_msgs::Marker>("estimation_markers", 10);
+    probability_markers = nh->advertise<rMarker>("probability_markers", 10);
+    estimation_markers = nh->advertise<rMarker>("estimation_markers", 10);
     gas_type_pub = nh->advertise<std_msgs::String>("gas_type", 10);
 
     // Init State
@@ -58,7 +58,7 @@ GrGSL::GrGSL(ros::NodeHandle *nh) :
 
     
     nh->param<double>("markers_height", markers_height, 0);
-	ros::NodeHandle n;
+	rclcpp::NodeHandle n;
     clientW = n.serviceClient<gmrf_wind_mapping::WindEstimation>("/WindEstimation");
     exploredCells=0;
 }
@@ -81,7 +81,7 @@ void GrGSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     
     //wait until we know where the robot is
     //I know this looks wrong, but the way ros callbacks block (or dont) the execution is really counterintuitive, so it will actually work
-    ros::Rate rate(1);
+    rclcpp::Rate rate(1);
     while(robot_poses_vector.size()==0){
         rate.sleep();
     }
@@ -160,7 +160,7 @@ void GrGSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     normalizeWeights(cells);
     //Start the fun!!
     current_state=State::EXPLORATION;
-    start_time = ros::Time::now();     //start measuring time
+    start_time = rclcpp::Time::now();     //start measuring time
     robot_poses_vector.clear();         //start measuring distance
     inExecution = true;
     spdlog::warn("STARTING THE SEARCH --> WAITING FOR GAS");
@@ -246,7 +246,7 @@ void GrGSL::goalDoneCallback(const actionlib::SimpleClientGoalState &state, cons
 void GrGSL::getGasWindObservations()
 {
 
-    if( (ros::Time::now() - time_stopped).toSec() >= stop_and_measure_time )
+    if( (rclcpp::Time::now() - time_stopped).toSec() >= stop_and_measure_time )
     {
         //Get averaged values of the observations taken while standing
         //Wind direction is reported as DownWind in the map frame_id
@@ -543,7 +543,7 @@ void GrGSL::cancel_navigation(){
     stop_and_measure_gas_v.clear();
     stop_and_measure_windS_v.clear();
     stop_and_measure_windD_v.clear();
-    time_stopped = ros::Time::now();    //Start timer for initial wind measurement
+    time_stopped = rclcpp::Time::now();    //Start timer for initial wind measurement
     
     previous_state = current_state;
     current_state=State::STOP_AND_MEASURE;
@@ -574,7 +574,7 @@ void GrGSL::updateSets(){
 void GrGSL::setGoal(){
     updateSets();
 
-    navigation_assistant::nav_assistantGoal goal;
+    NavAssistant::Goal goal;
     int i=-1,j=-1;
     if(infoTaxis){
         //Infotactic navigation
@@ -583,12 +583,12 @@ void GrGSL::setGoal(){
         std::mutex mtx;
         double ent=-100;
         double maxDist = 0;
-        ros::Time tstart = ros::Time::now();
+        rclcpp::Time tstart = rclcpp::Time::now();
         if(!wind.empty()){
             #pragma omp parallel for
             for (int index =0; index<wind.size(); index++){
                 int r=wind[index].i; int c=wind[index].j;
-                navigation_assistant::nav_assistantGoal tempGoal=indexToGoal(r,c);
+                NavAssistant::Goal tempGoal=indexToGoal(r,c);
                 if(checkGoal(&tempGoal)){
                     double entAux=informationGain(wind[index]);
                     mtx.lock();
@@ -606,7 +606,7 @@ void GrGSL::setGoal(){
             spdlog::error("Set of open nodes is empty! Are you certain the source is reachable?");
         }
         computingInfoGain=false;
-        double ti = (ros::Time::now() - tstart).toSec();
+        double ti = (rclcpp::Time::now() - tstart).toSec();
         std::cout<<"Time infotaxis: "<<ti<<"\n";
         std::cout<<"Number of considered cells: "<<wind.size()<<"\n";
     }
@@ -621,8 +621,8 @@ void GrGSL::setGoal(){
                 if(probability(p)>max 
                 || (probability(p)==max && cells[p.x][p.y].distance>maxDist)){
 
-                    navigation_assistant::nav_assistantGoal tempGoal=indexToGoal(p.x, p.y);
-                    if(checkGoal(&tempGoal))
+                    NavAssistant::Goal tempGoal=indexToGoal(p.x, p.y);
+                    if(checkGoal(tempGoal))
                     {
                         i=p.x; j=p.y;
                         max=probability(p);
@@ -642,7 +642,7 @@ void GrGSL::setGoal(){
     moveTo(goal);
 }
 
-void GrGSL::moveTo(navigation_assistant::nav_assistantGoal goal){
+void GrGSL::moveTo(NavAssistant::Goal goal){
     
     inMotion=true;
 
@@ -671,10 +671,10 @@ void GrGSL::moveTo(navigation_assistant::nav_assistantGoal goal){
     }
 }
 
-navigation_assistant::nav_assistantGoal GrGSL::indexToGoal(int i, int j){
-    navigation_assistant::nav_assistantGoal goal;
+NavAssistant::Goal GrGSL::indexToGoal(int i, int j){
+    NavAssistant::Goal goal;
     goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = ros::Time::now();
+    goal.target_pose.header.stamp = rclcpp::Time::now();
 
     Eigen::Vector2d pos = indexToCoordinates(i,j);
     Eigen::Vector2d coordR = indexToCoordinates(currentPosIndex.x,currentPosIndex.y);
@@ -758,7 +758,7 @@ double GrGSL::probability (const Vector2Int& indices){
 }
 
 void GrGSL::showWeights(){
-    visualization_msgs::Marker points=emptyMarker();
+    rMarker points=emptyMarker();
     
     for(int a=0;a<cells.size();a++){
         for(int b=0;b<cells[0].size();b++){
@@ -799,14 +799,14 @@ double GrGSL::gaussian(double distance, double sigma){
         /(sigma*sqrt(2*M_PI));
 }
 
-visualization_msgs::Marker GrGSL::emptyMarker(){
-    visualization_msgs::Marker points;
+rMarker GrGSL::emptyMarker(){
+    rMarker points;
                         points.header.frame_id="map";
-                        points.header.stamp=ros::Time::now();
+                        points.header.stamp=rclcpp::Time::now();
                         points.ns = "cells";
                         points.id = 0;
-                        points.type=visualization_msgs::Marker::POINTS;
-                        points.action=visualization_msgs::Marker::ADD;
+                        points.type=rMarker::POINTS;
+                        points.action=rMarker::ADD;
 
                         Eigen::Vector3d colour = valueToColor(1.0/numCells, 0, 1);
                         points.color.r = colour[0];
@@ -900,7 +900,7 @@ double GrGSL::varianceSourcePosition(){
 int GrGSL::checkSourceFound(){
 
     if(current_state!=State::WAITING_FOR_MAP){
-        ros::Duration time_spent = ros::Time::now() - start_time;
+        rclcpp::Duration time_spent = rclcpp::Time::now() - start_time;
         if(time_spent.toSec()>max_search_time){
             Eigen::Vector2d locationAll = expectedValueSource(1);
             Eigen::Vector2d location = expectedValueSource(0.05);
@@ -953,7 +953,7 @@ void GrGSL::save_results_to_file(int result, double i, double j, double allI, do
     mb_ac.cancelAllGoals();
 
     //1. Search time.
-    ros::Duration time_spent = ros::Time::now() - start_time;
+    rclcpp::Duration time_spent = rclcpp::Time::now() - start_time;
     double search_t = time_spent.toSec();
 
     std::string str = fmt::format("RESULT IS: Success={}, Search_t={} \n", result, search_t);

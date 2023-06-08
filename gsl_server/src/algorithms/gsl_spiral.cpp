@@ -1,26 +1,14 @@
 #include "algorithms/gsl_spiral.h"
 
+using namespace std::placeholders;
 
-SpiralSearcher::SpiralSearcher(ros::NodeHandle *nh) :
-    GSLAlgorithm(nh)
+SpiralSearcher::SpiralSearcher(std::shared_ptr<rclcpp::Node> _node) :
+    GSLAlgorithm(_node)
 {
-    
-    // Load Parameters
-    //-----------------
-    nh->param<double>("minPI", minPI, 0.1);
-    nh->param<double>("stop_and_measure_time", stop_and_measure_time, 1.0);
-   
-    nh->param<double>("initial_step", initStep, 0.6);
-    nh->param<double>("step_increment", step_increment, 0.3);
-    nh->param<double>("Kmu", Kmu, 0.5);
-    nh->param<double>("Kp", Kp, 1);
-    nh->param<double>("intervalLength", intervalLength, 0.5);
-
-    nh->param<double>("gas_present_thr", gas_present_thr, 1);
     // Subscribers
     //------------
-    gas_sub_ = nh_->subscribe(enose_topic,1, &SpiralSearcher::gasCallback, this);
-    map_sub_ = nh_->subscribe(map_topic, 1,  &SpiralSearcher::mapCallback, this);
+    gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic,1, std::bind(&SpiralSearcher::gasCallback, this, _1) );
+    map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, 1,  std::bind(&SpiralSearcher::mapCallback, this, _1) );
 
     // Init State
     previous_state = SPIRAL_state::WAITING_FOR_MAP;
@@ -38,6 +26,21 @@ SpiralSearcher::SpiralSearcher(ros::NodeHandle *nh) :
     spiral_iter=1;
 }
 
+void SpiralSearcher::declareParameters()
+{
+    GSLAlgorithm::declareParameters();
+    minPI = node->declare_parameter<double>("minPI", 0.1);
+    stop_and_measure_time = node->declare_parameter<double>("stop_and_measure_time", 1.0);
+   
+    initStep = node->declare_parameter<double>("initial_step", 0.6);
+    step_increment = node->declare_parameter<double>("step_increment", 0.3);
+    Kmu = node->declare_parameter<double>("Kmu", 0.5);
+    Kp = node->declare_parameter<double>("Kp", 1);
+    intervalLength = node->declare_parameter<double>("intervalLength", 0.5);
+
+    gas_present_thr = node->declare_parameter<double>("gas_present_thr", 1);
+}
+
 SpiralSearcher::~SpiralSearcher(){}
 
 //-------------------------
@@ -46,7 +49,7 @@ SpiralSearcher::~SpiralSearcher(){}
 
 //-------------------------
 
-void SpiralSearcher::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
+void SpiralSearcher::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
 {
     //Only if we are in the Stop_and_Measure
     if (this->current_state == SPIRAL_state::STOP_AND_MEASURE)
@@ -55,7 +58,7 @@ void SpiralSearcher::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
     }
 }
 
-void SpiralSearcher::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+void SpiralSearcher::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
     if (verbose) spdlog::info("[SPIRAL_SEARCH] - {} - Got the map of the environment!", __FUNCTION__);
     //ROS convention is to consider cell [0,0] as the lower-left corner (see http://docs.ros.org/api/nav_msgs/html/msg/MapMetaData.html)
@@ -71,14 +74,14 @@ void SpiralSearcher::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     resetSpiral();
     previous_state = current_state;
     current_state = SPIRAL_state::SPIRAL;
-    start_time = ros::Time::now();     //start measuring time
+    start_time = node->now();     //start measuring time
     robot_poses_vector.clear();         //start measuring distance
     inExecution = true;
     inMotion = false;
     spdlog::warn("[SPIRAL_SEARCH] STARTING THE SEARCH --> NEW SPIRAL");
 }
 
-void SpiralSearcher::windCallback(const olfaction_msgs::anemometerPtr& msg)
+void SpiralSearcher::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
 {
     
 }
@@ -93,7 +96,7 @@ void SpiralSearcher::windCallback(const olfaction_msgs::anemometerPtr& msg)
 //Then switch to corresponding search state
 void SpiralSearcher::getGasObservations()
 {
-    if( (ros::Time::now() - time_stopped).toSec() > stop_and_measure_time )
+    if( (node->now() - time_stopped).seconds() > stop_and_measure_time )
     {
         //Get averaged values of the observations taken while standing
         average_concentration = get_average_vector(stop_and_measure_gas_v);
@@ -130,9 +133,9 @@ void SpiralSearcher::getGasObservations()
             }
         }
     }
-    else if( (ros::Time::now() - lastInterval).toSec() > intervalLength )
+    else if( (node->now() - lastInterval).seconds() > intervalLength )
     {
-        lastInterval=ros::Time::now();
+        lastInterval=node->now();
         stop_and_measure_gas_v.push_back(std::vector<double>());
         currentInterval++;
     }
@@ -148,10 +151,10 @@ double SpiralSearcher::getSumOfLocalMaxima(std::vector<std::vector<double> > con
 }
 
 double SpiralSearcher::getPI(){
-        double P = getSumOfLocalMaxima(stop_and_measure_gas_v);
+    double P = getSumOfLocalMaxima(stop_and_measure_gas_v);
 
-        //Proximity Index (used to determine if we are getting closer to the source)
-        return Kmu*average_concentration+Kp*P*intervalLength;
+    //Proximity Index (used to determine if we are getting closer to the source)
+    return Kmu*average_concentration+Kp*P*intervalLength;
 }
 //----------------------
 
@@ -161,13 +164,13 @@ double SpiralSearcher::getPI(){
   
 void SpiralSearcher::cancelNavigation()
 {
-    mb_ac.cancelAllGoals();               //Cancel current navigations
+    nav_client->async_cancel_all_goals();               //Cancel current navigations
     inMotion = false;
 
     //Start a new measurement-phase while standing
     stop_and_measure_gas_v.clear();
     stop_and_measure_gas_v.push_back(std::vector<double>());
-    time_stopped = ros::Time::now();    //Start timer for initial measurement
+    time_stopped = node->now();    //Start timer for initial measurement
     lastInterval = time_stopped;
     currentInterval=0;
 }
@@ -177,16 +180,16 @@ void SpiralSearcher::resetSpiral(){
     spiral_iter=-1;
 }
 
-navigation_assistant::nav_assistantGoal SpiralSearcher::nextGoalSpiral(geometry_msgs::Pose initial){
+NavAssistant::Goal SpiralSearcher::nextGoalSpiral(Pose initial){
 
-    double yaw=tf::getYaw(initial.orientation);
-    navigation_assistant::nav_assistantGoal goal;
+    double yaw=Utils::getYaw(initial.orientation);
+    NavAssistant::Goal goal;
     goal.target_pose.header.frame_id="map";
-    goal.target_pose.header.stamp=ros::Time::now();
+    goal.target_pose.header.stamp=node->now();
     if(spiral_iter==-1){
         goal.target_pose.pose.position.x=initial.position.x+step*cos(yaw)-step*sin(yaw);
         goal.target_pose.pose.position.y=initial.position.y+step*sin(yaw)+step*cos(yaw);
-        goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw+M_PI/4);
+        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw+M_PI/4);
         spiral_iter=1;
     }else{
         if(spiral_iter%2==0){
@@ -194,7 +197,7 @@ navigation_assistant::nav_assistantGoal SpiralSearcher::nextGoalSpiral(geometry_
         }
         goal.target_pose.pose.position.x=initial.position.x-(-step)*sin(yaw);
         goal.target_pose.pose.position.y=initial.position.y+(-step)*cos(yaw);
-        goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw-M_PI/2);
+        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw-M_PI/2);
         spiral_iter++;
     }
     
@@ -203,10 +206,10 @@ navigation_assistant::nav_assistantGoal SpiralSearcher::nextGoalSpiral(geometry_
 }
 
 bool SpiralSearcher::doSpiral(){
-    navigation_assistant::nav_assistantGoal goal = nextGoalSpiral(current_robot_pose.pose.pose);
+    NavAssistant::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
     int i=0;
     bool blocked=false;
-    while(ros::ok()&&!checkGoal(&goal)){
+    while(rclcpp::ok()&&!checkGoal(goal)){
         if(verbose) spdlog::info("[SPIRAL_SEARCH] SKIPPING NEXT POINT IN SPIRAL (OBSTACLES)");
         goal=nextGoalSpiral(goal.target_pose.pose);
         i++;
@@ -221,144 +224,49 @@ bool SpiralSearcher::doSpiral(){
         }
     }
     inMotion=true;
-    mb_ac.sendGoal(goal, std::bind(&SpiralSearcher::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SpiralSearcher::goalActiveCallback, this), std::bind(&SpiralSearcher::goalFeedbackCallback, this, std::placeholders::_1));
+    sendGoal(goal);
 
     return true;
 }
 
-geometry_msgs::PoseStamped SpiralSearcher::get_random_pose_environment()
+NavAssistant::Goal SpiralSearcher::get_random_pose_environment()
 {
     bool valid_pose = false;
-    geometry_msgs::PoseStamped p;
-    p.header.frame_id = "map";
-    p.header.stamp = ros::Time::now();
+
+    NavAssistant::Goal goal;
+    goal.target_pose.header.frame_id = "map";
+    goal.target_pose.header.stamp = node->now();
     double randomPoseDistance=1;
     while (!valid_pose)
     {
         //random pose in the vecinity of the robot
-        p.pose.position.x = fRand(current_robot_pose.pose.pose.position.x-randomPoseDistance, current_robot_pose.pose.pose.position.x+randomPoseDistance);
-        p.pose.position.y = fRand(current_robot_pose.pose.pose.position.y-randomPoseDistance, current_robot_pose.pose.pose.position.y+randomPoseDistance);
-        p.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+        goal.target_pose.pose.position.x = fRand(current_robot_pose.pose.pose.position.x-randomPoseDistance, current_robot_pose.pose.pose.position.x+randomPoseDistance);
+        goal.target_pose.pose.position.y = fRand(current_robot_pose.pose.pose.position.x-randomPoseDistance, current_robot_pose.pose.pose.position.x+randomPoseDistance);
+        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
         randomPoseDistance+=0.5;
         //check pose validity
-        nav_msgs::GetPlan mb_srv;
-        geometry_msgs::PoseStamped start_point;
-        start_point.header.frame_id = "map";
-        start_point.header.stamp = ros::Time::now();
-        start_point.pose = current_robot_pose.pose.pose;
-        mb_srv.request.start = start_point;
-        mb_srv.request.goal = p;
-
-        //get path from robot to candidate.
-        if( make_plan_client.call(mb_srv) && mb_srv.response.plan.poses.size())
+        if( checkGoal(goal))
             valid_pose = true;
-        else
-            if (verbose) spdlog::warn("[SPIRAL_SEARCH] invalid random pose=[{:.2}, {:.2}, {:.2}]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
+        else if (verbose) 
+            spdlog::warn("[SPIRAL_SEARCH] invalid random pose=[{:.2}, {:.2}, {:.2}]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y, goal.target_pose.pose.orientation.z);
     }
    
     //show content
-    if (verbose) spdlog::info("[SPIRAL_SEARCH] Random Goal pose =[{:.2}, {:.2}, {:.2}]", p.pose.position.x, p.pose.position.y, p.pose.orientation.z);
-    return p;
+    if (verbose) 
+        spdlog::info("[SPIRAL_SEARCH] Random Goal pose =[{:.2}, {:.2}, {:.2}]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y, goal.target_pose.pose.orientation.z);
+    return goal;
 }
 
 //Set a random goal within the map (EXPLORATION)
 void SpiralSearcher::setRandomGoal()
 {
-    navigation_assistant::nav_assistantGoal goal;
-    goal.target_pose = get_random_pose_environment();
+    NavAssistant::Goal goal = get_random_pose_environment();
 
     //Send goal to the Move_Base node for execution
-    if (verbose) spdlog::info("[SPIRAL_SEARCH] - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, std::bind(&SpiralSearcher::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SpiralSearcher::goalActiveCallback, this), std::bind(&SpiralSearcher::goalFeedbackCallback, this, std::placeholders::_1));
+    if (verbose) 
+        spdlog::info("[SPIRAL_SEARCH] - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    sendGoal(goal);
     inMotion = true;
-}
-
-void SpiralSearcher::save_results_to_file(int result)
-{
-    mb_ac.cancelAllGoals();
-
-    //1. Search time.
-    ros::Duration time_spent = ros::Time::now() - start_time;
-    double search_t = time_spent.toSec();
-
-
-    // 2. Search distance
-    // Get distance from array of path followed (vector of PoseWithCovarianceStamped
-    double search_d;
-    double Ax, Ay, d = 0;
-
-    for (size_t h=1; h<robot_poses_vector.size(); h++)
-    {
-        Ax = robot_poses_vector[h-1].pose.pose.position.x - robot_poses_vector[h].pose.pose.position.x;
-        Ay = robot_poses_vector[h-1].pose.pose.position.y - robot_poses_vector[h].pose.pose.position.y;
-        d += sqrt( pow(Ax,2) + pow(Ay,2) );
-    }
-    search_d = d;
-
-
-
-    // 3. Navigation distance (from robot to source)
-    // Estimate the distances by getting a navigation path from Robot initial pose to Source points in the map
-    double nav_d;
-    geometry_msgs::PoseStamped source_pose;
-    source_pose.header.frame_id = "map";
-    source_pose.header.stamp = ros::Time::now();
-    source_pose.pose.position.x = source_pose_x;
-    source_pose.pose.position.y = source_pose_y;
-
-    // Set MoveBase srv to estimate the distances
-    mb_ac.cancelAllGoals();
-    nav_msgs::GetPlan mb_srv;
-    mb_srv.request.start.header.frame_id = "map";
-    mb_srv.request.start.header.stamp  = ros::Time::now();
-    mb_srv.request.start.pose = robot_poses_vector[0].pose.pose;
-    mb_srv.request.goal = source_pose;
-
-    // Get path
-    if( !make_plan_client.call(mb_srv) )
-    {
-        spdlog::error(" Unable to GetPath from MoveBase");
-        nav_d = -1;
-    }
-    else
-    {
-        // get distance [m] from vector<pose>
-        double Ax, Ay, d = 0;
-        for (size_t h=0; h<mb_srv.response.plan.poses.size(); h++)
-        {
-            if (h==0)
-            {
-                Ax = mb_srv.request.start.pose.position.x - mb_srv.response.plan.poses[h].pose.position.x;
-                Ay = mb_srv.request.start.pose.position.y - mb_srv.response.plan.poses[h].pose.position.y;
-            }
-            else
-            {
-                Ax = mb_srv.response.plan.poses[h-1].pose.position.x - mb_srv.response.plan.poses[h].pose.position.x;
-                Ay = mb_srv.response.plan.poses[h-1].pose.position.y - mb_srv.response.plan.poses[h].pose.position.y;
-            }
-            d += sqrt( pow(Ax,2) + pow(Ay,2) );
-        }
-        nav_d = d;
-    }
-
-    // 4. Nav time
-    double nav_t = nav_d/0.4;   //assumming a cte speed of 0.4m/s
-    std::string str = fmt::format("RESULT IS: Success={}, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}\n", result, search_d, nav_d, search_t, nav_t);
-    spdlog::info(str.c_str());
-
-
-    //Save to file
-    
-    if (FILE* output_file=fopen(results_file.c_str(), "w"))
-    {
-        fprintf(output_file, "%s", str.c_str());
-        for(geometry_msgs::PoseWithCovarianceStamped p : robot_poses_vector){
-            fprintf(output_file, "%f, %f\n", p.pose.pose.position.x, p.pose.pose.position.y);
-        }
-        fclose(output_file);
-    }
-    else
-        spdlog::error("Unable to open Results file at: {}", results_file.c_str());
 }
 
 //------------------------

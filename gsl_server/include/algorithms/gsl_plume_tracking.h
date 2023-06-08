@@ -5,20 +5,19 @@
 #include <fstream>      // std::ofstream
 #include <iostream>
 
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 #include <algorithms/gsl_algorithm.h>
 
 
-typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
 enum class PT_state {WAITING_FOR_MAP, EXPLORATION, STOP_AND_MEASURE, INSPECTION, UPWIND_SURGE, CROSSWIND_CAST};
 
 class PlumeTracking:public GSLAlgorithm
 {
 
 public:
-    PlumeTracking(ros::NodeHandle *nh);
+    PlumeTracking(std::shared_ptr<rclcpp::Node> _node);
     ~PlumeTracking();
 
     PT_state get_state();              //Returns current Search-State
@@ -34,9 +33,8 @@ public:
 
     void cancel_navigation();
 protected:
-    ros::NodeHandle *nh_;                                                 //! Node handler.
-    ros::Time movingTimestamp;
-    ros::Time recoveryTimestamp;
+    rclcpp::Time movingTimestamp;
+    rclcpp::Time recoveryTimestamp;
 
     //GSL variables
     bool gasFound;
@@ -51,11 +49,8 @@ protected:
     std::vector<float> gasConcentration_v;
     std::vector<float> windSpeed_v;
     std::vector<float> windDirection_v;
-    std::vector<float>::iterator gas_it;
-    std::vector<float>::iterator windS_it;
-    std::vector<float>::iterator windD_it;
     //Stop_and_measure
-    ros::Time time_stopped;                                             //! Used to measure wind while robot is stopped
+    rclcpp::Time time_stopped;                                             //! Used to measure wind while robot is stopped
 
     double average_concentration, average_wind_direction, average_wind_spped;
     std::vector<float> stop_and_measure_gas_v;
@@ -66,16 +61,17 @@ protected:
     double stop_and_measure_time;                                       //! (seconds) time the robot is stopped while measuring the wind direction
     bool gasHit;
 
+    void declareParameters() override;
     //CallBacks
-    void gasCallback(const olfaction_msgs::gas_sensorPtr& msg) override;
-    void windCallback(const olfaction_msgs::anemometerPtr& msg) override;
-    void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg) override;
+    void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
+    void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr) override;
+    void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
 
     //Methods
-    geometry_msgs::PoseStamped get_random_pose_environment();
+    geometry_msgs::msg::PoseStamped get_random_pose_environment();
     double fRand(double fMin, double fMax);
     float get_average_wind_direction(std::vector<float> const &v);
     
     //Actionlib callbacks (move_base)
-    void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result) override;
+    void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result) override;
 };

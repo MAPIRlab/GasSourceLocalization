@@ -14,12 +14,9 @@
 //-----------------------------------------------------------
 //						GSL-PlumeTracking
 //-----------------------------------------------------------
-SurgeCastPT::SurgeCastPT(ros::NodeHandle *nh) :
-    PlumeTracking(nh)
+SurgeCastPT::SurgeCastPT(std::shared_ptr<rclcpp::Node> _node) :
+    PlumeTracking(_node)
 {
-    nh->param<std::string>("results_file",results_file,"home/pepe/catkin_ws/src/olfaction/gas_source_localization/results/surge-cast/results.txt");
-    nh->param<double>("stop_and_measure_time", stop_and_measure_time, 1);
-    
 }
 
 
@@ -44,18 +41,18 @@ void SurgeCastPT::setSurgeGoal()
     //spdlog::info("[DEBUG] movement_dir in map frame = {}", movement_dir);
 
     //Set goal in the Upwind direction
-    navigation_assistant::nav_assistantGoal goal;
+    NavAssistant::Goal goal;
     current_step = step;
     double movement_dir = upwind_dir;
     do
     {
         goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = ros::Time::now();
+        goal.target_pose.header.stamp = node->now();
 
         //Set a goal in the upwind direction
         goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
         goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
-        goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
+        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
         // If goal is unreachable
         //add noise in angle (in case goal is an obstacle)
@@ -69,11 +66,11 @@ void SurgeCastPT::setSurgeGoal()
             return;
         }
     }
-    while(!checkGoal(&goal));
+    while(!checkGoal(goal));
 
     //Send goal to the Move_Base node for execution
     if (verbose) spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, std::bind(&SurgeCastPT::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SurgeCastPT::goalActiveCallback, this), std::bind(&SurgeCastPT::goalFeedbackCallback, this, std::placeholders::_1));
+    sendGoal(goal);
     inMotion = true;
     
 }
@@ -110,16 +107,16 @@ void SurgeCastPT::setCastGoal()
     }
 
     //Set goal
-    navigation_assistant::nav_assistantGoal goal;
+    NavAssistant::Goal goal;
     do
     {
         goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = ros::Time::now();
+        goal.target_pose.header.stamp = node->now();
 
         //Set a goal in the crosswind direction
         goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
         goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
-        goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
+        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
         //spdlog::info("SurgeCastPT - {} - Testing {} {}...", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
 
@@ -131,11 +128,12 @@ void SurgeCastPT::setCastGoal()
             return;
         }
     }
-    while(!checkGoal(&goal));
+    while(!checkGoal(goal));
 
     //Send goal to the Move_Base node for execution
-    if (verbose) spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, std::bind(&SurgeCastPT::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SurgeCastPT::goalActiveCallback, this), std::bind(&SurgeCastPT::goalFeedbackCallback, this, std::placeholders::_1));
+    if (verbose) 
+        spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    sendGoal(goal);
     inMotion = true;
 }
 
@@ -151,12 +149,14 @@ void SurgeCastPT::checkState()
         //We are looking for gas clues
         if(gasFound&&*max_element(gasConcentration_v.begin(), gasConcentration_v.end()))
         {
-            if (verbose) spdlog::info("GAS HIT!");
+            if (verbose) 
+                spdlog::info("GAS HIT!");
             gasHit=true;
             cancel_navigation();                //Stop Robot
             previous_state = current_state;
             current_state = PT_state::STOP_AND_MEASURE;
-            if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+            if (verbose) 
+                spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
         }
         break;
     case PT_state::INSPECTION:
@@ -171,7 +171,8 @@ void SurgeCastPT::checkState()
             cancel_navigation();                //Stop Robot
             previous_state = current_state;
             current_state = PT_state::STOP_AND_MEASURE;
-            if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+            if (verbose) 
+                spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
         }
         break;
     case PT_state::CROSSWIND_CAST:
@@ -183,7 +184,8 @@ void SurgeCastPT::checkState()
             cancel_navigation();                //Stop Robot
             previous_state = current_state;
             current_state = PT_state::STOP_AND_MEASURE;
-            if (verbose) spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
+            if (verbose) 
+                spdlog::warn("[SurgeCastPT] New state --> STOP_AND_MEASURE");
         }        
         break;
     default:
@@ -193,17 +195,17 @@ void SurgeCastPT::checkState()
 
 void SurgeCastPT::save_results_to_file(int result)
 {
-    mb_ac.cancelAllGoals();
+    nav_client->async_cancel_all_goals();
 
     //1. Search time.
-    ros::Duration time_spent = ros::Time::now() - start_time;
-    double search_t = time_spent.toSec();
+    rclcpp::Duration time_spent = node->now() - start_time;
+    double search_t = time_spent.seconds();
 
     std::ofstream file;
     file.open(results_file, std::ios_base::app);
 
     file<<search_t<<"\n\n\n";
-    for(geometry_msgs::PoseWithCovarianceStamped p : robot_poses_vector){
+    for(PoseWithCovarianceStamped p : robot_poses_vector){
        file<<p.pose.pose.position.x<<", "<<p.pose.pose.position.y<<"\n";
     }
 }

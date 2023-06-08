@@ -2,20 +2,17 @@
 #include <Utils/Utils.h>
 #include <fstream>      // std::ofstream
 #include <iostream>
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
 #include <eigen3/Eigen/Dense>
 #include <cmath>
 #include <bits/stdc++.h>
 #include <unordered_set>
-#include <std_msgs/String.h>
+#include <std_msgs/msg/string.hpp>
 #include <deque>
 
 #include <gmrf_wind_mapping/WindEstimation.h>
 
 namespace GrGSL{
 
-typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
 typedef Utils::Vector2Int Vector2Int;
 typedef std::unordered_set<Vector2Int, Vector2Int::Vec2IntHash, Vector2Int::Vec2IntCompare > hashSet;
 enum class State {WAITING_FOR_MAP, INITIALIZING, EXPLORATION, STOP_AND_MEASURE, MOVING};
@@ -42,7 +39,7 @@ struct WindVector{
 class GrGSL:public GSLAlgorithm
 {
     public:
-        GrGSL(ros::NodeHandle *nh);
+        GrGSL(std::shared_ptr<rclcpp::Node> _node);
         ~GrGSL();
         void getGasWindObservations();
         State getState();
@@ -53,20 +50,20 @@ class GrGSL:public GSLAlgorithm
     protected:
 
         //CallBacks
-        void gasCallback(const olfaction_msgs::gas_sensorPtr& msg) override;
-        void windCallback(const olfaction_msgs::anemometerPtr& msg) override;
-        void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg) override;
-        void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result) override;
+        void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
+        void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
+        void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
+        void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult&) override;
             
         State previous_state, current_state;
 
         //Measurements
-        ros::Time time_stopped; 
+        rclcpp::Time time_stopped; 
         double stop_and_measure_time;                                       //! (seconds) time the robot is stopped while measuring the wind direction
         bool gasHit;
         double th_gas_present;
         double th_wind_present;
-        ros::Publisher gas_type_pub;
+        rclcpp::Publisher gas_type_pub;
 
         std::vector<float> stop_and_measure_gas_v;
         std::vector<float> stop_and_measure_windS_v;
@@ -97,8 +94,8 @@ class GrGSL:public GSLAlgorithm
         //Movement
         bool infoTaxis;
         bool allowMovementRepetition;
-        void moveTo(navigation_assistant::nav_assistantGoal goal);
-        navigation_assistant::nav_assistantGoal indexToGoal(int i, int j);
+        void moveTo(NavAssistant::Goal goal);
+        NavAssistant::Goal indexToGoal(int i, int j);
         void cancel_navigation();
 
         Eigen::Vector2d previous_robot_pose;
@@ -112,20 +109,20 @@ class GrGSL:public GSLAlgorithm
         bool computingInfoGain = false;
         double informationGain(WindVector windVec);
         double KLD(std::vector<std::vector<Cell> >& a, std::vector<std::vector<Cell> >& b);
-        ros::ServiceClient clientW;
+        rclcpp::ServiceClient clientW;
         std::vector<WindVector> estimateWind();
 
         //Cells
         double scale;
         int numCells;
         std::vector<std::vector<Cell> > cells;
-        ros::Publisher probability_markers;
-        ros::Publisher estimation_markers;
+        rclcpp::Publisher probability_markers;
+        rclcpp::Publisher estimation_markers;
         Vector2Int currentPosIndex;
         virtual double probability(const Vector2Int& indices);
         
         //Auxiliary functions
-        visualization_msgs::Marker emptyMarker();
+        Marker emptyMarker();
         double markers_height;
         Eigen::Vector3d valueToColor(double val, double low, double high);
         Vector2Int coordinatesToIndex(double x, double y);

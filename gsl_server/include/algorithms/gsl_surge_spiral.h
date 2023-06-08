@@ -14,9 +14,9 @@ class SurgeSpiralPT:public PlumeTracking
 {
 
 public:
-    SurgeSpiralPT(ros::NodeHandle *nh);
+    SurgeSpiralPT(std::shared_ptr<rclcpp::Node> _node);
     ~SurgeSpiralPT();
-
+    virtual void declareParameters() override;
     virtual void checkState() override; 
 
     double spiralStep;
@@ -26,12 +26,12 @@ public:
 
 
     double deltaT; //measuring interval length
-    ros::Time lastUpdateTimestamp;
+    rclcpp::Time lastUpdateTimestamp;
     
     void setSurgeGoal() override; 
 
     void setCastGoal() override;
-    navigation_assistant::nav_assistantGoal nextGoalSpiral(geometry_msgs::Pose initial);
+    NavAssistant::Goal nextGoalSpiral(Pose initial);
     void resetSpiral();
 
 };

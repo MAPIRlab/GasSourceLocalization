@@ -166,7 +166,6 @@
 
     #Surge-Cast
     <param name="step" value="0.7"/>
-    <param name="moving_average_size" value="25"/>
   </node> 
 
 

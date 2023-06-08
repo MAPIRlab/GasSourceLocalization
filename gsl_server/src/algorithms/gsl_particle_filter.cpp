@@ -7,32 +7,35 @@ Particle::Particle(double a, double b, double c){
 Particle::~Particle(){
 }
 
-ParticleFilter::ParticleFilter(ros::NodeHandle *nh) :
-    SurgeSpiralPT(nh)
+ParticleFilter::ParticleFilter(std::shared_ptr<rclcpp::Node> _node) :
+    SurgeSpiralPT(_node)
 {
-    nh->param<int>("numberOfParticles", numberOfParticles, 500);
-    nh->param<int>("maxEstimations", maxEstimations, 20);
-    nh->param<int>("numberOfWindObs", numberOfWindObs, 30);
-    nh->param<std::string>("results_file",results_file,"home/pepe/catkin_ws/src/olfaction/gas_source_localization/results/PF/results.txt");
-    nh->param<double>("convergenceThr", convergenceThr, 0.5);
-    nh->param<double>("deltaT", deltaT, 1);
-    nh->param<double>("mu", mu, 0.9);
-    nh->param<double>("Sp", Sp, 0.01);
-    nh->param<double>("Rconv", Rconv, 0.5);
+    
 
-    particle_markers = nh->advertise<visualization_msgs::Marker>("particle_markers", 10);
-    estimation_markers = nh->advertise<visualization_msgs::Marker>("estimation_markers", 10);
-    average_estimation_marker = nh->advertise<visualization_msgs::Marker>("average_estimation_marker", 10);
+    particle_markers = node->create_publisher<Marker>("particle_markers", 10);
+    estimation_markers = node->create_publisher<Marker>("estimation_markers", 10);
+    average_estimation_marker = node->create_publisher<Marker>("average_estimation_marker", 10);
 
-    lastWindObservation=ros::Time(0);
+    lastWindObservation=rclcpp::Time(0);
     windDirection_v.clear();
     windSpeed_v.clear();
     firstObserv=false;
     iterationsToConverge=0;
 }
 
-ParticleFilter::~ParticleFilter(){
-    
+ParticleFilter::~ParticleFilter(){}
+
+void ParticleFilter::declareParameters()
+{
+    SurgeSpiralPT::declareParameters();
+    numberOfParticles = node->declare_parameter<int>("numberOfParticles", 500);
+    maxEstimations = node->declare_parameter<int>("maxEstimations", 20);
+    numberOfWindObs = node->declare_parameter<int>("numberOfWindObs", 30);
+    convergenceThr = node->declare_parameter<double>("convergenceThr", 0.5);
+    deltaT = node->declare_parameter<double>("deltaT", 1);
+    mu = node->declare_parameter<double>("mu", 0.9);
+    Sp = node->declare_parameter<double>("Sp", 0.01);
+    Rconv = node->declare_parameter<double>("Rconv", 0.5);
 }
 
 //------------------------------------
@@ -41,45 +44,45 @@ ParticleFilter::~ParticleFilter(){
 
 //------------------------------------
 
-void ParticleFilter::windCallback(const olfaction_msgs::anemometerPtr& msg){
+void ParticleFilter::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg){
     
    windSpeed_v.push_back(msg->wind_speed);
 
     float downWind_direction = angles::normalize_angle(msg->wind_direction+ M_PI);
     //Transform from anemometer ref_system to map ref_system using TF
-    geometry_msgs::PoseStamped anemometer_downWind_pose, map_downWind_pose;
+    geometry_msgs::msg::PoseStamped anemometer_downWind_pose, map_downWind_pose;
     try
     {
         anemometer_downWind_pose.header.frame_id = msg->header.frame_id;
         anemometer_downWind_pose.pose.position.x = 0.0;
         anemometer_downWind_pose.pose.position.y = 0.0;
         anemometer_downWind_pose.pose.position.z = 0.0;
-        anemometer_downWind_pose.pose.orientation = tf::createQuaternionMsgFromYaw(downWind_direction);
+        anemometer_downWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
 
-        tf_listener.transformPose("map", anemometer_downWind_pose, map_downWind_pose);
+        tf_buffer->transform(anemometer_downWind_pose, map_downWind_pose, "map");
     }
-    catch(tf::TransformException &ex)
+    catch(tf2::TransformException &ex)
     {
         spdlog::error("[Particle_Filter] - {} - Error: {}", __FUNCTION__, ex.what());
         return;
     }
 
-    windDirection_v.push_back(tf::getYaw(map_downWind_pose.pose.orientation));
+    windDirection_v.push_back(Utils::getYaw(map_downWind_pose.pose.orientation));
 
     //Only if we are in the Stop_and_Measure
     if (this->current_state == PT_state::STOP_AND_MEASURE)
     {
         stop_and_measure_windS_v.push_back(msg->wind_speed);
-        stop_and_measure_windD_v.push_back(tf::getYaw(map_downWind_pose.pose.orientation));
+        stop_and_measure_windD_v.push_back(Utils::getYaw(map_downWind_pose.pose.orientation));
     }
 
-    if(ros::Time::now().toSec()-lastWindObservation.toSec()>=deltaT){
+    if(node->now().seconds()-lastWindObservation.seconds()>=deltaT){
         //store the measurement in the list of wind history as a (x,y) vector
         double length = 1;
-        if(lastWindObservation!=ros::Time(0)){
-            length=(ros::Time::now().toSec()-lastWindObservation.toSec())/deltaT;
+        if(lastWindObservation!=rclcpp::Time(0)){
+            length=(node->now().seconds()-lastWindObservation.seconds())/deltaT;
         }
-        lastWindObservation=ros::Time::now();
+        lastWindObservation=node->now();
         double speed = get_average_vector(windSpeed_v)*length;
         double angle = get_average_wind_direction(windDirection_v);
         historicWind.push_back(Utils::Vector2(speed*cos(angle),speed*sin(angle)));
@@ -116,17 +119,17 @@ void ParticleFilter::checkState()
         break;
     case PT_state::UPWIND_SURGE:
         //We are moving within the gas plume
-        if(ros::Time::now().toSec()-lastUpdateTimestamp.toSec()>=deltaT)
+        if(node->now().seconds()-lastUpdateTimestamp.seconds()>=deltaT)
         {
             if(gasConcentration_v.back() >= th_gas_present){
                 //if we haven't moved in 3 seconds, the path might not be good, resample everything
-                if(ros::Time::now().toSec()-recoveryTimestamp.toSec()>=3){ 
+                if(node->now().seconds()-recoveryTimestamp.seconds()>=3){ 
                     current_state = PT_state::STOP_AND_MEASURE;
                     cancel_navigation();
                     if (verbose) spdlog::warn("[GSL-SurgeSpiral] New state --> STOP_AND_MEASURE");
                     return;
                 }
-                lastUpdateTimestamp=ros::Time::now();
+                lastUpdateTimestamp=node->now();
                 
                 double dist = sqrt(pow(current_robot_pose.pose.pose.position.x-movingPose.pose.pose.position.x,2)+
                     pow(current_robot_pose.pose.pose.position.y-movingPose.pose.pose.position.y,2));
@@ -135,9 +138,9 @@ void ParticleFilter::checkState()
                 if(dist>0.1){  
                     if (verbose) spdlog::warn("[GSL-SurgeSpiral] More gas! Surge distance has been reset"); 
                     setSurgeGoal();
-                    movingTimestamp=ros::Time::now();
+                    movingTimestamp=node->now();
                     movingPose=current_robot_pose;
-                    recoveryTimestamp=ros::Time::now();
+                    recoveryTimestamp=node->now();
                 }
 
                 updateWeights(true);
@@ -151,7 +154,7 @@ void ParticleFilter::checkState()
                 if(isDegenerated()){
                     resample();
                 }
-                lastUpdateTimestamp=ros::Time::now();
+                lastUpdateTimestamp=node->now();
             }
               
         }
@@ -169,12 +172,12 @@ void ParticleFilter::checkState()
             if (verbose) spdlog::warn("[GSL-ParticleFilter] New state --> STOP_AND_MEASURE");
         }   
         else{
-            if(ros::Time::now().toSec()-lastUpdateTimestamp.toSec()>=deltaT){
+            if(node->now().seconds()-lastUpdateTimestamp.seconds()>=deltaT){
                 updateWeights(false);
                 if(isDegenerated()){
                     resample();
                 }
-                lastUpdateTimestamp=ros::Time::now();
+                lastUpdateTimestamp=node->now();
             }
         }     
         break;
@@ -228,14 +231,14 @@ Utils::Vector2 ParticleFilter::standardDeviationWind(int first){
     
 }
 
-visualization_msgs::Marker ParticleFilter::emptyMarker(){
-    visualization_msgs::Marker points;
+Marker ParticleFilter::emptyMarker(){
+    Marker points;
                         points.header.frame_id="map";
-                        points.header.stamp=ros::Time::now();
+                        points.header.stamp=node->now();
                         points.ns = "particles";
                         points.id = 0;
-                        points.type=visualization_msgs::Marker::POINTS;
-                        points.action=visualization_msgs::Marker::ADD;
+                        points.type=Marker::POINTS;
+                        points.action=Marker::ADD;
 
                         Eigen::Vector3d colour = valueToColor(1.0/numberOfParticles);
                         points.color.r = colour[0];
@@ -273,7 +276,7 @@ Eigen::Vector3d ParticleFilter::valueToColor(double val){
 
 //-----------------------------
 
-void ParticleFilter::generateParticles(visualization_msgs::Marker &points){
+void ParticleFilter::generateParticles(Marker &points){
 
     std::random_device rd; 
     std::mt19937 gen(rd()); 
@@ -290,7 +293,7 @@ void ParticleFilter::generateParticles(visualization_msgs::Marker &points){
 
     while(particles.size()<numberOfParticles){ //Keep generating until we get the desired amount of particles
         int i = rand() % (estSourcePos.size()); //choose which OS to use with uniform probability
-        geometry_msgs::Point p;
+        Point p;
             p.x=estSourcePos[i].x+dist(gen)*stDev[i].x; //generate a point in that OS according to a gaussian
             p.y=estSourcePos[i].y+dist(gen)*stDev[i].y;
             p.z=0;
@@ -300,7 +303,7 @@ void ParticleFilter::generateParticles(visualization_msgs::Marker &points){
             particles.push_back(Particle (p.x, p.y, 0));
         }
     }
-    particle_markers.publish(points);
+    particle_markers->publish(points);
 }
 
 double ParticleFilter::probability(bool hit, Particle &particle){
@@ -344,21 +347,21 @@ void ParticleFilter::updateWeights(bool hit){
 
     std::sort(particles.begin(), particles.end(), [](Particle p1, Particle p2){return p1.weight>p2.weight;});
     
-    visualization_msgs::Marker parts;
+    Marker parts;
                 parts.header.frame_id="map";
-                parts.header.stamp=ros::Time::now();
+                parts.header.stamp=node->now();
                 parts.ns = "particles";
                 parts.id = 0;
-                parts.type=visualization_msgs::Marker::POINTS;
-                parts.action=visualization_msgs::Marker::ADD;
+                parts.type=Marker::POINTS;
+                parts.action=Marker::ADD;
                 parts.scale.x=0.1;
                 parts.scale.y=0.1;
     for(const Particle &p : particles){
-        geometry_msgs::Point point;
+        Point point;
             point.x=p.x;
             point.y=p.y;
         Eigen::Vector3d col = valueToColor(p.weight);
-        std_msgs::ColorRGBA color;
+        std_msgs::msg::ColorRGBA color;
             color.a=1;
             color.r=col[0];
             color.g=col[1];
@@ -367,7 +370,7 @@ void ParticleFilter::updateWeights(bool hit){
         parts.points.push_back(point);
         parts.colors.push_back(color);
     }
-    particle_markers.publish(parts);
+    particle_markers->publish(parts);
 }
 
 bool ParticleFilter::isDegenerated(){
@@ -390,7 +393,7 @@ void ParticleFilter::resample(){
     std::random_device rd; 
     std::mt19937 gen(rd()); 
     std::normal_distribution<double> dist(0.0, 0.05);
-    visualization_msgs::Marker points=emptyMarker();
+    Marker points=emptyMarker();
 
     for(int i = 0; i<particles.size();i++){
         if(newParticles.size()>=2*numberOfParticles){
@@ -400,7 +403,7 @@ void ParticleFilter::resample(){
             int n = std::min(5, (int)(particles[i].weight*particles.size())); 
             int count=0;
             while(count<n){
-                geometry_msgs::Point p;
+                Point p;
                     p.x=dist(gen)+particles[i].x;
                     p.y=dist(gen)+particles[i].y;
                 if(cellIsFree(p.x, p.y)){
@@ -410,7 +413,7 @@ void ParticleFilter::resample(){
                 }
             }         
         }else if(rand()%3==0){ //if the particle is bad, *maybe* kill it
-            geometry_msgs::Point p;
+            Point p;
                     p.x=particles[i].x;
                     p.y=particles[i].y;
             newParticles.push_back(particles[i]);
@@ -443,13 +446,13 @@ bool ParticleFilter::particlesConverge(){
 }
 
 void ParticleFilter::estimateLocation(){
-    visualization_msgs::Marker estimation;
+    Marker estimation;
                 estimation.header.frame_id="map";
-                estimation.header.stamp=ros::Time::now();
+                estimation.header.stamp=node->now();
                 estimation.ns = "estimations";
                 estimation.id = 1;
-                estimation.type=visualization_msgs::Marker::POINTS;
-                estimation.action=visualization_msgs::Marker::ADD;
+                estimation.type=Marker::POINTS;
+                estimation.action=Marker::ADD;
                 estimation.color.b = 1.0;
                 estimation.color.a = 1.0;
                 estimation.scale.x=0.1;
@@ -472,11 +475,11 @@ void ParticleFilter::estimateLocation(){
     }
     
     for(const Utils::Vector2 &est:estimatedLocations){
-        geometry_msgs::Point p;
+        Point p;
         p.x=est.x; p.y=est.y;
         estimation.points.push_back(p);
     }
-    estimation_markers.publish(estimation); 
+    estimation_markers->publish(estimation); 
 }
 
 Utils::Vector2 ParticleFilter::sourceLocalizationEstimation(){
@@ -491,32 +494,32 @@ int ParticleFilter::checkSourceFound()
             return -1;
         }
         //1. Check that working time < max allowed time for search
-        ros::Duration time_spent = ros::Time::now() - start_time;
-        if (time_spent.toSec() > max_search_time)
+        rclcpp::Duration time_spent = node->now() - start_time;
+        if (time_spent.seconds() > max_search_time)
         {
             //Report failure, we were too slow
-            spdlog::info("- FAILURE-> Time spent ({} s) > max_search_time = {}", time_spent.toSec(), max_search_time);
+            spdlog::info("- FAILURE-> Time spent ({} s) > max_search_time = {}", time_spent.seconds(), max_search_time);
             save_results_to_file(0);
             return 0;
         }
 
         Utils::Vector2 average=average_vector(estimatedLocations);
-        visualization_msgs::Marker estimation;
+        Marker estimation;
                     estimation.header.frame_id="map";
-                    estimation.header.stamp=ros::Time::now();
+                    estimation.header.stamp=node->now();
                     estimation.ns = "average";
                     estimation.id = 2;
-                    estimation.type=visualization_msgs::Marker::POINTS;
-                    estimation.action=visualization_msgs::Marker::ADD;
+                    estimation.type=Marker::POINTS;
+                    estimation.action=Marker::ADD;
                     estimation.color.g = 1.0;
                     estimation.color.a = 1.0;
                     estimation.scale.x=0.1;
                     estimation.scale.y=0.1;
-        geometry_msgs::Point p;
+        Point p;
             p.x=average.x, p.y=average.y;
 
         estimation.points.push_back(p);
-        average_estimation_marker.publish(estimation);
+        average_estimation_marker->publish(estimation);
 
         for(const Utils::Vector2& vec : estimatedLocations){
             if((vec-average).norm()>convergenceThr){
@@ -528,7 +531,7 @@ int ParticleFilter::checkSourceFound()
         if (dist<distance_found && cellIsFree(p.x, p.y))
         {
             //GSL has finished with success!
-            spdlog::info("- SUCCESS -> Time spent ({} s)", time_spent.toSec());
+            spdlog::info("- SUCCESS -> Time spent ({} s)", time_spent.seconds());
             save_results_to_file(1);
             return 1;
         }
@@ -538,94 +541,3 @@ int ParticleFilter::checkSourceFound()
     return -1;
 }
 
-void ParticleFilter::save_results_to_file(int result)
-{
-    mb_ac.cancelAllGoals();
-
-    //1. Search time.
-    ros::Duration time_spent = ros::Time::now() - start_time;
-    double search_t = time_spent.toSec();
-
-
-    // 2. Search distance
-    // Get distance from array of path followed (vector of PoseWithCovarianceStamped
-    double search_d;
-    double Ax, Ay, d = 0;
-
-    for (size_t h=1; h<robot_poses_vector.size(); h++)
-    {
-        Ax = robot_poses_vector[h-1].pose.pose.position.x - robot_poses_vector[h].pose.pose.position.x;
-        Ay = robot_poses_vector[h-1].pose.pose.position.y - robot_poses_vector[h].pose.pose.position.y;
-        d += sqrt( pow(Ax,2) + pow(Ay,2) );
-    }
-    search_d = d;
-
-
-
-    // 3. Navigation distance (from robot to source)
-    // Estimate the distances by getting a navigation path from Robot initial pose to Source points in the map
-    double nav_d;
-    geometry_msgs::PoseStamped source_pose;
-    source_pose.header.frame_id = "map";
-    source_pose.header.stamp = ros::Time::now();
-    source_pose.pose.position.x = source_pose_x;
-    source_pose.pose.position.y = source_pose_y;
-
-    // Set MoveBase srv to estimate the distances
-    mb_ac.cancelAllGoals();
-    nav_msgs::GetPlan mb_srv;
-    mb_srv.request.start.header.frame_id = "map";
-    mb_srv.request.start.header.stamp  = ros::Time::now();
-    mb_srv.request.start.pose = robot_poses_vector[0].pose.pose;
-    mb_srv.request.goal = source_pose;
-
-    // Get path
-    if( !make_plan_client.call(mb_srv) )
-    {
-        spdlog::error(" Unable to GetPath from MoveBase");
-        nav_d = -1;
-    }
-    else
-    {
-        // get distance [m] from vector<pose>
-        double Ax, Ay, d = 0;
-        for (size_t h=0; h<mb_srv.response.plan.poses.size(); h++)
-        {
-            if (h==0)
-            {
-                Ax = mb_srv.request.start.pose.position.x - mb_srv.response.plan.poses[h].pose.position.x;
-                Ay = mb_srv.request.start.pose.position.y - mb_srv.response.plan.poses[h].pose.position.y;
-            }
-            else
-            {
-                Ax = mb_srv.response.plan.poses[h-1].pose.position.x - mb_srv.response.plan.poses[h].pose.position.x;
-                Ay = mb_srv.response.plan.poses[h-1].pose.position.y - mb_srv.response.plan.poses[h].pose.position.y;
-            }
-            d += sqrt( pow(Ax,2) + pow(Ay,2) );
-        }
-        nav_d = d;
-    }
-
-    // 4. Nav time
-    double nav_t = nav_d/0.4;   //assumming a cte speed of 0.4m/s
-    std::string str = fmt::format("RESULT IS: Success=%u, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}", result, search_d, nav_d, search_t, nav_t);
-    spdlog::info(str);
-
-
-    //Save to file
-    
-    if (FILE* output_file=fopen(results_file.c_str(), "w"))
-    {
-        fprintf(output_file, "%s", str.c_str());
-        for(geometry_msgs::PoseWithCovarianceStamped p : robot_poses_vector){
-            fprintf(output_file, "%f, %f\n", p.pose.pose.position.x, p.pose.pose.position.y);
-        }
-        fprintf(output_file,"%s", "pred\n");
-        for(Utils::Vector2 p : allEstimations){
-            fprintf(output_file, "%f, %f\n", p.x, p.y);
-        }
-        fclose(output_file);
-    }
-    else
-        spdlog::error("Unable to open Results file at: {}", results_file.c_str());
-}

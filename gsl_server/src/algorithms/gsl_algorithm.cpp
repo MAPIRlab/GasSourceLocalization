@@ -28,25 +28,7 @@ GSLAlgorithm::GSLAlgorithm(std::shared_ptr<rclcpp::Node> _node)
     spdlog::info("[GSL_NODE] Found MoveBase! Initializing module...");
 
 
-    // Load Parameters
-    //-----------------
-
-    moving_average_size = node->declare_parameter<int>("moving_average_size", 10);
-
-    enose_topic = node->declare_parameter<std::string>("enose_topic", "/PID/Sensor_reading");
-    anemometer_topic = node->declare_parameter<std::string>("anemometer_topic", "/Anemometer/WindSensor_reading");
-    robot_location_topic = node->declare_parameter<std::string>("robot_location_topic", "/amcl_pose");
-    map_topic = node->declare_parameter<std::string>("map_topic", "/map");
-    costmap_topic = node->declare_parameter<std::string>("costmap_topic", "/move_base/global_costmap/costmap");
-
-    max_search_time = node->declare_parameter<double>("max_search_time", 300.0);
-    distance_found = node->declare_parameter<double>("distance_found", 0.5);
-    source_pose_x = node->declare_parameter<double>("ground_truth_x", 0.0);
-    source_pose_y = node->declare_parameter<double>("ground_truth_y", 0.0);
-    robot_pose_x = node->declare_parameter<double>("robot_pose_x", 0.0);
-    robot_pose_y = node->declare_parameter<double>("robot_pose_y", 0.0);
-    verbose = node->declare_parameter<bool>("verbose", false);
-
+    declareParameters();
 
     // Subscribers
     //------------
@@ -64,6 +46,28 @@ GSLAlgorithm::GSLAlgorithm(std::shared_ptr<rclcpp::Node> _node)
     inMotion = false;
     inExecution = false;
 
+    tf_buffer = std::make_unique<tf2_ros::Buffer>(node->get_clock());
+    tf_listener = std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
+}
+
+void GSLAlgorithm::declareParameters()
+{
+
+    enose_topic = node->declare_parameter<std::string>("enose_topic", "/PID/Sensor_reading");
+    anemometer_topic = node->declare_parameter<std::string>("anemometer_topic", "/Anemometer/WindSensor_reading");
+    robot_location_topic = node->declare_parameter<std::string>("robot_location_topic", "/amcl_pose");
+    map_topic = node->declare_parameter<std::string>("map_topic", "/map");
+    costmap_topic = node->declare_parameter<std::string>("costmap_topic", "/move_base/global_costmap/costmap");
+
+    max_search_time = node->declare_parameter<double>("max_search_time", 300.0);
+    distance_found = node->declare_parameter<double>("distance_found", 0.5);
+    source_pose_x = node->declare_parameter<double>("ground_truth_x", 0.0);
+    source_pose_y = node->declare_parameter<double>("ground_truth_y", 0.0);
+    verbose = node->declare_parameter<bool>("verbose", false);
+
+    results_file = node->declare_parameter<std::string>("results_file", "");
+    errors_file = node->declare_parameter<std::string>("errors_file", "");
+    path_file = node->declare_parameter<std::string>("path_file", "");
 }
 
 GSLAlgorithm::~GSLAlgorithm(){}
@@ -153,6 +157,14 @@ bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
     else
         return true;
 }
+
+void GSLAlgorithm::sendGoal(const NavAssistant::Goal& goal)
+{
+    rclcpp_action::Client<NavAssistant>::SendGoalOptions options;
+    options.result_callback = std::bind(&goalDoneCallback, this , _1);
+    nav_client->async_send_goal(goal, options);
+}
+
 
 
 int GSLAlgorithm::checkSourceFound()

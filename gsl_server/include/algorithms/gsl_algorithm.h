@@ -26,6 +26,10 @@ typedef geometry_msgs::msg::PoseWithCovarianceStamped PoseWithCovarianceStamped;
 typedef geometry_msgs::msg::Point Point;
 typedef nav_assistant_msgs::action::NavAssistant NavAssistant;
 typedef rclcpp_action::Client<NavAssistant>::SharedPtr NavAssistClient;
+typedef nav_assistant_msgs::srv::MakePlan MakePlan;
+
+using MarkerArray=visualization_msgs::msg::MarkerArray;
+using Marker=visualization_msgs::msg::Marker;
 
 class GSLAlgorithm
 {
@@ -45,15 +49,12 @@ class GSLAlgorithm
         bool inMotion;                                                      //! Determines if a goal has been set and we are moving towards it
         std::string enose_topic, anemometer_topic, robot_location_topic, map_topic, costmap_topic;
 
-        int moving_average_size;
-
         bool verbose;
         bool inExecution;
         rclcpp::Time start_time;
         double distance_found;
         std::vector<PoseWithCovarianceStamped> robot_poses_vector;
         double source_pose_x, source_pose_y;
-        double robot_pose_x, robot_pose_y;
         std::string results_file;
         std::string errors_file;
         std::string path_file;
@@ -71,12 +72,11 @@ class GSLAlgorithm
         rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;                                           //! Map subscriber.
         rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_;                                       //! CostMap subscriber.
         rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localization_sub_;
-        rclcpp::Client<nav_assistant_msgs::srv::MakePlan>::SharedPtr make_plan_client;
+        rclcpp::Client<MakePlan>::SharedPtr make_plan_client;
         
         std::unique_ptr<tf2_ros::Buffer> tf_buffer;
-        std::shared_ptr<tf2_ros::TransformListener> listener;
+        std::shared_ptr<tf2_ros::TransformListener> tf_listener;
 
-        //tf::MessageFilter<nav_msgs::Odometry> * tf_filter_;
 
         //CallBacks
         virtual void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)=0;
@@ -88,6 +88,8 @@ class GSLAlgorithm
         virtual void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result);
 
         bool checkGoal(const NavAssistant::Goal& goal);
+        void sendGoal(const NavAssistant::Goal& goal);
         float get_average_vector(std::vector<float> const &v);
         virtual void save_results_to_file(int result);
+        virtual void declareParameters();
 };

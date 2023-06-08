@@ -16,18 +16,11 @@
     //GSL-PlumeTracking
 
 //-----------------------------------------------------------
-SurgeSpiralPT::SurgeSpiralPT(ros::NodeHandle *nh) :
-    PlumeTracking(nh)
+SurgeSpiralPT::SurgeSpiralPT(std::shared_ptr<rclcpp::Node> _node) :
+    PlumeTracking(_node)
 {
-    
-    nh->param<double>("initSpiralStep", initSpiralStep, 1);
-    nh->param<double>("spiralStep_increment", spiralStep_increment, 0.4);
-    nh->param<std::string>("results_file",results_file,"/home/pepe/catkin_ws/src/olfaction/gas_source_localization/results/surge-spiral/results.txt");
 
-    nh->param<double>("deltaT", deltaT, 1);
-
-
-    lastUpdateTimestamp=ros::Time::now();
+    lastUpdateTimestamp=node->now();
     resetSpiral();
     step=1;
 }
@@ -38,6 +31,14 @@ SurgeSpiralPT::~SurgeSpiralPT()
     spdlog::info("- Closing...");
 }
 
+void SurgeSpiralPT::declareParameters()
+{
+    PlumeTracking::declareParameters();
+    
+    initSpiralStep = node->declare_parameter<double>("initSpiralStep", 1);
+    spiralStep_increment = node->declare_parameter<double>("spiralStep_increment", 0.4);
+    deltaT = node->declare_parameter<double>("deltaT", 1);
+}
 
 //------------------------------------
 
@@ -68,17 +69,17 @@ void SurgeSpiralPT::checkState()
         break;
     case PT_state::UPWIND_SURGE:
         //We are moving within the gas plume
-        if(ros::Time::now().toSec()-lastUpdateTimestamp.toSec()>=deltaT)
+        if(node->now().seconds()-lastUpdateTimestamp.seconds()>=deltaT)
         {   
             if(gasConcentration_v.back() >= th_gas_present){
 
                 //if we haven't moved in 3 seconds, the path might not be good, resample everything
-                if(ros::Time::now().toSec()-recoveryTimestamp.toSec()>=3){ 
+                if(node->now().seconds()-recoveryTimestamp.seconds()>=3){ 
                     current_state = PT_state::STOP_AND_MEASURE;
                     cancel_navigation();
                     if (verbose) spdlog::warn("[GSL-SurgeSpiral] New state --> STOP_AND_MEASURE");
                 }
-                lastUpdateTimestamp=ros::Time::now();
+                lastUpdateTimestamp=node->now();
 
                 double dist = sqrt(pow(current_robot_pose.pose.pose.position.x-movingPose.pose.pose.position.x,2)+
                     pow(current_robot_pose.pose.pose.position.y-movingPose.pose.pose.position.y,2));
@@ -87,15 +88,15 @@ void SurgeSpiralPT::checkState()
                 if(dist>0.1){ 
                     if (verbose) spdlog::warn("[GSL-SurgeSpiral] More gas! Surge distance has been reset"); 
                     setSurgeGoal();
-                    movingTimestamp=ros::Time::now();
+                    movingTimestamp=node->now();
                     movingPose=current_robot_pose;
-                    recoveryTimestamp=ros::Time::now();
+                    recoveryTimestamp=node->now();
 
                     return;
                 }
             }
             else{
-                lastUpdateTimestamp=ros::Time::now();
+                lastUpdateTimestamp=node->now();
             }      
         }
         break;
@@ -112,8 +113,8 @@ void SurgeSpiralPT::checkState()
             if (verbose) spdlog::warn("[GSL-SurgeSpiral] New state --> STOP_AND_MEASURE");
         }   
         else{
-            if(ros::Time::now().toSec()-lastUpdateTimestamp.toSec()>=deltaT){
-                lastUpdateTimestamp=ros::Time::now();
+            if(node->now().seconds()-lastUpdateTimestamp.seconds()>=deltaT){
+                lastUpdateTimestamp=node->now();
             }
         }     
         break;
@@ -130,18 +131,18 @@ void SurgeSpiralPT::setSurgeGoal()
     double upwind_dir = angles::normalize_angle(average_wind_direction + 3.14159);
 
     //Set goal in the Upwind direction
-    navigation_assistant::nav_assistantGoal goal;
+    NavAssistant::Goal goal;
     current_step = step;
     double movement_dir = upwind_dir;
     do
     {
         goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = ros::Time::now();
+        goal.target_pose.header.stamp = node->now();
 
         //Set a goal in the upwind direction
         goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
         goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
-        goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
+        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
         // If goal is unreachable
         //add noise in angle (in case goal is an obstacle)
@@ -156,13 +157,14 @@ void SurgeSpiralPT::setSurgeGoal()
             current_state=PT_state::STOP_AND_MEASURE;
             return;
         }
-        lastUpdateTimestamp=ros::Time::now();
+        lastUpdateTimestamp=node->now();
     }
-    while(!checkGoal(&goal));
+    while(!checkGoal(goal));
 
     //Send goal to the Move_Base node for execution
-    if (verbose) spdlog::debug("GSL-SurgeSpiral - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    mb_ac.sendGoal(goal, std::bind(&SurgeSpiralPT::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SurgeSpiralPT::goalActiveCallback, this), std::bind(&SurgeSpiralPT::goalFeedbackCallback, this, std::placeholders::_1));
+    if (verbose) 
+        spdlog::debug("GSL-SurgeSpiral - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    sendGoal(goal);
     inMotion = true;
 }
 //-------------------------
@@ -177,18 +179,18 @@ void SurgeSpiralPT::resetSpiral(){
     spiral_iter=1;
 }
 
-navigation_assistant::nav_assistantGoal SurgeSpiralPT::nextGoalSpiral(geometry_msgs::Pose initial){
+NavAssistant::Goal SurgeSpiralPT::nextGoalSpiral(Pose initial){
 
-    double yaw=tf::getYaw(initial.orientation);
-    navigation_assistant::nav_assistantGoal goal;
+    double yaw=Utils::getYaw(initial.orientation);
+    NavAssistant::Goal goal;
     goal.target_pose.header.frame_id="map";
-    goal.target_pose.header.stamp=ros::Time::now();
+    goal.target_pose.header.stamp=node->now();
     if(spiral_iter%2==0){
         spiralStep+=spiralStep_increment;
     }
     goal.target_pose.pose.position.x=initial.position.x-(-spiralStep)*sin(yaw);
     goal.target_pose.pose.position.y=initial.position.y+(-spiralStep)*cos(yaw);
-    goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(yaw-M_PI/2);
+    goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw-M_PI/2);
     spiral_iter++;
     
     spdlog::info("[SPIRAL_SEARCH] New Goal [{:.2}, {:.2}]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
@@ -196,10 +198,10 @@ navigation_assistant::nav_assistantGoal SurgeSpiralPT::nextGoalSpiral(geometry_m
 }
 
 void SurgeSpiralPT::setCastGoal(){
-    navigation_assistant::nav_assistantGoal goal = nextGoalSpiral(current_robot_pose.pose.pose);
+    NavAssistant::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
     int i=0;
     bool blocked=false;
-    while(ros::ok()&&!checkGoal(&goal)){
+    while(rclcpp::ok()&&!checkGoal(goal)){
         if(verbose) spdlog::info("[GSL-SurgeSpiral] SKIPPING NEXT POINT IN SPIRAL (OBSTACLES)");
         goal=nextGoalSpiral(goal.target_pose.pose);
         i++;
@@ -216,7 +218,7 @@ void SurgeSpiralPT::setCastGoal(){
         }
     }
     inMotion=true;
-    mb_ac.sendGoal(goal, std::bind(&SurgeSpiralPT::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&SurgeSpiralPT::goalActiveCallback, this), std::bind(&SurgeSpiralPT::goalFeedbackCallback, this, std::placeholders::_1));
+    sendGoal(goal);
 }
 
 

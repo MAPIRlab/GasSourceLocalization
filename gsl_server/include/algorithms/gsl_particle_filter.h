@@ -1,9 +1,7 @@
 #pragma once
-#include <tf/tf.h>
-#include <tf/transform_listener.h>
 
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 #include <eigen3/Eigen/Dense>
 #include <numeric>
 #include <random>
@@ -18,9 +16,10 @@ class Particle{
         
 };
 
+
 class ParticleFilter:public SurgeSpiralPT{
     public:
-        ParticleFilter(ros::NodeHandle *nh);
+        ParticleFilter(std::shared_ptr<rclcpp::Node> _node);
         ~ParticleFilter();
     
         int numberOfParticles; //how many particles we are going to generate
@@ -37,14 +36,14 @@ class ParticleFilter:public SurgeSpiralPT{
         std::vector<Utils::Vector2> estimatedLocations; //record of estimated positions
         std::vector<Utils::Vector2> allEstimations; //record of estimated positions
         std::vector<Utils::Vector2> historicWind; //record of measured wind
-        ros::Time lastWindObservation;
+        rclcpp::Time lastWindObservation;
 
-        ros::Publisher particle_markers;
-        ros::Publisher estimation_markers;
-        ros::Publisher average_estimation_marker;
+        rclcpp::Publisher<Marker>::SharedPtr particle_markers;
+        rclcpp::Publisher<Marker>::SharedPtr estimation_markers;
+        rclcpp::Publisher<Marker>::SharedPtr average_estimation_marker;
 
         //plume-tracking logic
-        void windCallback(const olfaction_msgs::anemometerPtr& msg) override;
+        void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
         void checkState() override;
 
         int iterationsToConverge;
@@ -52,7 +51,7 @@ class ParticleFilter:public SurgeSpiralPT{
         //aux functions
         bool cellIsFree(double x, double y);
         Utils::Vector2 average_vector(std::vector<Utils::Vector2> &data);
-        visualization_msgs::Marker emptyMarker();
+        Marker emptyMarker();
         Utils::Vector2 standardDeviationWind(int first);
         Utils::Vector2 sourceLocalizationEstimation();
 
@@ -62,9 +61,10 @@ class ParticleFilter:public SurgeSpiralPT{
         bool isDegenerated();
         void resample();
         double probability(bool hit, Particle &particle);
-        void generateParticles(visualization_msgs::Marker &points);
+        void generateParticles(Marker &points);
         bool particlesConverge();
         int checkSourceFound() override;
-        void save_results_to_file(int result) override;
         Eigen::Vector3d valueToColor(double val);
+
+        void declareParameters() override;
 };

@@ -13,7 +13,7 @@
 int CGSLServer::doSurgeCast()
 {
     spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
-    SurgeCastPT pt;
+    SurgeCastPT pt(shared_from_this());
 
     spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
@@ -70,7 +70,7 @@ int CGSLServer::doSurgeCast()
 
 int CGSLServer::doSpiral()
 {
-    SpiralSearcher spiral;
+    SpiralSearcher spiral(shared_from_this());
     rclcpp::Rate loop_rate(10);
     bool blocked=false;
     while(rclcpp::ok()&&spiral.checkSourceFound()==-1)
@@ -112,7 +112,7 @@ int CGSLServer::doSpiral()
 int CGSLServer::doSurgeSpiral()
 {
     spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
-    SurgeSpiralPT pt;
+    SurgeSpiralPT pt(shared_from_this());
 
     spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
@@ -170,7 +170,7 @@ int CGSLServer::doSurgeSpiral()
 int CGSLServer::doParticleFilter()
 {
     spdlog::info("[GSL-ParticleFilter] New Action request. Initializing Plume Tracking algorithm.");
-    ParticleFilter pt;
+    ParticleFilter pt(shared_from_this());
 
     //Loop
     spdlog::info("[GSL-ParticleFilter] Staring Plume Tracking Loop");
@@ -257,7 +257,7 @@ int CGSLServer::doParticleFilter()
 int CGSLServer::doGrGSL()
 {
     using namespace GrGSL;
-    GrGSL::GrGSL grgsl;
+    GrGSL::GrGSL grgsl(shared_from_this());
     rclcpp::Rate loop_rate(2);
     int sourceFound = -1;
     double startTime = now().seconds();
@@ -292,7 +292,7 @@ int CGSLServer::doGrGSL()
 int CGSLServer::doPMFS()
 {
     using namespace PMFS;
-    PMFS_GSL grid;
+    PMFS_GSL grid(shared_from_this());
     rclcpp::Rate loop_rate(2);
     int sourceFound = -1;
     double startTime = now().seconds();

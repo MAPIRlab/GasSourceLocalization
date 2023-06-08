@@ -34,4 +34,6 @@ namespace Utils{
 
     double KLD(std::vector<std::vector<double> >& a, std::vector<std::vector<double> >& b);
 
+    geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw);
+
 };

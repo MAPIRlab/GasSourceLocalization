@@ -1,26 +1,28 @@
 #include <Utils/Utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-using namespace Utils;
+namespace Utils
+{
 
-double Utils::lerp(double start, double end, double proportion){
+
+double lerp(double start, double end, double proportion){
     if(proportion<0 || std::isnan(proportion))
         return start;
 
     return start + (end-start) * std::min(1.0, proportion);
 }
 
-double Utils::clamp(double val, double min, double max)
+double clamp(double val, double min, double max)
 {
     return std::max(min, std::min(val, max) );
 }
 
-double Utils::remapRange(double value, double low1, double high1, double low2, double high2){
+double remapRange(double value, double low1, double high1, double low2, double high2){
     return low2 + (value - low1) * (high2 - low2) / (high1 - low1);
 }
 
 
-double Utils::evaluate1DGaussian(double distance, double sigma){
+double evaluate1DGaussian(double distance, double sigma){
     return exp(-0.5*(
                     std::pow(distance,2)
                     /std::pow(sigma,2)
@@ -29,7 +31,7 @@ double Utils::evaluate1DGaussian(double distance, double sigma){
         /(sigma*std::sqrt(2*M_PI));
 }
 
-double Utils::evaluate2DGaussian(const Vector2& sampleOffset, const Vector2& sigma, float distributionRotation){
+double evaluate2DGaussian(const Vector2& sampleOffset, const Vector2& sigma, float distributionRotation){
     //we rotate the vector instead of the gaussian because keeping the distribution axis-aligned removes several terms from the PDF equation
     Vector2 v = sampleOffset.rotate(-distributionRotation);
 
@@ -38,12 +40,17 @@ double Utils::evaluate2DGaussian(const Vector2& sampleOffset, const Vector2& sig
 }
 
 
-double Utils::logOddsToProbability(double lo){
+double logOddsToProbability(double lo){
     return 1.0 - 1.0/(1+std::exp(lo));
 }
 
+geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw)
+{
+    return tf2::toMsg(tf2::Quaternion(tf2::Vector3(0,0,1), yaw));
+}
 
-visualization_msgs::msg::Marker Utils::emptyMarker(Vector2 scale, rclcpp::Clock& clock){
+
+visualization_msgs::msg::Marker emptyMarker(Vector2 scale, rclcpp::Clock& clock){
     visualization_msgs::msg::Marker points;
                         points.header.frame_id="map";
                         points.header.stamp=clock.now();
@@ -58,7 +65,7 @@ visualization_msgs::msg::Marker Utils::emptyMarker(Vector2 scale, rclcpp::Clock&
     return points;
 }
 
-std_msgs::msg::ColorRGBA Utils::valueToColor(double val, double lowLimit, double highLimit, valueColorMode mode){
+std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, valueColorMode mode){
     double r, g, b;
     double range;
     if(mode == valueColorMode::Logarithmic){
@@ -94,7 +101,7 @@ std_msgs::msg::ColorRGBA Utils::valueToColor(double val, double lowLimit, double
     return create_color(r,g,b,1);
 }
 
-std_msgs::msg::ColorRGBA Utils::create_color(float r, float g, float b, float a)
+std_msgs::msg::ColorRGBA create_color(float r, float g, float b, float a)
 {
     std_msgs::msg::ColorRGBA color;
         color.r=r;
@@ -104,7 +111,7 @@ std_msgs::msg::ColorRGBA Utils::create_color(float r, float g, float b, float a)
     return color;
 }
 
-double Utils::getYaw(const geometry_msgs::msg::Quaternion& quat)
+double getYaw(const geometry_msgs::msg::Quaternion& quat)
 {
     tf2::Quaternion tfquat;
     tf2::fromMsg(quat, tfquat);
@@ -115,7 +122,7 @@ double Utils::getYaw(const geometry_msgs::msg::Quaternion& quat)
     return yaw;
 }
 
-geometry_msgs::msg::Pose Utils::compose(geometry_msgs::msg::Pose referenceSystem, geometry_msgs::msg::Pose pose){
+geometry_msgs::msg::Pose compose(geometry_msgs::msg::Pose referenceSystem, geometry_msgs::msg::Pose pose){
     double theta1 = getYaw(referenceSystem.orientation);
     double theta2 = getYaw(pose.orientation);
     geometry_msgs::msg::Pose result;
@@ -125,7 +132,7 @@ geometry_msgs::msg::Pose Utils::compose(geometry_msgs::msg::Pose referenceSystem
     return result;
 }
 
-geometry_msgs::msg::Point Utils::rotateVector(geometry_msgs::msg::Point p1, geometry_msgs::msg::Pose ref){
+geometry_msgs::msg::Point rotateVector(geometry_msgs::msg::Point p1, geometry_msgs::msg::Pose ref){
     double theta = getYaw(ref.orientation);
     geometry_msgs::msg::Point result;
     result.x = std::cos(theta) * p1.x -std::sin(theta) * p1.y;
@@ -133,7 +140,7 @@ geometry_msgs::msg::Point Utils::rotateVector(geometry_msgs::msg::Point p1, geom
     return result;
 }
 
-double Utils::randomFromGaussian(double mean, double stdev){
+double randomFromGaussian(double mean, double stdev){
     static thread_local std::mt19937 engine;
 
     static thread_local std::normal_distribution<> dist{0, stdev};
@@ -147,7 +154,7 @@ double Utils::randomFromGaussian(double mean, double stdev){
     return mean + dist(engine);
 }
 
-double Utils::uniformRandom(double min, double max){
+double uniformRandom(double min, double max){
     static thread_local std::mt19937 engine;
     static thread_local std::uniform_real_distribution<double> distribution{0.0, 0.999};
 
@@ -155,7 +162,7 @@ double Utils::uniformRandom(double min, double max){
 }
 
 
-double Utils::KLD(std::vector<std::vector<double> >& a, std::vector<std::vector<double> >& b){
+double KLD(std::vector<std::vector<double> >& a, std::vector<std::vector<double> >& b){
     double total=0;
     for(int r =0 ; r<a.size();r++){
         for(int c=0; c<a[0].size();c++){
@@ -166,4 +173,6 @@ double Utils::KLD(std::vector<std::vector<double> >& a, std::vector<std::vector<
         }
     }
     return total;
+}
+
 }
