@@ -9,12 +9,14 @@
 #include <std_msgs/msg/string.hpp>
 #include <deque>
 
-#include <gmrf_wind_mapping/WindEstimation.h>
+#include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 
 namespace GrGSL{
 
 typedef Utils::Vector2Int Vector2Int;
 typedef std::unordered_set<Vector2Int, Vector2Int::Vec2IntHash, Vector2Int::Vec2IntCompare > hashSet;
+using WindEstimation=gmrf_wind_mapping::srv::WindEstimation;
+
 enum class State {WAITING_FOR_MAP, INITIALIZING, EXPLORATION, STOP_AND_MEASURE, MOVING};
 
 class Cell{
@@ -48,7 +50,7 @@ class GrGSL:public GSLAlgorithm
         virtual void setGoal();
 
     protected:
-
+        void declareParameters() override;
         //CallBacks
         void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
         void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
@@ -63,7 +65,6 @@ class GrGSL:public GSLAlgorithm
         bool gasHit;
         double th_gas_present;
         double th_wind_present;
-        rclcpp::Publisher gas_type_pub;
 
         std::vector<float> stop_and_measure_gas_v;
         std::vector<float> stop_and_measure_windS_v;
@@ -109,15 +110,15 @@ class GrGSL:public GSLAlgorithm
         bool computingInfoGain = false;
         double informationGain(WindVector windVec);
         double KLD(std::vector<std::vector<Cell> >& a, std::vector<std::vector<Cell> >& b);
-        rclcpp::ServiceClient clientW;
+        rclcpp::Client<WindEstimation>::SharedPtr clientWind;
         std::vector<WindVector> estimateWind();
 
         //Cells
         double scale;
         int numCells;
         std::vector<std::vector<Cell> > cells;
-        rclcpp::Publisher probability_markers;
-        rclcpp::Publisher estimation_markers;
+        rclcpp::Publisher<Marker>::SharedPtr probability_markers;
+        rclcpp::Publisher<Marker>::SharedPtr estimation_markers;
         Vector2Int currentPosIndex;
         virtual double probability(const Vector2Int& indices);
         
