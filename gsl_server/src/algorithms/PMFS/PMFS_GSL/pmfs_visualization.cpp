@@ -3,17 +3,17 @@
 namespace PMFS{
 
 void PMFS_GSL::showWeights(){
-    visualization_msgs::Marker sourceProbMarker=Utils::emptyMarker({0.2, 0.2});
+    Marker sourceProbMarker=Utils::emptyMarker({0.2, 0.2}, node->get_clock());
 
-    visualization_msgs::Marker gasProbMarker=Utils::emptyMarker({0.2, 0.2});
+    Marker gasProbMarker=Utils::emptyMarker({0.2, 0.2}, node->get_clock());
     
-    visualization_msgs::Marker confidenceMarker = gasProbMarker;
+    Marker confidenceMarker = gasProbMarker;
 
     for(int a=0;a<cells.size();a++){
         for(int b=0;b<cells[0].size();b++){
             if(cells[a][b].free){
                 auto coords = indexToCoordinates(a,b);
-                geometry_msgs::Point p;
+                Point p;
                     p.x=coords.x;
                     p.y=coords.y;
                     p.z=settings.markers_height;
@@ -21,13 +21,13 @@ void PMFS_GSL::showWeights(){
 
                 //SOURCE PROB
                 double prob_s = sourceProbability(a,b);
-                std_msgs::ColorRGBA color_source = Utils::valueToColor(prob_s, settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y, settings.visualization.sourceMode);
+                std_msgs::msg::ColorRGBA color_source = Utils::valueToColor(prob_s, settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y, settings.visualization.sourceMode);
                 sourceProbMarker.points.push_back(p);
                 sourceProbMarker.colors.push_back(color_source);
                 
 
                 //HIT
-                std_msgs::ColorRGBA col_hit = valueToColor(Utils::logOddsToProbability(cells[a][b].hitProbability.logOdds), settings.visualization.hitLimits.x, settings.visualization.hitLimits.y, settings.visualization.hitMode);
+                std_msgs::msg::ColorRGBA col_hit = valueToColor(Utils::logOddsToProbability(cells[a][b].hitProbability.logOdds), settings.visualization.hitLimits.x, settings.visualization.hitLimits.y, settings.visualization.hitMode);
                     
                 p.z = settings.markers_height-0.1;
                 gasProbMarker.points.push_back(p);
@@ -35,7 +35,7 @@ void PMFS_GSL::showWeights(){
 
 
                 //CONFIDENCE
-                std_msgs::ColorRGBA colorConfidence = valueToColor(cells[a][b].hitProbability.confidence, 0, 1, Utils::valueColorMode::Linear);
+                std_msgs::msg::ColorRGBA colorConfidence = valueToColor(cells[a][b].hitProbability.confidence, 0, 1, Utils::valueColorMode::Linear);
                     
                 p.z = settings.markers_height-0.1;
                 confidenceMarker.points.push_back(p);
@@ -45,18 +45,18 @@ void PMFS_GSL::showWeights(){
     }
 
 
-    pubs.markers.source_probability_markers.publish(sourceProbMarker);
-    pubs.markers.hitProbabilityMarkers.publish(gasProbMarker);
-    pubs.markers.confidenceMarkers.publish(confidenceMarker);
+    pubs.markers.source_probability_markers->publish(sourceProbMarker);
+    pubs.markers.hitProbabilityMarkers->publish(gasProbMarker);
+    pubs.markers.confidenceMarkers->publish(confidenceMarker);
 }
 
 void PMFS_GSL::showDebugInfo(){
 
-    visualization_msgs::Marker explorationMarker=Utils::emptyMarker({0.2, 0.2});
+    Marker explorationMarker=Utils::emptyMarker({0.2, 0.2}, node->get_clock());
     
-    visualization_msgs::Marker varianceMarker = explorationMarker;
+    Marker varianceMarker = explorationMarker;
 
-    visualization_msgs::Marker movementSetsMarker = explorationMarker;
+    Marker movementSetsMarker = explorationMarker;
 
     double maxExpl=-DBL_MAX; double maxVar=-DBL_MAX;
     double minExpl=DBL_MAX; double minVar=DBL_MAX;
@@ -77,14 +77,14 @@ void PMFS_GSL::showDebugInfo(){
             if(!cells[a][b].free)
                 continue;
             auto coords = indexToCoordinates(a,b);
-                geometry_msgs::Point p;
+                Point p;
                     p.x=coords.x;
                     p.y=coords.y;
                     p.z=settings.markers_height;
 
-            std_msgs::ColorRGBA explorationColor;
-            std_msgs::ColorRGBA advantageColor;
-            std_msgs::ColorRGBA varianceColor;
+            std_msgs::msg::ColorRGBA explorationColor;
+            std_msgs::msg::ColorRGBA advantageColor;
+            std_msgs::msg::ColorRGBA varianceColor;
 
             if(openMoveSet.find( Vector2Int(a,b) ) == openMoveSet.end() ){
                 explorationColor.r = 0;
@@ -115,18 +115,18 @@ void PMFS_GSL::showDebugInfo(){
                 movementSetsMarker.colors.push_back(Utils::create_color(0,0,1,1));
         }
     }
-    pubs.markers.debug.explorationValue.publish(explorationMarker);
-    pubs.markers.debug.varianceHit.publish(varianceMarker);
-    pubs.markers.debug.movementSets.publish(movementSetsMarker);
+    pubs.markers.debug.explorationValue->publish(explorationMarker);
+    pubs.markers.debug.varianceHit->publish(varianceMarker);
+    pubs.markers.debug.movementSets->publish(movementSetsMarker);
 }
 
 
 void PMFS_GSL::debugMapSegmentation(){
-    visualization_msgs::MarkerArray segmentMarker;
+    MarkerArray segmentMarker;
     for(int i=0; i<simulations.QTleaves.size(); i++){
         NQA::Node* leaf = &simulations.QTleaves[i];
-        visualization_msgs::Marker mark = Utils::emptyMarker({0.2, 0.2});
-        mark.type = visualization_msgs::Marker::CUBE;
+        Marker mark = Utils::emptyMarker({0.2, 0.2}, node->get_clock());
+        mark.type = Marker::CUBE;
         Utils::Vector2 worldSpaceScale = (Utils::Vector2(leaf->size.y, leaf->size.x)) * settings.scale *map_.info.resolution;
 
         auto coords = indexToCoordinates(
@@ -135,7 +135,7 @@ void PMFS_GSL::debugMapSegmentation(){
             false
         ) + (worldSpaceScale*0.5);
 
-        geometry_msgs::Point p;
+        Point p;
             p.x=coords.x;
             p.y=coords.y;
             p.z=0;
@@ -152,9 +152,9 @@ void PMFS_GSL::debugMapSegmentation(){
             mark.color=Utils::create_color(1,1,1,1);
         segmentMarker.markers.push_back(mark);
 
-        pubs.markers.quadtreePublisher.publish(segmentMarker);
+        pubs.markers.quadtreePublisher->publish(segmentMarker);
 
-        if(!ros::ok())
+        if(!rclcpp::ok())
             break;
     }
     
@@ -163,14 +163,14 @@ void PMFS_GSL::debugMapSegmentation(){
 
 
 void PMFS_GSL::plotWindVectors(){
-    visualization_msgs::MarkerArray arrow_array;
+    MarkerArray arrow_array;
     //Add an ARROW marker for each node
-    visualization_msgs::Marker marker;
+    Marker marker;
     marker.header.frame_id = "map";
-    marker.header.stamp = ros::Time();
+    marker.header.stamp = node->now();
     marker.ns = "WindVector";
-    marker.type = visualization_msgs::Marker::ARROW;
-    marker.action = visualization_msgs::Marker::ADD;
+    marker.type = Marker::ARROW;
+    marker.action = Marker::ADD;
     
     //Get max wind vector in the map (to normalize the plot)
     double max_module = 0.0;
@@ -199,7 +199,7 @@ void PMFS_GSL::plotWindVectors(){
                     marker.pose.position.x = coords.x;
                     marker.pose.position.y = coords.y;
                     marker.pose.position.z = settings.markers_height;
-                    marker.pose.orientation = tf::createQuaternionMsgFromYaw( angle);
+                    marker.pose.orientation = Utils::createQuaternionMsgFromYaw( angle);
                     //shape
                     marker.scale.x = settings.scale*map_.info.resolution *  (module/max_module);      // arrow length,
                     marker.scale.y = 0.03;           // arrow width
@@ -217,7 +217,7 @@ void PMFS_GSL::plotWindVectors(){
             }
         }//end for
     }
-    pubs.markers.windArrowMarkers.publish(arrow_array);
+    pubs.markers.windArrowMarkers->publish(arrow_array);
 }
 
 
@@ -230,9 +230,9 @@ void PMFS_GSL::renderImgui()
     GSLIMGUI::setup();
     GSLIMPLOT::setup();
 
-    ros::Rate rate(30);
+    rclcpp::Rate rate(30);
 
-    while(ros::ok() && !finished){
+    while(rclcpp::ok() && !finished){
         GSLIMGUI::StartFrame();
         createUI();
         createPlots();
@@ -291,7 +291,7 @@ void PMFS_GSL::createUI()
             simulations.printImage( SimulationSource(indexToCoordinates(x,y), this) );
         }
 
-        ImGui::Text(result.c_str());
+        ImGui::Text("%s", result.c_str());
     }
     ImGui::End();
 

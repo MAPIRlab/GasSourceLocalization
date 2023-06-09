@@ -10,6 +10,101 @@
 #include <thread>
 
 
+int main(int argc, char** argv)
+{
+    spdlog::set_pattern("[%^%l%$] (%T) [GSL] %v");
+    rclcpp::init(argc,argv);
+
+    auto gsl_node = std::make_shared<CGSLServer>("gsl");
+    spdlog::info("[GSL_server] GSL action server is ready for action!...");
+
+    while(rclcpp::ok())
+    {
+        rclcpp::spin_some(gsl_node);
+        if(gsl_node->m_activeGoal.get() == nullptr)
+        {
+            gsl_node->execute(gsl_node->m_activeGoal);
+            rclcpp::shutdown();
+        }
+    }
+
+    return 0;
+}
+
+
+void CGSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
+{
+    int res;
+
+    //1. Start the localization of the gas source
+
+    if ( goal_handle->get_goal()->gsl_method == "surge_cast" )
+    {
+        res = doSurgeCast();
+    }
+    else if(goal_handle->get_goal()->gsl_method == "spiral"){
+        res = doSpiral();
+    }
+    else if(goal_handle->get_goal()->gsl_method == "surge_spiral"){
+        res = doSurgeSpiral();
+    }
+    else if(goal_handle->get_goal()->gsl_method == "particle_filter"){
+        res=doParticleFilter();
+    }
+    else if(goal_handle->get_goal()->gsl_method == "GrGSL"){
+        res=doGrGSL();
+    }
+    else if(goal_handle->get_goal()->gsl_method == "PMFS"){
+        res=doPMFS();
+    }
+    else
+        spdlog::error("[GSL_server] Invalid GSL goal_handle->get_goal()->gsl_method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal_handle->get_goal()->gsl_method.c_str());
+
+
+    //2. Return result
+    // res: -1(fail) 0(cancelled) 1(sucess)
+    auto result = std::make_shared<DoGSL::Result>();
+    if (res == 1) // Completed
+    {
+        result->success = 1;
+        spdlog::info("[GSL_server]{}: I found the emission source! ", action_name_.c_str());
+        // set the action state to succeeded
+        goal_handle->succeed(result);
+    }
+    else if (res==0)  // Canceled/Preempted by user?
+    {
+        result->success = 0;
+        spdlog::info("[GSL_server] {}: Action cancelled/preemted", action_name_.c_str());
+        // set the action state to succeeded (end)
+        goal_handle->succeed(result);
+    }
+    else //failure (-1)
+    {
+        result->success = 0;
+        spdlog::info("[GSL_server] {}: Couldn't find the gas source! SORRY!", action_name_.c_str());
+        // set the action state to succeeded (end)
+        goal_handle->succeed(result);
+    }
+    rclcpp::shutdown();
+}
+
+
+rclcpp_action::GoalResponse  CGSLServer::handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const DoGSL::Goal> goal)
+{
+    return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
+}
+
+rclcpp_action::CancelResponse CGSLServer::handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
+{
+    rclcpp::shutdown();
+    return rclcpp_action::CancelResponse::ACCEPT;
+}
+
+void CGSLServer::handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
+{
+    m_activeGoal = goal_handle;
+}
+
 int CGSLServer::doSurgeCast()
 {
     spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
@@ -66,6 +161,7 @@ int CGSLServer::doSurgeCast()
 
         loop_rate.sleep();
     }
+    return 0;
 }
 
 int CGSLServer::doSpiral()
@@ -165,6 +261,7 @@ int CGSLServer::doSurgeSpiral()
 
         loop_rate.sleep();
     }
+    return 0;
 }
 
 int CGSLServer::doParticleFilter()
@@ -252,6 +349,7 @@ int CGSLServer::doParticleFilter()
 
         loop_rate.sleep();
     }
+    return 0;
 }
 
 int CGSLServer::doGrGSL()
@@ -341,79 +439,3 @@ int CGSLServer::doPMFS()
     renderThread.join();
     return sourceFound;
 }
-
-//=======================================================
-// Action Server Callback when Goal is received (START!)
-//=======================================================
-void CGSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
-{
-    int res;
-
-    //1. Start the localization of the gas source
-
-    if ( goal_handle->get_goal()->gsl_method == "surge_cast" )
-    {
-        res = doSurgeCast();
-    }
-    else if(goal_handle->get_goal()->gsl_method == "spiral"){
-        res = doSpiral();
-    }
-    else if(goal_handle->get_goal()->gsl_method == "surge_spiral"){
-        res = doSurgeSpiral();
-    }
-    else if(goal_handle->get_goal()->gsl_method == "particle_filter"){
-        res=doParticleFilter();
-    }
-    else if(goal_handle->get_goal()->gsl_method == "GrGSL"){
-        res=doGrGSL();
-    }
-    else if(goal_handle->get_goal()->gsl_method == "PMFS"){
-        res=doPMFS();
-    }
-    else
-        spdlog::error("[GSL_server] Invalid GSL goal_handle->get_goal()->gsl_method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal_handle->get_goal()->gsl_method.c_str());
-
-
-    //2. Return result
-    // res: -1(fail) 0(cancelled) 1(sucess)
-    auto result = std::make_shared<DoGSL::Result>();
-    if (res == 1) // Completed
-    {
-        result->success = 1;
-        spdlog::info("[GSL_server]{}: I found the emission source! ", action_name_.c_str());
-        // set the action state to succeeded
-        goal_handle->succeed(result);
-    }
-    else if (res==0)  // Canceled/Preempted by user?
-    {
-        result->success = 0;
-        spdlog::info("[GSL_server] {}: Action cancelled/preemted", action_name_.c_str());
-        // set the action state to succeeded (end)
-        goal_handle->succeed(result);
-    }
-    else //failure (-1)
-    {
-        result->success = 0;
-        spdlog::info("[GSL_server] {}: Couldn't find the gas source! SORRY!", action_name_.c_str());
-        // set the action state to succeeded (end)
-        goal_handle->succeed(result);
-    }
-    rclcpp::shutdown();
-}
-
-//===================================================================================
-//================================== MAIN ===========================================
-//===================================================================================
-int main(int argc, char** argv)
-{
-    spdlog::set_pattern("[%^%l%$] (%T) [GSL] %v");
-    rclcpp::init(argc,argv);
-
-    CGSLServer::SharedPtr gsl_node = std::make_shared<CGSLServer>("gsl");
-    spdlog::info("[GSL_server] GSL action server is ready for action!...");
-
-    rclcpp::spin(gsl_node);
-
-    return 0;
-}
-

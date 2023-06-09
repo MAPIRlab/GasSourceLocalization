@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
- <name>gsl_actionserver</name>
+ <name>gsl_server</name>
   <version>0.0.1</version>
   <description>Gas Source Localizaton ActionServer. It implements different search strategies: Surge-cast, Spiral, etc.</description>
 
@@ -19,8 +19,9 @@
   <build_depend>tf2_ros</build_depend>
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>olfaction_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
   <build_depend>gmrf_wind_mapping</build_depend>
-  <build_depend>navigation_assistant</build_depend>
+  <build_depend>nav_assistant_msgs</build_depend>
   <build_depend>gsl_actions</build_depend>
 
   <export>

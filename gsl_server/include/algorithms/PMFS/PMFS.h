@@ -15,16 +15,13 @@
 #include <deque>
 #include <bits/stdc++.h>
 #include <unordered_set>
-#include <std_msgs/String.h>
+#include <std_msgs/msg/string.hpp>
 #include <memory>
  
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 namespace PMFS{
-
-typedef actionlib::SimpleActionClient<navigation_assistant::nav_assistantAction> MoveBaseClient;
-
 
 /*
 This class is very long. 
@@ -37,7 +34,7 @@ class PMFS_GSL : public GSLAlgorithm
     public:
 
         //initialization
-        PMFS_GSL(ros::NodeHandle *nh);
+        PMFS_GSL(std::shared_ptr<rclcpp::Node> _node);
         ~PMFS_GSL();
         void initialize();
 
@@ -90,6 +87,9 @@ class PMFS_GSL : public GSLAlgorithm
         double ground_truth_x, ground_truth_y;
 
 
+        //-------------Initialization-------------
+            void declareParameters() override;
+
         //-------------Core-------------
             void estimateHitProbabilities(std::vector<std::vector<Cell> >& hitLocalVariable,
                                         bool hit,
@@ -107,8 +107,8 @@ class PMFS_GSL : public GSLAlgorithm
             double applyFalloffLogOdds(Utils::Vector2 originalVectorScaled,  const HitProbKernel& kernel);
 
         //-------------Movement-------------
-            void moveTo(navigation_assistant::nav_assistantGoal goal);
-            navigation_assistant::nav_assistantGoal indexToGoal(int i, int j);
+            void moveTo(NavAssistant::Goal& goal);
+            NavAssistant::Goal indexToGoal(int i, int j);
             void cancel_navigation(bool succeeded); 
             double explorationValue(int i, int j);
             void updateSets();
@@ -141,16 +141,16 @@ class PMFS_GSL : public GSLAlgorithm
 
 
         //---------------Callbacks--------------
-            void gasCallback(const olfaction_msgs::gas_sensorPtr& msg) override;
-            void windCallback(const olfaction_msgs::anemometerPtr& msg) override;
-            void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg) override;
-            void goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result) override;
+            void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
+            void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
+            void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
+            void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result) override;
 
                 
 
             //Measurements
             float last_concentration_reading=-1;
-            ros::Time time_stopped; 
+            rclcpp::Time time_stopped; 
             std::vector<float> stop_and_measure_gas_v;
             std::vector<float> stop_and_measure_windS_v;
             std::vector<float> stop_and_measure_windD_v;

@@ -1,42 +1,38 @@
 #pragma once
 #include <algorithms/gsl_algorithm.h>
-#include <gmrf_wind_mapping/WindEstimation.h>
+#include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 
 #ifdef USE_GADEN
-#include <gaden_player/WindPosition.h>
+#include <gaden_player/srv/wind_position.hpp>
 #endif 
 
-#include <visualization_msgs/Marker.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/msg/marker.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 namespace PMFS{
 
-
+using WindEstimation=gmrf_wind_mapping::srv::WindEstimation;
 struct PublishersAndSubscribers{
 
-    gmrf_wind_mapping::WindEstimation GMRFservice;
-    ros::ServiceClient clientWindGMRF;
+    WindEstimation::Request::SharedPtr GMRFRequest;
+    rclcpp::Client<WindEstimation>::SharedPtr clientWindGMRF;
 #ifdef USE_GADEN
-    gaden_player::WindPosition groundTruthWindService;
+    gaden_player::srv::WindPosition::Request::SharedPtr groundTruthWindRequest;
+    rclcpp::Client<gaden_player::srv::WindPosition>::SharedPtr clientWindGroundTruth;
 #endif 
-
-    ros::ServiceClient clientWindGroundTruth;
-
-    ros::Publisher gas_type_pub;
-    ros::Publisher wind_repub;
     
     struct Markers{
-        ros::Publisher source_probability_markers;
-        ros::Publisher hitProbabilityMarkers;
-        ros::Publisher quadtreePublisher;
-        ros::Publisher gradientMarkers;
-        ros::Publisher windArrowMarkers;
-        ros::Publisher confidenceMarkers;
+        rclcpp::Publisher<Marker>::SharedPtr source_probability_markers;
+        rclcpp::Publisher<Marker>::SharedPtr hitProbabilityMarkers;
+        rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePublisher;
+        rclcpp::Publisher<MarkerArray>::SharedPtr gradientMarkers;
+        rclcpp::Publisher<MarkerArray>::SharedPtr windArrowMarkers;
+        rclcpp::Publisher<Marker>::SharedPtr confidenceMarkers;
         
         struct Debug{
-            ros::Publisher explorationValue;
-            ros::Publisher varianceHit;
-            ros::Publisher movementSets;
+            rclcpp::Publisher<Marker>::SharedPtr explorationValue;
+            rclcpp::Publisher<Marker>::SharedPtr varianceHit;
+            rclcpp::Publisher<Marker>::SharedPtr movementSets;
         };
         Debug debug;
     };

@@ -6,7 +6,7 @@ namespace PMFS{
     //CALLBACKS
 //------------------
 
-void PMFS_GSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
+void PMFS_GSL::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
     if (current_state!=State::WAITING_FOR_MAP){
         return;
@@ -14,7 +14,7 @@ void PMFS_GSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
     
     //wait until we know where the robot is
     //I know this looks wrong, but the way ros callbacks block (or dont) the execution is really counterintuitive, so it will actually work
-    ros::Rate rate(1);
+    rclcpp::Rate rate(1);
     while(robot_poses_vector.size()==0){
         rate.sleep();
     }
@@ -31,7 +31,7 @@ void PMFS_GSL::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 }
 
 
-void PMFS_GSL::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
+void PMFS_GSL::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
 {
 
     //Only if we are in the Stop_and_Measure
@@ -42,23 +42,23 @@ void PMFS_GSL::gasCallback(const olfaction_msgs::gas_sensorPtr& msg)
     last_concentration_reading = msg->raw;
 }
 
-void PMFS_GSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
+void PMFS_GSL::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
 {
     //1. Add obs to the vector of the last N wind speeds
     float downWind_direction = angles::normalize_angle(msg->wind_direction);
     //Transform from anemometer ref_system to map ref_system using TF
-    geometry_msgs::PoseStamped anemometer_upWind_pose, map_upWind_pose;
+    geometry_msgs::msg::PoseStamped anemometer_upWind_pose, map_upWind_pose;
     try
     {
         anemometer_upWind_pose.header.frame_id = msg->header.frame_id;
         anemometer_upWind_pose.pose.position.x = 0.0;
         anemometer_upWind_pose.pose.position.y = 0.0;
         anemometer_upWind_pose.pose.position.z = 0.0;
-        anemometer_upWind_pose.pose.orientation = tf::createQuaternionMsgFromYaw(downWind_direction);
+        anemometer_upWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
 
-        tf_listener.transformPose("map", anemometer_upWind_pose, map_upWind_pose);
+        tf_buffer->transform(anemometer_upWind_pose, map_upWind_pose, "map");
     }
-    catch(tf::TransformException &ex)
+    catch(tf2::TransformException &ex)
     {
         spdlog::error("SurgeCastPT - {} - Error: {}", __FUNCTION__, ex.what());
         return;
@@ -68,8 +68,7 @@ void PMFS_GSL::windCallback(const olfaction_msgs::anemometerPtr& msg)
     if (current_state == State::STOP_AND_MEASURE)
     {
         stop_and_measure_windS_v.push_back(msg->wind_speed);
-        stop_and_measure_windD_v.push_back(angles::normalize_angle(tf::getYaw(map_upWind_pose.pose.orientation)+M_PI));
-        pubs.wind_repub.publish(*msg);
+        stop_and_measure_windD_v.push_back(angles::normalize_angle(Utils::getYaw(map_upWind_pose.pose.orientation)+M_PI));
     }
 
 }
@@ -111,10 +110,10 @@ float AveragedMeasurement::get_average_wind_direction(std::vector<float> const &
     return average_angle;
 }
 
-void PMFS_GSL::goalDoneCallback(const actionlib::SimpleClientGoalState &state, const navigation_assistant::nav_assistantResultConstPtr &result)
+void PMFS_GSL::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result)
 {
     bool succeeded;
-    if(state.state_ == actionlib::SimpleClientGoalState::SUCCEEDED)
+    if(result.code != rclcpp_action::ResultCode::SUCCEEDED)
     {
         succeeded = true;
     }
@@ -122,6 +121,8 @@ void PMFS_GSL::goalDoneCallback(const actionlib::SimpleClientGoalState &state, c
         succeeded = false;
         spdlog::error("PlumeTracking - {} - UPS! Couldn't reach the target.", __FUNCTION__);
     }
+
+    
     //Notify that the objective has been reached
     cancel_navigation(succeeded);
 }

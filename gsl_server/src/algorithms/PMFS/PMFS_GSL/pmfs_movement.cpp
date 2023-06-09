@@ -7,14 +7,14 @@ namespace PMFS{
 //----------------
 
 void PMFS_GSL::cancel_navigation(bool succeeded){
-    nav_client.cancelAllGoals();               //Cancel current navigations
+    nav_client->async_cancel_all_goals();               //Cancel current navigations
     inMotion = false;
 
     //Start a new measurement-phase while standing
     stop_and_measure_gas_v.clear();
     stop_and_measure_windS_v.clear();
     stop_and_measure_windD_v.clear();
-    time_stopped = ros::Time::now();    //Start timer for initial wind measurement
+    time_stopped = node->now();    //Start timer for initial wind measurement
     
     previous_state = current_state;
     if(succeeded)
@@ -51,7 +51,7 @@ void PMFS_GSL::setGoal(){
         return;
     updateSets();
     openMoveSet.erase(currentPosIndex);
-    navigation_assistant::nav_assistantGoal goal;
+    NavAssistant::Goal goal;
     int goalI=-1,goalJ=-1;
     double interest = -DBL_MAX;
     double maxDist = 0;
@@ -65,7 +65,7 @@ void PMFS_GSL::setGoal(){
     else{
         for(const auto& indices : openMoveSet){
             int r=indices.x; int c=indices.y;
-            navigation_assistant::nav_assistantGoal tempGoal=indexToGoal(r,c);
+            NavAssistant::Goal tempGoal=indexToGoal(r,c);
                 
             double explorationTerm = explorationValue(r,c);
             double varianceTerm = std::pow(simulations.varianceOfHitProb[r][c], 2.5) * (1-cells[r][c].hitProbability.confidence);
@@ -75,7 +75,7 @@ void PMFS_GSL::setGoal(){
                                     varianceTerm;
             
             if(this_interest>interest){
-                if(checkGoal(&tempGoal)){
+                if(checkGoal(tempGoal)){
                     interest=this_interest;
                     goalI=r; goalJ=c;
                     maxDist = cells[r][c].distanceFromRobot;
@@ -93,10 +93,10 @@ void PMFS_GSL::setGoal(){
     moveTo(goal);
 }
 
-void PMFS_GSL::moveTo(navigation_assistant::nav_assistantGoal goal){
+void PMFS_GSL::moveTo(NavAssistant::Goal& goal){
     
     inMotion=true;
-    nav_client.sendGoal(goal, std::bind(&PMFS_GSL::goalDoneCallback, this,  std::placeholders::_1, std::placeholders::_2), std::bind(&PMFS_GSL::goalActiveCallback, this), std::bind(&PMFS_GSL::goalFeedbackCallback, this, std::placeholders::_1));
+    sendGoal(goal);
 
     currentPosIndex=coordinatesToIndex(goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
     
@@ -121,10 +121,10 @@ void PMFS_GSL::moveTo(navigation_assistant::nav_assistantGoal goal){
     }
 }
 
-navigation_assistant::nav_assistantGoal PMFS_GSL::indexToGoal(int i, int j){
-    navigation_assistant::nav_assistantGoal goal;
+NavAssistant::Goal PMFS_GSL::indexToGoal(int i, int j){
+    NavAssistant::Goal goal;
     goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = ros::Time::now();
+    goal.target_pose.header.stamp = node->now();
 
     Utils::Vector2 pos = indexToCoordinates(i,j);
     Utils::Vector2 coordR = indexToCoordinates(currentPosIndex.x,currentPosIndex.y);
@@ -132,7 +132,7 @@ navigation_assistant::nav_assistantGoal PMFS_GSL::indexToGoal(int i, int j){
     double move_angle= (std::atan2(pos.y-coordR.y,pos.x-coordR.x));
     goal.target_pose.pose.position.x = pos.x;
     goal.target_pose.pose.position.y = pos.y;
-    goal.target_pose.pose.orientation = tf::createQuaternionMsgFromYaw(angles::normalize_angle(move_angle));
+    goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(move_angle));
     goal.turn_before_nav = true;
     return goal;
 }

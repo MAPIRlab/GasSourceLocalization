@@ -161,7 +161,8 @@ bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
 void GSLAlgorithm::sendGoal(const NavAssistant::Goal& goal)
 {
     rclcpp_action::Client<NavAssistant>::SendGoalOptions options;
-    options.result_callback = std::bind(&goalDoneCallback, this , _1);
+    //TODO make sure this is calling the overriden version
+    options.result_callback = std::bind(&GSLAlgorithm::goalDoneCallback, this , _1);
     nav_client->async_send_goal(goal, options);
 }
 

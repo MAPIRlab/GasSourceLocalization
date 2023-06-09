@@ -11,3 +11,6 @@
 [submodule "gas_distribution_mapping/gmrf_wind"]
 	path = gas_distribution_mapping/gmrf_wind
 	url = git@github.com:MAPIRlab/GMRF-wind.git
+[submodule "gsl_server/third_party/glfw"]
+	path = gsl_server/third_party/glfw
+	url = git@github.com:glfw/glfw.git

@@ -2,6 +2,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_ros/buffer.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <nav_assistant_msgs/srv/make_plan.hpp>

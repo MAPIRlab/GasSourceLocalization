@@ -6,7 +6,7 @@ namespace PMFS{
 void PMFS_GSL::processGasWindObservations()
 {
     static int number_of_updates = 0;
-    if( (ros::Time::now() - time_stopped).toSec() >= settings.stop_and_measure_time )
+    if( (node->now() - time_stopped).seconds() >= settings.stop_and_measure_time )
     {
         AveragedMeasurement averaged= getAveragedMeasurement();
 
@@ -26,7 +26,7 @@ void PMFS_GSL::processGasWindObservations()
         estimateWind(settings.simulation.useWindGroundTruth);
         
 
-        time_stopped = ros::Time::now();
+        time_stopped = node->now();
         number_of_updates++;    
         if(number_of_updates >= settings.hitProbability.max_updates_per_stop)
         {

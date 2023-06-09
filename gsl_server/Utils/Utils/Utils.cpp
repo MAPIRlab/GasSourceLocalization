@@ -50,10 +50,10 @@ geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw)
 }
 
 
-visualization_msgs::msg::Marker emptyMarker(Vector2 scale, rclcpp::Clock& clock){
+visualization_msgs::msg::Marker emptyMarker(Vector2 scale, rclcpp::Clock::SharedPtr clock){
     visualization_msgs::msg::Marker points;
                         points.header.frame_id="map";
-                        points.header.stamp=clock.now();
+                        points.header.stamp=clock->now();
                         points.ns = "cells";
                         points.id = 0;
                         points.type=visualization_msgs::msg::Marker::POINTS;

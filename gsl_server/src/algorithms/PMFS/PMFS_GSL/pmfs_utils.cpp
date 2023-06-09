@@ -121,8 +121,8 @@ void PMFS_GSL::runSubmitedQueue()
 int PMFS_GSL::checkSourceFound(){
 
     if(current_state!=State::WAITING_FOR_MAP){
-        ros::Duration time_spent = ros::Time::now() - start_time;
-        if(time_spent.toSec()>max_search_time){
+        rclcpp::Duration time_spent = node->now() - start_time;
+        if(time_spent.seconds()>max_search_time){
             Utils::Vector2 locationAll = expectedValueSource();
             Utils::Vector2 location = expectedValueSource(0.05);
             save_results_to_file(0, location.x, location.y, locationAll.x, locationAll.y);
@@ -130,10 +130,10 @@ int PMFS_GSL::checkSourceFound(){
         }
 
         if(!reached){
-            if(sqrt(pow(current_robot_pose.pose.pose.position.x-ground_truth_x,2)+
-                    pow(current_robot_pose.pose.pose.position.y-ground_truth_y,2))
+            if(std::sqrt(std::pow(current_robot_pose.pose.pose.position.x-ground_truth_x,2)+
+                    std::pow(current_robot_pose.pose.pose.position.y-ground_truth_y,2))
                 <0.5){
-                t1 = time_spent.toSec();
+                t1 = time_spent.seconds();
                 reached=true;
             }
         }
@@ -228,11 +228,11 @@ void PMFS_GSL::normalizeSourceProb(std::vector<std::vector<Cell> >& variable){
 
 void PMFS_GSL::save_results_to_file(int result, double i, double j, double allI, double allJ)
 {
-    nav_client.cancelAllGoals();
+    nav_client->async_cancel_all_goals();
 
     //1. Search time.
-    ros::Duration time_spent = ros::Time::now() - start_time;
-    double search_t = time_spent.toSec();
+    rclcpp::Duration time_spent = node->now() - start_time;
+    double search_t = time_spent.seconds();
 
     spdlog::info("RESULT IS: Success={0}, Search_t={1} s, Error={2} m", result, search_t, errorOverTime.back().error);
 
@@ -270,7 +270,7 @@ void PMFS_GSL::save_results_to_file(int result, double i, double j, double allI,
         std::ofstream file;
         file.open(path_file, std::ios_base::app);
         file<<"------------------------\n";
-        for(geometry_msgs::PoseWithCovarianceStamped p : robot_poses_vector)
+        for(PoseWithCovarianceStamped& p : robot_poses_vector)
             file<<p.pose.pose.position.x<<", "<<p.pose.pose.position.y<<"\n";
     }
     else
@@ -285,31 +285,40 @@ void PMFS_GSL::estimateWind(bool groundTruth){
     if(!groundTruth){
 #endif
         auto& clientWindGMRF = pubs.clientWindGMRF;
-        auto& GMRFservice = pubs.GMRFservice;
+        auto& GMRFRequest = pubs.GMRFRequest;
         //ask the gmrf_wind service for the estimated wind vector in cell i,j
-        if(clientWindGMRF.call(GMRFservice)){
-            for(int ind=0;ind<GMRFservice.request.x.size();ind++){
-                Vector2Int pair = coordinatesToIndex(GMRFservice.request.x[ind], GMRFservice.request.y[ind]);
-                estimatedWindVectors[pair.x][pair.y] = Utils::Vector2(std::cos(GMRFservice.response.v[ind]), std::sin(GMRFservice.response.v[ind])) * GMRFservice.response.u[ind];
+        auto future = clientWindGMRF->async_send_request(GMRFRequest);
+        auto result = rclcpp::spin_until_future_complete(node, future); 
+
+        if(result == rclcpp::FutureReturnCode::SUCCESS)
+        {
+            auto response = future.get();
+            for(int ind=0;ind< GMRFRequest->x.size();ind++){
+                Vector2Int pair = coordinatesToIndex(GMRFRequest->x[ind], GMRFRequest->y[ind]);
+                estimatedWindVectors[pair.x][pair.y] = Utils::Vector2(std::cos(response->v[ind]), std::sin(response->v[ind])) * response->u[ind];
             }
-        }else{
+        }else
             spdlog::warn("CANNOT READ ESTIMATED WIND VECTORS");
-        }
+        
 #ifdef USE_GADEN
     }
     
     else{
-        auto& clientWindGroundTruth = pubs.clientWindGroundTruth;
-        auto& groundTruthWindService = pubs.groundTruthWindService;
-        if(clientWindGroundTruth.call(groundTruthWindService)){
-            for(int ind=0;ind<groundTruthWindService.request.x.size();ind++){
-                Vector2Int pair = coordinatesToIndex(groundTruthWindService.request.x[ind], groundTruthWindService.request.y[ind]);
-                estimatedWindVectors[pair.x][pair.y]=Utils::Vector2(groundTruthWindService.response.u[ind], groundTruthWindService.response.v[ind]);
-            }
-        }else{
-            spdlog::warn("CANNOT READ ESTIMATED WIND VECTORS");
-        }
 
+        auto& clientWindGroundTruth = pubs.clientWindGroundTruth;
+        auto& groundTruthWindRequest = pubs.groundTruthWindRequest;
+        
+        auto future = clientWindGroundTruth->async_send_request(groundTruthWindRequest);
+        auto result = rclcpp::spin_until_future_complete(node, future); 
+        if(result == rclcpp::FutureReturnCode::SUCCESS)
+        {
+            auto response = future.get();
+            for(int ind=0;ind<groundTruthWindRequest->x.size();ind++){
+                Vector2Int pair = coordinatesToIndex(groundTruthWindRequest->x[ind], groundTruthWindRequest->y[ind]);
+                estimatedWindVectors[pair.x][pair.y]=Utils::Vector2(response->u[ind], response->v[ind]);
+            }
+        }else
+            spdlog::warn("CANNOT READ ESTIMATED WIND VECTORS");
     }
 #endif
 }

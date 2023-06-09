@@ -59,7 +59,7 @@ void ParticleFilter::windCallback(const olfaction_msgs::msg::Anemometer::SharedP
         anemometer_downWind_pose.pose.position.z = 0.0;
         anemometer_downWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
 
-        tf_buffer->transform(anemometer_downWind_pose, map_downWind_pose, "map");
+        map_downWind_pose = tf_buffer->transform(anemometer_downWind_pose, "map");
     }
     catch(tf2::TransformException &ex)
     {

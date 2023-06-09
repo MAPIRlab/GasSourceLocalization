@@ -20,13 +20,14 @@ public:
         action_name_(name), Node("gsl_server")
     {
         actionServer = rclcpp_action::create_server<DoGSL>(this, name, 
-            std::bind(&handle_goal, this, _1, _2), 
-            std::bind(&handle_cancel, this, _1), 
-            std::bind(&handle_accepted, this, _1)
+            std::bind(&CGSLServer::handle_goal, this, _1, _2), 
+            std::bind(&CGSLServer::handle_cancel, this, _1), 
+            std::bind(&CGSLServer::handle_accepted, this, _1)
         );
     }
 
     ~CGSLServer(){}
+    std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> m_activeGoal{nullptr};
 
     rclcpp_action::GoalResponse  handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const DoGSL::Goal> goal);
     rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle);

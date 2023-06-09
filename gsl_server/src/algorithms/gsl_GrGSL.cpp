@@ -38,6 +38,7 @@ GrGSL::GrGSL(std::shared_ptr<rclcpp::Node> _node) :
 
 void GrGSL::declareParameters()
 {
+    GSLAlgorithm::declareParameters();
     th_gas_present = node->declare_parameter<double>("th_gas_present", 0.3);
     th_wind_present = node->declare_parameter<double>("th_wind_present", 0.05);
     stop_and_measure_time = node->declare_parameter<double>("stop_and_measure_time", 3);
@@ -196,7 +197,7 @@ void GrGSL::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
         anemometer_downWind_pose.pose.position.z = 0.0;
         anemometer_downWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
 
-        tf_buffer->transform(anemometer_downWind_pose, map_downWind_pose, "map");
+        map_downWind_pose = tf_buffer->transform(anemometer_downWind_pose, "map");
     }
     catch(tf2::TransformException &ex)
     {

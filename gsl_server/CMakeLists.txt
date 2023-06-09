@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_server)
 set(CMAKE_BUILD_TYPE "None") 
-set(CMAKE_CXX_FLAGS "-std=c++17 -fopenmp -g ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++17 -g ${CMAKE_CXX_FLAGS}")
 
 
 
@@ -9,7 +9,7 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -fopenmp -g ${CMAKE_CXX_FLAGS}")
 ##############################################################################
 set(GSL_DEBUG OFF) #debug mode disables optimizations and activates a bunch of assertions in the code.
 
-set(USE_GADEN OFF) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
+set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
@@ -60,23 +60,30 @@ find_package(rclcpp_action REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(angles REQUIRED)
 find_package(olfaction_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(gmrf_wind_mapping REQUIRED)
-find_package(navigation_assistant REQUIRED)
+find_package(nav_assistant_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(gsl_actions REQUIRED)
 
 
 
 if(USE_GADEN)
-add_definitions(-DUSE_GADEN)
-find_package(gaden_player REQUIRED)
+    add_definitions(-DUSE_GADEN)
+    find_package(gaden_player REQUIRED)
+    set(CONDITIONAL_GADEN_PLAYER "gaden_player")  
+else()
+    set(CONDITIONAL_GADEN_PLAYER "")  
 endif(USE_GADEN)
-set(CONDITIONAL_GADEN_PLAYER "")  
 
 
 
 
 #other stuff
+find_package(OpenMP REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(OpenCV REQUIRED)
 
@@ -161,13 +168,22 @@ add_dependencies(gsl_actionserver_node ${CONDITIONAL_GLFW})
 ament_target_dependencies( gsl_actionserver_node
     rclcpp
     rclcpp_action
+    
+    geometry_msgs
     tf2
     tf2_ros
     tf2_geometry_msgs
+    angles
+    
     olfaction_msgs
+    visualization_msgs
+    nav_assistant_msgs
+    std_msgs
+    
     gmrf_wind_mapping
-    navigation_assistant
     gsl_actions
+
+    ${CONDITIONAL_GADEN_PLAYER}
 )
 
 ament_target_dependencies( gsl_actionserver_call
@@ -182,7 +198,7 @@ ament_target_dependencies( gsl_actionserver_call
 target_link_libraries(gsl_actionserver_node  
   ${OpenCV_LIBS}
   spdlog::spdlog
-  ${CMAKE_DL_LIBS}
+  OpenMP::OpenMP_CXX
 )
 
 

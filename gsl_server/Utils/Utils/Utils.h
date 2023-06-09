@@ -1,5 +1,6 @@
 #pragma once
 
+#include <rclcpp/rclcpp.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
@@ -12,7 +13,7 @@
 
 #include <eigen3/Eigen/Dense>
 namespace Utils{
-    visualization_msgs::msg::Marker emptyMarker(Vector2 scale, rclcpp::Clock& clock);
+    visualization_msgs::msg::Marker emptyMarker(Vector2 scale, rclcpp::Clock::SharedPtr clock);
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);
     double clamp(double val, double min, double max);

@@ -1,107 +1,100 @@
 #include <algorithms/PMFS/PMFS.h>
 namespace PMFS{
 
-PMFS_GSL::PMFS_GSL(ros::NodeHandle *nh) :
-    GSLAlgorithm(nh)
+using namespace std::placeholders;
+
+PMFS_GSL::PMFS_GSL(std::shared_ptr<rclcpp::Node> _node) :
+    GSLAlgorithm(_node)
 {
     //A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
     //see the file grid_callbacks.cpp
 
-    // Load Parameters
-    //-----------------
-    nh->param<double>("th_gas_present", settings.th_gas_present, 0.3);
-    nh->param<double>("th_wind_present", settings.th_wind_present, 0.05);
-    nh->param<double>("stop_and_measure_time", settings.stop_and_measure_time, 3);
+    pubs.markers.source_probability_markers = node->create_publisher<Marker>("probability_markers", 1);
+    pubs.markers.hitProbabilityMarkers = node->create_publisher<Marker>("hitProbabilityMarkers", 1);
+    pubs.markers.confidenceMarkers = node->create_publisher<Marker>("confidenceMarkers", 1);
+    pubs.markers.windArrowMarkers = node->create_publisher<MarkerArray>("arrowMarkers", 1);
+    pubs.markers.gradientMarkers = node->create_publisher<MarkerArray>("gradientMarkers", 1);
 
-
-    // Subscribers
-    //------------
-    gas_sub_ = nh->subscribe(enose_topic,1,&PMFS_GSL::gasCallback, this);
-    wind_sub_ = nh->subscribe(anemometer_topic,1,&PMFS_GSL::windCallback, this);
-    map_sub_ = nh->subscribe(map_topic, 1, &PMFS_GSL::mapCallback, this);
+    pubs.markers.quadtreePublisher = node->create_publisher<MarkerArray>("quadtree", 1);
+    
     
 
-    pubs.markers.source_probability_markers = nh->advertise<visualization_msgs::Marker>("probability_markers", 1);
-    pubs.markers.hitProbabilityMarkers = nh->advertise<visualization_msgs::Marker>("hitProbabilityMarkers", 1);
-    pubs.markers.confidenceMarkers = nh->advertise<visualization_msgs::Marker>("confidenceMarkers", 1);
-    pubs.markers.windArrowMarkers = nh->advertise<visualization_msgs::MarkerArray>("arrowMarkers", 1);
-    pubs.markers.gradientMarkers = nh->advertise<visualization_msgs::MarkerArray>("gradientMarkers", 1);
-
-    pubs.markers.quadtreePublisher = nh->advertise<visualization_msgs::MarkerArray>("quadtree", 1);
+    pubs.markers.debug.explorationValue = node->create_publisher<Marker>("explorationValue", 1);
+    pubs.markers.debug.varianceHit = node->create_publisher<Marker>("varianceHit", 1);
+    pubs.markers.debug.movementSets = node->create_publisher<Marker>("movementSets", 1);
     
-    pubs.gas_type_pub = nh->advertise<std_msgs::String>("gas_type", 10);
-    
-    pubs.wind_repub = nh->advertise<olfaction_msgs::anemometer>("wind_repub", 10);
-
-    pubs.markers.debug.explorationValue = nh->advertise<visualization_msgs::Marker>("explorationValue", 1);
-    pubs.markers.debug.varianceHit = nh->advertise<visualization_msgs::Marker>("varianceHit", 1);
-    pubs.markers.debug.movementSets = nh->advertise<visualization_msgs::Marker>("movementSets", 1);
+    gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic,1, std::bind(&PMFS_GSL::gasCallback, this, _1) );
+    wind_sub_ = node->create_subscription<olfaction_msgs::msg::Anemometer>(anemometer_topic,1, std::bind(&PMFS_GSL::windCallback, this, _1) );
+    map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, 1,  std::bind(&PMFS_GSL::mapCallback, this, _1) );
 
     // Init State
     previous_state = State::WAITING_FOR_MAP;
     current_state = State::WAITING_FOR_MAP;
     spdlog::info("WAITING_FOR_MAP");
 
-    nh->param<int>("scale", settings.scale, 65); //scale for dynamic map reduction
 
-    nh->param<double>("hitPriorProbability", settings.hitProbability.prior, 0.1); 
-
-    nh->param<int>("openMoveSetExpasion", settings.movement.openMoveSetExpasion, 5); //number of cells in each direction that we add to the open move set in each step
-    nh->param<bool>("allowMovementRepetition", settings.movement.allowMovementRepetition, false);
-    nh->param<double>("explorationProbability", settings.movement.explorationProbability, 0.1);
-    nh->param<int>("initialExplorationMoves", settings.movement.initialExplorationMoves, 5);
-
-    //hit probability
-    nh->param<int>("max_updates_per_stop", settings.hitProbability.max_updates_per_stop, 3);
-
-    nh->param<double>("kernel_sigma", settings.hitProbability.kernel_sigma, 0.5);
-    nh->param<double>("kernel_stretch_constant", settings.hitProbability.kernel_stretch_constant, 1);
-
-    nh->param<double>("confidence_measurement_weight", settings.hitProbability.confidence_measurement_weight, 0.5);
-    nh->param<double>("confidence_sigma_spatial", settings.hitProbability.confidence_sigma_spatial, 0.5);
-
-
-    //
-    nh->param<bool>("useWindGroundTruth", settings.simulation.useWindGroundTruth, false);
-
-    nh->param<double>("sourceDiscriminationPower", settings.simulation.sourceDiscriminationPower, 1);
-    nh->param<double>("refineFraction", settings.simulation.refineFraction, 10);
-    nh->param<int>("stepsSourceUpdate", settings.simulation.steps_between_source_updates, 10);
-
-
-    nh->param<int>("maxRegionSize", settings.simulation.maxRegionSize, 5);
-    nh->param<double>("deltaTime", settings.simulation.deltaTime, 0.2);
-    nh->param<double>("noiseSTDev", settings.simulation.noiseSTDev, 0.5);
-    nh->param<int>("iterationsToRecord", settings.simulation.iterationsToRecord, 200);
-    nh->param<int>("maxWarmupIterations", settings.simulation.maxWarmupIterations, 500);
-
-
-
-    nh->param<double>("ground_truth_x", ground_truth_x, 0);
-    nh->param<double>("ground_truth_y", ground_truth_y, 0);
-
-    nh->param<double>("markers_height", settings.markers_height, 0);
-
-    nh->param<int>("localEstimationWindowSize", settings.localEstimationWindowSize, 2);
-
-    nh->param<std::string>("results_file", results_file, "");
-    nh->param<std::string>("errors_file", errors_file, "");
-    nh->param<std::string>("path_file", path_file, "");
-
-    nh->param<double>("convergence_thr", settings.declaration.threshold, 0.5); //threshold for source declaration
-    nh->param<int>("convergence_steps", settings.declaration.steps, 5);
-
-
-	ros::NodeHandle n;
-    pubs.clientWindGMRF = n.serviceClient<gmrf_wind_mapping::WindEstimation>("/WindEstimation");
+    pubs.clientWindGMRF = node->create_client<WindEstimation>("/WindEstimation");
 #ifdef USE_GADEN
-    pubs.clientWindGroundTruth = n.serviceClient<gaden_player::WindPosition>("/wind_value");
+    pubs.clientWindGroundTruth = node->create_client<gaden_player::srv::WindPosition>("/wind_value");
 #endif
     exploredCells=0;
     iterationsCounter=1;
     simulations.grid = this;
 }
 
+void PMFS_GSL::declareParameters()
+{
+
+    settings.th_gas_present = node->declare_parameter<double>("th_gas_present", 0.3);
+    settings.th_wind_present = node->declare_parameter<double>("th_wind_present", 0.05);
+    settings.stop_and_measure_time = node->declare_parameter<double>("stop_and_measure_time", 3);
+
+    settings.scale = node->declare_parameter<int>("scale", 65); //scale for dynamic map reduction
+
+    settings.hitProbability.prior = node->declare_parameter<double>("hitPriorProbability", 0.1); 
+
+    settings.movement.openMoveSetExpasion = node->declare_parameter<int>("openMoveSetExpasion", 5); //number of cells in each direction that we add to the open move set in each step
+    settings.movement.allowMovementRepetition = node->declare_parameter<bool>("allowMovementRepetition", false);
+    settings.movement.explorationProbability = node->declare_parameter<double>("explorationProbability", 0.1);
+    settings.movement.initialExplorationMoves = node->declare_parameter<int>("initialExplorationMoves", 5);
+
+    //hit probability
+    settings.hitProbability.max_updates_per_stop = node->declare_parameter<int>("max_updates_per_stop", 3);
+
+    settings.hitProbability.kernel_sigma = node->declare_parameter<double>("kernel_sigma", 0.5);
+    settings.hitProbability.kernel_stretch_constant = node->declare_parameter<double>("kernel_stretch_constant", 1);
+
+    settings.hitProbability.confidence_measurement_weight = node->declare_parameter<double>("confidence_measurement_weight", 0.5);
+    settings.hitProbability.confidence_sigma_spatial = node->declare_parameter<double>("confidence_sigma_spatial", 0.5);
+
+
+    //
+    settings.simulation.useWindGroundTruth = node->declare_parameter<bool>("useWindGroundTruth", false);
+
+    settings.simulation.sourceDiscriminationPower = node->declare_parameter<double>("sourceDiscriminationPower", 1);
+    settings.simulation.refineFraction = node->declare_parameter<double>("refineFraction", 10);
+    settings.simulation.steps_between_source_updates = node->declare_parameter<int>("stepsSourceUpdate", 10);
+
+
+    settings.simulation.maxRegionSize = node->declare_parameter<int>("maxRegionSize", 5);
+    settings.simulation.deltaTime = node->declare_parameter<double>("deltaTime", 0.2);
+    settings.simulation.noiseSTDev = node->declare_parameter<double>("noiseSTDev", 0.5);
+    settings.simulation.iterationsToRecord = node->declare_parameter<int>("iterationsToRecord", 200);
+    settings.simulation.maxWarmupIterations = node->declare_parameter<int>("maxWarmupIterations", 500);
+
+
+
+    ground_truth_x = node->declare_parameter<double>("ground_truth_x", 0);
+    ground_truth_y = node->declare_parameter<double>("ground_truth_y", 0);
+
+    settings.markers_height = node->declare_parameter<double>("markers_height",  0);
+
+    settings.localEstimationWindowSize = node->declare_parameter<int>("localEstimationWindowSize", 2);
+
+    settings.declaration.threshold = node->declare_parameter<double>("convergence_thr", 0.5); //threshold for source declaration
+    settings.declaration.steps = node->declare_parameter<int>("convergence_steps", 5);
+
+}
 
 PMFS_GSL::~PMFS_GSL()
 {
@@ -147,9 +140,8 @@ void PMFS_GSL::initialize(){
     //pruning unreachable free cells
     {
         std::vector<std::vector<uint8_t> > occupancyMap(cells.size(), std::vector<uint8_t>(cells[0].size()));
-        tf::StampedTransform tfm;
-        tf_listener.lookupTransform("map", "anemometer_frame", ros::Time(0), tfm);
-        float anemometer_Z = tfm.getOrigin().z();
+        geometry_msgs::msg::TransformStamped tfm = tf_buffer->lookupTransform("map", "anemometer_frame", rclcpp::Time(0));
+        float anemometer_Z = tfm.transform.translation.z;
         spdlog::info("anemometer z is {}", anemometer_Z);
         numFreeCells = 0;
         hashSet openPropagationSet;
@@ -160,6 +152,12 @@ void PMFS_GSL::initialize(){
         cells[curr.x][curr.y].hitProbability.auxWeight=0;
         activePropagationSet.insert(curr);
         propagateProbabilities(cells, openPropagationSet, closedPropagationSet, activePropagationSet, {1, {1,0}, 0});
+
+        pubs.GMRFRequest = std::make_shared<WindEstimation::Request>();
+#ifdef USE_GADEN
+        pubs.groundTruthWindRequest=std::make_shared<gaden_player::srv::WindPosition::Request>();
+#endif
+
         for(int i=0; i<cells.size();i++){
             for(int j=0; j<cells[0].size();j++){
                 if(!cells[i][j].free || cells[i][j].hitProbability.auxWeight==-1){
@@ -169,12 +167,12 @@ void PMFS_GSL::initialize(){
                 else{
                     numFreeCells++;
                     Utils::Vector2 coords = indexToCoordinates(i,j);
-                    pubs.GMRFservice.request.x.push_back(coords.x);
-                    pubs.GMRFservice.request.y.push_back(coords.y);
+                    pubs.GMRFRequest->x.push_back(coords.x);
+                    pubs.GMRFRequest->y.push_back(coords.y);
 #ifdef USE_GADEN
-                    pubs.groundTruthWindService.request.x.push_back(coords.x);
-                    pubs.groundTruthWindService.request.y.push_back(coords.y);
-                    pubs.groundTruthWindService.request.z.push_back(anemometer_Z);
+                    pubs.groundTruthWindRequest->x.push_back(coords.x);
+                    pubs.groundTruthWindRequest->y.push_back(coords.y);
+                    pubs.groundTruthWindRequest->z.push_back(anemometer_Z);
 #endif
                 }
 
@@ -255,7 +253,7 @@ void PMFS_GSL::initialize(){
 
     //Start the fun!!
     cancel_navigation(true);
-    start_time = ros::Time::now();     //start measuring time
+    start_time = node->now();     //start measuring time
     robot_poses_vector.clear();         //start measuring distance
     inExecution = true;
 
