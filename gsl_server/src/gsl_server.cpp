@@ -58,7 +58,7 @@ void CGSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>>
         res=doPMFS();
     }
     else
-        spdlog::error("[GSL_server] Invalid GSL goal_handle->get_goal()->gsl_method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal_handle->get_goal()->gsl_method.c_str());
+        spdlog::error("[GSL_server] Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'", goal_handle->get_goal()->gsl_method.c_str());
 
 
     //2. Return result
