@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <stdio.h>
 
-class GSLIMGUI{
+class R_IMGUI{
     public:
         static void setup();
         static void close();

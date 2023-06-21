@@ -227,22 +227,22 @@ void PMFS_GSL::plotWindVectors(){
 void PMFS_GSL::renderImgui()
 {
 #ifdef USE_GUI
-    GSLIMGUI::setup();
+    R_IMGUI::setup();
     GSLIMPLOT::setup();
 
     rclcpp::Rate rate(30);
 
     while(rclcpp::ok() && !finished){
-        GSLIMGUI::StartFrame();
+        R_IMGUI::StartFrame();
         createUI();
         createPlots();
 
-        GSLIMGUI::Render();
+        R_IMGUI::Render();
         rate.sleep();
     }
 
     GSLIMPLOT::close();
-    GSLIMGUI::close();
+    R_IMGUI::close();
 #endif
 }
 

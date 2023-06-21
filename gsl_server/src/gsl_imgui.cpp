@@ -1,14 +1,14 @@
 #ifdef USE_GUI
 #include "gsl_imgui.h"
 
-GLFWwindow* GSLIMGUI::window;
+GLFWwindow* R_IMGUI::window;
 
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-void GSLIMGUI::setup(){
+void R_IMGUI::setup(){
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return;
@@ -76,7 +76,7 @@ void GSLIMGUI::setup(){
 }
 
 
-void GSLIMGUI::close(){
+void R_IMGUI::close(){
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -85,7 +85,7 @@ void GSLIMGUI::close(){
     glfwTerminate();
 }
 
-void GSLIMGUI::StartFrame(){
+void R_IMGUI::StartFrame(){
     glfwPollEvents();
     // Start the Dear ImGui frame
     ImGui_ImplOpenGL3_NewFrame();
@@ -93,7 +93,7 @@ void GSLIMGUI::StartFrame(){
     ImGui::NewFrame();
 }
 
-void GSLIMGUI::Render(){
+void R_IMGUI::Render(){
     // Rendering
     ImGui::Render();
     int display_w, display_h;
