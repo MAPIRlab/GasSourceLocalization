@@ -1,5 +1,6 @@
 #ifdef USE_GUI
 #include <algorithms/PMFS/PMFS.h>
+#include <ament_imgui/ament_imgui.h>
 
 namespace PMFS{
 

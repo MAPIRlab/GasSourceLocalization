@@ -32,19 +32,6 @@ set(USE_GUI ON)
 
 
 
-
-
-if(USE_GUI)
-  # You can change these two lines to use a different rendering API and window manager combo for imgui
-  # but you will also need to provide the boilerplate code in the gsl_imgui.cpp file, which only implements this combo
-  set(IMGUI_BACKEND 
-  "third_party/imgui/backends/imgui_impl_glfw.cpp")
-  list(APPEND IMGUI_BACKEND 
-  "third_party/imgui/backends/imgui_impl_opengl3.cpp")
-  add_definitions(-DUSE_GUI)
-  add_definitions(-DIMGUI_INI_PATH="${CMAKE_CURRENT_SOURCE_DIR}/imgui.ini") #imgui.ini file in the same directory as this CMakeLists.txt
-endif(USE_GUI)
-
 if(GSL_DEBUG)
   add_definitions(-DGSL_DEBUG)
   set(CMAKE_CXX_FLAGS "-Og ${CMAKE_CXX_FLAGS}")
@@ -88,8 +75,8 @@ find_package(spdlog REQUIRED)
 find_package(OpenCV REQUIRED)
 
 if(USE_GUI)
-  add_subdirectory(third_party/glfw)
-  set(CONDITIONAL_GLFW "glfw")
+    find_package(ament_imgui REQUIRED)
+    set(CONDITIONAL_IMGUI "ament_imgui")
 endif(USE_GUI)
 
 
@@ -101,39 +88,17 @@ endif(USE_GUI)
 include_directories(
   include
   Utils
-  
-  third_party/imgui
-  third_party/imgui/backends
-
-  third_party/implot
 )
 
 ###########
 ## SOURCES
 ###########
 
-if(USE_GUI)  
-  SET(IMGUI_FILES
-    third_party/imgui/imgui_draw.cpp
-    third_party/imgui/imgui_tables.cpp
-    third_party/imgui/imgui_widgets.cpp
-    third_party/imgui/imgui.cpp
-    
-    ${IMGUI_BACKEND}
-  )
-    
-  SET(IMPLOT_FILES
-    third_party/implot/implot.cpp
-    third_party/implot/implot_items.cpp
-  )
-endif(USE_GUI)
-  
 set(SOURCES_node 
   Utils/Utils/Utils.cpp
   Utils/NQA/NQAQuadtree.cpp
 
   src/gsl_server.cpp 
-  src/gsl_imgui.cpp
 
   src/algorithms/gsl_algorithm.cpp 
   src/algorithms/gsl_spiral.cpp 
@@ -151,9 +116,6 @@ set(SOURCES_node
     src/algorithms/PMFS/PMFS_GSL/pmfs_movement.cpp
     src/algorithms/PMFS/PMFS_GSL/pmfs_visualization.cpp
     src/algorithms/PMFS/PMFS_GSL/pmfs_utils.cpp
-
-  ${IMGUI_FILES}  
-  ${IMPLOT_FILES}
 )
 
 ###########
@@ -162,8 +124,6 @@ set(SOURCES_node
 
 add_executable(gsl_actionserver_node ${SOURCES_node})
 add_executable(gsl_actionserver_call src/gsl_server_call.cpp)
-
-add_dependencies(gsl_actionserver_node ${CONDITIONAL_GLFW})
 
 ament_target_dependencies( gsl_actionserver_node
     rclcpp
@@ -184,6 +144,7 @@ ament_target_dependencies( gsl_actionserver_node
     gsl_actions
 
     ${CONDITIONAL_GADEN_PLAYER}
+    ${CONDITIONAL_IMGUI}
 )
 
 ament_target_dependencies( gsl_actionserver_call
@@ -200,15 +161,6 @@ target_link_libraries(gsl_actionserver_node
   spdlog::spdlog
   OpenMP::OpenMP_CXX
 )
-
-
-#optional link libs
-if(USE_GUI)
-  target_link_libraries(gsl_actionserver_node
-  glfw
-  OpenGL
-  )
-endif(USE_GUI)
 
 
 install(

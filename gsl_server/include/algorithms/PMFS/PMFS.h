@@ -5,8 +5,6 @@
 #include <algorithms/PMFS/pmfs_publishers_and_subscribers.h>
 #include <algorithms/PMFS/pmfs_UI.h>
 #include <algorithms/PMFS/pmfs_simulations.h>
-#include <gsl_imgui.h>
-#include <gsl_implot.h>
 
 #include <NQA/NQAQuadtree.h>
 #include <fstream>      // std::ofstream

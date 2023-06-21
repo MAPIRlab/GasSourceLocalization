@@ -18,17 +18,22 @@ Currently available algorithms include:
 - "particle_filter"
 
 # Installing and building
-You can download this package by navigating to your catkin workspace and running:
+You can download this package by navigating to your ROS workspace and running:
 
 `git clone --recursive git@github.com:MAPIRlab/Gas-Source-Localization.git GSL`
 
-This will get you the source code of the GSL algorithms and some additional dependencies (under gsl_actionserver/third_party). However, due to the nature of how ROS code is organized in semi-independent packages, it does not quite make sense for this repository to include other catkin packages (which you might already have in the same workspace for something else) as submodules. You will need to install those separately:
+Due to the nature of how ROS code is organized in semi-independent packages, it does not quite make sense for this repository to include other ament packages (which you might already have in the same workspace for something else) as submodules. You will need to install those separately:
 
 ## Dependencies
 
 - [GMRF-wind](https://github.com/MAPIRlab/GMRF-wind)
 - [Nav-assistant](https://github.com/MAPIRlab/navigation-assistant)
 - [Olfaction msgs](https://github.com/MAPIRlab/olfaction_msgs)
+
 - (Optional)[Gaden](https://github.com/MAPIRlab/gaden)
 
 If you don't want to use Gaden for your experiments you can omit it and set the `USE_GADEN` option in the [CMakeLists.txt](gsl_actionserver/CMakeLists.txt) file to `OFF` to compile without the corresponding dependency.
+
+- (Optional)[ament_imgui](https://github.com/PepeOjeda/ament_imgui)
+
+The dependency with ament_imgui can similarly be disabled using the `USE_GUI` option in the [CMakeLists.txt](gsl_actionserver/CMakeLists.txt).

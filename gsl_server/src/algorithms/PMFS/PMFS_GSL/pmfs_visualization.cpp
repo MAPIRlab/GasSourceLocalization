@@ -1,4 +1,6 @@
 #include <algorithms/PMFS/PMFS.h>
+#include <ament_imgui/ament_imgui.h>
+#include <gsl_implot.h>
 
 namespace PMFS{
 
@@ -227,22 +229,22 @@ void PMFS_GSL::plotWindVectors(){
 void PMFS_GSL::renderImgui()
 {
 #ifdef USE_GUI
-    R_IMGUI::setup();
+    AMENT_IMGUI::setup();
     GSLIMPLOT::setup();
 
     rclcpp::Rate rate(30);
 
     while(rclcpp::ok() && !finished){
-        R_IMGUI::StartFrame();
+        AMENT_IMGUI::StartFrame();
         createUI();
         createPlots();
 
-        R_IMGUI::Render();
+        AMENT_IMGUI::Render();
         rate.sleep();
     }
 
     GSLIMPLOT::close();
-    R_IMGUI::close();
+    AMENT_IMGUI::close();
 #endif
 }
 

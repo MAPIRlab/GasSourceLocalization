@@ -1,5 +1,5 @@
 #pragma once
-#include <implot.h>
+#include <implot/implot.h>
 
 class GSLIMPLOT{
     public:
