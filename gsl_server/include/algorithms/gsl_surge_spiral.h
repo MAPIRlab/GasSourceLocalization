@@ -9,29 +9,26 @@
  * STOP_AND_MEASURE: Stop the robot and measure wind and gas for a time-lapse.
  * */
 
-
-class SurgeSpiralPT:public PlumeTracking
+class SurgeSpiralPT : public PlumeTracking
 {
 
 public:
     SurgeSpiralPT(std::shared_ptr<rclcpp::Node> _node);
     ~SurgeSpiralPT();
     virtual void declareParameters() override;
-    virtual void checkState() override; 
+    virtual void checkState() override;
 
     double spiralStep;
     double spiralStep_increment;
     double initSpiralStep;
     int spiral_iter;
 
-
-    double deltaT; //measuring interval length
+    double deltaT; // measuring interval length
     rclcpp::Time lastUpdateTimestamp;
-    
-    void setSurgeGoal() override; 
+
+    void setSurgeGoal() override;
 
     void setCastGoal() override;
     NavAssistant::Goal nextGoalSpiral(Pose initial);
     void resetSpiral();
-
 };

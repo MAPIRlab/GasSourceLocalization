@@ -1,12 +1,12 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
-#include <fstream>      // std::ofstream
+#include <fstream> // std::ofstream
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <gsl_actions/action/do_gsl.hpp>
-#include <numeric>      // std::inner_product
+#include <numeric> // std::inner_product
 #include <eigen3/Eigen/Dense>
 
-using DoGSL=gsl_actions::action::DoGSL;
+using DoGSL = gsl_actions::action::DoGSL;
 using namespace std::placeholders;
 
 class CGSLServer : public rclcpp::Node
@@ -16,27 +16,25 @@ protected:
     std::string action_name_;
 
 public:
-    CGSLServer(std::string name) :
-        action_name_(name), Node("gsl_server")
+    CGSLServer(std::string name) : action_name_(name), Node("gsl_server")
     {
-        actionServer = rclcpp_action::create_server<DoGSL>(this, name, 
-            std::bind(&CGSLServer::handle_goal, this, _1, _2), 
-            std::bind(&CGSLServer::handle_cancel, this, _1), 
-            std::bind(&CGSLServer::handle_accepted, this, _1)
-        );
+        actionServer = rclcpp_action::create_server<DoGSL>(this, name,
+            std::bind(&CGSLServer::handle_goal, this, _1, _2),
+            std::bind(&CGSLServer::handle_cancel, this, _1),
+            std::bind(&CGSLServer::handle_accepted, this, _1));
     }
 
-    ~CGSLServer(){}
-    std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> m_activeGoal{nullptr};
+    ~CGSLServer() {}
+    std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> m_activeGoal{ nullptr };
 
-    rclcpp_action::GoalResponse  handle_goal(const rclcpp_action::GoalUUID & uuid, std::shared_ptr<const DoGSL::Goal> goal);
+    rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const DoGSL::Goal> goal);
     rclcpp_action::CancelResponse handle_cancel(const std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle);
     void handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle);
 
     void execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle);
-private:
 
-    //Implement here all the GSL methods: CFD, plume_tracking, etc.
+private:
+    // Implement here all the GSL methods: CFD, plume_tracking, etc.
     int doSurgeCast();
     int doSpiral();
     int doSurgeSpiral();
