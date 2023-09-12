@@ -240,7 +240,7 @@ namespace PMFS
         }
 
         total = total - min * count;
-#pragma omp parallel for collapse(2)
+        #pragma omp parallel for collapse(2)
         for (int i = 0; i < variable.size(); i++)
         {
             for (int j = 0; j < variable[0].size(); j++)
@@ -310,10 +310,10 @@ namespace PMFS
 
         // if not compiled with gaden support, you have no choice but to use ground truth :)
 
-#ifdef USE_GADEN
+        #ifdef USE_GADEN
         if (!groundTruth)
         {
-#endif
+            #endif
             auto& clientWindGMRF = pubs.clientWindGMRF;
             auto& GMRFRequest = pubs.GMRFRequest;
             // ask the gmrf_wind service for the estimated wind vector in cell i,j
@@ -332,7 +332,7 @@ namespace PMFS
             else
                 spdlog::warn("CANNOT READ ESTIMATED WIND VECTORS");
 
-#ifdef USE_GADEN
+            #ifdef USE_GADEN
         }
 
         else
@@ -355,7 +355,7 @@ namespace PMFS
             else
                 spdlog::warn("CANNOT READ ESTIMATED WIND VECTORS");
         }
-#endif
+        #endif
     }
 
 }

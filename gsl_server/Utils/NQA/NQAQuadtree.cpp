@@ -149,7 +149,7 @@ namespace NQA
     {
         std::list<Node> free_leaves; //__copies__ of all the leaves that correspond to free parts of the map. Not actually part of the tree!
 
-#if 1
+        #if 1
         // use the existing leaves
         for (int i = 0; i < leaves.size(); i++)
         {
@@ -160,7 +160,7 @@ namespace NQA
                 free_leaves.back().value = 1;
             }
         }
-#else
+        #else
 
         // use the original map, cell by cell
         for (int i = 0; i < map.size(); i++)
@@ -173,7 +173,7 @@ namespace NQA
                 free_leaves.back().value = 1;
             }
         }
-#endif
+        #endif
 
         std::vector<std::vector<Node*>> pointersImage(map.size(), std::vector<Node*>(map[0].size(), nullptr)); // for each cell in the original map, a pointer to the leaf that contains it
 
@@ -183,7 +183,7 @@ namespace NQA
             Node* leaf = &(*itr);
             Utils::Vector2Int start = leaf->origin;
             Utils::Vector2Int end = leaf->origin + leaf->size;
-#pragma omp parallel for collapse(2)
+            #pragma omp parallel for collapse(2)
             for (int r = start.x; r < end.x; r++)
             {
                 for (int c = start.y; c < end.y; c++)

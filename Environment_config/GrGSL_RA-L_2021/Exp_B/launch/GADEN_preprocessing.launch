@@ -6,19 +6,19 @@
     <arg name="scenario" default="Exp_B" />
     <arg name="simulation" default="dynamic" />
     
-    <node pkg="gaden_preprocessing" type="preprocessing" name="preprocessing" output="screen" >
+    <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen" >
  
         #Cell size
         <param name="cell_size" value="0.1"/>    
         
         #CAD models of the enviroment (.stl)
         <param name="number_of_models" value="1"/>
-        <param name="model_0" value="$(find grgsl_env)/$(arg scenario)/cad_models/10x6_walls.stl"/>
+        <param name="model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_walls.stl"/>
                 
         #CAD model of the outlets (.stl)
         <param name="number_of_outlet_models" value="2"/>
-        <param name="outlets_model_1" value="$(find grgsl_env)/$(arg scenario)/cad_models/10x6_door_left.stl"/>
-        <param name="outlets_model_0" value="$(find grgsl_env)/$(arg scenario)/cad_models/10x6_door_right.stl"/>
+        <param name="outlets_model_1" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_left.stl"/>
+        <param name="outlets_model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_right.stl"/>
         
         #3D Location of a point in free-space
         <param name="empty_point_x" value="1.0"/>      ### (m)
@@ -27,10 +27,17 @@
             
 
         #Wind Data (the node will append _i.csv to the name that is specified here)
-        <param name="wind_files" value="$(find grgsl_env)/$(arg scenario)/wind_simulations/$(arg simulation)/wind_at_cell_centers"/>
+        <param name="wind_files" value="$(find-pkg-share grgsl_env)/$(var scenario)/wind_simulations/$(var simulation)/wind_at_cell_centers"/>
         <param name="uniformWind" value="false"/>
         #Where to write the output files
-        <param name="output_path" value="$(find grgsl_env)/$(arg scenario)" />
+        <param name="output_path" value="$(find-pkg-share grgsl_env)/$(var scenario)" />
+        <param name="generateCoppeliaScene" value="$(var generateCoppeliaScene)" />
     </node>
+
+	<include file="$(find-pkg-share grgsl_env)/navigation_config/conditional_coppelia_launch.py" >
+      <arg name="launchCoppelia" value="$(var generateCoppeliaScene)"/>
+      <arg name="autoplay" value="False"/>
+      <arg name="headless" value="True"/>
+    </include>  
 </launch>
 
