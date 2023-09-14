@@ -17,6 +17,12 @@ namespace GrGSL
 
 	GrGSL::GrGSL(std::shared_ptr<rclcpp::Node> _node) : GSLAlgorithm(_node)
 	{
+
+	}
+
+	void GrGSL::initialize()
+	{
+		GSLAlgorithm::initialize();
 		// Subscribers
 		//------------
 		gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic, 1, std::bind(&GrGSL::gasCallback, this, _1));
@@ -39,19 +45,19 @@ namespace GrGSL
 	void GrGSL::declareParameters()
 	{
 		GSLAlgorithm::declareParameters();
-		th_gas_present = node->declare_parameter<double>("th_gas_present", 0.3);
-		th_wind_present = node->declare_parameter<double>("th_wind_present", 0.05);
-		stop_and_measure_time = node->declare_parameter<double>("stop_and_measure_time", 3);
-		scale = node->declare_parameter<double>("scale", 65); // scale for dynamic map reduction
-		stdev_hit = node->declare_parameter<double>("stdev_hit", 1.0);
-		stdev_miss = node->declare_parameter<double>("stdev_miss", 2.0);
-		infoTaxis = node->declare_parameter<bool>("infoTaxis", false);
-		allowMovementRepetition = node->declare_parameter<bool>("allowMovementRepetition", true);
-		ground_truth_x = node->declare_parameter<double>("ground_truth_x", 0);
-		ground_truth_y = node->declare_parameter<double>("ground_truth_y", 0);
-		convergence_thr = node->declare_parameter<double>("convergence_thr", 0.5); // threshold for source declaration
-		convergence_steps = node->declare_parameter<int>("convergence_steps", 5);
-		markers_height = node->declare_parameter<double>("markers_height", 0);
+		th_gas_present = getParam<double>("th_gas_present", 0.3);
+		th_wind_present = getParam<double>("th_wind_present", 0.05);
+		stop_and_measure_time = getParam<double>("stop_and_measure_time", 3);
+		scale = getParam<double>("scale", 65); // scale for dynamic map reduction
+		stdev_hit = getParam<double>("stdev_hit", 1.0);
+		stdev_miss = getParam<double>("stdev_miss", 2.0);
+		infoTaxis = getParam<bool>("infoTaxis", false);
+		allowMovementRepetition = getParam<bool>("allowMovementRepetition", true);
+		ground_truth_x = getParam<double>("ground_truth_x", 0);
+		ground_truth_y = getParam<double>("ground_truth_y", 0);
+		convergence_thr = getParam<double>("convergence_thr", 0.5); // threshold for source declaration
+		convergence_steps = getParam<int>("convergence_steps", 5);
+		markers_height = getParam<double>("markers_height", 0);
 	}
 
 	GrGSL::~GrGSL()
@@ -65,6 +71,7 @@ namespace GrGSL
 
 	void GrGSL::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 	{
+		spdlog::info("Grgsl - map");
 		if (current_state != State::WAITING_FOR_MAP)
 		{
 			return;

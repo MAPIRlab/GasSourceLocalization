@@ -13,11 +13,12 @@ class SurgeCastPT : public PlumeTracking
 {
 
 public:
-    SurgeCastPT(std::shared_ptr<rclcpp::Node> _node);
-    ~SurgeCastPT();
+	SurgeCastPT(std::shared_ptr<rclcpp::Node> _node);
+	~SurgeCastPT();
+	virtual void initialize() override;
 
-    void checkState() override;   // Check gas/wind to see if a state transition is necessary
-    void setSurgeGoal() override; // Set target upwind
-    void setCastGoal() override;  // Set target crosswind
-    void save_results_to_file(int result) override;
+	void checkState() override;   // Check gas/wind to see if a state transition is necessary
+	void setSurgeGoal() override; // Set target upwind
+	void setCastGoal() override;  // Set target crosswind
+	void save_results_to_file(int result) override;
 };

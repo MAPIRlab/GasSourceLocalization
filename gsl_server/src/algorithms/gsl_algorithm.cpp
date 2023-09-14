@@ -6,6 +6,10 @@ using namespace std::placeholders;
 GSLAlgorithm::GSLAlgorithm(std::shared_ptr<rclcpp::Node> _node)
 {
 	node = _node;
+}
+
+void GSLAlgorithm::initialize()
+{
 	nav_client = rclcpp_action::create_client<NavAssistant>(node, "nav_assistant");
 	spdlog::info("[GSL_NODE] Waiting for the move_base action server to come online...");
 	bool mb_aconline = false;
@@ -52,21 +56,21 @@ GSLAlgorithm::GSLAlgorithm(std::shared_ptr<rclcpp::Node> _node)
 void GSLAlgorithm::declareParameters()
 {
 
-	enose_topic = node->declare_parameter<std::string>("enose_topic", "PID/Sensor_reading");
-	anemometer_topic = node->declare_parameter<std::string>("anemometer_topic", "Anemometer/WindSensor_reading");
-	robot_location_topic = node->declare_parameter<std::string>("robot_location_topic", "amcl_pose");
-	map_topic = node->declare_parameter<std::string>("map_topic", "map");
-	costmap_topic = node->declare_parameter<std::string>("costmap_topic", "global_costmap/costmap");
+	enose_topic = getParam<std::string>("enose_topic", "PID/Sensor_reading");
+	anemometer_topic = getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading");
+	robot_location_topic = getParam<std::string>("robot_location_topic", "amcl_pose");
+	map_topic = getParam<std::string>("map_topic", "map");
+	costmap_topic = getParam<std::string>("costmap_topic", "global_costmap/costmap");
 
-	max_search_time = node->declare_parameter<double>("max_search_time", 300.0);
-	distance_found = node->declare_parameter<double>("distance_found", 0.5);
-	source_pose_x = node->declare_parameter<double>("ground_truth_x", 0.0);
-	source_pose_y = node->declare_parameter<double>("ground_truth_y", 0.0);
-	verbose = node->declare_parameter<bool>("verbose", false);
+	max_search_time = getParam<double>("max_search_time", 300.0);
+	distance_found = getParam<double>("distance_found", 0.5);
+	source_pose_x = getParam<double>("ground_truth_x", 0.0);
+	source_pose_y = getParam<double>("ground_truth_y", 0.0);
+	verbose = getParam<bool>("verbose", false);
 
-	results_file = node->declare_parameter<std::string>("results_file", "");
-	errors_file = node->declare_parameter<std::string>("errors_file", "");
-	path_file = node->declare_parameter<std::string>("path_file", "");
+	results_file = getParam<std::string>("results_file", "");
+	errors_file = getParam<std::string>("errors_file", "");
+	path_file = getParam<std::string>("path_file", "");
 }
 
 GSLAlgorithm::~GSLAlgorithm() {}

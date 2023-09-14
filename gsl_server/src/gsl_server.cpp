@@ -32,6 +32,8 @@ int main(int argc, char** argv)
 
 void CGSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
 {
+	spdlog::info("[GSL_server] Request received: {}", goal_handle->get_goal()->gsl_method);
+
 	int res;
 
 	// 1. Start the localization of the gas source
@@ -110,6 +112,7 @@ int CGSLServer::doSurgeCast()
 {
 	spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
 	SurgeCastPT pt(shared_from_this());
+	pt.initialize();
 
 	spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
@@ -153,7 +156,6 @@ int CGSLServer::doSurgeCast()
 				pt.setCastGoal();
 				break;
 			case PT_state::WAITING_FOR_MAP:
-				spdlog::info(" Waiting for the map of the environment!...."); // Waiting call back function
 				break;
 			default:
 				spdlog::error(" Search state is undefined!");
@@ -168,6 +170,8 @@ int CGSLServer::doSurgeCast()
 int CGSLServer::doSpiral()
 {
 	SpiralSearcher spiral(shared_from_this());
+	spiral.initialize();
+
 	rclcpp::Rate loop_rate(10);
 	bool blocked = false;
 	while (rclcpp::ok() && spiral.checkSourceFound() == -1)
@@ -182,7 +186,6 @@ int CGSLServer::doSpiral()
 			switch (spiral.getCurrentState())
 			{
 			case (SPIRAL_state::WAITING_FOR_MAP):
-				spdlog::info("[SPIRAL_SEARCH] Waiting for the map of the environment!....");
 				break;
 			case (SPIRAL_state::STOP_AND_MEASURE):
 				spiral.getGasObservations();
@@ -215,6 +218,7 @@ int CGSLServer::doSurgeSpiral()
 {
 	spdlog::info(" New Action request. Initializing Plume Tracking algorithm.");
 	SurgeSpiralPT pt(shared_from_this());
+	pt.initialize();
 
 	spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
@@ -258,7 +262,6 @@ int CGSLServer::doSurgeSpiral()
 				pt.setCastGoal();
 				break;
 			case PT_state::WAITING_FOR_MAP:
-				spdlog::info(" Waiting for the map of the environment!...."); // Waiting call back function
 				break;
 			default:
 				spdlog::error(" Search state is undefined!");
@@ -274,6 +277,7 @@ int CGSLServer::doParticleFilter()
 {
 	spdlog::info("[GSL-ParticleFilter] New Action request. Initializing Plume Tracking algorithm.");
 	ParticleFilter pt(shared_from_this());
+	pt.initialize();
 
 	// Loop
 	spdlog::info("[GSL-ParticleFilter] Staring Plume Tracking Loop");
@@ -359,7 +363,6 @@ int CGSLServer::doParticleFilter()
 				pt.setCastGoal();
 				break;
 			case PT_state::WAITING_FOR_MAP:
-				spdlog::info("[GSL-ParticleFilter] Waiting for the map of the environment!...."); // Waiting call back function
 				break;
 			default:
 				spdlog::error("[GSL-ParticleFilter] Search state is undefined!");
@@ -375,6 +378,8 @@ int CGSLServer::doGrGSL()
 {
 	using namespace GrGSL;
 	GrGSL::GrGSL grgsl(shared_from_this());
+	grgsl.initialize();
+
 	rclcpp::Rate loop_rate(2);
 	int sourceFound = -1;
 	double startTime = now().seconds();
@@ -414,6 +419,8 @@ int CGSLServer::doPMFS()
 {
 	using namespace PMFS;
 	PMFS_GSL grid(shared_from_this());
+	grid.initialize();
+
 	rclcpp::Rate loop_rate(2);
 	int sourceFound = -1;
 	double startTime = now().seconds();
@@ -425,7 +432,7 @@ int CGSLServer::doPMFS()
 		loop_rate.sleep();
 	}
 
-	grid.initialize();
+	grid.setUpMaps();
 
 	std::thread renderThread = std::thread(&PMFS_GSL::renderImgui, &grid);
 
