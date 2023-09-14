@@ -44,7 +44,7 @@
 
     ### RVIZ ###
   <node name="rviz_player" pkg="rviz2" exec="rviz2" args="-d $(find-pkg-share grgsl_env)/gaden.rviz" launch-prefix="xterm -e" />
-    <!--
+    
   
   
 # ===================== GADEN =====================================
@@ -123,7 +123,7 @@
 		<param name="use_map_ref_system" value="false"/>
 	</node>
   	<node pkg="tf2_ros" exec="static_transform_publisher" name="anemometer_broadcaster" args="0.0 0.0 0.5 0.0 0 0 $(var robot_name)_base_link $(var robot_name)_anemometer_frame 100" />
--->
+
 
   ## GSL ##
   <node pkg="gsl_server" exec="gsl_actionserver_call" name="gsl_call" output="screen" namespace="$(var robot_name)"> 
@@ -132,7 +132,7 @@
   <node pkg="gsl_server" exec="gsl_actionserver_node" name="gsl_node" output="screen" namespace="$(var robot_name)" launch-prefix="xterm -e gdb --args">
     #Common
     <param name="robot_location_topic" value="ground_truth"/>
-    <param name="stop_and_measure_time" value="1"/>
+    <param name="stop_and_measure_time" value="1.0"/>
     <param name="th_gas_present" value="0.5"/>
     <param name="th_wind_present" value="0.1"/>
     <param name="ground_truth_x" value="$(var source_location_x)"/>
@@ -140,7 +140,7 @@
     <param name="results_file" value="/home/pepe/Documents/Results/GridGSL_$(var scenario)_$(var simulation)_Infotaxis_$(var info).csv"/>
     
     #Grid
-    <param name="scale" value="60"/>
+    <param name="scale" value="60.0"/>
     <param name="stdev_hit" value="1.0"/>
     <param name="stdev_miss" value="1.5"/>
     <param name="convergence_thr" value="0.5"/>
