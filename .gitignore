@@ -5,3 +5,4 @@
 *occupancy.pgm
 *occupancy.yaml
 *OccupancyGrid3D.csv
+**__pycache__**

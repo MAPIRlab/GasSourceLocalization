@@ -12,12 +12,10 @@
         <param name="cell_size" value="0.1"/>    
         
         #CAD models of the enviroment (.stl)
-        <param name="number_of_models" value="2"/>
         <param name="model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_walls.stl"/>
         <param name="model_1" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_central_obstacle.stl"/>
                 
         #CAD model of the outlets (.stl)
-        <param name="number_of_outlet_models" value="2"/>
         <param name="outlets_model_1" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_left.stl"/>
         <param name="outlets_model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_right.stl"/>
         

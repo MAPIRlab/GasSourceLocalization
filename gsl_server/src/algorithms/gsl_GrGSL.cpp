@@ -71,22 +71,11 @@ namespace GrGSL
 
 	void GrGSL::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 	{
-		spdlog::info("Grgsl - map");
 		if (current_state != State::WAITING_FOR_MAP)
 		{
 			return;
 		}
 
-		// wait until we know where the robot is
-		rclcpp::Rate rate(1);
-		while (robot_poses_vector.size() == 0)
-		{
-			rate.sleep();
-		}
-
-		if (verbose)
-			spdlog::info("- {} - Got the map of the environment!", __FUNCTION__);
-		// ROS convention is to consider cell [0,0] as the lower-left corner (see http://docs.ros.org/api/nav_msgs/html/msg/MapMetaData.html)
 		map_ = *msg;
 
 		if (verbose)
@@ -97,6 +86,18 @@ namespace GrGSL
 			spdlog::info("x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}", map_.info.origin.position.x, map_.info.origin.position.x + map_.info.width * map_.info.resolution, map_.info.origin.position.y, map_.info.origin.position.y + map_.info.height * map_.info.resolution);
 			spdlog::info("--------------------------------");
 		}
+
+		// wait until we know where the robot is
+		rclcpp::Rate rate(1);
+		while (robot_poses_vector.size() == 0)
+		{
+			rate.sleep();
+			rclcpp::spin_some(node);
+			if (verbose)
+				spdlog::info("Waiting to hear from localization topic: {}", localization_sub_->get_topic_name());
+		}
+
+
 
 		// i is y, j is x
 
