@@ -117,7 +117,7 @@ int CGSLServer::doSurgeCast()
 	spdlog::debug(" inMotion = {}", pt.get_inMotion() ? "true" : "false");
 
 	// Loop
-	spdlog::info(" Staring Plume Tracking Loop");
+	spdlog::info(" Starting Plume Tracking Loop");
 	rclcpp::Rate loop_rate(10);
 	size_t num_iterations = 10;
 	size_t iter_i = 0;
@@ -384,6 +384,14 @@ int CGSLServer::doGrGSL()
 	int sourceFound = -1;
 	double startTime = now().seconds();
 
+	while (rclcpp::ok() && grgsl.getState() == State::WAITING_FOR_MAP)
+	{
+		rclcpp::spin_some(shared_from_this());
+		loop_rate.sleep();
+	}
+
+	grgsl.initializeMap();
+
 	while (rclcpp::ok() && sourceFound == -1 && now().seconds() - startTime < grgsl.max_search_time * 1.2)
 	{
 		if (!grgsl.get_inMotion())
@@ -401,8 +409,6 @@ int CGSLServer::doGrGSL()
 				grgsl.showWeights();
 				break;
 			case State::EXPLORATION:
-				break;
-			case State::WAITING_FOR_MAP:
 				break;
 			default:
 				spdlog::error("[GSL-Grid] Search state is undefined!");
@@ -426,7 +432,7 @@ int CGSLServer::doPMFS()
 	double startTime = now().seconds();
 	bool initializationStarted = false;
 
-	while (grid.getState() == State::WAITING_FOR_MAP)
+	while (rclcpp::ok() && grid.getState() == State::WAITING_FOR_MAP)
 	{
 		rclcpp::spin_some(shared_from_this());
 		loop_rate.sleep();

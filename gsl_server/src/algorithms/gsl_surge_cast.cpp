@@ -144,7 +144,7 @@ void SurgeCastPT::checkState()
 	{
 	case PT_state::EXPLORATION:
 		// We are looking for gas clues
-		if (gasFound && *max_element(gasConcentration_v.begin(), gasConcentration_v.end()))
+		if (gasFound && get_average_vector(gasConcentration_v))
 		{
 			if (verbose)
 				spdlog::info("GAS HIT!");

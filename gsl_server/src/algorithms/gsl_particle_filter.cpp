@@ -23,7 +23,7 @@ void ParticleFilter::initialize()
 	estimation_markers = node->create_publisher<Marker>("estimation_markers", 10);
 	average_estimation_marker = node->create_publisher<Marker>("average_estimation_marker", 10);
 
-	lastWindObservation = rclcpp::Time(0);
+	lastWindObservation = node->now();
 	windDirection_v.clear();
 	windSpeed_v.clear();
 	firstObserv = false;
@@ -85,11 +85,7 @@ void ParticleFilter::windCallback(const olfaction_msgs::msg::Anemometer::SharedP
 	if (node->now().seconds() - lastWindObservation.seconds() >= deltaT)
 	{
 		// store the measurement in the list of wind history as a (x,y) vector
-		double length = 1;
-		if (lastWindObservation != rclcpp::Time(0))
-		{
-			length = (node->now().seconds() - lastWindObservation.seconds()) / deltaT;
-		}
+		double length = (node->now().seconds() - lastWindObservation.seconds()) / deltaT;
 		lastWindObservation = node->now();
 		double speed = get_average_vector(windSpeed_v) * length;
 		double angle = get_average_wind_direction(windDirection_v);
@@ -349,7 +345,6 @@ double ParticleFilter::probability(bool hit, Particle& particle)
 
 	for (int windIndex = 0; windIndex < historicWind.size(); windIndex++)
 	{
-
 		double sx = 0, sy = 0;
 		for (int j = windIndex; j < historicWind.size(); j++)
 		{
@@ -367,13 +362,10 @@ double ParticleFilter::probability(bool hit, Particle& particle)
 	}
 
 	if (hit)
-	{
 		return (1 - total);
-	}
 	else
-	{
 		return total;
-	}
+
 }
 
 void ParticleFilter::updateWeights(bool hit)
@@ -427,11 +419,11 @@ bool ParticleFilter::isDegenerated()
 	double sum = 0;
 	for (const Particle& p : particles)
 	{
-		neff += pow(p.weight, 2);
+		neff += std::pow(p.weight, 2);
 		sum += p.weight;
 	}
 	double effectiveP = 1.0 / neff;
-	spdlog::info("Effective particles {}Total particles: {}", (int)effectiveP, particles.size());
+	spdlog::info("Effective particles {} Total particles: {}", std::floor(effectiveP), particles.size());
 
 	return effectiveP < particles.size() * 0.25 || std::isnan(effectiveP);
 }
@@ -442,9 +434,9 @@ void ParticleFilter::resample()
 		spdlog::warn("[Particle Filter] Resampling");
 	std::vector<Particle> newParticles;
 
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::normal_distribution<double> dist(0.0, 0.05);
+	static std::random_device rd;
+	static std::mt19937 gen(rd());
+	static std::normal_distribution<double> dist(0.0, 0.05);
 	Marker points = emptyMarker();
 
 	for (int i = 0; i < particles.size(); i++)

@@ -23,11 +23,6 @@ namespace GrGSL
 	void GrGSL::initialize()
 	{
 		GSLAlgorithm::initialize();
-		// Subscribers
-		//------------
-		gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic, 1, std::bind(&GrGSL::gasCallback, this, _1));
-		wind_sub_ = node->create_subscription<olfaction_msgs::msg::Anemometer>(anemometer_topic, 1, std::bind(&GrGSL::windCallback, this, _1));
-		map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, rclcpp::QoS(1).reliable().transient_local(), std::bind(&GrGSL::mapCallback, this, _1));
 
 		probability_markers = node->create_publisher<Marker>("probability_markers", 10);
 		estimation_markers = node->create_publisher<Marker>("estimation_markers", 10);
@@ -48,7 +43,7 @@ namespace GrGSL
 		th_gas_present = getParam<double>("th_gas_present", 0.3);
 		th_wind_present = getParam<double>("th_wind_present", 0.05);
 		stop_and_measure_time = getParam<double>("stop_and_measure_time", 3);
-		scale = getParam<double>("scale", 65); // scale for dynamic map reduction
+		scale = getParam<int>("scale", 65); // scale for dynamic map reduction
 		stdev_hit = getParam<double>("stdev_hit", 1.0);
 		stdev_miss = getParam<double>("stdev_miss", 2.0);
 		infoTaxis = getParam<bool>("infoTaxis", false);
@@ -86,7 +81,11 @@ namespace GrGSL
 			spdlog::info("x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}", map_.info.origin.position.x, map_.info.origin.position.x + map_.info.width * map_.info.resolution, map_.info.origin.position.y, map_.info.origin.position.y + map_.info.height * map_.info.resolution);
 			spdlog::info("--------------------------------");
 		}
+		current_state = State::EXPLORATION;
+	}
 
+	void GrGSL::initializeMap()
+	{
 		// wait until we know where the robot is
 		rclcpp::Rate rate(1);
 		while (robot_poses_vector.size() == 0)
@@ -172,7 +171,6 @@ namespace GrGSL
 
 		normalizeWeights(cells);
 		// Start the fun!!
-		current_state = State::EXPLORATION;
 		start_time = node->now();   // start measuring time
 		robot_poses_vector.clear(); // start measuring distance
 		inExecution = true;
@@ -817,7 +815,7 @@ namespace GrGSL
 		std::vector<WindVector> result(indices.size());
 
 		auto future = clientWind->async_send_request(request);
-		auto future_result = rclcpp::spin_until_future_complete(node, future);
+		auto future_result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(1));
 		if (future_result == rclcpp::FutureReturnCode::SUCCESS)
 		{
 			auto response = future.get();

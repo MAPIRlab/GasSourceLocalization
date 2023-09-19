@@ -24,6 +24,7 @@ void SurgeSpiralPT::initialize()
 	lastUpdateTimestamp = node->now();
 	resetSpiral();
 	step = 1;
+	inMotion = false;
 }
 
 SurgeSpiralPT::~SurgeSpiralPT()

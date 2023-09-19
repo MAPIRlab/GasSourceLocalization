@@ -12,9 +12,6 @@ void PlumeTracking::initialize()
 	GSLAlgorithm::initialize();
 	// Subscribers
 	//------------
-	gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic, 1, std::bind(&PlumeTracking::gasCallback, this, _1));
-	wind_sub_ = node->create_subscription<olfaction_msgs::msg::Anemometer>(anemometer_topic, 1, std::bind(&PlumeTracking::windCallback, this, _1));
-	map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, 1, std::bind(&PlumeTracking::mapCallback, this, _1));
 
 	constexpr int size_vector_moving_measurements = 40;
 	// Init variables
@@ -71,7 +68,7 @@ void PlumeTracking::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr 
 	{
 		stop_and_measure_gas_v.push_back(msg->raw);
 	}
-	if (!gasFound && msg->raw > th_gas_present)
+	if (current_state != PT_state::WAITING_FOR_MAP && !gasFound && msg->raw > th_gas_present)
 	{
 		gasFound = true;
 		if (verbose)
@@ -139,19 +136,15 @@ void PlumeTracking::windCallback(const olfaction_msgs::msg::Anemometer::SharedPt
 
 void PlumeTracking::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
 {
-	if (verbose)
-		spdlog::info("- {} - Got the map of the environment!", __FUNCTION__);
-	// ROS convention is to consider cell [0,0] as the lower-left corner (see http://docs.ros.org/api/nav_msgs/html/msg/MapMetaData.html)
 	map_ = *msg;
 
 	if (verbose)
+	{
 		spdlog::info("--------------GSL---------------");
-	if (verbose)
 		spdlog::info("Occupancy Map dimensions:");
-	if (verbose)
 		spdlog::info("x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}", map_.info.origin.position.x, map_.info.origin.position.x + map_.info.width * map_.info.resolution, map_.info.origin.position.y, map_.info.origin.position.y + map_.info.height * map_.info.resolution);
-	if (verbose)
 		spdlog::info("--------------------------------");
+	}
 
 	// Start the fun!!
 	cancel_navigation();
@@ -167,6 +160,7 @@ void PlumeTracking::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr ms
 // Move Base CallBacks
 void PlumeTracking::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result)
 {
+	inMotion = false;
 	if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
 	{
 		spdlog::debug("PlumeTracking - {} - Target achieved!", __FUNCTION__);
@@ -222,7 +216,7 @@ void PlumeTracking::getGasWindObservations()
 		// Get averaged values of the observations taken while standing
 		// Wind direction is reported as DownWind in the map frame_id
 		// Being positive to the right, negative to the left, range [-pi,pi]
-		average_concentration = *max_element(stop_and_measure_gas_v.begin(), stop_and_measure_gas_v.end()); // get_average_vector(stop_and_measure_gas_v);
+		average_concentration = get_average_vector(stop_and_measure_gas_v);
 		average_wind_direction = get_average_wind_direction(stop_and_measure_windD_v);
 		average_wind_spped = get_average_vector(stop_and_measure_windS_v);
 

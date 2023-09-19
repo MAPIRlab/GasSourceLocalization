@@ -25,10 +25,6 @@ namespace PMFS
 		pubs.markers.debug.varianceHit = node->create_publisher<Marker>("varianceHit", 1);
 		pubs.markers.debug.movementSets = node->create_publisher<Marker>("movementSets", 1);
 
-		gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic, 1, std::bind(&PMFS_GSL::gasCallback, this, _1));
-		wind_sub_ = node->create_subscription<olfaction_msgs::msg::Anemometer>(anemometer_topic, 1, std::bind(&PMFS_GSL::windCallback, this, _1));
-		map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, 1, std::bind(&PMFS_GSL::mapCallback, this, _1));
-
 		// Init State
 		previous_state = State::WAITING_FOR_MAP;
 		current_state = State::WAITING_FOR_MAP;
@@ -45,6 +41,7 @@ namespace PMFS
 
 	void PMFS_GSL::declareParameters()
 	{
+		GSLAlgorithm::declareParameters();
 		settings.th_gas_present = getParam<double>("th_gas_present", 0.3);
 		settings.th_wind_present = getParam<double>("th_wind_present", 0.05);
 		settings.stop_and_measure_time = getParam<double>("stop_and_measure_time", 3);
@@ -80,9 +77,6 @@ namespace PMFS
 		settings.simulation.iterationsToRecord = getParam<int>("iterationsToRecord", 200);
 		settings.simulation.maxWarmupIterations = getParam<int>("maxWarmupIterations", 500);
 
-		ground_truth_x = getParam<double>("ground_truth_x", 0);
-		ground_truth_y = getParam<double>("ground_truth_y", 0);
-
 		settings.markers_height = getParam<double>("markers_height", 0);
 
 		settings.localEstimationWindowSize = getParam<int>("localEstimationWindowSize", 2);
@@ -98,6 +92,15 @@ namespace PMFS
 
 	void PMFS_GSL::setUpMaps()
 	{
+		rclcpp::Rate rate(1);
+		while (robot_poses_vector.size() == 0)
+		{
+			rate.sleep();
+			rclcpp::spin_some(node);
+			if (verbose)
+				spdlog::info("Waiting to hear from localization topic: {}", localization_sub_->get_topic_name());
+		}
+
 		std::vector<std::vector<uint8_t>> mapa(map_.info.height, std::vector<uint8_t>(map_.info.width));
 		int index = 0;
 		for (int i = 0; i < mapa.size(); i++)
@@ -140,7 +143,8 @@ namespace PMFS
 		// pruning unreachable free cells
 		{
 			std::vector<std::vector<uint8_t>> occupancyMap(cells.size(), std::vector<uint8_t>(cells[0].size()));
-			geometry_msgs::msg::TransformStamped tfm = tf_buffer->lookupTransform("map", "anemometer_frame", rclcpp::Time(0));
+			std::string anemometer_frame = getParam<std::string>("anemometer_frame", "anemometer_frame");
+			geometry_msgs::msg::TransformStamped tfm = tf_buffer->lookupTransform("map", anemometer_frame, rclcpp::Time(0));
 			float anemometer_Z = tfm.transform.translation.z;
 			spdlog::info("anemometer z is {}", anemometer_Z);
 			numFreeCells = 0;

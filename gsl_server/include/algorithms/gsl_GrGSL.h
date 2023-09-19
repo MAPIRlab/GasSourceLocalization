@@ -57,6 +57,7 @@ namespace GrGSL
 		void showWeights();
 		virtual void setGoal();
 		virtual void initialize() override;
+		void initializeMap();
 
 	protected:
 		void declareParameters() override;
@@ -122,7 +123,7 @@ namespace GrGSL
 		std::vector<WindVector> estimateWind();
 
 		// Cells
-		double scale;
+		int scale;
 		int numCells;
 		std::vector<std::vector<Cell>> cells;
 		rclcpp::Publisher<Marker>::SharedPtr probability_markers;

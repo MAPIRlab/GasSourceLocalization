@@ -37,7 +37,7 @@ void GSLAlgorithm::initialize()
 	//------------
 	gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic, 1, std::bind(&GSLAlgorithm::gasCallback, this, _1));
 	wind_sub_ = node->create_subscription<olfaction_msgs::msg::Anemometer>(anemometer_topic, 1, std::bind(&GSLAlgorithm::windCallback, this, _1));
-	map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, 1, std::bind(&GSLAlgorithm::mapCallback, this, _1));
+	map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, rclcpp::QoS(1).reliable().transient_local(), std::bind(&GSLAlgorithm::mapCallback, this, _1));
 	costmap_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(costmap_topic, 1, std::bind(&GSLAlgorithm::costmapCallback, this, _1));
 	localization_sub_ = node->create_subscription<PoseWithCovarianceStamped>(robot_location_topic, 100, std::bind(&GSLAlgorithm::localizationCallback, this, _1));
 
@@ -134,7 +134,7 @@ bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
 	if (!isPointInsideMapBounds({ pos_x, pos_y }))
 	{
 		if (verbose)
-			spdlog::info("[DEBUG] Goal is out of map dimensions");
+			spdlog::warn("Goal [{:.2}, {:.2}] is out of map dimensions", pos_x, pos_y);
 		return false;
 	}
 
@@ -146,7 +146,7 @@ bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
 	request->goal = goal.target_pose;
 
 	auto future = make_plan_client->async_send_request(request);
-	if (rclcpp::spin_until_future_complete(node, future) != rclcpp::FutureReturnCode::SUCCESS)
+	if (rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(1)) != rclcpp::FutureReturnCode::SUCCESS)
 	{
 		spdlog::error("Unable to call make_plan!");
 		return false;
@@ -162,7 +162,6 @@ bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
 void GSLAlgorithm::sendGoal(const NavAssistant::Goal& goal)
 {
 	rclcpp_action::Client<NavAssistant>::SendGoalOptions options;
-	// TODO make sure this is calling the overriden version
 	options.result_callback = std::bind(&GSLAlgorithm::goalDoneCallback, this, _1);
 	nav_client->async_send_goal(goal, options);
 }
@@ -238,7 +237,7 @@ void GSLAlgorithm::save_results_to_file(int result)
 	request->goal = source_pose;
 
 	auto future = make_plan_client->async_send_request(request);
-	if (rclcpp::spin_until_future_complete(node, future) != rclcpp::FutureReturnCode::SUCCESS)
+	if (rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(1)) != rclcpp::FutureReturnCode::SUCCESS)
 	{
 		spdlog::error(" Unable to GetPath from MoveBase");
 		nav_d = -1;

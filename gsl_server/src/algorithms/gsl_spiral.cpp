@@ -10,11 +10,6 @@ void SpiralSearcher::initialize()
 {
 	GSLAlgorithm::initialize();
 
-	// Subscribers
-	//------------
-	gas_sub_ = node->create_subscription<olfaction_msgs::msg::GasSensor>(enose_topic, 1, std::bind(&SpiralSearcher::gasCallback, this, _1));
-	map_sub_ = node->create_subscription<nav_msgs::msg::OccupancyGrid>(map_topic, 1, std::bind(&SpiralSearcher::mapCallback, this, _1));
-
 	// Init State
 	previous_state = SPIRAL_state::WAITING_FOR_MAP;
 	current_state = SPIRAL_state::WAITING_FOR_MAP;
