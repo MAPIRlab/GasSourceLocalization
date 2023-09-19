@@ -4,6 +4,7 @@
 
 <launch>
     <arg name="scenario" default="Exp_D" />
+	<arg name="generateCoppeliaScene" default="True"/>
     
     <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen">
      

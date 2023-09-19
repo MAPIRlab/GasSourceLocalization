@@ -4,6 +4,8 @@
 
 <launch>
     <arg name="scenario" default="Exp_C" />
+	<arg name="generateCoppeliaScene" default="True"/>
+    
     
     <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen">
      
@@ -15,12 +17,12 @@
         <param name="model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-walls.stl"/>
                 
         #CAD model of the outlets (.stl)
-        <param name="number_of_outlet_models" value="5"/>
         <param name="outlets_model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-2.stl"/>
         <param name="outlets_model_1" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-6.stl"/>
         <param name="outlets_model_2" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-1.stl"/>
         <param name="outlets_model_3" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-4.stl"/>
         <param name="outlets_model_4" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-3.stl"/>
+        <param name="outlets_model_5" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-5.stl"/>
         
         #3D Location of a point in free-space
         <param name="empty_point_x" value="1.7"/>      ### (m)

@@ -45,9 +45,9 @@
         <param name="wait_preprocessing" value="false"/>    	 ### wait for the ok from preprocessing before starting the simulation
 	    <param name="sim_time" value="300.0" />                    ### [sec] Total time of the gas dispersion simulation
 	    <param name="time_step" value="0.1" />                   ### [sec] Time increment between snapshots. Set aprox = cell_size/max_wind_speed.
-	    <param name="num_filaments_sec" value="7" />            ### Num of filaments released each second
-	    <param name="variable_rate" value="true" />              ### If true the number of released filaments would be random(0,numFilaments_sec)
-        <param name="filament_stop_steps" value="30" />
+	    <param name="num_filaments_sec" value="10" />            ### Num of filaments released each second
+	    <param name="variable_rate" value="false" />              ### If true the number of released filaments would be random(0,numFilaments_sec)
+        <param name="filament_stop_steps" value="20" />
         <param name="ppm_filament_center" value="10.0"/>           ### [ppm] Gas concentration at the center of the 3D gaussian (filament)
         <param name="filament_initial_std" value="10.0"/>          ### [cm] Sigma of the filament at t=0-> 3DGaussian shape
         <param name="filament_growth_gamma" value="10.0"/>         ### [cm²/s] Growth ratio of the filament_std
@@ -76,7 +76,7 @@
 	    <param name="save_results" value="1" />                  #1=true, 0=false
 	    <param name="restuls_time_step" value="0.5" />           #(sec) Time increment between saving state to file
 	    <param name="results_min_time" value="0.0" />            #(sec) Time to start saving results to file
-	    <param name="results_location" value="$(find-pkg-share grgsl_env)/$(var scenario)/gas_simulations/$(var simulation)" />
+	    <param name="results_location" value="$(find-pkg-share grgsl_env)/$(var scenario)/gas_simulations/sim1" />
     </node>
 
    

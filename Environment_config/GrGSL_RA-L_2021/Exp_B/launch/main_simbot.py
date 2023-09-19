@@ -23,7 +23,7 @@ def launch_arguments():
 				"launchCoppelia", default_value=["True"],
 			),
 			DeclareLaunchArgument(
-				"scenario",	default_value=["Exp_A"],
+				"scenario",	default_value=["Exp_B"],
 			),
 			DeclareLaunchArgument(
 				"use_infotaxis",	default_value=["False"],
@@ -52,23 +52,23 @@ def launch_setup(context, *args, **kwargs):
 					# Common
 					{"verbose": True},
 					{"robot_location_topic": "ground_truth"},
-					{"stop_and_measure_time": 1.0},
-					{"th_gas_present": 0.5},
-					{"th_wind_present": 0.1},
+					{"stop_and_measure_time": 3.0},
+					{"th_gas_present": 0.2},
+					{"th_wind_present": 0.15},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
 					{"ground_truth_y": parse_substitution("$(var source_location_y)")},
 					{"results_file": parse_substitution("Results/GridGSL_$(var scenario)_Infotaxis_$(var use_infotaxis).csv")},
 					{"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
 					
 					#GrGSL
-					{"scale": 60},
+					{"scale": 55},
 					{"stdev_hit": 1.0},
 					{"stdev_miss": 1.5},
 					{"convergence_thr": 0.5},
 					{"infoTaxis": parse_substitution("$(var use_infotaxis)")},
 					
 					#Surge-Cast
-					{"step": 0.8},
+					{"step": 0.55},
 				],
 			),
 		])
@@ -161,14 +161,11 @@ def launch_setup(context, *args, **kwargs):
 				{"CAD_0" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_walls.dae")},
 				{"CAD_0_color" : [0.82, 0.86, 0.86]},
 
-				{"CAD_1" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_central_obstacle.dae")},
+				{"CAD_1" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_left.dae")},
 				{"CAD_1_color" : [0.82, 0.86, 0.86]},
 
-				{"CAD_2" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_left.dae")},
+				{"CAD_2" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_right.dae")},
 				{"CAD_2_color" : [0.96, 0.17, 0.3]},
-
-				{"CAD_3" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/10x6_door_right.dae")},
-				{"CAD_3_color" : [0.96, 0.17, 0.3]},
 
 				{"occupancy3D_data" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/OccupancyGrid3D.csv")},
 				
@@ -188,15 +185,15 @@ def launch_setup(context, *args, **kwargs):
 			parameters=[
 				{"verbose" : False},
 				{"player_freq" : 2.0},
-				{"initial_iteration" : 35},
+				{"initial_iteration" : 1},
 				{"num_simulators" : 1},
 
 				{"simulation_data_0" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/gas_simulations/sim1")},
 				{"occupancyFile" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/OccupancyGrid3D.csv")},
 
 				{"allow_looping" : True},
-				{"loop_from_iteration" : 40},
-				{"loop_to_iteration" : 45},
+				{"loop_from_iteration" : 15},
+				{"loop_to_iteration" : 24},
 			]
 		),
 	]
@@ -290,7 +287,7 @@ def generate_launch_description():
         ),
 		SetLaunchConfiguration(
             name="source_location_x",
-            value=["2.00"],
+            value=["1.50"],
         ),
 		SetLaunchConfiguration(
             name="source_location_y",
@@ -298,7 +295,7 @@ def generate_launch_description():
         ),
 		SetLaunchConfiguration(
             name="source_location_z",
-            value=["0.50"],
+            value=["0.75"],
         ),
 		SetLaunchConfiguration(
             name="robot_name",
