@@ -7,7 +7,7 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -g ${CMAKE_CXX_FLAGS}")
 
 #OPTIONS
 ##############################################################################
-set(GSL_DEBUG ON) #debug mode disables optimizations and activates a bunch of assertions in the code.
+set(GSL_DEBUG OFF) #debug mode disables optimizations and activates a bunch of assertions in the code.
 
 set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 

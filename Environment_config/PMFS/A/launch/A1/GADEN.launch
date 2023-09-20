@@ -90,7 +90,7 @@
 	    <param name="save_results" value="1" />                  #1=true, 0=false
 	    <param name="results_time_step" value="0.5" />           #(sec) Time increment between saving state to file
 	    <param name="results_min_time" value="0.0" />            #(sec) Time to start saving results to file
-	    <param name="results_location" value="$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/$(var simulation)" />
+	    <param name="results_location" value="$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/A1" />
     </node>
 
    

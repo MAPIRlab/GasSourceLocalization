@@ -278,10 +278,7 @@ def generate_launch_description():
         # Set env var to print messages to stdout immediately
         SetEnvironmentVariable("RCUTILS_LOGGING_BUFFERED_STREAM", "1"),
         SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
-        SetLaunchConfiguration(
-            name="pkg_dir",
-            value=[get_package_share_directory("test_env")],
-        ),
+        
 		SetLaunchConfiguration(
             name="source_location_x",
             value=["1.75"],

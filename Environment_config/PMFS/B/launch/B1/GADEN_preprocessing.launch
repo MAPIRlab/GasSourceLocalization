@@ -1,19 +1,19 @@
 <launch>
- <arg name="scenario" default="B" />
- <arg name="simulation" default="1,3-2,4_fast" />
 
- <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen" >
+ 	<arg name="scenario" default="B" />
+ 	<arg name="simulation" default="1,3-2,4_fast" />
+	<arg name="generateCoppeliaScene" default="True"/>
+    
+    <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen" >
      #Cell size
 		<param name="cell_size" value="0.1"/>
 		#CAD models of the enviroment (.stl)
-		<param name="number_of_models" value="4"/>
 		<param name="model_0" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/House01-main.stl"/>
 		<param name="model_1" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/House01Outlet005.stl"/>
 		<param name="model_2" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/House01Outlet006.stl"/>
 		<param name="model_3" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/House01Outlet007.stl"/>
 
 			#CAD model of the outlets (.stl)
-		<param name="number_of_outlet_models" value="4"/>
 		<param name="outlets_model_0" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/House01Outlet001.stl"/>
 		<param name="outlets_model_1" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/House01Outlet002.stl"/>
 		<param name="outlets_model_2" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/House01Outlet003.stl"/>

@@ -1,8 +1,9 @@
 <launch>
- <arg name="scenario" default="B" />
- <arg name="simulation" default="2,4-1_fast" />
-
- <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen" >
+	<arg name="scenario" default="B" />
+	<arg name="simulation" default="2,4-1_fast" />
+	<arg name="generateCoppeliaScene" default="True"/>
+    
+    <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen" >
      #Cell size
      <param name="cell_size" value="0.1"/>
      #CAD models of the enviroment (.stl)
