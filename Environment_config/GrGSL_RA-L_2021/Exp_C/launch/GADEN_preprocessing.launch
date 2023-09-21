@@ -4,23 +4,25 @@
 
 <launch>
     <arg name="scenario" default="Exp_C" />
+	<arg name="generateCoppeliaScene" default="True"/>
     
-    <node pkg="gaden_preprocessing" type="preprocessing" name="preprocessing" output="screen">
+    
+    <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen">
      
         #Cell size
         <param name="cell_size" value="0.1"/>    
         
         #CAD models of the enviroment (.stl)
         <param name="number_of_models" value="1"/>
-        <param name="model_0" value="$(find grgsl_env)/$(arg scenario)/cad_models/ROOMS-walls.stl"/>
+        <param name="model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-walls.stl"/>
                 
         #CAD model of the outlets (.stl)
-        <param name="number_of_outlet_models" value="5"/>
-        <param name="outlets_model_0" value="$(find grgsl_env)/$(arg scenario)/cad_models/ROOMS-outlet-2.stl"/>
-        <param name="outlets_model_1" value="$(find grgsl_env)/$(arg scenario)/cad_models/ROOMS-outlet-6.stl"/>
-        <param name="outlets_model_2" value="$(find grgsl_env)/$(arg scenario)/cad_models/ROOMS-outlet-1.stl"/>
-        <param name="outlets_model_3" value="$(find grgsl_env)/$(arg scenario)/cad_models/ROOMS-outlet-4.stl"/>
-        <param name="outlets_model_4" value="$(find grgsl_env)/$(arg scenario)/cad_models/ROOMS-outlet-3.stl"/>
+        <param name="outlets_model_0" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-2.stl"/>
+        <param name="outlets_model_1" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-6.stl"/>
+        <param name="outlets_model_2" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-1.stl"/>
+        <param name="outlets_model_3" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-4.stl"/>
+        <param name="outlets_model_4" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-3.stl"/>
+        <param name="outlets_model_5" value="$(find-pkg-share grgsl_env)/$(var scenario)/cad_models/ROOMS-outlet-5.stl"/>
         
         #3D Location of a point in free-space
         <param name="empty_point_x" value="1.7"/>      ### (m)
@@ -30,10 +32,17 @@
 
         #Wind Data (the node will append _i.csv to the name that is specified here)
         <param name="uniformWind" value="false"/>
-        <param name="wind_files" value="$(find grgsl_env)/$(arg scenario)/wind_simulations/1,2,3-5,6"/>
+        <param name="wind_files" value="$(find-pkg-share grgsl_env)/$(var scenario)/wind_simulations/1,2,3-5,6"/>
 
         #Where to write the output files
-        <param name="output_path" value="$(find grgsl_env)/$(arg scenario)" />
+        <param name="output_path" value="$(find-pkg-share grgsl_env)/$(var scenario)" />
+        <param name="generateCoppeliaScene" value="$(var generateCoppeliaScene)" />
     </node>
+
+	<include file="$(find-pkg-share grgsl_env)/navigation_config/conditional_coppelia_launch.py" >
+      <arg name="launchCoppelia" value="$(var generateCoppeliaScene)"/>
+      <arg name="autoplay" value="False"/>
+      <arg name="headless" value="True"/>
+    </include>  
 </launch>
 

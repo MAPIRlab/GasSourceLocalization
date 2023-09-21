@@ -34,7 +34,7 @@ set(USE_GUI ON)
 
 if(GSL_DEBUG)
   add_definitions(-DGSL_DEBUG)
-  set(CMAKE_CXX_FLAGS "-Og ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "-O0 ${CMAKE_CXX_FLAGS}")
 else()
   set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif(GSL_DEBUG)
@@ -75,6 +75,7 @@ find_package(spdlog REQUIRED)
 find_package(OpenCV REQUIRED)
 
 if(USE_GUI)
+	add_definitions(-DUSE_GUI)
     find_package(ament_imgui REQUIRED)
     set(CONDITIONAL_IMGUI "ament_imgui")
 endif(USE_GUI)
@@ -168,4 +169,8 @@ install(
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+	DIRECTORY resources
+	DESTINATION share/${PROJECT_NAME}
+)
 ament_package()

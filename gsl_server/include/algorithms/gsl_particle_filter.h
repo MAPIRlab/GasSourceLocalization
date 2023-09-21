@@ -22,6 +22,7 @@ class ParticleFilter : public SurgeSpiralPT
 public:
     ParticleFilter(std::shared_ptr<rclcpp::Node> _node);
     ~ParticleFilter();
+	virtual void initialize() override;
 
     int numberOfParticles; // how many particles we are going to generate
     int maxEstimations;    // how many estimations we want to keep track of

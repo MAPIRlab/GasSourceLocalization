@@ -1,442 +1,443 @@
 #include <algorithms/PMFS/PMFS.h>
 #include <ament_imgui/ament_imgui.h>
 #include <gsl_implot.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 namespace PMFS
 {
 
-    void PMFS_GSL::showWeights()
-    {
-        Marker sourceProbMarker = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
+	void PMFS_GSL::showWeights()
+	{
+		Marker sourceProbMarker = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
 
-        Marker gasProbMarker = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
+		Marker gasProbMarker = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
 
-        Marker confidenceMarker = gasProbMarker;
+		Marker confidenceMarker = gasProbMarker;
 
-        for (int a = 0; a < cells.size(); a++)
-        {
-            for (int b = 0; b < cells[0].size(); b++)
-            {
-                if (cells[a][b].free)
-                {
-                    auto coords = indexToCoordinates(a, b);
-                    Point p;
-                    p.x = coords.x;
-                    p.y = coords.y;
-                    p.z = settings.markers_height;
+		for (int a = 0; a < cells.size(); a++)
+		{
+			for (int b = 0; b < cells[0].size(); b++)
+			{
+				if (cells[a][b].free)
+				{
+					auto coords = indexToCoordinates(a, b);
+					Point p;
+					p.x = coords.x;
+					p.y = coords.y;
+					p.z = settings.markers_height;
 
-                    // SOURCE PROB
-                    double prob_s = sourceProbability(a, b);
-                    std_msgs::msg::ColorRGBA color_source = Utils::valueToColor(prob_s, settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y, settings.visualization.sourceMode);
-                    sourceProbMarker.points.push_back(p);
-                    sourceProbMarker.colors.push_back(color_source);
+					// SOURCE PROB
+					double prob_s = sourceProbability(a, b);
+					std_msgs::msg::ColorRGBA color_source = Utils::valueToColor(prob_s, settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y, settings.visualization.sourceMode);
+					sourceProbMarker.points.push_back(p);
+					sourceProbMarker.colors.push_back(color_source);
 
-                    // HIT
-                    std_msgs::msg::ColorRGBA col_hit = valueToColor(Utils::logOddsToProbability(cells[a][b].hitProbability.logOdds), settings.visualization.hitLimits.x, settings.visualization.hitLimits.y, settings.visualization.hitMode);
+					// HIT
+					std_msgs::msg::ColorRGBA col_hit = valueToColor(Utils::logOddsToProbability(cells[a][b].hitProbability.logOdds), settings.visualization.hitLimits.x, settings.visualization.hitLimits.y, settings.visualization.hitMode);
 
-                    p.z = settings.markers_height - 0.1;
-                    gasProbMarker.points.push_back(p);
-                    gasProbMarker.colors.push_back(col_hit);
+					p.z = settings.markers_height - 0.1;
+					gasProbMarker.points.push_back(p);
+					gasProbMarker.colors.push_back(col_hit);
 
-                    // CONFIDENCE
-                    std_msgs::msg::ColorRGBA colorConfidence = valueToColor(cells[a][b].hitProbability.confidence, 0, 1, Utils::valueColorMode::Linear);
+					// CONFIDENCE
+					std_msgs::msg::ColorRGBA colorConfidence = valueToColor(cells[a][b].hitProbability.confidence, 0, 1, Utils::valueColorMode::Linear);
 
-                    p.z = settings.markers_height - 0.1;
-                    confidenceMarker.points.push_back(p);
-                    confidenceMarker.colors.push_back(colorConfidence);
-                }
-            }
-        }
+					p.z = settings.markers_height - 0.1;
+					confidenceMarker.points.push_back(p);
+					confidenceMarker.colors.push_back(colorConfidence);
+				}
+			}
+		}
 
-        pubs.markers.source_probability_markers->publish(sourceProbMarker);
-        pubs.markers.hitProbabilityMarkers->publish(gasProbMarker);
-        pubs.markers.confidenceMarkers->publish(confidenceMarker);
-    }
+		pubs.markers.source_probability_markers->publish(sourceProbMarker);
+		pubs.markers.hitProbabilityMarkers->publish(gasProbMarker);
+		pubs.markers.confidenceMarkers->publish(confidenceMarker);
+	}
 
-    void PMFS_GSL::showDebugInfo()
-    {
+	void PMFS_GSL::showDebugInfo()
+	{
 
-        Marker explorationMarker = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
+		Marker explorationMarker = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
 
-        Marker varianceMarker = explorationMarker;
+		Marker varianceMarker = explorationMarker;
 
-        Marker movementSetsMarker = explorationMarker;
+		Marker movementSetsMarker = explorationMarker;
 
-        double maxExpl = -DBL_MAX;
-        double maxVar = -DBL_MAX;
-        double minExpl = DBL_MAX;
-        double minVar = DBL_MAX;
-        for (int a = 0; a < cells.size(); a++)
-        {
-            for (int b = 0; b < cells[0].size(); b++)
-            {
-                if (!cells[a][b].free)
-                    continue;
-                maxExpl = std::max(maxExpl, explorationValue(a, b));
-                maxVar = std::max(maxVar, simulations.varianceOfHitProb[a][b] * (1 - cells[a][b].hitProbability.confidence));
+		double maxExpl = -DBL_MAX;
+		double maxVar = -DBL_MAX;
+		double minExpl = DBL_MAX;
+		double minVar = DBL_MAX;
+		for (int a = 0; a < cells.size(); a++)
+		{
+			for (int b = 0; b < cells[0].size(); b++)
+			{
+				if (!cells[a][b].free)
+					continue;
+				maxExpl = std::max(maxExpl, explorationValue(a, b));
+				maxVar = std::max(maxVar, simulations.varianceOfHitProb[a][b] * (1 - cells[a][b].hitProbability.confidence));
 
-                minExpl = std::min(minExpl, explorationValue(a, b));
-                minVar = std::min(minVar, simulations.varianceOfHitProb[a][b] * (1 - cells[a][b].hitProbability.confidence));
-            }
-        }
+				minExpl = std::min(minExpl, explorationValue(a, b));
+				minVar = std::min(minVar, simulations.varianceOfHitProb[a][b] * (1 - cells[a][b].hitProbability.confidence));
+			}
+		}
 
-        for (int a = 0; a < cells.size(); a++)
-        {
-            for (int b = 0; b < cells[0].size(); b++)
-            {
-                if (!cells[a][b].free)
-                    continue;
-                auto coords = indexToCoordinates(a, b);
-                Point p;
-                p.x = coords.x;
-                p.y = coords.y;
-                p.z = settings.markers_height;
+		for (int a = 0; a < cells.size(); a++)
+		{
+			for (int b = 0; b < cells[0].size(); b++)
+			{
+				if (!cells[a][b].free)
+					continue;
+				auto coords = indexToCoordinates(a, b);
+				Point p;
+				p.x = coords.x;
+				p.y = coords.y;
+				p.z = settings.markers_height;
 
-                std_msgs::msg::ColorRGBA explorationColor;
-                std_msgs::msg::ColorRGBA advantageColor;
-                std_msgs::msg::ColorRGBA varianceColor;
+				std_msgs::msg::ColorRGBA explorationColor;
+				std_msgs::msg::ColorRGBA advantageColor;
+				std_msgs::msg::ColorRGBA varianceColor;
 
-                if (openMoveSet.find(Vector2Int(a, b)) == openMoveSet.end())
-                {
-                    explorationColor.r = 0;
-                    explorationColor.g = 0;
-                    explorationColor.b = 0;
-                    explorationColor.a = 1;
-                    advantageColor = explorationColor;
-                }
-                else
-                {
-                    explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::valueColorMode::Linear);
-                }
-                varianceColor = Utils::valueToColor(simulations.varianceOfHitProb[a][b] * (1 - cells[a][b].hitProbability.confidence), minVar, maxVar, Utils::valueColorMode::Linear);
+				if (openMoveSet.find(Vector2Int(a, b)) == openMoveSet.end())
+				{
+					explorationColor.r = 0;
+					explorationColor.g = 0;
+					explorationColor.b = 0;
+					explorationColor.a = 1;
+					advantageColor = explorationColor;
+				}
+				else
+				{
+					explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::valueColorMode::Linear);
+				}
+				varianceColor = Utils::valueToColor(simulations.varianceOfHitProb[a][b] * (1 - cells[a][b].hitProbability.confidence), minVar, maxVar, Utils::valueColorMode::Linear);
 
-                explorationMarker.points.push_back(p);
-                explorationMarker.colors.push_back(explorationColor);
+				explorationMarker.points.push_back(p);
+				explorationMarker.colors.push_back(explorationColor);
 
-                p.z = settings.markers_height - 0.1;
-                varianceMarker.points.push_back(p);
-                varianceMarker.colors.push_back(varianceColor);
+				p.z = settings.markers_height - 0.1;
+				varianceMarker.points.push_back(p);
+				varianceMarker.colors.push_back(varianceColor);
 
-                movementSetsMarker.points.push_back(p);
-                if (openMoveSet.find({ a, b }) != openMoveSet.end())
-                    movementSetsMarker.colors.push_back(Utils::create_color(0, 1, 0, 1));
-                else if (closedMoveSet.find(Vector2Int(a, b)) != closedMoveSet.end())
-                    movementSetsMarker.colors.push_back(Utils::create_color(1, 0, 0, 1));
-                else
-                    movementSetsMarker.colors.push_back(Utils::create_color(0, 0, 1, 1));
-            }
-        }
-        pubs.markers.debug.explorationValue->publish(explorationMarker);
-        pubs.markers.debug.varianceHit->publish(varianceMarker);
-        pubs.markers.debug.movementSets->publish(movementSetsMarker);
-    }
+				movementSetsMarker.points.push_back(p);
+				if (openMoveSet.find({ a, b }) != openMoveSet.end())
+					movementSetsMarker.colors.push_back(Utils::create_color(0, 1, 0, 1));
+				else if (closedMoveSet.find(Vector2Int(a, b)) != closedMoveSet.end())
+					movementSetsMarker.colors.push_back(Utils::create_color(1, 0, 0, 1));
+				else
+					movementSetsMarker.colors.push_back(Utils::create_color(0, 0, 1, 1));
+			}
+		}
+		pubs.markers.debug.explorationValue->publish(explorationMarker);
+		pubs.markers.debug.varianceHit->publish(varianceMarker);
+		pubs.markers.debug.movementSets->publish(movementSetsMarker);
+	}
 
-    void PMFS_GSL::debugMapSegmentation()
-    {
-        MarkerArray segmentMarker;
-        for (int i = 0; i < simulations.QTleaves.size(); i++)
-        {
-            NQA::Node* leaf = &simulations.QTleaves[i];
-            Marker mark = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
-            mark.type = Marker::CUBE;
-            Utils::Vector2 worldSpaceScale = (Utils::Vector2(leaf->size.y, leaf->size.x)) * settings.scale * map_.info.resolution;
+	void PMFS_GSL::debugMapSegmentation()
+	{
+		MarkerArray segmentMarker;
+		for (int i = 0; i < simulations.QTleaves.size(); i++)
+		{
+			NQA::Node* leaf = &simulations.QTleaves[i];
+			Marker mark = Utils::emptyMarker({ 0.2, 0.2 }, node->get_clock());
+			mark.type = Marker::CUBE;
+			Utils::Vector2 worldSpaceScale = (Utils::Vector2(leaf->size.y, leaf->size.x)) * settings.scale * map_.info.resolution;
 
-            auto coords = indexToCoordinates(
-                leaf->origin.x,
-                leaf->origin.y,
-                false) +
-                (worldSpaceScale * 0.5);
+			auto coords = indexToCoordinates(
+				leaf->origin.x,
+				leaf->origin.y,
+				false) +
+				(worldSpaceScale * 0.5);
 
-            Point p;
-            p.x = coords.x;
-            p.y = coords.y;
-            p.z = 0;
-            // mark.points.push_back(p);
-            mark.pose.position = p;
-            mark.id = i;
-            mark.scale.x = worldSpaceScale.x - 0.05;
-            mark.scale.y = worldSpaceScale.y - 0.05;
-            mark.scale.z = 0.01;
+			Point p;
+			p.x = coords.x;
+			p.y = coords.y;
+			p.z = 0;
+			// mark.points.push_back(p);
+			mark.pose.position = p;
+			mark.id = i;
+			mark.scale.x = worldSpaceScale.x - 0.05;
+			mark.scale.y = worldSpaceScale.y - 0.05;
+			mark.scale.z = 0.01;
 
-            if (leaf->value <= 0.5)
-                mark.color = Utils::create_color(0, 0, 0, 1);
-            else
-                mark.color = Utils::create_color(1, 1, 1, 1);
-            segmentMarker.markers.push_back(mark);
+			if (leaf->value <= 0.5)
+				mark.color = Utils::create_color(0, 0, 0, 1);
+			else
+				mark.color = Utils::create_color(1, 1, 1, 1);
+			segmentMarker.markers.push_back(mark);
 
-            pubs.markers.quadtreePublisher->publish(segmentMarker);
+			pubs.markers.quadtreePublisher->publish(segmentMarker);
 
-            if (!rclcpp::ok())
-                break;
-        }
-    }
+			if (!rclcpp::ok())
+				break;
+		}
+	}
 
-    void PMFS_GSL::plotWindVectors()
-    {
-        MarkerArray arrow_array;
-        // Add an ARROW marker for each node
-        Marker marker;
-        marker.header.frame_id = "map";
-        marker.header.stamp = node->now();
-        marker.ns = "WindVector";
-        marker.type = Marker::ARROW;
-        marker.action = Marker::ADD;
+	void PMFS_GSL::plotWindVectors()
+	{
+		MarkerArray arrow_array;
+		// Add an ARROW marker for each node
+		Marker marker;
+		marker.header.frame_id = "map";
+		marker.header.stamp = node->now();
+		marker.ns = "WindVector";
+		marker.type = Marker::ARROW;
+		marker.action = Marker::ADD;
 
-        // Get max wind vector in the map (to normalize the plot)
-        double max_module = 0.0;
-        for (size_t i = 0; i < estimatedWindVectors.size(); i++)
-        {
-            for (size_t j = 0; j < estimatedWindVectors[0].size(); j++)
-            {
-                if (estimatedWindVectors[i][j].norm() > max_module)
-                    max_module = estimatedWindVectors[i][j].norm();
-            }
-        }
+		// Get max wind vector in the map (to normalize the plot)
+		double max_module = 0.0;
+		for (size_t i = 0; i < estimatedWindVectors.size(); i++)
+		{
+			for (size_t j = 0; j < estimatedWindVectors[0].size(); j++)
+			{
+				if (estimatedWindVectors[i][j].norm() > max_module)
+					max_module = estimatedWindVectors[i][j].norm();
+			}
+		}
 
-        for (size_t i = 0; i < estimatedWindVectors.size(); i++)
-        {
-            for (size_t j = 0; j < estimatedWindVectors[0].size(); j++)
-            {
-                if (cells[i][j].free)
-                {
-                    double module = estimatedWindVectors[i][j].norm();
-                    double angle = std::atan2(estimatedWindVectors[i][j].y, estimatedWindVectors[i][j].x);
-                    if (module > 0.001)
-                    {
-                        marker.id = i * estimatedWindVectors[0].size() + j;
-                        // Set the pose of the marker.
-                        Utils::Vector2 coords = indexToCoordinates(i, j);
-                        marker.pose.position.x = coords.x;
-                        marker.pose.position.y = coords.y;
-                        marker.pose.position.z = settings.markers_height;
-                        marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
-                        // shape
-                        marker.scale.x = settings.scale * map_.info.resolution * (module / max_module); // arrow length,
-                        marker.scale.y = 0.03;                                                          // arrow width
-                        marker.scale.z = 0.05;                                                          // arrow height
-                        // color -> must normalize to [0-199]
-                        size_t idx_color = 199 * (module / max_module);
-                        marker.color.r = 1;
-                        marker.color.g = 0;
-                        marker.color.b = 0;
-                        marker.color.a = 1.0;
+		for (size_t i = 0; i < estimatedWindVectors.size(); i++)
+		{
+			for (size_t j = 0; j < estimatedWindVectors[0].size(); j++)
+			{
+				if (cells[i][j].free)
+				{
+					double module = estimatedWindVectors[i][j].norm();
+					double angle = std::atan2(estimatedWindVectors[i][j].y, estimatedWindVectors[i][j].x);
+					if (module > 0.001)
+					{
+						marker.id = i * estimatedWindVectors[0].size() + j;
+						// Set the pose of the marker.
+						Utils::Vector2 coords = indexToCoordinates(i, j);
+						marker.pose.position.x = coords.x;
+						marker.pose.position.y = coords.y;
+						marker.pose.position.z = settings.markers_height;
+						marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
+						// shape
+						marker.scale.x = settings.scale * map_.info.resolution * (module / max_module); // arrow length,
+						marker.scale.y = 0.03;                                                          // arrow width
+						marker.scale.z = 0.05;                                                          // arrow height
+						// color -> must normalize to [0-199]
+						size_t idx_color = 199 * (module / max_module);
+						marker.color.r = 1;
+						marker.color.g = 0;
+						marker.color.b = 0;
+						marker.color.a = 1.0;
 
-                        // Push Arrow to array
-                        arrow_array.markers.push_back(marker);
-                    }
-                }
-            } // end for
-        }
-        pubs.markers.windArrowMarkers->publish(arrow_array);
-    }
+						// Push Arrow to array
+						arrow_array.markers.push_back(marker);
+					}
+				}
+			} // end for
+		}
+		pubs.markers.windArrowMarkers->publish(arrow_array);
+	}
 
-    // ImGui stuff
+	// ImGui stuff
 
-    void PMFS_GSL::renderImgui()
-    {
-#ifdef USE_GUI
-        AMENT_IMGUI::setup();
-        GSLIMPLOT::setup();
+	void PMFS_GSL::renderImgui()
+	{
+		#ifdef USE_GUI
+		AMENT_IMGUI::setup(fmt::format("{}/resources/imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(), "PMFS", 900, 600);
+		GSLIMPLOT::setup();
 
-        rclcpp::Rate rate(30);
+		rclcpp::Rate rate(30);
 
-        while (rclcpp::ok() && !finished)
-        {
-            AMENT_IMGUI::StartFrame();
-            createUI();
-            createPlots();
+		while (rclcpp::ok() && !finished)
+		{
+			AMENT_IMGUI::StartFrame();
+			createUI();
+			createPlots();
 
-            AMENT_IMGUI::Render();
-            rate.sleep();
-        }
+			AMENT_IMGUI::Render();
+			rate.sleep();
+		}
 
-        GSLIMPLOT::close();
-        AMENT_IMGUI::close();
-#endif
-    }
+		GSLIMPLOT::close();
+		AMENT_IMGUI::close();
+		#endif
+	}
 
-    void PMFS_GSL::createUI()
-    {
-#ifdef USE_GUI
+	void PMFS_GSL::createUI()
+	{
+		#ifdef USE_GUI
 
-        ImGui::Begin("Queries");
-        {
-            static int x = 0;
-            static int y = 0;
-            int selectedVar = GridUI::selectVariable();
+		ImGui::Begin("Queries");
+		{
+			static int x = 0;
+			static int y = 0;
+			int selectedVar = GridUI::selectVariable();
 
-            if (GridUI::useCoordinates())
-            {
-                static float fx, fy;
-                ImGui::InputFloat("X", &fx);
-                ImGui::InputFloat("Y", &fy);
-                auto indices = coordinatesToIndex(fx, fy);
-                x = indices.x;
-                y = indices.y;
-            }
-            else
-            {
-                ImGui::InputInt("X", &x);
-                ImGui::InputInt("Y", &y);
-            }
+			if (GridUI::useCoordinates())
+			{
+				static float fx, fy;
+				ImGui::InputFloat("X", &fx);
+				ImGui::InputFloat("Y", &fy);
+				auto indices = coordinatesToIndex(fx, fy);
+				x = indices.x;
+				y = indices.y;
+			}
+			else
+			{
+				ImGui::InputInt("X", &x);
+				ImGui::InputInt("Y", &y);
+			}
 
-            static std::string result;
-            if (ImGui::Button("Print") && indicesInBounds({ x, y }))
-            {
-                if (selectedVar == 0)
-                    result = GridUI::printCell(cells, x, y);
-                else if (selectedVar == 1)
-                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, cells[x][y].sourceProbability);
-            }
-            if (ImGui::Button("Simulate leaf") && indicesInBounds({ x, y }))
-            {
+			static std::string result;
+			if (ImGui::Button("Print") && indicesInBounds({ x, y }))
+			{
+				if (selectedVar == 0)
+					result = GridUI::printCell(cells, x, y);
+				else if (selectedVar == 1)
+					result = fmt::format("Cell {0},{1}: {2}\n", x, y, cells[x][y].sourceProbability);
+			}
+			if (ImGui::Button("Simulate leaf") && indicesInBounds({ x, y }))
+			{
 
-                NQA::Node* leaf = simulations.mapSegmentation[x][y];
-                if (!leaf)
-                    spdlog::error("Wrong coordinates!");
-                else
-                    simulations.printImage(SimulationSource(leaf, this));
-            }
-            else if (ImGui::Button("Simulate cell") && indicesInBounds({ x, y }))
-            {
-                simulations.printImage(SimulationSource(indexToCoordinates(x, y), this));
-            }
+				NQA::Node* leaf = simulations.mapSegmentation[x][y];
+				if (!leaf)
+					spdlog::error("Wrong coordinates!");
+				else
+					simulations.printImage(SimulationSource(leaf, this));
+			}
+			else if (ImGui::Button("Simulate cell") && indicesInBounds({ x, y }))
+			{
+				simulations.printImage(SimulationSource(indexToCoordinates(x, y), this));
+			}
 
-            ImGui::Text("%s", result.c_str());
-        }
-        ImGui::End();
+			ImGui::Text("%s", result.c_str());
+		}
+		ImGui::End();
 
-        ImGui::Begin("Goal");
-        {
+		ImGui::Begin("Goal");
+		{
 
-            ImGui::TextWrapped("Set a goal manually to be visited during the next movement phase.");
-            if (GridUI::useCoordinates())
-            {
-                static float fx, fy;
-                ImGui::InputFloat("X", &fx);
-                ImGui::InputFloat("Y", &fy);
-                debugStuff.debugGoal = coordinatesToIndex(fx, fy);
-            }
-            else
-            {
-                static int x, y;
-                ImGui::InputInt("X", &x);
-                ImGui::InputInt("Y", &y);
-                debugStuff.debugGoal = Vector2Int(x, y);
-            }
-            if (ImGui::Button("Go"))
-            {
-                debugStuff.GoalSet = true;
-            }
-        }
-        ImGui::End();
+			ImGui::TextWrapped("Set a goal manually to be visited during the next movement phase.");
+			if (GridUI::useCoordinates())
+			{
+				static float fx, fy;
+				ImGui::InputFloat("X", &fx);
+				ImGui::InputFloat("Y", &fy);
+				debugStuff.debugGoal = coordinatesToIndex(fx, fy);
+			}
+			else
+			{
+				static int x, y;
+				ImGui::InputInt("X", &x);
+				ImGui::InputInt("Y", &y);
+				debugStuff.debugGoal = Vector2Int(x, y);
+			}
+			if (ImGui::Button("Go"))
+			{
+				debugStuff.GoalSet = true;
+			}
+		}
+		ImGui::End();
 
-        ImGui::Begin("Source Estimation Power");
-        {
-            ImGui::InputDouble("Source Power", &settings.simulation.sourceDiscriminationPower);
-        }
-        ImGui::End();
+		ImGui::Begin("Source Estimation Power");
+		{
+			ImGui::InputDouble("Source Power", &settings.simulation.sourceDiscriminationPower);
+		}
+		ImGui::End();
 
-        ImGui::Begin("Update Source");
-        {
-            if (ImGui::Button("Update Source Probability"))
-            {
-                submitToMainThread([this]()
-                    {
-                        debugStuff.paused = true;
-                        simulations.updateSourceProbability(settings.simulation.refineFraction);
-                        showWeights();
-                        debugStuff.paused = false; });
-            }
-        }
-        ImGui::End();
-        ImGui::Begin("Quadtree");
-        {
-            if (ImGui::Button("Show Quadtree"))
-            {
-                debugMapSegmentation();
-            }
-        }
-        ImGui::End();
+		ImGui::Begin("Update Source");
+		{
+			if (ImGui::Button("Update Source Probability"))
+			{
+				submitToMainThread([this]()
+					{
+						debugStuff.paused = true;
+						simulations.updateSourceProbability(settings.simulation.refineFraction);
+						showWeights();
+						debugStuff.paused = false; });
+			}
+		}
+		ImGui::End();
+		ImGui::Begin("Quadtree");
+		{
+			if (ImGui::Button("Show Quadtree"))
+			{
+				debugMapSegmentation();
+			}
+		}
+		ImGui::End();
 
-        ImGui::Begin("Pause/Play");
-        {
-            static std::string buttonText;
-            if (debugStuff.paused)
-                buttonText = "Play";
-            else
-                buttonText = "Pause";
-            if (ImGui::Button(buttonText.c_str()))
-            {
-                debugStuff.paused = !debugStuff.paused;
-            }
-        }
-        ImGui::End();
+		ImGui::Begin("Pause/Play");
+		{
+			static std::string buttonText;
+			if (debugStuff.paused)
+				buttonText = "Play";
+			else
+				buttonText = "Pause";
+			if (ImGui::Button(buttonText.c_str()))
+			{
+				debugStuff.paused = !debugStuff.paused;
+			}
+		}
+		ImGui::End();
 
-        ImGui::Begin("Markers");
-        {
-            static int modeHit = settings.visualization.hitMode;
-            static int modeSource = settings.visualization.sourceMode;
-            static float hitLimits[2] = { settings.visualization.hitLimits.x, settings.visualization.hitLimits.y };
-            static float sourceLimits[2] = { settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y };
+		ImGui::Begin("Markers");
+		{
+			static int modeHit = settings.visualization.hitMode;
+			static int modeSource = settings.visualization.sourceMode;
+			static float hitLimits[2] = { settings.visualization.hitLimits.x, settings.visualization.hitLimits.y };
+			static float sourceLimits[2] = { settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y };
 
-            ImGui::Combo("Hit display mode", &modeHit, "Linear\0Logarithmic\0");
-            settings.visualization.hitMode = modeHit == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
-            ImGui::InputFloat2("Hit limits", hitLimits, "%.5f");
+			ImGui::Combo("Hit display mode", &modeHit, "Linear\0Logarithmic\0");
+			settings.visualization.hitMode = modeHit == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
+			ImGui::InputFloat2("Hit limits", hitLimits, "%.5f");
 
-            ImGui::Combo("Source display mode", &modeSource, "Linear\0Logarithmic\0");
-            settings.visualization.sourceMode = modeSource == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
-            ImGui::InputFloat2("Source limits", sourceLimits, "%.5f");
+			ImGui::Combo("Source display mode", &modeSource, "Linear\0Logarithmic\0");
+			settings.visualization.sourceMode = modeSource == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
+			ImGui::InputFloat2("Source limits", sourceLimits, "%.5f");
 
-            settings.visualization.hitLimits.x = hitLimits[0];
-            settings.visualization.hitLimits.y = hitLimits[1];
-            settings.visualization.sourceLimits.x = sourceLimits[0];
-            settings.visualization.sourceLimits.y = sourceLimits[1];
-        }
-        ImGui::End();
-#endif
-    }
+			settings.visualization.hitLimits.x = hitLimits[0];
+			settings.visualization.hitLimits.y = hitLimits[1];
+			settings.visualization.sourceLimits.x = sourceLimits[0];
+			settings.visualization.sourceLimits.y = sourceLimits[1];
+		}
+		ImGui::End();
+		#endif
+	}
 
-    void PMFS_GSL::createPlots()
-    {
-#ifdef USE_GUI
+	void PMFS_GSL::createPlots()
+	{
+		#ifdef USE_GUI
 
-        ImGui::Begin("Plots");
-        {
-            static bool paused = false;
+		ImGui::Begin("Plots");
+		{
+			static bool paused = false;
 
-            if (ImGui::Button("Toggle Pause"))
-                paused = !paused;
+			if (ImGui::Button("Toggle Pause"))
+				paused = !paused;
 
-            ImGui::BulletText("Gas concentration measured over time");
-            static ImPlot::ScrollingBuffer sdata1;
-            ImVec2 mouse = ImGui::GetMousePos();
-            static float t = 0;
-            t += ImGui::GetIO().DeltaTime;
-            if (last_concentration_reading != -1)
-                sdata1.AddPoint(t, last_concentration_reading);
+			ImGui::BulletText("Gas concentration measured over time");
+			static ImPlot::ScrollingBuffer sdata1;
+			ImVec2 mouse = ImGui::GetMousePos();
+			static float t = 0;
+			t += ImGui::GetIO().DeltaTime;
+			if (last_concentration_reading != -1)
+				sdata1.AddPoint(t, last_concentration_reading);
 
-            static float history = 10.0f;
-            ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
+			static float history = 10.0f;
+			ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
 
-            static ImPlotAxisFlags flags = ImPlotAxisFlags_AutoFit;
-            static ImVec2 xAxisLimits;
-            if (!paused)
-                xAxisLimits = { t - history, t };
+			static ImPlotAxisFlags flags = ImPlotAxisFlags_AutoFit;
+			static ImVec2 xAxisLimits;
+			if (!paused)
+				xAxisLimits = { t - history, t };
 
-            if (ImPlot::BeginPlot("##Concentration", ImVec2(-1, -1)))
-            {
-                ImPlot::SetupAxes(NULL, NULL, ImPlotAxisFlags_NoGridLines, flags);
-                ImPlot::SetupAxisLimits(ImAxis_X1, xAxisLimits.x, xAxisLimits.y, paused ? ImGuiCond_None : ImGuiCond_Always);
-                ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
-                ImPlot::SetNextLineStyle({ 1, 0, 0, 1 }, 2);
-                if (sdata1.Data.size() > 0)
-                    ImPlot::PlotLine("Concentration", &sdata1.Data[0].x, &sdata1.Data[0].y, sdata1.Data.size(), 0, sdata1.IndexOfLast, 2 * sizeof(float));
-                ImPlot::EndPlot();
-            }
-        }
-        ImGui::End();
-#endif
-    }
+			if (ImPlot::BeginPlot("##Concentration", ImVec2(-1, -1)))
+			{
+				ImPlot::SetupAxes(NULL, NULL, ImPlotAxisFlags_NoGridLines, flags);
+				ImPlot::SetupAxisLimits(ImAxis_X1, xAxisLimits.x, xAxisLimits.y, paused ? ImGuiCond_None : ImGuiCond_Always);
+				ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+				ImPlot::SetNextLineStyle({ 1, 0, 0, 1 }, 2);
+				if (sdata1.Data.size() > 0)
+					ImPlot::PlotLine("Concentration", &sdata1.Data[0].x, &sdata1.Data[0].y, sdata1.Data.size(), 0, sdata1.IndexOfLast, 2 * sizeof(float));
+				ImPlot::EndPlot();
+			}
+		}
+		ImGui::End();
+		#endif
+	}
 
 }
