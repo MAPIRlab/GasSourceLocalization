@@ -14,6 +14,7 @@ from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, SetLau
 from launch.substitutions import LaunchConfiguration
 from launch.frontend.parse_substitution import parse_substitution
 from launch_ros.actions import Node, PushRosNamespace
+from launch.conditions import IfCondition
 from ament_index_python.packages import get_package_share_directory
 
 def launch_arguments():
@@ -75,7 +76,8 @@ def launch_setup(context, *args, **kwargs):
 	]
 
 
-	coppelia = IncludeLaunchDescription(
+	coppelia = [
+		IncludeLaunchDescription(
 			PythonLaunchDescriptionSource(
 					os.path.join(
 						get_package_share_directory("grgsl_env"),
@@ -85,10 +87,22 @@ def launch_setup(context, *args, **kwargs):
 				launch_arguments={
 					"launchCoppelia": LaunchConfiguration("launchCoppelia").perform(context),
 					"scenePath" : parse_substitution("$(find-pkg-share grgsl_env)/$(var scenario)/coppeliaScene.ttt"),
-					"autoplay" : "True",
+					"autoplay" : "False",
 					"headless" : "True"
 				}.items(),
+		),
+		Node(
+			package="gaden_preprocessing",
+			executable="moveCoppeliaRobot",
+			name="moveCoppeliaRobot",
+			condition=IfCondition(LaunchConfiguration("launchCoppelia")),
+			parameters=[
+				{"permanentChange" : False},
+				{"robotName" : LaunchConfiguration("robot_name")},
+				{"position" : [4.8, 1.4, 0.0]},
+            ],
 		)
+	]
 	
 	nav2 = IncludeLaunchDescription(
 			PythonLaunchDescriptionSource(
@@ -258,7 +272,7 @@ def launch_setup(context, *args, **kwargs):
 
 
 	returnList = []
-	returnList.append(coppelia)
+	returnList.extend(coppelia)
 	returnList.extend(gaden)
 	returnList.append(nav2)
 	returnList.extend(nav_assistant)

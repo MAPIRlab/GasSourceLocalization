@@ -112,7 +112,7 @@ def launch_setup(context, *args, **kwargs):
 				launch_arguments={
 					"launchCoppelia": LaunchConfiguration("launchCoppelia").perform(context),
 					"scenePath" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/coppeliaScene.ttt"),
-					"autoplay" : "True",
+					"autoplay" : "False",
 					"headless" : "True"
 				}.items(),
 		),
@@ -124,7 +124,7 @@ def launch_setup(context, *args, **kwargs):
 			parameters=[
 				{"permanentChange" : False},
 				{"robotName" : LaunchConfiguration("robot_name")},
-				{"position" : [-2.6, -3.4, 0.0]},
+				{"position" : [-1.0, 0.0, -0.7]},
             ],
 		)
 	]

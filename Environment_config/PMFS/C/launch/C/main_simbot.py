@@ -48,7 +48,7 @@ def launch_setup(context, *args, **kwargs):
 				package="gsl_server",
 				executable="gsl_actionserver_node",
 				name="gsl_node",
-				prefix="xterm -hold -e",
+				prefix="xterm -hold -e gdb --args",
 				parameters=[
 					# Common
 					{"verbose": True},

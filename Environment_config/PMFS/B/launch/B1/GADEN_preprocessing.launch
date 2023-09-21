@@ -24,7 +24,7 @@
 		<param name="empty_point_y" value="0.0"/>
 		<param name="empty_point_z" value="1.0"/>
 
-		<param name="floor_height" value="-0.64"/>
+		<param name="floor_height" value="-0.7"/>
 		<param name="worldFile" value="$(find-pkg-share pmfs_env)/$(var scenario)/launch/ros/stage.world"/>
 
 		#Wind Data (the node will append _i.csv to the name that is specified here)

@@ -56,7 +56,7 @@ Visualization Manager:
       Enabled: true
       Name: GasDistribution
       Namespaces:
-        Gas_Dispersion: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -83,7 +83,6 @@ Visualization Manager:
       Name: Environment_CAD
       Namespaces:
         part_0: true
-        part_1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -375,25 +374,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 20.536069869995117
+      Distance: 12.767290115356445
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.716494083404541
-        Y: 4.436794281005859
-        Z: 0.020674239844083786
+        X: -2.107165575027466
+        Y: -3.6736040115356445
+        Z: 0.29943570494651794
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.1747967004776
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.703586578369141
+      Yaw: 3.158578634262085
     Saved: ~
 Window Geometry:
   Displays:
