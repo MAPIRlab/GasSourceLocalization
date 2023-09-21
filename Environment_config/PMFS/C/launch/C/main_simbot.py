@@ -124,7 +124,7 @@ def launch_setup(context, *args, **kwargs):
 			parameters=[
 				{"permanentChange" : False},
 				{"robotName" : LaunchConfiguration("robot_name")},
-				{"position" : [-2.5, -3.4, -0.94]},
+				{"position" : [-2.5, -3.4, -0.9]},
             ],
 		)
 	]
