@@ -25,8 +25,12 @@ namespace PMFS
 
         const PMFS_GSL* grid;
 
-        SimulationSource(const Utils::Vector2& _point, const PMFS_GSL* _grid) : point(_point), mode(Mode::Point), grid(_grid) {}
-        SimulationSource(const NQA::Node* _node, const PMFS_GSL* _grid) : nqaNode(_node), mode(Mode::Quadtree), grid(_grid) {}
+        SimulationSource(const Utils::Vector2& _point, const PMFS_GSL* _grid) : point(_point), mode(Mode::Point), grid(_grid)
+        {
+        }
+        SimulationSource(const NQA::Node* _node, const PMFS_GSL* _grid) : nqaNode(_node), mode(Mode::Quadtree), grid(_grid)
+        {
+        }
 
         Utils::Vector2 getPoint() const;
     };
@@ -44,10 +48,11 @@ namespace PMFS
         std::vector<std::vector<double>> varianceOfHitProb; // calculated from the simulations, used for movement
 
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev);
-        void simulateSourceInPosition(const SimulationSource& source, std::vector<std::vector<float>>& hitMap, bool warmup, int warmupLimit, int timesteps, float deltaTime, float noiseSTDev);
+        void simulateSourceInPosition(const SimulationSource& source, std::vector<std::vector<float>>& hitMap, bool warmup, int warmupLimit,
+                                      int timesteps, float deltaTime, float noiseSTDev);
         bool filamentIsOutside(Filament& filament);
         double weightedDifference(const std::vector<std::vector<Cell>>& hitRandomVariable, const std::vector<std::vector<float>>& hitMap);
         void printImage(const SimulationSource& source);
         bool moveAlongPath(Utils::Vector2& beginning, const Utils::Vector2& end);
     };
-}
+} // namespace PMFS

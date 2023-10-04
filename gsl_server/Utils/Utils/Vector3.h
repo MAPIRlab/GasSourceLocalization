@@ -57,10 +57,7 @@ namespace Utils
 
         inline Vector3 cross(const Vector3& other) const
         {
-            return Vector3(
-                y * other.z - z * other.y,
-                z * other.x - x * other.z,
-                x * other.y - y * other.x);
+            return Vector3(y * other.z - z * other.y, z * other.x - x * other.z, x * other.y - y * other.x);
         }
 
         inline float norm() const
@@ -72,7 +69,7 @@ namespace Utils
         {
             float n = norm();
             if (n == 0)
-                return { 0, 0, 0 };
+                return {0, 0, 0};
             return *this / n;
         }
 
@@ -102,7 +99,7 @@ namespace Utils
     {
         return Vector3(vec.x / other, vec.y / other, vec.z / other);
     }
-}
+} // namespace Utils
 
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h" // must be included

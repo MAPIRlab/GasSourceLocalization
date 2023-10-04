@@ -148,12 +148,12 @@ namespace Utils
     {
         static thread_local std::mt19937 engine;
 
-        static thread_local std::normal_distribution<> dist{ 0, stdev };
+        static thread_local std::normal_distribution<> dist{0, stdev};
         static thread_local double previousStdev = stdev;
 
         if (stdev != previousStdev)
         {
-            dist = std::normal_distribution<>{ 0, stdev };
+            dist = std::normal_distribution<>{0, stdev};
             previousStdev = stdev;
         }
 
@@ -163,7 +163,7 @@ namespace Utils
     double uniformRandom(double min, double max)
     {
         static thread_local std::mt19937 engine;
-        static thread_local std::uniform_real_distribution<double> distribution{ 0.0, 0.999 };
+        static thread_local std::uniform_real_distribution<double> distribution{0.0, 0.999};
 
         return min + distribution(engine) * (max - min);
     }
@@ -175,12 +175,11 @@ namespace Utils
         {
             for (int c = 0; c < a[0].size(); c++)
             {
-                double aux = a[r][c] * std::log(a[r][c] / b[r][c]) +
-                    (1 - a[r][c]) * std::log((1 - a[r][c]) / (1 - b[r][c]));
+                double aux = a[r][c] * std::log(a[r][c] / b[r][c]) + (1 - a[r][c]) * std::log((1 - a[r][c]) / (1 - b[r][c]));
                 total += std::isnan(aux) ? 0 : aux;
             }
         }
         return total;
     }
 
-}
+} // namespace Utils

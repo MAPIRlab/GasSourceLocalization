@@ -21,7 +21,7 @@ class SpiralSearcher : public GSLAlgorithm
 public:
     SpiralSearcher(std::shared_ptr<rclcpp::Node> _node);
     ~SpiralSearcher();
-	virtual void initialize() override;
+    virtual void initialize() override;
 
     // void checkState();
     void cancelNavigation();

@@ -56,7 +56,9 @@ namespace PMFS
             indices = ind;
             probability = prob;
         }
-        ~CellData() {}
+        ~CellData()
+        {
+        }
     };
 
     struct SourceEstimationError
@@ -73,4 +75,4 @@ namespace PMFS
 
         static float get_average_wind_direction(std::vector<float> const& v);
     };
-}
+} // namespace PMFS

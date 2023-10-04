@@ -1,6 +1,6 @@
 #ifdef USE_GUI
-#include <algorithms/PMFS/PMFS.h>
-#include <ament_imgui/ament_imgui.h>
+    #include <algorithms/PMFS/PMFS.h>
+    #include <ament_imgui/ament_imgui.h>
 
 namespace PMFS
 {
@@ -30,14 +30,13 @@ namespace PMFS
         }
         else
         {
-            queryResult = fmt::format("Cell {0},{1}:\n", x, y) +
-                fmt::format("free:{} \n", cells[x][y].free) +
-                fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(cells[x][y].hitProbability.auxWeight)) +
-                fmt::format("weight:{} \n", Utils::logOddsToProbability(cells[x][y].hitProbability.logOdds));
+            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", cells[x][y].free) +
+                          fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(cells[x][y].hitProbability.auxWeight)) +
+                          fmt::format("weight:{} \n", Utils::logOddsToProbability(cells[x][y].hitProbability.logOdds));
         }
 
         return queryResult.c_str();
     }
 
-}
+} // namespace PMFS
 #endif

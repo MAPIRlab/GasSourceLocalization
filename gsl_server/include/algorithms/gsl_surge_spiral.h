@@ -13,23 +13,23 @@ class SurgeSpiralPT : public PlumeTracking
 {
 
 public:
-	SurgeSpiralPT(std::shared_ptr<rclcpp::Node> _node);
-	~SurgeSpiralPT();
-	virtual void initialize() override;
-	virtual void declareParameters() override;
-	virtual void checkState() override;
+    SurgeSpiralPT(std::shared_ptr<rclcpp::Node> _node);
+    ~SurgeSpiralPT();
+    virtual void initialize() override;
+    virtual void declareParameters() override;
+    virtual void checkState() override;
 
-	double spiralStep;
-	double spiralStep_increment;
-	double initSpiralStep;
-	int spiral_iter;
+    double spiralStep;
+    double spiralStep_increment;
+    double initSpiralStep;
+    int spiral_iter;
 
-	double deltaT; // measuring interval length
-	rclcpp::Time lastUpdateTimestamp;
+    double deltaT; // measuring interval length
+    rclcpp::Time lastUpdateTimestamp;
 
-	void setSurgeGoal() override;
+    void setSurgeGoal() override;
 
-	void setCastGoal() override;
-	NavAssistant::Goal nextGoalSpiral(Pose initial);
-	void resetSpiral();
+    void setCastGoal() override;
+    NavAssistant::Goal nextGoalSpiral(Pose initial);
+    void resetSpiral();
 };

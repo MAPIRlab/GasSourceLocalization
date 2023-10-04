@@ -65,7 +65,7 @@ namespace Utils
         {
             float n = norm();
             if (n == 0)
-                return { 0, 0 };
+                return {0, 0};
 
             return *this / n;
         }
@@ -84,8 +84,7 @@ namespace Utils
         {
             float c = std::cos(signedAngleRadians);
             float s = std::sin(signedAngleRadians);
-            return { x * c - y * s,
-                    x * s + y * c };
+            return {x * c - y * s, x * s + y * c};
         }
     };
 
@@ -103,7 +102,7 @@ namespace Utils
     {
         return Vector2(vec.x / other, vec.y / other);
     }
-}
+} // namespace Utils
 
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h" // must be included

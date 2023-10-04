@@ -17,8 +17,7 @@ namespace Utils::Time
         std::chrono::high_resolution_clock clock;
         std::chrono::_V2::system_clock::time_point start;
 
-        Stopwatch()
-            : clock(), start(clock.now())
+        Stopwatch() : clock(), start(clock.now())
         {
         }
 
@@ -27,4 +26,4 @@ namespace Utils::Time
             return toSeconds(clock.now() - start);
         }
     };
-}
+} // namespace Utils::Time

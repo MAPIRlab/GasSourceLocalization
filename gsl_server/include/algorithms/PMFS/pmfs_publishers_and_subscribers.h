@@ -3,7 +3,7 @@
 #include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 
 #ifdef USE_GADEN
-#include <gaden_player/srv/wind_position.hpp>
+    #include <gaden_player/srv/wind_position.hpp>
 #endif
 
 #include <visualization_msgs/msg/marker.hpp>
@@ -41,6 +41,8 @@ namespace PMFS
             Debug debug;
         };
         Markers markers;
-        PublishersAndSubscribers() {}
+        PublishersAndSubscribers()
+        {
+        }
     };
-}
+} // namespace PMFS

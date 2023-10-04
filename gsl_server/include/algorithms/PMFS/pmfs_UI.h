@@ -13,7 +13,7 @@ namespace PMFS
         static int selectVariable();
         static std::string printCell(const std::vector<std::vector<Cell>>& cells, const int& x, const int& y);
     };
-}
+} // namespace PMFS
 
 namespace ImPlot
 {
@@ -48,5 +48,5 @@ namespace ImPlot
             }
         }
     };
-}
+} // namespace ImPlot
 #endif

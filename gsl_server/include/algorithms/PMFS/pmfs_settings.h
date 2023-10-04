@@ -49,8 +49,10 @@ namespace PMFS
             double kernel_sigma;
             double kernel_stretch_constant;
 
-            double confidence_sigma_spatial;      // the sigma of the confidence normal associated with each measurement -- confidence as a function of physical proximity to the measurement location, this is not variance or anything like that
-            double confidence_measurement_weight; // sigma_omega in kernel DMV. Controls how much confidence you gain from one measurement (affects all distances)
+            double confidence_sigma_spatial; // the sigma of the confidence normal associated with each measurement -- confidence as a function of
+                                             // physical proximity to the measurement location, this is not variance or anything like that
+            double confidence_measurement_weight; // sigma_omega in kernel DMV. Controls how much confidence you gain from one measurement (affects
+                                                  // all distances)
         };
         HitProbabilitySettings hitProbability;
 
@@ -59,7 +61,8 @@ namespace PMFS
             bool useWindGroundTruth;
             int maxRegionSize;
             int steps_between_source_updates;
-            double sourceDiscriminationPower; // higher values here will lead to a larger difference in the estimated source probability from one cell to another
+            double sourceDiscriminationPower; // higher values here will lead to a larger difference in the estimated source probability from one cell
+                                              // to another
             double refineFraction;            // proportion of the cells that will be subdivided for the finer simulation
 
             int maxWarmupIterations;
@@ -81,4 +84,4 @@ namespace PMFS
         VisualizationSettings visualization;
     };
 
-}
+} // namespace PMFS

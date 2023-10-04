@@ -23,7 +23,8 @@ namespace NQA
         uint8_t value; // all "cells" (or pixels, or whatever) in this node have the same value in the image
         std::array<std::shared_ptr<Node>, 4> children;
 
-        static std::shared_ptr<Node> createNode(NQAQuadtree* qt, Utils::Vector2Int _origin, Utils::Vector2Int _size, const std::vector<std::vector<uint8_t>>& map);
+        static std::shared_ptr<Node> createNode(NQAQuadtree* qt, Utils::Vector2Int _origin, Utils::Vector2Int _size,
+                                                const std::vector<std::vector<uint8_t>>& map);
 
         bool subdivide(); // returns false if it is not a leaf or is too small to subdivide
 
@@ -48,4 +49,4 @@ namespace NQA
 
         std::vector<Node> fusedLeaves(int maxSize);
     };
-}
+} // namespace NQA

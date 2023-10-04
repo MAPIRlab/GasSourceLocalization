@@ -80,7 +80,10 @@ namespace PMFS
                 double explorationTerm = explorationValue(r, c);
                 double varianceTerm = std::pow(simulations.varianceOfHitProb[r][c], 2.5) * (1 - cells[r][c].hitProbability.confidence);
 
-                double this_interest = current_state == State::EXPLORATION || varianceTerm == 0 || explorationC < settings.movement.explorationProbability ? explorationTerm : varianceTerm;
+                double this_interest =
+                    current_state == State::EXPLORATION || varianceTerm == 0 || explorationC < settings.movement.explorationProbability
+                        ? explorationTerm
+                        : varianceTerm;
 
                 if (this_interest > interest)
                 {
@@ -98,7 +101,7 @@ namespace PMFS
 
         if (closedMoveSet.find(currentPosIndex) == closedMoveSet.end())
             openMoveSet.insert(currentPosIndex);
-        GSL_ASSERT_MSG(closedMoveSet.find({ goalI, goalJ }) == closedMoveSet.end(), "Goal is in closed set, what the hell");
+        GSL_ASSERT_MSG(closedMoveSet.find({goalI, goalJ}) == closedMoveSet.end(), "Goal is in closed set, what the hell");
 
         exploredCells++;
         moveTo(goal);
@@ -170,4 +173,4 @@ namespace PMFS
         return sum;
     }
 
-}
+} // namespace PMFS

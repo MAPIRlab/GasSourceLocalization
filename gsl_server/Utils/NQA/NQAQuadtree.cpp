@@ -16,7 +16,7 @@ namespace NQA
 
     std::shared_ptr<Node> Node::createNode(NQAQuadtree* qt, Vector2Int _origin, Vector2Int _size, const std::vector<std::vector<uint8_t>>& _map)
     {
-        std::shared_ptr<Node> noderef{ new Node(qt, _origin, _size, _map) };
+        std::shared_ptr<Node> noderef{new Node(qt, _origin, _size, _map)};
 
         noderef->isLeaf = noderef->initialize();
         if (noderef->isLeaf && qt)
@@ -63,7 +63,8 @@ namespace NQA
         if (!isLeaf || (size.x < 2 && size.y < 2))
             return false;
 
-        // unlike a proper quadtree, we can have a node that only has two children, rather than four. This can happen if we have a non-square cell that reaches the minimum size on one of the dimensions
+        // unlike a proper quadtree, we can have a node that only has two children, rather than four. This can happen if we have a non-square cell
+        // that reaches the minimum size on one of the dimensions
 
         // if it's like this          we divide it like this  and keep the *bottom* children
         //   -------------              -------------
@@ -149,7 +150,7 @@ namespace NQA
     {
         std::list<Node> free_leaves; //__copies__ of all the leaves that correspond to free parts of the map. Not actually part of the tree!
 
-        #if 1
+#if 1
         // use the existing leaves
         for (int i = 0; i < leaves.size(); i++)
         {
@@ -160,7 +161,7 @@ namespace NQA
                 free_leaves.back().value = 1;
             }
         }
-        #else
+#else
 
         // use the original map, cell by cell
         for (int i = 0; i < map.size(); i++)
@@ -169,13 +170,14 @@ namespace NQA
             {
                 if (map[i][j] != 1)
                     continue;
-                free_leaves.emplace_back(nullptr, Vector2Int{ i, j }, Vector2Int{ 1, 1 }, map);
+                free_leaves.emplace_back(nullptr, Vector2Int{i, j}, Vector2Int{1, 1}, map);
                 free_leaves.back().value = 1;
             }
         }
-        #endif
+#endif
 
-        std::vector<std::vector<Node*>> pointersImage(map.size(), std::vector<Node*>(map[0].size(), nullptr)); // for each cell in the original map, a pointer to the leaf that contains it
+        std::vector<std::vector<Node*>> pointersImage(
+            map.size(), std::vector<Node*>(map[0].size(), nullptr)); // for each cell in the original map, a pointer to the leaf that contains it
 
         // populate the pòinters image
         for (auto itr = free_leaves.begin(); itr != free_leaves.end(); itr++)
@@ -183,7 +185,7 @@ namespace NQA
             Node* leaf = &(*itr);
             Utils::Vector2Int start = leaf->origin;
             Utils::Vector2Int end = leaf->origin + leaf->size;
-            #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
             for (int r = start.x; r < end.x; r++)
             {
                 for (int c = start.y; c < end.y; c++)
@@ -198,12 +200,12 @@ namespace NQA
         allNeighbours.reserve(leaves.size());
         {
             auto checkAndAdd = [](Node* current, Node* neighbour, std::unordered_set<Node*>& neighboursSet)
-                {
-                    if (current == nullptr || neighbour == nullptr)
-                        return;
-                    if (neighbour != current)
-                        neighboursSet.insert(neighbour);
-                };
+            {
+                if (current == nullptr || neighbour == nullptr)
+                    return;
+                if (neighbour != current)
+                    neighboursSet.insert(neighbour);
+            };
             for (int i = 1; i < pointersImage.size() - 1; i++)
             {
                 for (int j = 1; j < pointersImage[0].size() - 1; j++)
@@ -229,50 +231,50 @@ namespace NQA
                 to_be_evaluated.insert(&node);
 
             auto sizeFused = [](Node* a, Node* b, Vector2Int& outOrigin, Vector2Int& outSize)
-                {
-                    int minX = std::min(a->origin.x, b->origin.x);
-                    int minY = std::min(a->origin.y, b->origin.y);
+            {
+                int minX = std::min(a->origin.x, b->origin.x);
+                int minY = std::min(a->origin.y, b->origin.y);
 
-                    int maxX = std::max(a->origin.x + a->size.x, b->origin.x + b->size.x);
-                    int maxY = std::max(a->origin.y + a->size.y, b->origin.y + b->size.y);
-                    outOrigin = { minX, minY };
-                    outSize = Vector2Int{ maxX, maxY } - outOrigin;
-                };
+                int maxX = std::max(a->origin.x + a->size.x, b->origin.x + b->size.x);
+                int maxY = std::max(a->origin.y + a->size.y, b->origin.y + b->size.y);
+                outOrigin = {minX, minY};
+                outSize = Vector2Int{maxX, maxY} - outOrigin;
+            };
 
             auto fuse = [&free_leaves, &allNeighbours, &deletedNodes, &to_be_evaluated, this, sizeFused](Node* a, Node* b)
+            {
+                Vector2Int origin;
+                Vector2Int size;
+                sizeFused(a, b, origin, size);
+
+                free_leaves.emplace_back(nullptr, origin, size, this->map);
+                Node* fused = &free_leaves.back();
+                fused->value = 1;
+
+                // clean up
+                for (Node* n : allNeighbours[a])
                 {
-                    Vector2Int origin;
-                    Vector2Int size;
-                    sizeFused(a, b, origin, size);
+                    if (n == b)
+                        continue;
+                    allNeighbours[n].erase(a);
+                    allNeighbours[n].insert(fused);
+                    allNeighbours[fused].insert(n);
+                }
+                for (Node* n : allNeighbours[b])
+                {
+                    if (n == a)
+                        continue;
+                    allNeighbours[n].erase(b);
+                    allNeighbours[n].insert(fused);
+                    allNeighbours[fused].insert(n);
+                }
+                deletedNodes.insert(a);
+                deletedNodes.insert(b);
 
-                    free_leaves.emplace_back(nullptr, origin, size, this->map);
-                    Node* fused = &free_leaves.back();
-                    fused->value = 1;
-
-                    // clean up
-                    for (Node* n : allNeighbours[a])
-                    {
-                        if (n == b)
-                            continue;
-                        allNeighbours[n].erase(a);
-                        allNeighbours[n].insert(fused);
-                        allNeighbours[fused].insert(n);
-                    }
-                    for (Node* n : allNeighbours[b])
-                    {
-                        if (n == a)
-                            continue;
-                        allNeighbours[n].erase(b);
-                        allNeighbours[n].insert(fused);
-                        allNeighbours[fused].insert(n);
-                    }
-                    deletedNodes.insert(a);
-                    deletedNodes.insert(b);
-
-                    to_be_evaluated.erase(a);
-                    to_be_evaluated.erase(b);
-                    to_be_evaluated.insert(fused);
-                };
+                to_be_evaluated.erase(a);
+                to_be_evaluated.erase(b);
+                to_be_evaluated.insert(fused);
+            };
 
             // iterate over the existing nodes and see what can be fused
             while (to_be_evaluated.size() != 0)
@@ -285,7 +287,10 @@ namespace NQA
                 for (Node* neighbour : allNeighbours[current])
                 {
                     // if(can be fused)
-                    if ((current->origin.x == neighbour->origin.x && current->size.x == neighbour->size.x && (current->size.y + neighbour->size.y) <= maxSize) || (current->origin.y == neighbour->origin.y && current->size.y == neighbour->size.y && (current->size.x + neighbour->size.x) <= maxSize))
+                    if ((current->origin.x == neighbour->origin.x && current->size.x == neighbour->size.x &&
+                         (current->size.y + neighbour->size.y) <= maxSize) ||
+                        (current->origin.y == neighbour->origin.y && current->size.y == neighbour->size.y &&
+                         (current->size.x + neighbour->size.x) <= maxSize))
                     {
                         Vector2Int origin;
                         Vector2Int size;
@@ -320,4 +325,4 @@ namespace NQA
 
         return std::vector<Node>(free_leaves.begin(), free_leaves.end());
     }
-}
+} // namespace NQA
