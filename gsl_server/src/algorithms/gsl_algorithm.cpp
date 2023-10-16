@@ -64,7 +64,7 @@ void GSLAlgorithm::declareParameters()
     map_topic = getParam<std::string>("map_topic", "map");
     costmap_topic = getParam<std::string>("costmap_topic", "global_costmap/costmap");
 
-    max_search_time = getParam<double>("max_search_time", 300.0);
+    max_search_time = getParam<double>("max_search_time", 1000.0);
     distance_found = getParam<double>("distance_found", 0.5);
     source_pose_x = getParam<double>("ground_truth_x", 0.0);
     source_pose_y = getParam<double>("ground_truth_y", 0.0);

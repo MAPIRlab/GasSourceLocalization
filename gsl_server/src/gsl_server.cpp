@@ -429,7 +429,7 @@ int CGSLServer::doPMFS()
     PMFS_GSL grid(shared_from_this());
     grid.initialize();
 
-    rclcpp::Rate loop_rate(2);
+    rclcpp::Rate loop_rate(20);
     int sourceFound = -1;
     double startTime = now().seconds();
     bool initializationStarted = false;

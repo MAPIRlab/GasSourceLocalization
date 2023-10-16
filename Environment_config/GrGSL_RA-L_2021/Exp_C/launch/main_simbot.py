@@ -93,8 +93,8 @@ def launch_setup(context, *args, **kwargs):
 		),
 		Node(
 			package="gaden_preprocessing",
-			executable="moveCoppeliaRobot",
-			name="moveCoppeliaRobot",
+			executable="configureCoppeliaSim",
+			name="configureCoppeliaSim",
 			condition=IfCondition(LaunchConfiguration("launchCoppelia")),
 			parameters=[
 				{"permanentChange" : False},
