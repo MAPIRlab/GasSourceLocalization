@@ -78,7 +78,7 @@ namespace PMFS
                 NavAssistant::Goal tempGoal = indexToGoal(r, c);
 
                 double explorationTerm = explorationValue(r, c);
-                double varianceTerm = std::pow(simulations.varianceOfHitProb[r][c], 2.5) * (1 - cells[r][c].hitProbability.confidence);
+                double varianceTerm = simulations.varianceOfHitProb[r][c] * (1 - cells[r][c].hitProbability.confidence);
 
                 double this_interest =
                     current_state == State::EXPLORATION || varianceTerm == 0 || explorationC < settings.movement.explorationProbability
