@@ -2,14 +2,15 @@
 namespace PMFS
 {
 
-    void weighted_incremental_variance(double value, double weight, double& mean, double& w_sum, double& w2_sum, double& S)
+    static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
+                                              double& variance)
     {
         // Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
-        w_sum = w_sum + weight;
-        w2_sum = w2_sum + weight * weight;
+        weight_sum = weight_sum + weight;
+        weight_squared_sum = weight_squared_sum + weight * weight;
         double mean_old = mean;
-        mean = mean_old + (weight / w_sum) * (value - mean_old);
-        S = S + weight * (value - mean_old) * (value - mean);
+        mean = mean_old + (weight / weight_sum) * (value - mean_old);
+        variance = variance + weight * (value - mean_old) * (value - mean);
     }
 
     void Simulations::updateSourceProbability(float refineFraction)
@@ -32,9 +33,9 @@ namespace PMFS
         struct VarianceCalculationData
         {
             double mean = 0;
-            double w_sum = 0;
-            double w2_sum = 0;
-            double S = 0;
+            double weight_sum = 0;
+            double weight_squared_sum = 0;
+            double variance = 0;
         };
         std::vector<std::vector<VarianceCalculationData>> varianceCalculationData(grid->cells.size(),
                                                                                   std::vector<VarianceCalculationData>(grid->cells[0].size()));
@@ -73,7 +74,7 @@ namespace PMFS
                     for (int cellJ = 0; cellJ < hitMap[0].size(); cellJ++)
                     {
                         auto& var = varianceCalculationData[cellI][cellJ];
-                        weighted_incremental_variance(hitMap[cellI][cellJ], diff, var.mean, var.w_sum, var.w2_sum, var.S);
+                        weighted_incremental_variance(hitMap[cellI][cellJ], diff, var.mean, var.weight_sum, var.weight_squared_sum, var.variance);
                     }
                 }
             }
@@ -86,7 +87,8 @@ namespace PMFS
             for (int cellJ = 0; cellJ < grid->cells[0].size(); cellJ++)
             {
                 if (grid->cells[cellI][cellJ].free)
-                    varianceOfHitProb[cellI][cellJ] = varianceCalculationData[cellI][cellJ].S / varianceCalculationData[cellI][cellJ].w_sum;
+                    varianceOfHitProb[cellI][cellJ] =
+                        varianceCalculationData[cellI][cellJ].variance / varianceCalculationData[cellI][cellJ].weight_sum;
             }
         }
 
