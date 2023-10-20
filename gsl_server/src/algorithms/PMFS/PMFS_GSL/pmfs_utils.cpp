@@ -219,7 +219,6 @@ namespace PMFS
         // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
         // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens
         double total = 0;
-        double min = 0;
         int count = 0;
         for (int i = 0; i < variable.size(); i++)
         {
@@ -228,13 +227,11 @@ namespace PMFS
                 if (cells[i][j].free)
                 {
                     total += variable[i][j].sourceProbability;
-                    min = std::min(min, variable[i][j].sourceProbability);
                     count++;
                 }
             }
         }
 
-        total = total - min * count;
 #pragma omp parallel for collapse(2)
         for (int i = 0; i < variable.size(); i++)
         {
@@ -242,7 +239,7 @@ namespace PMFS
             {
                 if (cells[i][j].free)
                 {
-                    variable[i][j].sourceProbability = (variable[i][j].sourceProbability - min) / total;
+                    variable[i][j].sourceProbability = (variable[i][j].sourceProbability) / total;
                 }
             }
         }

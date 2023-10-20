@@ -417,9 +417,9 @@ namespace PMFS
 
         std::string filename;
         if (source.mode == SimulationSource::Mode::Quadtree)
-            filename = fmt::format("/home/pepe/catkin_ws/leaf_{}.png", source.nqaNode->origin);
+            filename = fmt::format("leaf_{}.png", source.nqaNode->origin);
         else
-            filename = fmt::format("/home/pepe/catkin_ws/point_{}.png", source.point);
+            filename = fmt::format("point_{}.png", source.point);
 
         cv::imwrite(filename, image);
 
