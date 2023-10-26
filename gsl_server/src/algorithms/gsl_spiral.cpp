@@ -198,18 +198,18 @@ void SpiralSearcher::resetSpiral()
     spiral_iter = -1;
 }
 
-NavAssistant::Goal SpiralSearcher::nextGoalSpiral(Pose initial)
+NavigateToPose::Goal SpiralSearcher::nextGoalSpiral(Pose initial)
 {
 
     double yaw = Utils::getYaw(initial.orientation);
-    NavAssistant::Goal goal;
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = node->now();
+    NavigateToPose::Goal goal;
+    goal.pose.header.frame_id = "map";
+    goal.pose.header.stamp = node->now();
     if (spiral_iter == -1)
     {
-        goal.target_pose.pose.position.x = initial.position.x + step * cos(yaw) - step * sin(yaw);
-        goal.target_pose.pose.position.y = initial.position.y + step * sin(yaw) + step * cos(yaw);
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw + M_PI / 4);
+        goal.pose.pose.position.x = initial.position.x + step * cos(yaw) - step * sin(yaw);
+        goal.pose.pose.position.y = initial.position.y + step * sin(yaw) + step * cos(yaw);
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw + M_PI / 4);
         spiral_iter = 1;
     }
     else
@@ -218,26 +218,26 @@ NavAssistant::Goal SpiralSearcher::nextGoalSpiral(Pose initial)
         {
             step += step_increment;
         }
-        goal.target_pose.pose.position.x = initial.position.x - (-step) * sin(yaw);
-        goal.target_pose.pose.position.y = initial.position.y + (-step) * cos(yaw);
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw - M_PI / 2);
+        goal.pose.pose.position.x = initial.position.x - (-step) * sin(yaw);
+        goal.pose.pose.position.y = initial.position.y + (-step) * cos(yaw);
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw - M_PI / 2);
         spiral_iter++;
     }
 
-    spdlog::info("[SPIRAL_SEARCH] New Goal [{:.2}, {:.2}]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    spdlog::info("[SPIRAL_SEARCH] New Goal [{:.2}, {:.2}]", goal.pose.pose.position.x, goal.pose.pose.position.y);
     return goal;
 }
 
 bool SpiralSearcher::doSpiral()
 {
-    NavAssistant::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
+    NavigateToPose::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
     int i = 0;
     bool blocked = false;
     while (rclcpp::ok() && !checkGoal(goal))
     {
         if (verbose)
             spdlog::info("[SPIRAL_SEARCH] SKIPPING NEXT POINT IN SPIRAL (OBSTACLES)");
-        goal = nextGoalSpiral(goal.target_pose.pose);
+        goal = nextGoalSpiral(goal.pose.pose);
         i++;
         if (i > 3)
         {
@@ -259,47 +259,46 @@ bool SpiralSearcher::doSpiral()
     return true;
 }
 
-NavAssistant::Goal SpiralSearcher::get_random_pose_environment()
+NavigateToPose::Goal SpiralSearcher::get_random_pose_environment()
 {
     bool valid_pose = false;
 
-    NavAssistant::Goal goal;
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = node->now();
+    NavigateToPose::Goal goal;
+    goal.pose.header.frame_id = "map";
+    goal.pose.header.stamp = node->now();
     double randomPoseDistance = 1;
     while (!valid_pose)
     {
         // random pose in the vecinity of the robot
-        goal.target_pose.pose.position.x =
+        goal.pose.pose.position.x =
             fRand(current_robot_pose.pose.pose.position.x - randomPoseDistance, current_robot_pose.pose.pose.position.x + randomPoseDistance);
-        goal.target_pose.pose.position.y =
+        goal.pose.pose.position.y =
             fRand(current_robot_pose.pose.pose.position.x - randomPoseDistance, current_robot_pose.pose.pose.position.x + randomPoseDistance);
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
         randomPoseDistance += 0.5;
         // check pose validity
         if (checkGoal(goal))
             valid_pose = true;
         else if (verbose)
-            spdlog::warn("[SPIRAL_SEARCH] invalid random pose=[{:.2}, {:.2}, {:.2}]", goal.target_pose.pose.position.x,
-                         goal.target_pose.pose.position.y, goal.target_pose.pose.orientation.z);
+            spdlog::warn("[SPIRAL_SEARCH] invalid random pose=[{:.2}, {:.2}, {:.2}]", goal.pose.pose.position.x, goal.pose.pose.position.y,
+                         goal.pose.pose.orientation.z);
     }
 
     // show content
     if (verbose)
-        spdlog::info("[SPIRAL_SEARCH] Random Goal pose =[{:.2}, {:.2}, {:.2}]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y,
-                     goal.target_pose.pose.orientation.z);
+        spdlog::info("[SPIRAL_SEARCH] Random Goal pose =[{:.2}, {:.2}, {:.2}]", goal.pose.pose.position.x, goal.pose.pose.position.y,
+                     goal.pose.pose.orientation.z);
     return goal;
 }
 
 // Set a random goal within the map (EXPLORATION)
 void SpiralSearcher::setRandomGoal()
 {
-    NavAssistant::Goal goal = get_random_pose_environment();
+    NavigateToPose::Goal goal = get_random_pose_environment();
 
     // Send goal to the Move_Base node for execution
     if (verbose)
-        spdlog::info("[SPIRAL_SEARCH] - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x,
-                     goal.target_pose.pose.position.y);
+        spdlog::info("[SPIRAL_SEARCH] - {} - Sending robot to {} {}", __FUNCTION__, goal.pose.pose.position.x, goal.pose.pose.position.y);
     sendGoal(goal);
     inMotion = true;
 }

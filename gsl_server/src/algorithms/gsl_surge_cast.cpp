@@ -39,18 +39,18 @@ void SurgeCastPT::setSurgeGoal()
     // spdlog::info("[DEBUG] movement_dir in map frame = {}", movement_dir);
 
     // Set goal in the Upwind direction
-    NavAssistant::Goal goal;
+    NavigateToPose::Goal goal;
     current_step = step;
     double movement_dir = upwind_dir;
     do
     {
-        goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = node->now();
+        goal.pose.header.frame_id = "map";
+        goal.pose.header.stamp = node->now();
 
         // Set a goal in the upwind direction
-        goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
-        goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
+        goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
+        goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
         // If goal is unreachable
         // add noise in angle (in case goal is an obstacle)
@@ -67,7 +67,7 @@ void SurgeCastPT::setSurgeGoal()
 
     // Send goal to the Move_Base node for execution
     if (verbose)
-        spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.pose.pose.position.x, goal.pose.pose.position.y);
     sendGoal(goal);
     inMotion = true;
 }
@@ -105,18 +105,18 @@ void SurgeCastPT::setCastGoal()
     }
 
     // Set goal
-    NavAssistant::Goal goal;
+    NavigateToPose::Goal goal;
     do
     {
-        goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = node->now();
+        goal.pose.header.frame_id = "map";
+        goal.pose.header.stamp = node->now();
 
         // Set a goal in the crosswind direction
-        goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
-        goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
+        goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
+        goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
-        // spdlog::info("SurgeCastPT - {} - Testing {} {}...", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        // spdlog::info("SurgeCastPT - {} - Testing {} {}...", __FUNCTION__, goal.pose.pose.position.x, goal.pose.pose.position.y);
 
         // reduce step (in case goal is an obstacle or out of bounds)
         current_step = current_step - 0.3;
@@ -130,7 +130,7 @@ void SurgeCastPT::setCastGoal()
 
     // Send goal to the Move_Base node for execution
     if (verbose)
-        spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        spdlog::debug("SurgeCastPT - {} - Sending robot to {} {}", __FUNCTION__, goal.pose.pose.position.x, goal.pose.pose.position.y);
     sendGoal(goal);
     inMotion = true;
 }

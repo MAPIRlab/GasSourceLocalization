@@ -65,7 +65,7 @@ namespace GrGSL
         void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
         void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
         void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
-        void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult&) override;
+        void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult&) override;
 
         State previous_state, current_state;
 
@@ -96,8 +96,8 @@ namespace GrGSL
         // Movement
         bool infoTaxis;
         bool allowMovementRepetition;
-        void moveTo(NavAssistant::Goal goal);
-        NavAssistant::Goal indexToGoal(int i, int j);
+        void moveTo(NavigateToPose::Goal goal);
+        NavigateToPose::Goal indexToGoal(int i, int j);
         void cancel_navigation();
 
         Eigen::Vector2d previous_robot_pose;

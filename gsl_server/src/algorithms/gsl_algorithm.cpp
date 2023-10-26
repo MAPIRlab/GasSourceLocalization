@@ -10,7 +10,17 @@ GSLAlgorithm::GSLAlgorithm(std::shared_ptr<rclcpp::Node> _node)
 
 void GSLAlgorithm::initialize()
 {
-    nav_client = rclcpp_action::create_client<NavAssistant>(node, "nav_assistant");
+    // Navigation
+    //-----------
+
+#ifdef USE_NAV_ASSISTANT
+    make_plan_client = node->create_client<MakePlan>("navigation_assistant/make_plan");
+    nav_client = rclcpp_action::create_client<NavigateToPose>(node, "nav_assistant");
+#else
+    make_plan_client = rclcpp_action::create_client<MakePlan>(node, "compute_path_to_pose");
+    nav_client = rclcpp_action::create_client<NavigateToPose>(node, "navigate_to_pose");
+#endif
+
     spdlog::info("[GSL_NODE] Waiting for the move_base action server to come online...");
     bool mb_aconline = false;
 
@@ -31,6 +41,7 @@ void GSLAlgorithm::initialize()
     }
     spdlog::info("[GSL_NODE] Found MoveBase! Initializing module...");
 
+    //-----------
     declareParameters();
 
     // Subscribers
@@ -43,9 +54,6 @@ void GSLAlgorithm::initialize()
     localization_sub_ =
         node->create_subscription<PoseWithCovarianceStamped>(robot_location_topic, 100, std::bind(&GSLAlgorithm::localizationCallback, this, _1));
 
-    // Services
-    //-----------
-    make_plan_client = node->create_client<nav_assistant_msgs::srv::MakePlan>("navigation_assistant/make_plan");
     // Init State
     spdlog::info("[GSL NODE] INITIALIZATON COMPLETED--> WAITING_FOR_MAP");
     inMotion = false;
@@ -100,10 +108,10 @@ void GSLAlgorithm::costmapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr
 }
 
 // Move Base CallBacks
-void GSLAlgorithm::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result)
+void GSLAlgorithm::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result)
 {
     if (result.code != rclcpp_action::ResultCode::SUCCEEDED)
-        spdlog::debug("PlumeTracking - {} - UPS! Couldn't reach the target.", __FUNCTION__);
+        spdlog::error("PlumeTracking - OOPS! Couldn't reach the target. Navigation goal ReturnCode: {}", (int)result.code);
 
     // Notify that the objective has been reached
     inMotion = false;
@@ -130,11 +138,12 @@ float GSLAlgorithm::get_average_vector(std::vector<float> const& v)
     return sum / length;
 }
 
-bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
+bool GSLAlgorithm::checkGoal(const NavigateToPose::Goal& goal)
 {
-    // spdlog::info("[DEBUG] Checking Goal [{:.2}, {:.2}] in map frame", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
-    float pos_x = goal.target_pose.pose.position.x;
-    float pos_y = goal.target_pose.pose.position.y;
+#ifdef USE_NAV_ASSISTANT
+    // spdlog::info("[DEBUG] Checking Goal [{:.2}, {:.2}] in map frame", goal.pose.pose.position.x, goal.pose.pose.position.y);
+    float pos_x = goal.pose.pose.position.x;
+    float pos_y = goal.pose.pose.position.y;
     if (!isPointInsideMapBounds({pos_x, pos_y}))
     {
         if (verbose)
@@ -142,12 +151,12 @@ bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
         return false;
     }
 
-    auto request = std::make_shared<nav_assistant_msgs::srv::MakePlan::Request>();
+    auto request = std::make_shared<MakePlan::Request>();
     request->start.header.frame_id = "map";
     request->start.header.stamp = node->now();
     request->start.pose = current_robot_pose.pose.pose;
 
-    request->goal = goal.target_pose;
+    request->goal = goal.pose;
 
     auto future = make_plan_client->async_send_request(request);
     if (rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(1)) != rclcpp::FutureReturnCode::SUCCESS)
@@ -161,11 +170,57 @@ bool GSLAlgorithm::checkGoal(const NavAssistant::Goal& goal)
         return false;
     else
         return true;
+#else
+    MakePlan::Goal mb_request;
+
+    mb_request.use_start = true;
+    mb_request.start.pose = current_robot_pose.pose.pose;
+    mb_request.start.header = current_robot_pose.header;
+    mb_request.goal = goal.pose;
+
+    // send the "make plan" goal to nav2 and wait until the response comes back
+    std::optional<nav_msgs::msg::Path> m_CurrentPlan = std::nullopt;
+
+    auto callback = [&m_CurrentPlan, this](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult& w_result)
+    {
+        m_CurrentPlan = w_result.result->path;
+        // spdlog::info("Path calculated");
+    };
+    auto goal_options = rclcpp_action::Client<MakePlan>::SendGoalOptions();
+    goal_options.result_callback = callback;
+
+    auto future = make_plan_client->async_send_goal(mb_request, goal_options);
+    auto result = rclcpp::spin_until_future_complete(node, future);
+
+    // Check if valid goal with move_base srv
+    if (result != rclcpp::FutureReturnCode::SUCCESS)
+    {
+        // SRV is not available!! Report Error
+        spdlog::info("[] Unable to call MAKE_PLAN service from MoveBase");
+        return false;
+    }
+
+    // wait until path is received. The spin-until-future-complete line only blocks until the request is accepted!
+    rclcpp::Rate wait_rate(200);
+    while (!m_CurrentPlan.has_value())
+    {
+        wait_rate.sleep();
+        rclcpp::spin_some(node);
+    }
+
+    if (m_CurrentPlan.value().poses.empty())
+    {
+        if (verbose)
+            spdlog::warn("[NavigateToPose] Unable to get plan");
+        return true;
+    }
+    return true;
+#endif
 }
 
-void GSLAlgorithm::sendGoal(const NavAssistant::Goal& goal)
+void GSLAlgorithm::sendGoal(const NavigateToPose::Goal& goal)
 {
-    rclcpp_action::Client<NavAssistant>::SendGoalOptions options;
+    rclcpp_action::Client<NavigateToPose>::SendGoalOptions options;
     options.result_callback = std::bind(&GSLAlgorithm::goalDoneCallback, this, _1);
     nav_client->async_send_goal(goal, options);
 }
@@ -232,42 +287,6 @@ void GSLAlgorithm::save_results_to_file(int result)
     source_pose.pose.position.y = source_pose_y;
 
     // Set MoveBase srv to estimate the distances
-
-    auto request = std::make_shared<nav_assistant_msgs::srv::MakePlan::Request>();
-    request->start.header.frame_id = "map";
-    request->start.header.stamp = node->now();
-    request->start.pose = robot_poses_vector[0].pose.pose;
-
-    request->goal = source_pose;
-
-    auto future = make_plan_client->async_send_request(request);
-    if (rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(1)) != rclcpp::FutureReturnCode::SUCCESS)
-    {
-        spdlog::error(" Unable to GetPath from MoveBase");
-        nav_d = -1;
-    }
-    else
-    {
-        auto response = future.get();
-
-        // get distance [m] from vector<pose>
-        double Ax, Ay, d = 0;
-        for (size_t h = 0; h < response->plan.poses.size(); h++)
-        {
-            if (h == 0)
-            {
-                Ax = request->start.pose.position.x - response->plan.poses[h].pose.position.x;
-                Ay = request->start.pose.position.y - response->plan.poses[h].pose.position.y;
-            }
-            else
-            {
-                Ax = response->plan.poses[h - 1].pose.position.x - response->plan.poses[h].pose.position.x;
-                Ay = response->plan.poses[h - 1].pose.position.y - response->plan.poses[h].pose.position.y;
-            }
-            d += sqrt(pow(Ax, 2) + pow(Ay, 2));
-        }
-        nav_d = d;
-    }
 
     // 4. Nav time
     double nav_t = nav_d / 0.4; // assumming a cte speed of 0.4m/s

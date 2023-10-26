@@ -144,18 +144,18 @@ void SurgeSpiralPT::setSurgeGoal()
     double upwind_dir = angles::normalize_angle(average_wind_direction + 3.14159);
 
     // Set goal in the Upwind direction
-    NavAssistant::Goal goal;
+    NavigateToPose::Goal goal;
     current_step = step;
     double movement_dir = upwind_dir;
     do
     {
-        goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = node->now();
+        goal.pose.header.frame_id = "map";
+        goal.pose.header.stamp = node->now();
 
         // Set a goal in the upwind direction
-        goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
-        goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
+        goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
+        goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
         // If goal is unreachable
         // add noise in angle (in case goal is an obstacle)
@@ -175,8 +175,8 @@ void SurgeSpiralPT::setSurgeGoal()
 
     // Send goal to the Move_Base node for execution
     if (verbose)
-        spdlog::debug("GSL-SurgeSpiral - {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x,
-                      goal.target_pose.pose.position.y);
+        spdlog::debug("GSL-SurgeSpiral - {} - Sending robot to {} {}", __FUNCTION__, goal.pose.pose.position.x,
+                      goal.pose.pose.position.y);
     sendGoal(goal);
     inMotion = true;
 }
@@ -194,36 +194,36 @@ void SurgeSpiralPT::resetSpiral()
     spiral_iter = 1;
 }
 
-NavAssistant::Goal SurgeSpiralPT::nextGoalSpiral(Pose initial)
+NavigateToPose::Goal SurgeSpiralPT::nextGoalSpiral(Pose initial)
 {
 
     double yaw = Utils::getYaw(initial.orientation);
-    NavAssistant::Goal goal;
-    goal.target_pose.header.frame_id = "map";
-    goal.target_pose.header.stamp = node->now();
+    NavigateToPose::Goal goal;
+    goal.pose.header.frame_id = "map";
+    goal.pose.header.stamp = node->now();
     if (spiral_iter % 2 == 0)
     {
         spiralStep += spiralStep_increment;
     }
-    goal.target_pose.pose.position.x = initial.position.x - (-spiralStep) * sin(yaw);
-    goal.target_pose.pose.position.y = initial.position.y + (-spiralStep) * cos(yaw);
-    goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw - M_PI / 2);
+    goal.pose.pose.position.x = initial.position.x - (-spiralStep) * sin(yaw);
+    goal.pose.pose.position.y = initial.position.y + (-spiralStep) * cos(yaw);
+    goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(yaw - M_PI / 2);
     spiral_iter++;
 
-    spdlog::info("[SPIRAL_SEARCH] New Goal [{:.2}, {:.2}]", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+    spdlog::info("[SPIRAL_SEARCH] New Goal [{:.2}, {:.2}]", goal.pose.pose.position.x, goal.pose.pose.position.y);
     return goal;
 }
 
 void SurgeSpiralPT::setCastGoal()
 {
-    NavAssistant::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
+    NavigateToPose::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
     int i = 0;
     bool blocked = false;
     while (rclcpp::ok() && !checkGoal(goal))
     {
         if (verbose)
             spdlog::info("[GSL-SurgeSpiral] SKIPPING NEXT POINT IN SPIRAL (OBSTACLES)");
-        goal = nextGoalSpiral(goal.target_pose.pose);
+        goal = nextGoalSpiral(goal.pose.pose);
         i++;
         if (i > 3)
         {
@@ -231,7 +231,7 @@ void SurgeSpiralPT::setCastGoal()
             if (blocked)
             {
                 resetSpiral();
-                goal.target_pose = get_random_pose_environment();
+                goal.pose = get_random_pose_environment();
             }
             else
             {

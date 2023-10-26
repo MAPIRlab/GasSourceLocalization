@@ -32,10 +32,10 @@ public:
     double fRand(double fMin, double fMax);
     double getSumOfLocalMaxima(std::vector<std::vector<double>> const& v);
     // movement functions
-    NavAssistant::Goal get_random_pose_environment();
+    NavigateToPose::Goal get_random_pose_environment();
     void setRandomGoal();
     void resetSpiral();
-    NavAssistant::Goal nextGoalSpiral(Pose initial);
+    NavigateToPose::Goal nextGoalSpiral(Pose initial);
     bool doSpiral();
 
     SPIRAL_state getPreviousState();

@@ -161,7 +161,7 @@ void PlumeTracking::mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr ms
 }
 
 // Move Base CallBacks
-void PlumeTracking::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result)
+void PlumeTracking::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result)
 {
     inMotion = false;
     if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
@@ -177,7 +177,7 @@ void PlumeTracking::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAs
         }
     }
     else
-        spdlog::debug("PlumeTracking - {} - UPS! Couldn't reach the target.", __FUNCTION__);
+        spdlog::error("PlumeTracking - OOPS! Couldn't reach the target. Navigation goal ReturnCode: {}", (int)result.code);
 }
 
 //----------------------------------------------
@@ -299,33 +299,33 @@ void PlumeTracking::setInspectionGoal()
 {
     if (inspection_iter < 4)
     {
-        NavAssistant::Goal goal;
+        NavigateToPose::Goal goal;
         current_step = inspection_radius; // meters
         do
         {
-            goal.target_pose.header.frame_id = "map";
-            goal.target_pose.header.stamp = node->now();
+            goal.pose.header.frame_id = "map";
+            goal.pose.header.stamp = node->now();
             switch (inspection_iter)
             {
             case 0: //(x+1,y)
-                goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step;
-                goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y;
-                goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(3 * M_PI / 4);
+                goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step;
+                goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y;
+                goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(3 * M_PI / 4);
                 break;
             case 1: //(x,y+1)
-                goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x - current_step;
-                goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step;
-                goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(-3 * M_PI / 4);
+                goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x - current_step;
+                goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step;
+                goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(-3 * M_PI / 4);
                 break;
             case 2: //(x-1,y)
-                goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x - current_step;
-                goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y - current_step;
-                goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(-M_PI / 4);
+                goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x - current_step;
+                goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y - current_step;
+                goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(-M_PI / 4);
                 break;
             case 3: //(x,y-1)
-                goal.target_pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step;
-                goal.target_pose.pose.position.y = current_robot_pose.pose.pose.position.y - current_step;
-                goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(M_PI / 4);
+                goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step;
+                goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y - current_step;
+                goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(M_PI / 4);
                 break;
             default:
                 spdlog::warn("ERROR IN SEARCH-STATE INSPECTION");
@@ -337,7 +337,7 @@ void PlumeTracking::setInspectionGoal()
 
         // Send goal to the Move_Base node for execution
         if (verbose)
-            spdlog::debug("INSPECTION - Sending robot to {} {}", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+            spdlog::debug("INSPECTION - Sending robot to {} {}", goal.pose.pose.position.x, goal.pose.pose.position.y);
 
         sendGoal(goal);
         inMotion = true;
@@ -357,12 +357,12 @@ void PlumeTracking::setInspectionGoal()
 // Set a random goal within the map (EXPLORATION)
 void PlumeTracking::setRandomGoal()
 {
-    NavAssistant::Goal goal;
-    goal.target_pose = get_random_pose_environment();
+    NavigateToPose::Goal goal;
+    goal.pose = get_random_pose_environment();
 
     // Send goal to the Move_Base node for execution
     if (verbose)
-        spdlog::info("- {} - Sending robot to {} {}", __FUNCTION__, goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        spdlog::info("- {} - Sending robot to {} {}", __FUNCTION__, goal.pose.pose.position.x, goal.pose.pose.position.y);
     sendGoal(goal);
     inMotion = true;
 }
@@ -370,7 +370,7 @@ void PlumeTracking::setRandomGoal()
 geometry_msgs::msg::PoseStamped PlumeTracking::get_random_pose_environment()
 {
     int idx = 0;
-    NavAssistant::Goal goal;
+    NavigateToPose::Goal goal;
     geometry_msgs::msg::PoseStamped p;
     p.header.frame_id = "map";
     p.header.stamp = node->now();
@@ -387,7 +387,7 @@ geometry_msgs::msg::PoseStamped PlumeTracking::get_random_pose_environment()
             randomPoseDistance += 0.5;
         }
         idx++;
-        goal.target_pose = p;
+        goal.pose = p;
     } while (!checkGoal(goal));
 
     // show content

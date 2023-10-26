@@ -30,6 +30,6 @@ public:
     void setSurgeGoal() override;
 
     void setCastGoal() override;
-    NavAssistant::Goal nextGoalSpiral(Pose initial);
+    NavigateToPose::Goal nextGoalSpiral(Pose initial);
     void resetSpiral();
 };

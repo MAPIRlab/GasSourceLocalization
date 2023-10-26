@@ -238,10 +238,10 @@ namespace GrGSL
         }
     }
 
-    void GrGSL::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result)
+    void GrGSL::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result)
     {
         if (result.code != rclcpp_action::ResultCode::SUCCEEDED)
-            spdlog::debug("PlumeTracking - {} - UPS! Couldn't reach the target.", __FUNCTION__);
+            spdlog::error("PlumeTracking - OOPS! Couldn't reach the target. Navigation goal ReturnCode: {}", (int)result.code);
 
         inMotion = false;
         cancel_navigation();
@@ -616,7 +616,7 @@ namespace GrGSL
     {
         updateSets();
 
-        NavAssistant::Goal goal;
+        NavigateToPose::Goal goal;
         int i = -1, j = -1;
         if (infoTaxis)
         {
@@ -634,7 +634,7 @@ namespace GrGSL
                 {
                     int r = wind[index].i;
                     int c = wind[index].j;
-                    NavAssistant::Goal tempGoal = indexToGoal(r, c);
+                    NavigateToPose::Goal tempGoal = indexToGoal(r, c);
                     if (checkGoal(tempGoal))
                     {
                         double entAux = informationGain(wind[index]);
@@ -674,7 +674,7 @@ namespace GrGSL
                     if (probability(p) > max || (probability(p) == max && cells[p.x][p.y].distance > maxDist))
                     {
 
-                        NavAssistant::Goal tempGoal = indexToGoal(p.x, p.y);
+                        NavigateToPose::Goal tempGoal = indexToGoal(p.x, p.y);
                         if (checkGoal(tempGoal))
                         {
                             i = p.x;
@@ -698,16 +698,16 @@ namespace GrGSL
         moveTo(goal);
     }
 
-    void GrGSL::moveTo(NavAssistant::Goal goal)
+    void GrGSL::moveTo(NavigateToPose::Goal goal)
     {
 
         inMotion = true;
 
-        spdlog::info(" MOVING TO {},{}", goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        spdlog::info(" MOVING TO {},{}", goal.pose.pose.position.x, goal.pose.pose.position.y);
 
         sendGoal(goal);
 
-        currentPosIndex = coordinatesToIndex(goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        currentPosIndex = coordinatesToIndex(goal.pose.pose.position.x, goal.pose.pose.position.y);
         // close nearby cells to avoid repeating the same pose with only minor variations
         if (!allowMovementRepetition)
         {
@@ -732,20 +732,22 @@ namespace GrGSL
         }
     }
 
-    NavAssistant::Goal GrGSL::indexToGoal(int i, int j)
+    NavigateToPose::Goal GrGSL::indexToGoal(int i, int j)
     {
-        NavAssistant::Goal goal;
-        goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = node->now();
+        NavigateToPose::Goal goal;
+        goal.pose.header.frame_id = "map";
+        goal.pose.header.stamp = node->now();
 
         Eigen::Vector2d pos = indexToCoordinates(i, j);
         Eigen::Vector2d coordR = indexToCoordinates(currentPosIndex.x, currentPosIndex.y);
 
         double move_angle = (atan2(pos.y() - coordR.y(), pos.x() - coordR.x()));
-        goal.target_pose.pose.position.x = pos.x();
-        goal.target_pose.pose.position.y = pos.y();
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(move_angle));
+        goal.pose.pose.position.x = pos.x();
+        goal.pose.pose.position.y = pos.y();
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(move_angle));
+#ifdef USE_NAV_ASSISTANT
         goal.turn_before_nav = true;
+#endif
         return goal;
     }
 

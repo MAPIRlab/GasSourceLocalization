@@ -98,8 +98,8 @@ namespace PMFS
         double applyFalloffLogOdds(Utils::Vector2 originalVectorScaled, const HitProbKernel& kernel);
 
         //-------------Movement-------------
-        void moveTo(NavAssistant::Goal& goal);
-        NavAssistant::Goal indexToGoal(int i, int j);
+        void moveTo(NavigateToPose::Goal& goal);
+        NavigateToPose::Goal indexToGoal(int i, int j);
         void cancel_navigation(bool succeeded);
         double explorationValue(int i, int j);
         void updateSets();
@@ -132,7 +132,7 @@ namespace PMFS
         void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
         void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
         void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
-        void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result) override;
+        void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result) override;
 
         // Measurements
         float last_concentration_reading = -1;

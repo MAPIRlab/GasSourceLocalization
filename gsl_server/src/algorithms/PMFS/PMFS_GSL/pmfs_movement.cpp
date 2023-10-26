@@ -57,7 +57,7 @@ namespace PMFS
             return;
         updateSets();
         openMoveSet.erase(currentPosIndex);
-        NavAssistant::Goal goal;
+        NavigateToPose::Goal goal;
         int goalI = -1, goalJ = -1;
         double interest = -DBL_MAX;
         double maxDist = 0;
@@ -75,7 +75,7 @@ namespace PMFS
             {
                 int r = indices.x;
                 int c = indices.y;
-                NavAssistant::Goal tempGoal = indexToGoal(r, c);
+                NavigateToPose::Goal tempGoal = indexToGoal(r, c);
 
                 double explorationTerm = explorationValue(r, c);
                 double varianceTerm = simulations.varianceOfHitProb[r][c] * (1 - cells[r][c].hitProbability.confidence);
@@ -107,13 +107,13 @@ namespace PMFS
         moveTo(goal);
     }
 
-    void PMFS_GSL::moveTo(NavAssistant::Goal& goal)
+    void PMFS_GSL::moveTo(NavigateToPose::Goal& goal)
     {
 
         inMotion = true;
         sendGoal(goal);
 
-        currentPosIndex = coordinatesToIndex(goal.target_pose.pose.position.x, goal.target_pose.pose.position.y);
+        currentPosIndex = coordinatesToIndex(goal.pose.pose.position.x, goal.pose.pose.position.y);
 
         if (!settings.movement.allowMovementRepetition)
         {
@@ -139,20 +139,22 @@ namespace PMFS
         }
     }
 
-    NavAssistant::Goal PMFS_GSL::indexToGoal(int i, int j)
+    NavigateToPose::Goal PMFS_GSL::indexToGoal(int i, int j)
     {
-        NavAssistant::Goal goal;
-        goal.target_pose.header.frame_id = "map";
-        goal.target_pose.header.stamp = node->now();
+        NavigateToPose::Goal goal;
+        goal.pose.header.frame_id = "map";
+        goal.pose.header.stamp = node->now();
 
         Utils::Vector2 pos = indexToCoordinates(i, j);
         Utils::Vector2 coordR = indexToCoordinates(currentPosIndex.x, currentPosIndex.y);
 
         double move_angle = (std::atan2(pos.y - coordR.y, pos.x - coordR.x));
-        goal.target_pose.pose.position.x = pos.x;
-        goal.target_pose.pose.position.y = pos.y;
-        goal.target_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(move_angle));
+        goal.pose.pose.position.x = pos.x;
+        goal.pose.pose.position.y = pos.y;
+        goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(move_angle));
+#ifdef USE_NAV_ASSISTANT
         goal.turn_before_nav = true;
+#endif
         return goal;
     }
 

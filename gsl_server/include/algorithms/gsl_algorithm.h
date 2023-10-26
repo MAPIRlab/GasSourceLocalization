@@ -5,8 +5,6 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
 #include <rclcpp_action/rclcpp_action.hpp>
-#include <nav_assistant_msgs/srv/make_plan.hpp>
-#include <nav_assistant_msgs/action/nav_assistant.hpp>
 
 #include <nav_msgs/msg/occupancy_grid.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -22,15 +20,29 @@
 #include "Utils/Utils.h"
 #include "gsl_macros.h"
 
-typedef geometry_msgs::msg::Pose Pose;
-typedef geometry_msgs::msg::PoseWithCovarianceStamped PoseWithCovarianceStamped;
-typedef geometry_msgs::msg::Point Point;
-typedef nav_assistant_msgs::action::NavAssistant NavAssistant;
-typedef rclcpp_action::Client<NavAssistant>::SharedPtr NavAssistClient;
-typedef nav_assistant_msgs::srv::MakePlan MakePlan;
-
+using Pose = geometry_msgs::msg::Pose;
+using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
+using Point = geometry_msgs::msg::Point;
 using MarkerArray = visualization_msgs::msg::MarkerArray;
 using Marker = visualization_msgs::msg::Marker;
+
+#ifdef USE_NAV_ASSISTANT
+
+#include <nav_assistant_msgs/srv/make_plan.hpp>
+#include <nav_assistant_msgs/action/nav_assistant.hpp>
+using NavigateToPose = nav_assistant_msgs::action::NavAssistant;
+using MakePlan = nav_assistant_msgs::srv::MakePlan;
+
+#else
+
+#include <nav2_msgs/action/navigate_to_pose.hpp>
+#include <nav2_msgs/action/compute_path_to_pose.hpp>
+using NavigateToPose = nav2_msgs::action::NavigateToPose;
+using MakePlan = nav2_msgs::action::ComputePathToPose;
+
+#endif
+
+using NavigationClient = rclcpp_action::Client<NavigateToPose>::SharedPtr;
 
 class GSLAlgorithm
 {
@@ -65,7 +77,7 @@ protected:
     nav_msgs::msg::OccupancyGrid costmap_;        //! Map
     PoseWithCovarianceStamped movingPose;         //! Robot pose on the global frame referential
     PoseWithCovarianceStamped current_robot_pose; //! Robot pose on the global frame referential
-    NavAssistClient nav_client;                   //! Move Base Action Server.
+    NavigationClient nav_client;                  //! Move Base Action Server.
 
     // Subscriptions
     rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gas_sub_;   //! Gas readings subscriber
@@ -73,7 +85,12 @@ protected:
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;     //! Map subscriber.
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_; //! CostMap subscriber.
     rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localization_sub_;
+
+#ifdef USE_NAV_ASSISTANT
     rclcpp::Client<MakePlan>::SharedPtr make_plan_client;
+#else
+    rclcpp_action::Client<MakePlan>::SharedPtr make_plan_client;
+#endif
 
     std::unique_ptr<tf2_ros::Buffer> tf_buffer;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener;
@@ -85,10 +102,10 @@ protected:
     virtual void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) = 0;
     void localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg);
 
-    virtual void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result);
+    virtual void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result);
 
-    bool checkGoal(const NavAssistant::Goal& goal);
-    void sendGoal(const NavAssistant::Goal& goal);
+    bool checkGoal(const NavigateToPose::Goal& goal);
+    void sendGoal(const NavigateToPose::Goal& goal);
     float get_average_vector(std::vector<float> const& v);
     virtual void save_results_to_file(int result);
     virtual void declareParameters();

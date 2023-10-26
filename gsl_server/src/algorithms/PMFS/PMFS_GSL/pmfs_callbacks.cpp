@@ -107,17 +107,17 @@ namespace PMFS
         return average_angle;
     }
 
-    void PMFS_GSL::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result)
+    void PMFS_GSL::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result)
     {
         bool succeeded;
-        if (result.code != rclcpp_action::ResultCode::SUCCEEDED)
+        if (result.code == rclcpp_action::ResultCode::SUCCEEDED)
         {
             succeeded = true;
         }
         else
         {
             succeeded = false;
-            spdlog::error("PlumeTracking - {} - UPS! Couldn't reach the target.", __FUNCTION__);
+            spdlog::error("PlumeTracking - OOPS! Couldn't reach the target. Navigation goal ReturnCode: {}", (int)result.code);
         }
 
         // Notify that the objective has been reached

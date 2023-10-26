@@ -82,5 +82,5 @@ protected:
     float get_average_wind_direction(std::vector<float> const& v);
 
     // Actionlib callbacks (move_base)
-    void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavAssistant>::WrappedResult& result) override;
+    void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result) override;
 };

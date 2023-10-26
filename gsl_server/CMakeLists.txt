@@ -11,6 +11,8 @@ set(GSL_DEBUG OFF) #debug mode disables optimizations and activates a bunch of a
 
 set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 
+set(USE_NAV_ASSISTANT OFF) # if ON uses the nav_assistant package rather than directly communicating with nav_2. It adds some extra features, but currently it has a relatively high performance cost due to async intra-process communication  
+
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
 
@@ -51,9 +53,9 @@ find_package(angles REQUIRED)
 find_package(olfaction_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(gmrf_wind_mapping REQUIRED)
-find_package(nav_assistant_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
 find_package(gsl_actions REQUIRED)
 
 
@@ -67,6 +69,11 @@ else()
 endif(USE_GADEN)
 
 
+if(USE_NAV_ASSISTANT)
+    add_definitions(-DUSE_NAV_ASSISTANT)
+	find_package(nav_assistant_msgs REQUIRED)
+    set(CONDITIONAL_NAV_ASSISTANT "nav_assistant_msgs")  
+endif()
 
 
 #other stuff
@@ -138,12 +145,13 @@ ament_target_dependencies( gsl_actionserver_node
     
     olfaction_msgs
     visualization_msgs
-    nav_assistant_msgs
+    nav2_msgs
     std_msgs
-    
+	
     gmrf_wind_mapping
     gsl_actions
-
+	
+    ${CONDITIONAL_NAV_ASSISTANT}
     ${CONDITIONAL_GADEN_PLAYER}
     ${CONDITIONAL_IMGUI}
 )
