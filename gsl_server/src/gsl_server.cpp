@@ -23,7 +23,6 @@ int main(int argc, char** argv)
         if (gsl_node->m_activeGoal.get() != nullptr)
         {
             gsl_node->execute(gsl_node->m_activeGoal);
-            rclcpp::shutdown();
         }
     }
 

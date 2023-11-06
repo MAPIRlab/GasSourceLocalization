@@ -79,7 +79,7 @@ namespace GrGSL
 
             spdlog::info("--------------GSL---------------");
             spdlog::info("Occupancy Map dimensions:");
-            spdlog::info("x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}", map_.info.origin.position.x,
+            spdlog::info("x_min:{:.2f} x_max:{:.2f}   -   y_min:{:.2f} y_max:{:.2f}", map_.info.origin.position.x,
                          map_.info.origin.position.x + map_.info.width * map_.info.resolution, map_.info.origin.position.y,
                          map_.info.origin.position.y + map_.info.height * map_.info.resolution);
             spdlog::info("--------------------------------");
@@ -153,7 +153,9 @@ namespace GrGSL
         hashSet openPropagationSet;
         hashSet activePropagationSet;
         hashSet closedPropagationSet;
-        Vector2Int curr = coordinatesToIndex(current_robot_pose.pose.pose.position.x, current_robot_pose.pose.pose.position.y);
+        currentPosIndex = coordinatesToIndex(current_robot_pose.pose.pose.position.x, current_robot_pose.pose.pose.position.y);
+
+        Vector2Int& curr = currentPosIndex;
         cells[curr.x][curr.y].auxWeight = 1;
         activePropagationSet.insert(curr);
         propagateProbabilities(cells, openPropagationSet, closedPropagationSet, activePropagationSet);
@@ -267,7 +269,7 @@ namespace GrGSL
             stop_and_measure_windS_v.clear();
             // Check thresholds and set new search-state
             if (verbose)
-                spdlog::info("avg_gas={:.2}    avg_wind_speed={:.2}     avg_wind_dir={:.2f}", average_concentration, average_wind_speed,
+                spdlog::info("avg_gas={:.2f}    avg_wind_speed={:.2f}     avg_wind_dir={:.2f}", average_concentration, average_wind_speed,
                              average_wind_direction);
 
             if (average_concentration > th_gas_present && average_wind_speed > th_wind_present)
@@ -444,6 +446,7 @@ namespace GrGSL
 
         // DIFFUSION
         // calculate and normalize these probabilities before combining them with the advection ones
+
         std::vector<std::vector<double>> diffusionProb = std::vector<std::vector<double>>(map.size(), std::vector<double>(map[0].size()));
         double sum = 0;
         for (int r = 0; r < map.size(); r++)
@@ -593,11 +596,12 @@ namespace GrGSL
     void GrGSL::updateSets()
     {
         int i = currentPosIndex.x, j = currentPosIndex.y;
+        int expansionSize = 5;
 
-        int oI = std::max(0, i - 3);
-        int fI = std::min((int)cells.size() - 1, i + 3);
-        int oJ = std::max(0, j - 3);
-        int fJ = std::min((int)cells[0].size() - 1, j + 3);
+        int oI = std::max(0, i - expansionSize);
+        int fI = std::min((int)cells.size() - 1, i + expansionSize);
+        int oJ = std::max(0, j - expansionSize);
+        int fJ = std::min((int)cells[0].size() - 1, j + expansionSize);
 
         for (int r = oI; r <= fI; r++)
         {
@@ -624,7 +628,7 @@ namespace GrGSL
             computingInfoGain = true;
             std::vector<WindVector> wind = estimateWind();
             std::mutex mtx;
-            double ent = -100;
+            double ent = -DBL_MAX;
             double maxDist = 0;
             rclcpp::Time tstart = node->now();
             if (!wind.empty())
@@ -635,7 +639,11 @@ namespace GrGSL
                     int r = wind[index].i;
                     int c = wind[index].j;
                     NavigateToPose::Goal tempGoal = indexToGoal(r, c);
-                    if (checkGoal(tempGoal))
+
+                    mtx.lock();
+                    bool pathExists = checkGoal(tempGoal);
+                    mtx.unlock();
+                    if (pathExists)
                     {
                         double entAux = informationGain(wind[index]);
                         mtx.lock();
@@ -658,8 +666,8 @@ namespace GrGSL
             }
             computingInfoGain = false;
             double ti = (node->now() - tstart).seconds();
-            std::cout << "Time infotaxis: " << ti << "\n";
-            std::cout << "Number of considered cells: " << wind.size() << "\n";
+            spdlog::info("Time infotaxis: {}", ti);
+            spdlog::info("Number of considered cells: {}", wind.size());
         }
         else
         {
@@ -703,7 +711,7 @@ namespace GrGSL
 
         inMotion = true;
 
-        spdlog::info(" MOVING TO {},{}", goal.pose.pose.position.x, goal.pose.pose.position.y);
+        spdlog::info("MOVING TO {:.2f},{:.2f}", goal.pose.pose.position.x, goal.pose.pose.position.y);
 
         sendGoal(goal);
 
@@ -795,7 +803,7 @@ namespace GrGSL
         std::vector<Vector2Int> indices;
         for (auto& p : openMoveSet)
         {
-            // if(cells[p.x][p.y].distance<5)
+            if (cells[p.x][p.y].distance < 10)
             {
                 Eigen::Vector2d coords = indexToCoordinates(p.x, p.y);
                 request->x.push_back(coords.x());

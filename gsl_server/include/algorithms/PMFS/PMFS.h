@@ -82,8 +82,7 @@ namespace PMFS
 
         int exploredCells;
         bool reached;
-        double t1;
-        double ground_truth_x, ground_truth_y;
+        double navigation_time = -1;
 
         //-------------Initialization-------------
         void declareParameters() override;

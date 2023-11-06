@@ -121,7 +121,7 @@ def launch_setup(context, *args, **kwargs):
 
 
 def generate_launch_description():
-	my_dir = get_package_share_directory("test_env")
+	my_dir = get_package_share_directory("pmfs_env")
 
 	return LaunchDescription(
 		[

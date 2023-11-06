@@ -132,9 +132,9 @@ namespace GrGSL
         double gaussian(double distance, double sigma);
 
         // Termination condition
-        int exploredCells;
-        bool reached;
-        double t1;
+        int exploredCells = 0;
+        bool reached = false;
+        double t1 = -1;
         int convergence_steps;
         double convergence_thr;
         double ground_truth_x, ground_truth_y;

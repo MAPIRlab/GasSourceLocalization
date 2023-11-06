@@ -41,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
 				executable="gsl_actionserver_call",
 				name="gsl_call",
 				parameters=[
-					{"method": "PMFS"},
+					{"method": "GrGSL"},
 				],
 			),
 			Node(

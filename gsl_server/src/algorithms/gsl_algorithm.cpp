@@ -222,7 +222,15 @@ void GSLAlgorithm::sendGoal(const NavigateToPose::Goal& goal)
 {
     rclcpp_action::Client<NavigateToPose>::SendGoalOptions options;
     options.result_callback = std::bind(&GSLAlgorithm::goalDoneCallback, this, _1);
-    nav_client->async_send_goal(goal, options);
+    auto future = nav_client->async_send_goal(goal, options);
+    rclcpp::FutureReturnCode code = rclcpp::spin_until_future_complete(node, future);
+    if (code != rclcpp::FutureReturnCode::SUCCESS)
+    {
+        spdlog::error("Error sending goal to navigation server! Received code {}", code);
+        rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult result;
+        result.code = rclcpp_action::ResultCode::ABORTED;
+        goalDoneCallback(result);
+    }
 }
 
 int GSLAlgorithm::checkSourceFound()

@@ -48,7 +48,7 @@ def launch_setup(context, *args, **kwargs):
 				package="gsl_server",
 				executable="gsl_actionserver_node",
 				name="gsl_node",
-				prefix="xterm -hold -e gdb --args",
+				prefix="xterm -hold -e ",
 				parameters=[
 					# Common
 					{"verbose": True},
@@ -125,6 +125,7 @@ def launch_setup(context, *args, **kwargs):
 				{"permanentChange" : False},
 				{"robotName" : LaunchConfiguration("robot_name")},
 				{"position" : [-2.5, -3.4, -0.9]},
+				{"simulationSpeed" : 5.0}
             ],
 		)
 	]

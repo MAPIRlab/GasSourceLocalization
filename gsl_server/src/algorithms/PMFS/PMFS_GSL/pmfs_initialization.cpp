@@ -85,6 +85,7 @@ namespace PMFS
 
         settings.declaration.threshold = getParam<double>("convergence_thr", 0.5); // threshold for source declaration
         settings.declaration.steps = getParam<int>("convergence_steps", 5);
+        spdlog::info("Source is at ({}, {})", source_pose_x, source_pose_y);
     }
 
     PMFS_GSL::~PMFS_GSL()
@@ -145,7 +146,23 @@ namespace PMFS
         {
             std::vector<std::vector<uint8_t>> occupancyMap(cells.size(), std::vector<uint8_t>(cells[0].size()));
             std::string anemometer_frame = getParam<std::string>("anemometer_frame", "anemometer_frame");
-            geometry_msgs::msg::TransformStamped tfm = tf_buffer->lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+
+            geometry_msgs::msg::TransformStamped tfm;
+            bool has_tf = false;
+            do
+            {
+                try
+                {
+                    geometry_msgs::msg::TransformStamped tfm = tf_buffer->lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+                    has_tf = true;
+                }
+                catch (std::exception& e)
+                {
+                    spdlog::error("TF error when looking up map -> anemometer:\n{}", e.what());
+                    rclcpp::spin_some(node);
+                }
+            } while (!has_tf);
+
             float anemometer_Z = tfm.transform.translation.z;
             spdlog::info("anemometer z is {}", anemometer_Z);
             numFreeCells = 0;
@@ -153,7 +170,7 @@ namespace PMFS
             hashSet activePropagationSet;
             hashSet closedPropagationSet;
             currentPosIndex = coordinatesToIndex(current_robot_pose.pose.pose.position.x, current_robot_pose.pose.pose.position.y);
-            ;
+
             Vector2Int& curr = currentPosIndex;
             cells[curr.x][curr.y].hitProbability.auxWeight = 0;
             activePropagationSet.insert(curr);

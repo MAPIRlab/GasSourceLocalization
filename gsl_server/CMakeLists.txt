@@ -11,7 +11,7 @@ set(GSL_DEBUG OFF) #debug mode disables optimizations and activates a bunch of a
 
 set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 
-set(USE_NAV_ASSISTANT OFF) # if ON uses the nav_assistant package rather than directly communicating with nav_2. It adds some extra features, but currently it has a relatively high performance cost due to async intra-process communication  
+set(USE_NAV_ASSISTANT OFF) # if ON uses the nav_assistant package rather than directly communicating with nav_2. It adds some extra features, but currently it has a relatively high performance cost due to async inter-process communication  
 
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)

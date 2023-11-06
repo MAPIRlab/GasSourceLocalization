@@ -71,7 +71,7 @@ namespace PMFS
             }
         }
 
-        std::sort(data.begin(), data.end(), [](CellData a, CellData b) { return a.probability > b.probability; });
+        std::sort(data.begin(), data.end(), [](const CellData& a, const CellData& b) { return a.probability > b.probability; });
 
         double averageX = 0, averageY = 0;
         double sum = 0;
@@ -143,10 +143,10 @@ namespace PMFS
 
             if (!reached)
             {
-                if (std::sqrt(std::pow(current_robot_pose.pose.pose.position.x - ground_truth_x, 2) +
-                              std::pow(current_robot_pose.pose.pose.position.y - ground_truth_y, 2)) < 0.5)
+                if (std::sqrt(std::pow(current_robot_pose.pose.pose.position.x - source_pose_x, 2) +
+                              std::pow(current_robot_pose.pose.pose.position.y - source_pose_y, 2)) < 0.5)
                 {
-                    t1 = time_spent.seconds();
+                    navigation_time = time_spent.seconds();
                     reached = true;
                 }
             }
@@ -245,7 +245,7 @@ namespace PMFS
         }
     }
 
-    void PMFS_GSL::save_results_to_file(int result, double i, double j, double allI, double allJ)
+    void PMFS_GSL::save_results_to_file(int result, double source_x, double source_y, double allI, double allJ)
     {
         nav_client->async_cancel_all_goals();
 
@@ -253,19 +253,23 @@ namespace PMFS
         rclcpp::Duration time_spent = node->now() - start_time;
         double search_t = time_spent.seconds();
 
+        spdlog::info("Estimated source position: ({:2f},{:2f})", source_x, source_y);
         spdlog::info("RESULT IS: Success={0}, Search_t={1} s, Error={2} m", result, search_t, errorOverTime.back().error);
 
-        double error = sqrt(pow(ground_truth_x - i, 2) + pow(ground_truth_y - j, 2));
-        double errorAll = sqrt(pow(ground_truth_x - allI, 2) + pow(ground_truth_y - allJ, 2));
+        double error = sqrt(pow(source_pose_x - source_x, 2) + pow(source_pose_y - source_y, 2));
+        double errorAll = sqrt(pow(source_pose_x - allI, 2) + pow(source_pose_y - allJ, 2));
         // Save to file
         if (results_file != "")
         {
             std::ofstream file;
             file.open(results_file, std::ios_base::app);
+            if (!file.is_open())
+                spdlog::warn("File {} could not be opened!", results_file);
             if (result == 1)
-                file << t1 << " " << search_t << " " << errorAll << " " << error << " " << exploredCells << " " << varianceSourcePosition() << "\n";
+                file << navigation_time << " " << search_t << " " << errorAll << " " << error << " " << exploredCells << " "
+                     << varianceSourcePosition() << "\n";
             else
-                file << "FAILED " << t1 << " " << search_t << " " << errorAll << " " << error << " " << exploredCells << "\n";
+                file << "FAILED " << navigation_time << " " << search_t << " " << errorAll << " " << error << " " << exploredCells << "\n";
         }
         else
             spdlog::warn("No file provided for logging result. Skipping it.");
@@ -274,6 +278,9 @@ namespace PMFS
         {
             std::ofstream file;
             file.open(errors_file, std::ios_base::app);
+            if (!file.is_open())
+                spdlog::warn("File {} could not be opened!", errors_file);
+
             file << "\n\n========================\n";
             for (int i = 0; i < errorOverTime.size(); i++)
                 file << i << ", " << errorOverTime[i].error << " " << errorOverTime[i].variance << "\n";
@@ -289,6 +296,8 @@ namespace PMFS
         {
             std::ofstream file;
             file.open(path_file, std::ios_base::app);
+            if (!file.is_open())
+                spdlog::warn("File {} could not be opened!", path_file);
             file << "------------------------\n";
             for (PoseWithCovarianceStamped& p : robot_poses_vector)
                 file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
@@ -300,7 +309,7 @@ namespace PMFS
     void PMFS_GSL::estimateWind(bool groundTruth)
     {
 
-        // if not compiled with gaden support, you have no choice but to use ground truth :)
+        // if not compiled with gaden support, you have no choice but to use GMRF :)
 
 #ifdef USE_GADEN
         if (!groundTruth)
