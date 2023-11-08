@@ -1,0 +1,46 @@
+<!-- Mission file for GADEN preprocessing
+    ROS - KINETIC
+-->
+
+<launch>
+    <arg name="scenario" default="A" />
+	<arg name="generateCoppeliaScene" default="True"/>
+    
+    <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen">
+     
+        #Cell size
+        <param name="cell_size" value="0.1"/>    
+        
+        #CAD models of the enviroment (.stl)
+        <param name="number_of_models" value="1"/>
+        <param name="model_0" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-walls.stl"/>
+                
+        #CAD model of the outlets (.stl)
+        <param name="number_of_outlet_models" value="5"/>
+        <param name="outlets_model_0" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-outlet-2.stl"/>
+        <param name="outlets_model_1" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-outlet-6.stl"/>
+        <param name="outlets_model_2" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-outlet-1.stl"/>
+        <param name="outlets_model_3" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-outlet-5.stl"/>
+        <param name="outlets_model_4" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-outlet-3.stl"/>
+        
+        #3D Location of a point in free-space
+        <param name="empty_point_x" value="1.7"/>      ### (m)
+        <param name="empty_point_y" value="8.6"/>      ### (m)
+        <param name="empty_point_z" value="1.3"/>      ### (m)
+            
+        <param name="worldFile" value="$(find-pkg-share pmfs_env)/$(var scenario)/launch/ros/stage.world"/>      ### (m)
+
+        #Wind Data (the node will append _i.csv to the name that is specified here)
+        <param name="uniformWind" value="false"/>
+        <param name="wind_files" value="$(find-pkg-share pmfs_env)/$(var scenario)/wind_simulations/1,2,3-5,6"/>
+
+        #Where to write the output files
+        <param name="output_path" value="$(find-pkg-share pmfs_env)/$(var scenario)" />
+        <param name="generateCoppeliaScene" value="$(var generateCoppeliaScene)" />
+    </node>
+
+	<include file="$(find-pkg-share pmfs_env)/navigation_config/conditional_coppelia_launch.py" >
+      <arg name="launchCoppelia" value="$(var generateCoppeliaScene)"/>
+    </include>  
+</launch>
+
