@@ -389,11 +389,13 @@ int CGSLServer::doGrGSL()
     {
         rclcpp::spin_some(shared_from_this());
         loop_rate.sleep();
+        if (now().seconds() - startTime > grgsl.max_search_time)
+            return 0;
     }
 
     grgsl.initializeMap();
 
-    while (rclcpp::ok() && sourceFound == -1 && now().seconds() - startTime < grgsl.max_search_time * 1.2)
+    while (rclcpp::ok() && sourceFound == -1 && now().seconds() - startTime < grgsl.max_search_time)
     {
         if (!grgsl.get_inMotion())
         {
@@ -425,57 +427,59 @@ int CGSLServer::doGrGSL()
 int CGSLServer::doPMFS()
 {
     using namespace PMFS;
-    PMFS_GSL grid(shared_from_this());
-    grid.initialize();
+    PMFS_GSL pmfs(shared_from_this());
+    pmfs.initialize();
 
     rclcpp::Rate loop_rate(20);
     int sourceFound = -1;
     double startTime = now().seconds();
     bool initializationStarted = false;
 
-    while (rclcpp::ok() && grid.getState() == State::WAITING_FOR_MAP)
+    while (rclcpp::ok() && pmfs.getState() == State::WAITING_FOR_MAP)
     {
         rclcpp::spin_some(shared_from_this());
         loop_rate.sleep();
+        if (now().seconds() - startTime > pmfs.max_search_time)
+            return 0;
     }
 
-    grid.setUpMaps();
+    pmfs.setUpMaps();
 
-    std::thread renderThread = std::thread(&PMFS_GSL::renderImgui, &grid);
+    std::thread renderThread = std::thread(&PMFS_GSL::renderImgui, &pmfs);
 
-    while (rclcpp::ok() && sourceFound == -1 && now().seconds() - startTime < grid.max_search_time * 1.2)
+    while (rclcpp::ok() && sourceFound == -1 && now().seconds() - startTime < pmfs.max_search_time)
     {
-        grid.runSubmitedQueue();
-        if (!grid.get_inMotion() && !grid.debugStuff.paused)
+        pmfs.runSubmitedQueue();
+        if (!pmfs.get_inMotion() && !pmfs.debugStuff.paused)
         {
-            PMFS::State state = grid.getState();
+            PMFS::State state = pmfs.getState();
 
             if (state == State::STOP_AND_MEASURE)
-                grid.processGasWindObservations();
+                pmfs.processGasWindObservations();
             else if (state == State::MOVING || state == State::EXPLORATION)
             {
-                sourceFound = grid.checkSourceFound();
-                grid.setGoal();
+                sourceFound = pmfs.checkSourceFound();
+                pmfs.setGoal();
 
-                grid.showWeights();
-                grid.showDebugInfo();
-                grid.plotWindVectors();
+                pmfs.showWeights();
+                pmfs.showDebugInfo();
+                pmfs.plotWindVectors();
             }
             else
                 spdlog::error("[GSL-Grid] Search state is undefined!");
         }
-        else if (grid.debugStuff.paused)
+        else if (pmfs.debugStuff.paused)
         {
-            grid.showWeights();
-            grid.showDebugInfo();
-            grid.plotWindVectors();
+            pmfs.showWeights();
+            pmfs.showDebugInfo();
+            pmfs.plotWindVectors();
         }
 
         loop_rate.sleep();
         rclcpp::spin_some(shared_from_this());
     }
 
-    grid.finished = true;
+    pmfs.finished = true;
     renderThread.join();
     return sourceFound;
 }
