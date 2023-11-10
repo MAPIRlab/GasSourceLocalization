@@ -1,5 +1,5 @@
 #pragma once
-#include <rclcpp.hpp>
+#include <rclcpp/rclcpp.hpp>
 #include <gsl_server/core/ros_typedefs.h>
 #include <gsl_server/core/Navigation.h>
 #include <gsl_server/Utils/BufferWrapper.h>
@@ -11,13 +11,17 @@
 
 #include <gsl_server/algorithms/Common/WaitForMapState.h>
 #include <gsl_server/algorithms/Common/StopAndMeasureState.h>
+#include <gsl_server/algorithms/Common/MovingState.h>
+#include <gsl_server/core/Vectors.h>
 
 namespace GSL
 {
+
     class Algorithm
     {
         friend class WaitForMapState;
         friend class StopAndMeasureState;
+        friend class MovingState;
 
     public:
         Algorithm() = delete;
@@ -31,21 +35,17 @@ namespace GSL
 
     protected:
         virtual void declareParameters();
-        bool checkGoal(const NavigateToPose::Goal& goal);
-        void sendGoal(const NavigateToPose::Goal& goal);
+
+        double thresholdGas, thresholdWind;
 
         std::shared_ptr<rclcpp::Node> node;
-        NavigationClient nav_client;
-#ifdef USE_NAV_ASSISTANT
-        rclcpp::Client<MakePlan>::SharedPtr make_plan_client;
-#else
-        rclcpp_action::Client<MakePlan>::SharedPtr make_plan_client;
-#endif
+
         BufferWrapper tf_buffer;
 
         StateMachines::StateMachine<GSL::State> stateMachine;
-        WaitForMapState waitForMapState;
-        StopAndMeasureState stopAndMeasureState;
+        std::unique_ptr<WaitForMapState> waitForMapState;
+        std::unique_ptr<StopAndMeasureState> stopAndMeasureState;
+        std::unique_ptr<MovingState> movingState;
 
         rclcpp::Time start_time;
         PoseWithCovarianceStamped current_robot_pose;
@@ -76,10 +76,16 @@ namespace GSL
                 return node->declare_parameter<T>(name, defaultValue);
         }
 
-        virtual void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) = 0;
-        virtual void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) = 0;
-        virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) = 0;
-        virtual void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result);
+        virtual void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) = 0;
+        virtual void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
+        virtual void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
+
+        virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+        virtual void OnCompleteNavigation(GSLResult result);
+
+        bool isPointInsideMapBounds(const Vector2& point) const;
+
+        float ppmFromGasMsg(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
 
     private:
         // Subscriptions

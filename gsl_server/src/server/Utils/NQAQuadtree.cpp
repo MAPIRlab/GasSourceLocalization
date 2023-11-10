@@ -1,5 +1,4 @@
-#include <gsl_server/NQA/NQAQuadtree.h>
-#include <gsl_server/core/Vectors.h>
+#include <gsl_server/Utils/NQAQuadtree.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <list>
@@ -7,7 +6,7 @@
 #include <cmath>
 #include <float.h>
 
-namespace NQA
+namespace Utils
 {
     using namespace GSL;
     NQAQuadtree::NQAQuadtree(const std::vector<std::vector<uint8_t>>& _map) : map(_map)
@@ -327,4 +326,4 @@ namespace NQA
 
         return std::vector<Node>(free_leaves.begin(), free_leaves.end());
     }
-} // namespace NQA
+} // namespace Utils

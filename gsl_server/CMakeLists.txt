@@ -78,8 +78,8 @@ endif()
 
 #other stuff
 find_package(OpenMP REQUIRED)
-find_package(spdlog REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(fmt REQUIRED)
 
 if(USE_GUI)
 	add_definitions(-DUSE_GUI)
@@ -95,42 +95,22 @@ endif(USE_GUI)
 
 include_directories(
   include
-  Utils
+  third_party/glm
+  third_party/StateMachine/include
 )
 
 ###########
 ## SOURCES
 ###########
 
-set(SOURCES_node 
-  Utils/Utils/Utils.cpp
-  Utils/NQA/NQAQuadtree.cpp
+file(GLOB_RECURSE SOURCES_SERVER "src/server/*.cpp")
 
-  src/gsl_server.cpp 
-
-  src/algorithms/gsl_algorithm.cpp 
-  src/algorithms/gsl_spiral.cpp 
-  src/algorithms/gsl_plume_tracking.cpp 
-  src/algorithms/gsl_surge_cast.cpp 
-  src/algorithms/gsl_surge_spiral.cpp 
-  src/algorithms/gsl_particle_filter.cpp 
-  src/algorithms/gsl_GrGSL.cpp 
-  
-  src/algorithms/PMFS/pmfs_simulations.cpp
-  src/algorithms/PMFS/pmfs_UI.cpp
-    src/algorithms/PMFS/PMFS_GSL/pmfs_core.cpp
-    src/algorithms/PMFS/PMFS_GSL/pmfs_callbacks.cpp
-    src/algorithms/PMFS/PMFS_GSL/pmfs_initialization.cpp
-    src/algorithms/PMFS/PMFS_GSL/pmfs_movement.cpp
-    src/algorithms/PMFS/PMFS_GSL/pmfs_visualization.cpp
-    src/algorithms/PMFS/PMFS_GSL/pmfs_utils.cpp
-)
 
 ###########
 #DECLARE EXECUTABLES
 ###########
 
-add_executable(gsl_actionserver_node ${SOURCES_node})
+add_executable(gsl_actionserver_node ${SOURCES_SERVER})
 add_executable(gsl_actionserver_call src/gsl_server_call.cpp)
 
 ament_target_dependencies( gsl_actionserver_node
@@ -167,8 +147,8 @@ ament_target_dependencies( gsl_actionserver_call
 ###########
 target_link_libraries(gsl_actionserver_node  
   ${OpenCV_LIBS}
-  spdlog::spdlog
   OpenMP::OpenMP_CXX
+  fmt
 )
 
 

@@ -5,13 +5,16 @@
 
 namespace GSL
 {
+    class Algorithm;
     class State : public StateMachines::State<State>
     {
     public:
-        virtual void initialize(class Algorithm* _algorithm)
+        State() = delete;
+        State(Algorithm* _algorithm)
         {
             algorithm = _algorithm;
         }
+
         virtual bool CanEnterState(const State* previousState) const
         {
             return true;

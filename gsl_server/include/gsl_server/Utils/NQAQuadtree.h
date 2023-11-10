@@ -2,8 +2,9 @@
 #include <vector>
 #include <deque>
 #include <memory>
+#include <gsl_server/core/Vectors.h>
 
-namespace NQA
+namespace Utils
 {
     class NQAQuadtree;
 
@@ -47,4 +48,4 @@ namespace NQA
 
         std::vector<Node> fusedLeaves(int maxSize);
     };
-} // namespace NQA
+} // namespace Utils

@@ -10,8 +10,9 @@ namespace GSL
     class WaitForMapState : public State
     {
     public:
-        WaitForMapState() = default;
-        ~WaitForMapState() = default;
+        WaitForMapState(Algorithm* _algorithm) : State(_algorithm)
+        {
+        }
 
         void OnEnterState(State* previous) override;
         void OnExitState(State* previous) override;
