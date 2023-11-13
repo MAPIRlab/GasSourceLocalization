@@ -17,7 +17,7 @@ namespace GSL
         {
             // move right
             movement_dir = angles::normalize_angle(downWind_direction + 3.14159 / 2);
-            current_step = step_size;
+            current_step = surgeStepSize;
             numberOfConsecutiveCasts = 1;
         }
         else if (numberOfConsecutiveCasts <= maxNumberOfCasts)
@@ -25,7 +25,7 @@ namespace GSL
             // move left
             numberOfConsecutiveCasts++;
             movement_dir = angles::normalize_angle(downWind_direction - 3.14159 / 2);
-            current_step = 2 * step_size;
+            current_step = 2 * surgeStepSize;
         }
         else
         {

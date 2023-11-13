@@ -17,15 +17,16 @@ namespace GSL
         double average_concentration();
         double average_wind_direction();
         double average_wind_speed();
-        void addGasReading(double concentration);
-        void addWindReading(double speed, double direction);
+        virtual void addGasReading(double concentration);
+        virtual void addWindReading(double speed, double direction);
+
+    protected:
+        double measure_time; // how long to measure for, in seconds
+        rclcpp::Time time_stopped;
 
     private:
         std::vector<float> gas_v;
         std::vector<float> windSpeed_v;
         std::vector<float> windDirection_v;
-
-        double measure_time; // how long to measure for, in seconds
-        rclcpp::Time time_stopped;
     };
 } // namespace GSL

@@ -53,23 +53,14 @@ namespace GSL
 
     double StopAndMeasureState::average_concentration()
     {
-        return Utils::get_average_vector(gas_v);
+        return Utils::getAverageVector(gas_v);
     }
     double StopAndMeasureState::average_wind_direction()
     {
-        // Average of wind direction, avoiding the problems of +/- pi angles.
-        float x = 0.0, y = 0.0;
-        for (std::vector<float>::const_iterator i = windDirection_v.begin(); i != windDirection_v.end(); ++i)
-        {
-            x += cos(*i);
-            y += sin(*i);
-        }
-        float average_angle = atan2(y, x);
-
-        return average_angle;
+        return Utils::getAverageDirection(windDirection_v);
     }
     double StopAndMeasureState::average_wind_speed()
     {
-        return Utils::get_average_vector(windSpeed_v);
+        return Utils::getAverageVector(windSpeed_v);
     }
 } // namespace GSL

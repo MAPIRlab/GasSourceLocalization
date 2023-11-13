@@ -5,8 +5,9 @@
 
 namespace GSL::Utils
 {
-    float get_average_vector(std::vector<float> const& v);
-    float get_average_deque(std::deque<float> const& v);
+    float getAverageVector(const std::vector<float>& v);
+    float getAverageDirection(const std::vector<float>& v);
+    float getAverageDeque(const std::deque<float>& v);
 
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);

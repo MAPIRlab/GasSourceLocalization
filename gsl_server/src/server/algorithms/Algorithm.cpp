@@ -11,6 +11,10 @@ namespace GSL
     {
     }
 
+    Algorithm::~Algorithm()
+    {
+    }
+
     void Algorithm::initialize()
     {
         declareParameters();
@@ -218,7 +222,7 @@ namespace GSL
         stopAndMeasureState->addGasReading(ppm);
     }
 
-    void Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
+    PoseStamped Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
     {
         float downWind_direction = angles::normalize_angle(msg->wind_direction);
         // Transform from anemometer ref_system to map ref_system using TF
@@ -236,10 +240,52 @@ namespace GSL
         catch (tf2::TransformException& ex)
         {
             GSL_ERROR("{} - Error: {}", __FUNCTION__, ex.what());
-            return;
+            return PoseStamped();
         }
 
         stopAndMeasureState->addWindReading(msg->wind_speed, Utils::getYaw(map_downWind_pose.pose.orientation));
+        return map_downWind_pose;
     }
 
+    geometry_msgs::msg::PoseStamped Algorithm::getRandomPoseInMap()
+    {
+        int idx = 0;
+        NavigateToPose::Goal goal;
+        geometry_msgs::msg::PoseStamped p;
+        p.header.frame_id = "map";
+        p.header.stamp = node->now();
+        double randomPoseDistance = 1;
+        do
+        {
+            p.pose.position.x = Utils::uniformRandom(current_robot_pose.pose.pose.position.x - randomPoseDistance,
+                                                     current_robot_pose.pose.pose.position.x + randomPoseDistance);
+            p.pose.position.y = Utils::uniformRandom(current_robot_pose.pose.pose.position.y - randomPoseDistance,
+                                                     current_robot_pose.pose.pose.position.y + randomPoseDistance);
+            p.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
+            if (idx % 5 == 0)
+            {
+                randomPoseDistance += 0.5;
+            }
+            idx++;
+            goal.pose = p;
+        } while (!movingState->checkGoal(goal));
+
+        return p;
+    }
+
+    bool Algorithm::isPositionFree(Vector2 point)
+    {
+        double x = point.x;
+        double y = point.y;
+        if (x < map.info.origin.position.x || x >= map.info.origin.position.x + map.info.width * map.info.resolution ||
+            y < map.info.origin.position.y || y >= map.info.origin.position.y + map.info.height * map.info.resolution)
+        {
+            return false;
+        }
+
+        int h = (x - map.info.origin.position.x) / map.info.resolution;
+        int v = (y - map.info.origin.position.y) / map.info.resolution;
+
+        return map.data[v * map.info.width + h] == 0;
+    }
 } // namespace GSL

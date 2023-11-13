@@ -16,14 +16,13 @@ namespace GSL
 
         virtual void initialize() override;
 
-        void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
+        virtual void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
 
     protected:
-        double step_size;
-        void declareParameters() override;
+        double surgeStepSize;
+        virtual void declareParameters() override;
 
         void setExplorationGoal();
-        geometry_msgs::msg::PoseStamped getRandomPoseInMap();
         void setSurgeGoal(double downWind_direction);
         virtual void setCastGoal(double downWind_direction) = 0;
 

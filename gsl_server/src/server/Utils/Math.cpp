@@ -5,7 +5,7 @@
 
 namespace GSL::Utils
 {
-    float get_average_vector(std::vector<float> const& v)
+    float getAverageVector(std::vector<float> const& v)
     {
         int length = v.size();
         float sum = 0.0;
@@ -15,7 +15,7 @@ namespace GSL::Utils
         return sum / length;
     }
 
-    float get_average_deque(std::deque<float> const& v)
+    float getAverageDeque(std::deque<float> const& v)
     {
         int length = v.size();
         float sum = 0.0;
@@ -23,6 +23,20 @@ namespace GSL::Utils
             sum += *i;
 
         return sum / length;
+    }
+
+    float getAverageDirection(const std::vector<float>& vec)
+    {
+        // Average of wind direction, avoiding the problems of +/- pi angles.
+        float x = 0.0, y = 0.0;
+        for (std::vector<float>::const_iterator i = vec.begin(); i != vec.end(); ++i)
+        {
+            x += cos(*i);
+            y += sin(*i);
+        }
+        float average_angle = atan2(y, x);
+
+        return average_angle;
     }
 
     double lerp(double start, double end, double proportion)

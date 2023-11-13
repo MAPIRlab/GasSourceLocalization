@@ -1,5 +1,8 @@
 #include <gsl_server/gsl_server.h>
 #include <gsl_server/algorithms/PlumeTracking/SurgeCast/SurgeCast.h>
+#include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.h>
+#include <gsl_server/algorithms/Spiral/Spiral.h>
+#include <gsl_server/algorithms/ParticleFilter/ParticleFilter.h>
 
 int main(int argc, char** argv)
 {
@@ -48,31 +51,30 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
     {
         algorithm = std::make_shared<SurgeCast>(shared_from_this());
     }
-    // else if (goal_handle->get_goal()->gsl_method == "spiral")
+    else if (goal_handle->get_goal()->gsl_method == "spiral")
+    {
+        algorithm = std::make_shared<Spiral>(shared_from_this());
+    }
+    else if (goal_handle->get_goal()->gsl_method == "surge_spiral")
+    {
+        algorithm = std::make_shared<SurgeSpiral>(shared_from_this());
+    }
+    else if (goal_handle->get_goal()->gsl_method == "particle_filter")
+    {
+        algorithm = std::make_shared<ParticleFilter>(shared_from_this());
+    }
+    //   else if (goal_handle->get_goal()->gsl_method == "GrGSL")
     //{
-    //     algorithm = std::make_shared<Spiral>(shared_from_this());
-    // }
-    // else if (goal_handle->get_goal()->gsl_method == "surge_spiral")
+    //       algorithm = std::make_shared<GrGSL>(shared_from_this());
+    //   }
+    //   else if (goal_handle->get_goal()->gsl_method == "PMFS")
     //{
-    //     algorithm = std::make_shared<SurgeSpiral>(shared_from_this());
-    // }
-    // else if (goal_handle->get_goal()->gsl_method == "particle_filter")
-    //{
-    //     algorithm = std::make_shared<ParticleFilter>(shared_from_this());
-    // }
-    // else if (goal_handle->get_goal()->gsl_method == "GrGSL")
-    //{
-    //     algorithm = std::make_shared<GrGSL>(shared_from_this());
-    // }
-    // else if (goal_handle->get_goal()->gsl_method == "PMFS")
-    //{
-    //     algorithm = std::make_shared<PMFS>(shared_from_this());
-    // }
+    //       algorithm = std::make_shared<PMFS>(shared_from_this());
+    //   }
     else
     {
-        GSL_ERROR(
-            "[GSL_server] Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'",
-            goal_handle->get_goal()->gsl_method.c_str());
+        GSL_ERROR("Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'",
+                  goal_handle->get_goal()->gsl_method.c_str());
         actionResult->success = false;
         goal_handle->abort(actionResult);
         return;

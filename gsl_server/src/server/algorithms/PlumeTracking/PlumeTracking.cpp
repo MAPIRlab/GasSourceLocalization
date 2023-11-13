@@ -21,7 +21,7 @@ namespace GSL
     void PlumeTracking::declareParameters()
     {
         Algorithm::declareParameters();
-        step_size = getParam<double>("step", 1);
+        surgeStepSize = getParam<double>("step", 1);
     }
 
     void PlumeTracking::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
@@ -53,7 +53,7 @@ namespace GSL
 
         // Set goal in the Upwind direction
         NavigateToPose::Goal goal;
-        double current_step = step_size;
+        double current_step = surgeStepSize;
         do
         {
             goal.pose.header.frame_id = "map";
@@ -85,32 +85,6 @@ namespace GSL
 
         dynamic_cast<MovingStatePlumeTracking*>(movingState.get())->currentMovement = PTMovement::Exploration;
         movingState->sendGoal(goal);
-    }
-
-    geometry_msgs::msg::PoseStamped PlumeTracking::getRandomPoseInMap()
-    {
-        int idx = 0;
-        NavigateToPose::Goal goal;
-        geometry_msgs::msg::PoseStamped p;
-        p.header.frame_id = "map";
-        p.header.stamp = node->now();
-        double randomPoseDistance = 1;
-        do
-        {
-            p.pose.position.x = Utils::uniformRandom(current_robot_pose.pose.pose.position.x - randomPoseDistance,
-                                                     current_robot_pose.pose.pose.position.x + randomPoseDistance);
-            p.pose.position.y = Utils::uniformRandom(current_robot_pose.pose.pose.position.y - randomPoseDistance,
-                                                     current_robot_pose.pose.pose.position.y + randomPoseDistance);
-            p.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
-            if (idx % 5 == 0)
-            {
-                randomPoseDistance += 0.5;
-            }
-            idx++;
-            goal.pose = p;
-        } while (!movingState->checkGoal(goal));
-
-        return p;
     }
 
     void PlumeTracking::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)

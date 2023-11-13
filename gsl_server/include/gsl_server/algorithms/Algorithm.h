@@ -26,7 +26,7 @@ namespace GSL
     public:
         Algorithm() = delete;
         Algorithm(std::shared_ptr<rclcpp::Node> _node);
-        ~Algorithm() = default;
+        ~Algorithm();
         virtual void initialize();
         virtual void OnUpdate();
 
@@ -68,17 +68,10 @@ namespace GSL
         virtual GSLResult checkSourceFound();
         virtual void save_results_to_file(GSLResult result);
 
-        template <typename T> T getParam(const std::string& name, T defaultValue)
-        {
-            if (node->has_parameter(name))
-                return node->get_parameter_or<T>(name, defaultValue);
-            else
-                return node->declare_parameter<T>(name, defaultValue);
-        }
 
         virtual void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) = 0;
         virtual void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
-        virtual void windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
+        virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
 
         virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
         virtual void OnCompleteNavigation(GSLResult result);
@@ -86,6 +79,17 @@ namespace GSL
         bool isPointInsideMapBounds(const Vector2& point) const;
 
         float ppmFromGasMsg(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
+        geometry_msgs::msg::PoseStamped getRandomPoseInMap();
+        bool isPositionFree(Vector2 point);
+
+
+        template <typename T> T getParam(const std::string& name, T defaultValue)
+        {
+            if (node->has_parameter(name))
+                return node->get_parameter_or<T>(name, defaultValue);
+            else
+                return node->declare_parameter<T>(name, defaultValue);
+        }
 
     private:
         // Subscriptions

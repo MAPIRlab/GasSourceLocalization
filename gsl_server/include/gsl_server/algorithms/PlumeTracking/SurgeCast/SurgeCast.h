@@ -9,6 +9,9 @@ namespace GSL
         SurgeCast(rclcpp::Node::SharedPtr _node) : PlumeTracking(_node)
         {
         }
+        ~SurgeCast()
+        {
+        }
         void setCastGoal(double downWind_direction) override;
     };
 } // namespace GSL
