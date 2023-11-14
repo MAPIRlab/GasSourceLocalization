@@ -19,13 +19,13 @@ int main(int argc, char** argv)
     rclcpp::Node::SharedPtr call_node = std::make_shared<rclcpp::Node>("gsl_call");
     std::string method = getParam<std::string>(call_node, "method", "surge_cast");
 
-    auto action_client = rclcpp_action::create_client<DoGSL>(call_node, "gsl");
-
-    RCLCPP_INFO(call_node->get_logger(), "Waiting for action server to start.");
+    auto action_client = rclcpp_action::create_client<DoGSL>(call_node, "gsl_server");
 
     using namespace std::chrono_literals;
     while (rclcpp::ok() && !action_client->wait_for_action_server(10s))
-        ;
+    {
+        RCLCPP_INFO(call_node->get_logger(), "Waiting for action server to start.");
+    }
 
     RCLCPP_INFO(call_node->get_logger(), "Action server started, sending goal.");
     DoGSL::Goal goal;

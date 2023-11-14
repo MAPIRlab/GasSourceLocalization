@@ -1,7 +1,7 @@
-#include <gsl_server/algorithms/PlumeTracking/PlumeTracking.h>
-#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.h>
-#include <gsl_server/Utils/RosUtils.h>
-#include <gsl_server/Utils/Math.h>
+#include <gsl_server/algorithms/PlumeTracking/PlumeTracking.hpp>
+#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
+#include <gsl_server/Utils/Math.hpp>
 #include <angles/angles.h>
 
 namespace GSL
@@ -13,6 +13,7 @@ namespace GSL
         lastConcentrationReadings.resize(sizeOfGasMsgBuffer);
 
         waitForMapState = std::make_unique<WaitForMapState>(this);
+        waitForGasState = std::make_unique<WaitForGasState>(this);
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<MovingStatePlumeTracking>(this);
         stateMachine.forceSetState(waitForMapState.get());
@@ -59,8 +60,8 @@ namespace GSL
             goal.pose.header.frame_id = "map";
             goal.pose.header.stamp = node->now();
 
-            goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(upwind_dir);
-            goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(upwind_dir);
+            goal.pose.pose.position.x = currentRobotPose.pose.pose.position.x + current_step * cos(upwind_dir);
+            goal.pose.pose.position.y = currentRobotPose.pose.pose.position.y + current_step * sin(upwind_dir);
             goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(upwind_dir));
 
             if (current_step <= 0.0)
@@ -87,15 +88,14 @@ namespace GSL
         movingState->sendGoal(goal);
     }
 
-    void PlumeTracking::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
+    float PlumeTracking::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
     {
-        float ppm = ppmFromGasMsg(msg);
-        stopAndMeasureState->addGasReading(ppm);
-
+        float ppm = Algorithm::gasCallback(msg);
         if (lastConcentrationReadings.size() >= sizeOfGasMsgBuffer)
             lastConcentrationReadings.pop_front();
 
         lastConcentrationReadings.push_back(ppm);
+        return ppm;
     }
 
 } // namespace GSL

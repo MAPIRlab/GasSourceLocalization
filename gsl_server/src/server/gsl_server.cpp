@@ -1,8 +1,9 @@
-#include <gsl_server/gsl_server.h>
-#include <gsl_server/algorithms/PlumeTracking/SurgeCast/SurgeCast.h>
-#include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.h>
-#include <gsl_server/algorithms/Spiral/Spiral.h>
-#include <gsl_server/algorithms/ParticleFilter/ParticleFilter.h>
+#include <gsl_server/gsl_server.hpp>
+#include <gsl_server/algorithms/PlumeTracking/SurgeCast/SurgeCast.hpp>
+#include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.hpp>
+#include <gsl_server/algorithms/Spiral/Spiral.hpp>
+#include <gsl_server/algorithms/ParticleFilter/ParticleFilter.hpp>
+#include <gsl_server/algorithms/GrGSL/GrGSL.hpp>
 
 int main(int argc, char** argv)
 {
@@ -11,8 +12,10 @@ int main(int argc, char** argv)
     auto gsl_node = std::make_shared<GSLServer>("gsl_server");
     GSL_INFO("GSL action server is ready for action!");
 
+    rclcpp::Rate rate(1);
     while (rclcpp::ok())
     {
+        rate.sleep();
         rclcpp::spin_some(gsl_node);
         if (gsl_node->m_activeGoal.get() != nullptr)
         {
@@ -63,10 +66,10 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
     {
         algorithm = std::make_shared<ParticleFilter>(shared_from_this());
     }
-    //   else if (goal_handle->get_goal()->gsl_method == "GrGSL")
-    //{
-    //       algorithm = std::make_shared<GrGSL>(shared_from_this());
-    //   }
+    else if (goal_handle->get_goal()->gsl_method == "GrGSL")
+    {
+        algorithm = std::make_shared<GrGSL>(shared_from_this());
+    }
     //   else if (goal_handle->get_goal()->gsl_method == "PMFS")
     //{
     //       algorithm = std::make_shared<PMFS>(shared_from_this());

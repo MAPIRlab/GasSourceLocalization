@@ -5,11 +5,12 @@
 class BufferWrapper
 {
 public:
-    BufferWrapper(rclcpp::Clock::SharedPtr clock)
-        : buffer(clock), tf_listener(buffer)
-    {}
+    BufferWrapper(rclcpp::Clock::SharedPtr clock) : buffer(clock), tf_listener(buffer)
+    {
+    }
 
     tf2_ros::Buffer buffer;
+
 private:
     tf2_ros::TransformListener tf_listener;
 };

@@ -5,7 +5,7 @@
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/pose.hpp>
-#include <gsl_server/core/Vectors.h>
+#include <gsl_server/core/Vectors.hpp>
 
 namespace GSL
 {

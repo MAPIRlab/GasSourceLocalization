@@ -1,6 +1,6 @@
-#include <gsl_server/algorithms/Algorithm.h>
-#include <gsl_server/Utils/Math.h>
-#include <gsl_server/Utils/RosUtils.h>
+#include <gsl_server/algorithms/Algorithm.hpp>
+#include <gsl_server/Utils/Math.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
 #include <angles/angles.h>
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
@@ -8,12 +8,10 @@ namespace GSL
 {
 
     Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node) : node(_node), tf_buffer(node->get_clock())
-    {
-    }
+    {}
 
     Algorithm::~Algorithm()
-    {
-    }
+    {}
 
     void Algorithm::initialize()
     {
@@ -31,6 +29,7 @@ namespace GSL
         localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 100,
                                                                                 std::bind(&Algorithm::localizationCallback, this, _1));
 
+        start_time = node->now();
         GSL_INFO("INITIALIZATON COMPLETED");
     }
 
@@ -38,10 +37,9 @@ namespace GSL
     {
         resultLogging.max_search_time = getParam<double>("max_search_time", 1000.0);
         resultLogging.distance_found = getParam<double>("distance_found", 0.5);
-        resultLogging.source_pose_x = getParam<double>("ground_truth_x", 0.0);
-        resultLogging.source_pose_y = getParam<double>("ground_truth_y", 0.0);
+        resultLogging.source_pose.x = getParam<float>("ground_truth_x", 0.0);
+        resultLogging.source_pose.y = getParam<float>("ground_truth_y", 0.0);
         resultLogging.results_file = getParam<std::string>("results_file", "");
-        resultLogging.errors_file = getParam<std::string>("errors_file", "");
         resultLogging.path_file = getParam<std::string>("path_file", "");
 
         thresholdGas = getParam<double>("th_gas_present", 0.1);
@@ -67,10 +65,10 @@ namespace GSL
     void Algorithm::localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg)
     {
         // keep the most recent robot pose
-        current_robot_pose = *msg;
+        currentRobotPose = *msg;
 
         // Keep all poses for later distance estimation
-        resultLogging.robot_poses_vector.push_back(current_robot_pose);
+        resultLogging.robot_poses_vector.push_back(currentRobotPose);
     }
 
     void Algorithm::onGetMap(const OccupancyGrid::SharedPtr msg)
@@ -105,19 +103,19 @@ namespace GSL
         {
             // Report failure, we were too slow
             GSL_INFO("FAILURE-> Time spent ({} s) > max_search_time = {}", time_spent.seconds(), resultLogging.max_search_time);
-            save_results_to_file(GSLResult::Failure);
+            saveResultsToFile(GSLResult::Failure);
             return GSLResult::Failure;
         }
 
         // 2. Distance from robot to source
-        double Ax = current_robot_pose.pose.pose.position.x - resultLogging.source_pose_x;
-        double Ay = current_robot_pose.pose.pose.position.y - resultLogging.source_pose_y;
+        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x;
+        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y;
         double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
         if (dist < resultLogging.distance_found)
         {
             // GSL has finished with success!
             GSL_INFO("SUCCESS -> Time spent ({} s)", time_spent.seconds());
-            save_results_to_file(GSLResult::Success);
+            saveResultsToFile(GSLResult::Success);
             return GSLResult::Success;
         }
 
@@ -125,7 +123,7 @@ namespace GSL
         return GSLResult::Running;
     }
 
-    void Algorithm::save_results_to_file(GSLResult result)
+    void Algorithm::saveResultsToFile(GSLResult result)
     {
         rclcpp::Duration time_spent = node->now() - start_time;
         double search_t = time_spent.seconds();
@@ -149,8 +147,8 @@ namespace GSL
             PoseStamped source_pose;
             source_pose.header.frame_id = "map";
             source_pose.header.stamp = node->now();
-            source_pose.pose.position.x = resultLogging.source_pose_x;
-            source_pose.pose.position.y = resultLogging.source_pose_y;
+            source_pose.pose.position.x = resultLogging.source_pose.x;
+            source_pose.pose.position.y = resultLogging.source_pose.y;
 
             PoseStamped startPose;
             startPose.pose = resultLogging.robot_poses_vector[0].pose.pose;
@@ -174,7 +172,7 @@ namespace GSL
         double nav_t = nav_d / 0.4; // assumming a constant speed of 0.4m/s
         std::string result_string =
             fmt::format("RESULT IS: Success={}, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}\n", (int)result, search_d, nav_d, search_t, nav_t);
-        GSL_INFO(result_string);
+        GSL_INFO(result_string.c_str());
 
         if (FILE* output_file = fopen(resultLogging.results_file.c_str(), "w"))
         {
@@ -216,10 +214,12 @@ namespace GSL
         }
     }
 
-    void Algorithm::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
+    float Algorithm::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
     {
         float ppm = ppmFromGasMsg(msg);
         stopAndMeasureState->addGasReading(ppm);
+        waitForGasState->addMeasurement(ppm);
+        return ppm;
     }
 
     PoseStamped Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
@@ -257,10 +257,10 @@ namespace GSL
         double randomPoseDistance = 1;
         do
         {
-            p.pose.position.x = Utils::uniformRandom(current_robot_pose.pose.pose.position.x - randomPoseDistance,
-                                                     current_robot_pose.pose.pose.position.x + randomPoseDistance);
-            p.pose.position.y = Utils::uniformRandom(current_robot_pose.pose.pose.position.y - randomPoseDistance,
-                                                     current_robot_pose.pose.pose.position.y + randomPoseDistance);
+            p.pose.position.x = Utils::uniformRandom(currentRobotPose.pose.pose.position.x - randomPoseDistance,
+                                                     currentRobotPose.pose.pose.position.x + randomPoseDistance);
+            p.pose.position.y = Utils::uniformRandom(currentRobotPose.pose.pose.position.y - randomPoseDistance,
+                                                     currentRobotPose.pose.pose.position.y + randomPoseDistance);
             p.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
             if (idx % 5 == 0)
             {

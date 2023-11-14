@@ -1,4 +1,4 @@
-#include <gsl_server/Utils/NQAQuadtree.h>
+#include <gsl_server/Utils/NQAQuadtree.hpp>
 #include <unordered_map>
 #include <unordered_set>
 #include <list>

@@ -1,7 +1,7 @@
-#include <gsl_server/algorithms/PlumeTracking/SurgeCast/SurgeCast.h>
-#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.h>
-#include <gsl_server/Utils/RosUtils.h>
-#include <gsl_server/Utils/Math.h>
+#include <gsl_server/algorithms/PlumeTracking/SurgeCast/SurgeCast.hpp>
+#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
+#include <gsl_server/Utils/Math.hpp>
 #include <angles/angles.h>
 
 namespace GSL
@@ -43,8 +43,8 @@ namespace GSL
             goal.pose.header.stamp = node->now();
 
             // Set a goal in the crosswind direction
-            goal.pose.pose.position.x = current_robot_pose.pose.pose.position.x + current_step * cos(movement_dir);
-            goal.pose.pose.position.y = current_robot_pose.pose.pose.position.y + current_step * sin(movement_dir);
+            goal.pose.pose.position.x = currentRobotPose.pose.pose.position.x + current_step * cos(movement_dir);
+            goal.pose.pose.position.y = currentRobotPose.pose.pose.position.y + current_step * sin(movement_dir);
             goal.pose.pose.orientation = Utils::createQuaternionMsgFromYaw(angles::normalize_angle(movement_dir));
 
             // reduce step (in case goal is an obstacle or out of bounds)

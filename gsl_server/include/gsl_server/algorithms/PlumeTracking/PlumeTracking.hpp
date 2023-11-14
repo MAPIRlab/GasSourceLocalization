@@ -1,7 +1,7 @@
 #pragma once
-#include <gsl_server/algorithms/Algorithm.h>
+#include <gsl_server/algorithms/Algorithm.hpp>
 #include <deque>
-#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.h>
+#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.hpp>
 
 namespace GSL
 {
@@ -27,6 +27,6 @@ namespace GSL
         virtual void setCastGoal(double downWind_direction) = 0;
 
         std::deque<float> lastConcentrationReadings;
-        void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
+        float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
     };
 } // namespace GSL

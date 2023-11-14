@@ -1,4 +1,4 @@
-#include <gsl_server/Utils/Math.h>
+#include <gsl_server/Utils/Math.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
 #include <random>

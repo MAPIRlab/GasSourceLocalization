@@ -1,18 +1,19 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
-#include <gsl_server/core/ros_typedefs.h>
-#include <gsl_server/core/Navigation.h>
-#include <gsl_server/Utils/BufferWrapper.h>
+#include <gsl_server/core/ros_typedefs.hpp>
+#include <gsl_server/core/Navigation.hpp>
+#include <gsl_server/Utils/BufferWrapper.hpp>
 #include <olfaction_msgs/msg/anemometer.hpp>
 #include <olfaction_msgs/msg/gas_sensor.hpp>
-#include <gsl_server/algorithms/Common/GSLState.h>
-#include <gsl_server/core/GSLResult.h>
-#include <gsl_server/core/logging.h>
+#include <gsl_server/algorithms/Common/GSLState.hpp>
+#include <gsl_server/core/GSLResult.hpp>
+#include <gsl_server/core/logging.hpp>
 
-#include <gsl_server/algorithms/Common/WaitForMapState.h>
-#include <gsl_server/algorithms/Common/StopAndMeasureState.h>
-#include <gsl_server/algorithms/Common/MovingState.h>
-#include <gsl_server/core/Vectors.h>
+#include <gsl_server/algorithms/Common/WaitForMapState.hpp>
+#include <gsl_server/algorithms/Common/WaitForGasState.hpp>
+#include <gsl_server/algorithms/Common/StopAndMeasureState.hpp>
+#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/core/Vectors.hpp>
 
 namespace GSL
 {
@@ -20,6 +21,7 @@ namespace GSL
     class Algorithm
     {
         friend class WaitForMapState;
+        friend class WaitForGasState;
         friend class StopAndMeasureState;
         friend class MovingState;
 
@@ -44,33 +46,33 @@ namespace GSL
 
         StateMachines::StateMachine<GSL::State> stateMachine;
         std::unique_ptr<WaitForMapState> waitForMapState;
+        std::unique_ptr<WaitForGasState> waitForGasState;
         std::unique_ptr<StopAndMeasureState> stopAndMeasureState;
         std::unique_ptr<MovingState> movingState;
 
         rclcpp::Time start_time;
-        PoseWithCovarianceStamped current_robot_pose;
+        PoseWithCovarianceStamped currentRobotPose;
         OccupancyGrid map;
         OccupancyGrid costmap;
 
         struct ResultLogging
         {
             std::vector<PoseWithCovarianceStamped> robot_poses_vector;
-            double source_pose_x, source_pose_y;
+            Vector2 source_pose;
             double max_search_time;
             double distance_found;
 
+            double navigationTime = -1;
             std::string results_file;
-            std::string errors_file;
             std::string path_file;
         };
         ResultLogging resultLogging;
         GSLResult currentResult = GSLResult::Running;
         virtual GSLResult checkSourceFound();
-        virtual void save_results_to_file(GSLResult result);
-
+        virtual void saveResultsToFile(GSLResult result);
 
         virtual void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) = 0;
-        virtual void gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
+        virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
         virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
 
         virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
@@ -82,7 +84,6 @@ namespace GSL
         geometry_msgs::msg::PoseStamped getRandomPoseInMap();
         bool isPositionFree(Vector2 point);
 
-
         template <typename T> T getParam(const std::string& name, T defaultValue)
         {
             if (node->has_parameter(name))
@@ -91,10 +92,9 @@ namespace GSL
                 return node->declare_parameter<T>(name, defaultValue);
         }
 
-    private:
         // Subscriptions
-        rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gas_sub;   //! Gas readings subscriber
-        rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr wind_sub; //! Wind readings subscriber
+        rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gas_sub;
+        rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr wind_sub;
         rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localization_sub;
 
         void onGetCostMap(const OccupancyGrid::SharedPtr msg);

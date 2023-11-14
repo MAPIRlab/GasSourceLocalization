@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gsl_server/algorithms/Common/MovingState.h>
+#include <gsl_server/algorithms/Common/MovingState.hpp>
 
 namespace GSL
 {

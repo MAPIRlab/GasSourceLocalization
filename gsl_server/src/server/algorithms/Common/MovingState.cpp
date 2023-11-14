@@ -1,7 +1,7 @@
-#include <gsl_server/algorithms/Common/MovingState.h>
-#include <gsl_server/core/logging.h>
-#include <gsl_server/core/GSLResult.h>
-#include <gsl_server/algorithms/Algorithm.h>
+#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/core/logging.hpp>
+#include <gsl_server/core/GSLResult.hpp>
+#include <gsl_server/algorithms/Algorithm.hpp>
 
 namespace GSL
 {
@@ -73,11 +73,11 @@ namespace GSL
             GSL_ERROR("Error sending goal to navigation server! Received code {}", (int)code);
             rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult result;
             result.code = rclcpp_action::ResultCode::ABORTED;
-            algorithm->stateMachine.forceSetState(this);
+            algorithm->OnCompleteNavigation(GSLResult::Failure);
         }
         else
         {
-            algorithm->OnCompleteNavigation(GSLResult::Failure);
+            algorithm->stateMachine.forceSetState(this);
         }
     }
 
@@ -114,8 +114,9 @@ namespace GSL
 
         // send the "make plan" goal to nav2 and wait until the response comes back
 
-        auto callback = [&currentPlan, this](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult& w_result)
-        { currentPlan = w_result.result->path; };
+        auto callback = [&currentPlan, this](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult& w_result) {
+            currentPlan = w_result.result->path;
+        };
         auto goal_options = rclcpp_action::Client<MakePlan>::SendGoalOptions();
         goal_options.result_callback = callback;
 
@@ -145,8 +146,8 @@ namespace GSL
     bool MovingState::checkGoal(const NavigateToPose::Goal& goal)
     {
         PoseStamped start;
-        start.pose = algorithm->current_robot_pose.pose.pose;
-        start.header = algorithm->current_robot_pose.header;
+        start.pose = algorithm->currentRobotPose.pose.pose;
+        start.header = algorithm->currentRobotPose.header;
 
         auto plan = GetPlan(start, goal.pose);
 

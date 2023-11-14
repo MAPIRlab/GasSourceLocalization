@@ -7,7 +7,8 @@ set(CMAKE_CXX_FLAGS "-std=c++17 -g ${CMAKE_CXX_FLAGS}")
 
 #OPTIONS
 ##############################################################################
-set(GSL_DEBUG OFF) #debug mode disables optimizations and activates a bunch of assertions in the code.
+set(GSL_DEBUG ON) #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
+set(GSL_TRACING ON) #extra logging to tell you what is being executed
 
 set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
 
@@ -59,6 +60,9 @@ find_package(nav2_msgs REQUIRED)
 find_package(gsl_actions REQUIRED)
 
 
+if(GSL_TRACING)
+    add_definitions(-DGSL_TRACING=1)
+endif(GSL_TRACING)
 
 if(USE_GADEN)
     add_definitions(-DUSE_GADEN)

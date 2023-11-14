@@ -1,7 +1,7 @@
-#include <gsl_server/algorithms/ParticleFilter/ParticleFilter.h>
-#include <gsl_server/Utils/Math.h>
-#include <gsl_server/Utils/RosUtils.h>
-#include <gsl_server/core/Vectors.h>
+#include <gsl_server/algorithms/ParticleFilter/ParticleFilter.hpp>
+#include <gsl_server/Utils/Math.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
+#include <gsl_server/core/Vectors.hpp>
 
 namespace GSL
 {
@@ -76,7 +76,7 @@ namespace GSL
     {
         std::vector<Vector2> stDev;
         std::vector<Vector2> estSourcePos;
-        estSourcePos.push_back(Vector2(current_robot_pose.pose.pose.position.x, current_robot_pose.pose.pose.position.y));
+        estSourcePos.push_back(Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y));
         stDev.push_back(Vector2(0.1, 0.1));
         for (int i = historicWind.size(); i >= 0; i--)
         {
@@ -204,8 +204,8 @@ namespace GSL
                 sy += historicWind[j].y * deltaT;
             }
 
-            double deltaIX = current_robot_pose.pose.pose.position.x - particle.x - sx;
-            double deltaIY = current_robot_pose.pose.pose.position.y - particle.y - sy;
+            double deltaIX = currentRobotPose.pose.pose.position.x - particle.x - sx;
+            double deltaIY = currentRobotPose.pose.pose.position.y - particle.y - sy;
             double t1 = exp(-pow(deltaIX, 2) / (2 * pow(stDev.x, 2) * (historicWind.size() - windIndex) * deltaT));
             double t2 = exp(-pow(deltaIY, 2) / (2 * pow(stDev.y, 2) * (historicWind.size() - windIndex) * deltaT));
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/Algorithm.h>
+#include <gsl_server/algorithms/Algorithm.hpp>
 
 namespace GSL
 {

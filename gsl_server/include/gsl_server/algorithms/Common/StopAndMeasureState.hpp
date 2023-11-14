@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gsl_server/algorithms/Common/GSLState.h>
+#include <gsl_server/algorithms/Common/GSLState.hpp>
 #include <vector>
 #include <rclcpp/time.hpp>
 

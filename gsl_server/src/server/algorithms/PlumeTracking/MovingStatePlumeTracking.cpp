@@ -1,6 +1,6 @@
-#include <gsl_server/algorithms/PlumeTracking/PlumeTracking.h>
-#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.h>
-#include <gsl_server/Utils/Math.h>
+#include <gsl_server/algorithms/PlumeTracking/PlumeTracking.hpp>
+#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.hpp>
+#include <gsl_server/Utils/Math.hpp>
 
 namespace GSL
 {

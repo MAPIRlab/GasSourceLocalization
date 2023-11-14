@@ -1,5 +1,5 @@
-#include <gsl_server/Utils/RosUtils.h>
-#include <gsl_server/Utils/Math.h>
+#include <gsl_server/Utils/RosUtils.hpp>
+#include <gsl_server/Utils/Math.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace GSL::Utils

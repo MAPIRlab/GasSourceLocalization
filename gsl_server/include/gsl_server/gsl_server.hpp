@@ -1,10 +1,10 @@
 #pragma once
 
-#include <gsl_server/core/logging.h>
-#include <gsl_server/core/GSLResult.h>
+#include <gsl_server/core/logging.hpp>
+#include <gsl_server/core/GSLResult.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <gsl_actions/action/do_gsl.hpp>
-#include <gsl_server/algorithms/Algorithm.h>
+#include <gsl_server/algorithms/Algorithm.hpp>
 
 using DoGSL = gsl_actions::action::DoGSL;
 
@@ -15,7 +15,7 @@ protected:
     rclcpp_action::Server<DoGSL>::SharedPtr actionServer;
 
 public:
-    GSLServer(std::string name) : Node("gsl_server")
+    GSLServer(std::string name) : Node(name)
     {
         actionServer =
             rclcpp_action::create_server<DoGSL>(this, name, std::bind(&GSLServer::handle_goal, this, _1, _2),
@@ -23,8 +23,7 @@ public:
     }
 
     ~GSLServer()
-    {
-    }
+    {}
     std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> m_activeGoal{nullptr};
 
     rclcpp_action::GoalResponse handle_goal(const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const DoGSL::Goal> goal);

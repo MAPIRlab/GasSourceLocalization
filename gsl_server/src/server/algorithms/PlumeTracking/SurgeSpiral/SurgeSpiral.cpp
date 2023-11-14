@@ -1,7 +1,7 @@
-#include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.h>
-#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.h>
-#include <gsl_server/Utils/RosUtils.h>
-#include <gsl_server/Utils/Math.h>
+#include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.hpp>
+#include <gsl_server/algorithms/PlumeTracking/MovingStatePlumeTracking.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
+#include <gsl_server/Utils/Math.hpp>
 #include <angles/angles.h>
 
 namespace GSL
@@ -45,7 +45,7 @@ namespace GSL
         if (dynamic_cast<MovingStatePlumeTracking*>(movingState.get())->currentMovement != PTMovement::RecoverPlume)
             resetSpiral();
 
-        NavigateToPose::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
+        NavigateToPose::Goal goal = nextGoalSpiral(currentRobotPose.pose.pose);
         int numberOfTries = 0;
         bool hasAlreadyReset = false;
         while (rclcpp::ok() && !movingState->checkGoal(goal))

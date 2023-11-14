@@ -1,9 +1,9 @@
 #pragma once
 
-#include <gsl_server/algorithms/Common/GSLState.h>
+#include <gsl_server/algorithms/Common/GSLState.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
-#include <gsl_server/core/Navigation.h>
-#include <gsl_server/core/ros_typedefs.h>
+#include <gsl_server/core/Navigation.hpp>
+#include <gsl_server/core/ros_typedefs.hpp>
 
 namespace GSL
 {

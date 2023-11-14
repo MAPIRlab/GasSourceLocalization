@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/PlumeTracking/PlumeTracking.h>
+#include <gsl_server/algorithms/PlumeTracking/PlumeTracking.hpp>
 
 namespace GSL
 {

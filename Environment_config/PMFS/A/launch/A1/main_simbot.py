@@ -53,7 +53,7 @@ def launch_setup(context, *args, **kwargs):
 					# Common
 					{"verbose": True},
 					{"robot_location_topic": "ground_truth"},
-					{"stop_and_measure_time": 0.5},
+					{"stop_and_measure_time": 2.0},
 					{"th_gas_present": 0.2},
 					{"th_wind_present": 0.1},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
@@ -125,6 +125,7 @@ def launch_setup(context, *args, **kwargs):
 				{"permanentChange" : False},
 				{"robotName" : LaunchConfiguration("robot_name")},
 				{"position" : [6.6, 1.6, 0.0]},
+				{"simulationSpeed" : 5.0}
             ],
 		)
 	]

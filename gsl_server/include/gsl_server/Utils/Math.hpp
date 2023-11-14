@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <deque>
-#include <gsl_server/core/Vectors.h>
+#include <gsl_server/core/Vectors.hpp>
 
 namespace GSL::Utils
 {

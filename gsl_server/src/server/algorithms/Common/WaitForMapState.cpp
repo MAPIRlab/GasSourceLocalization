@@ -1,5 +1,5 @@
-#include <gsl_server/algorithms/Common/WaitForMapState.h>
-#include <gsl_server/algorithms/Algorithm.h>
+#include <gsl_server/algorithms/Common/WaitForMapState.hpp>
+#include <gsl_server/algorithms/Algorithm.hpp>
 
 namespace GSL
 {
@@ -17,8 +17,7 @@ namespace GSL
     }
 
     void WaitForMapState::OnExitState(State* previous)
-    {
-    }
+    {}
 
     void WaitForMapState::mapCallback(OccupancyGrid::SharedPtr msg)
     {
@@ -26,7 +25,7 @@ namespace GSL
         map_sub = nullptr;
         hasMap = true;
         if (hasCostmap)
-            algorithm->stateMachine.forceSetState(algorithm->stopAndMeasureState.get());
+            setNextState();
     }
 
     void WaitForMapState::costmapCallback(OccupancyGrid::SharedPtr msg)
@@ -35,6 +34,14 @@ namespace GSL
         costmap_sub = nullptr;
         hasCostmap = true;
         if (hasMap)
+            setNextState();
+    }
+
+    void WaitForMapState::setNextState()
+    {
+        if (shouldWaitForGas)
+            algorithm->stateMachine.forceSetState(algorithm->waitForGasState.get());
+        else
             algorithm->stateMachine.forceSetState(algorithm->stopAndMeasureState.get());
     }
 } // namespace GSL

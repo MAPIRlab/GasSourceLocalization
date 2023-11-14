@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.h>
+#include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.hpp>
 #include <deque>
 
 namespace GSL

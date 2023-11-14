@@ -2,7 +2,7 @@
 #include <vector>
 #include <deque>
 #include <memory>
-#include <gsl_server/core/Vectors.h>
+#include <gsl_server/core/Vectors.hpp>
 
 namespace Utils
 {

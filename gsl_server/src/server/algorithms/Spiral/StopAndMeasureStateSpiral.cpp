@@ -1,5 +1,5 @@
-#include <gsl_server/algorithms/Spiral/StopAndMeasureStateSpiral.h>
-#include <gsl_server/algorithms/Spiral/Spiral.h>
+#include <gsl_server/algorithms/Spiral/StopAndMeasureStateSpiral.hpp>
+#include <gsl_server/algorithms/Spiral/Spiral.hpp>
 
 namespace GSL
 {

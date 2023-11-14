@@ -1,6 +1,6 @@
-#include <gsl_server/algorithms/Common/StopAndMeasureState.h>
-#include <gsl_server/algorithms/Algorithm.h>
-#include <gsl_server/Utils/Math.h>
+#include <gsl_server/algorithms/Common/StopAndMeasureState.hpp>
+#include <gsl_server/algorithms/Algorithm.hpp>
+#include <gsl_server/Utils/Math.hpp>
 
 namespace GSL
 {

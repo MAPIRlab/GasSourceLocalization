@@ -1,6 +1,6 @@
-#include <gsl_server/algorithms/Spiral/Spiral.h>
-#include <gsl_server/algorithms/Spiral/StopAndMeasureStateSpiral.h>
-#include <gsl_server/Utils/RosUtils.h>
+#include <gsl_server/algorithms/Spiral/Spiral.hpp>
+#include <gsl_server/algorithms/Spiral/StopAndMeasureStateSpiral.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
 
 namespace GSL
 {
@@ -9,6 +9,7 @@ namespace GSL
         Algorithm::initialize();
         resetSpiral();
         waitForMapState = std::make_unique<WaitForMapState>(this);
+        waitForGasState = std::make_unique<WaitForGasState>(this);
         stopAndMeasureState = std::make_unique<StopAndMeasureStateSpiral>(this);
         movingState = std::make_unique<MovingState>(this);
         stateMachine.forceSetState(waitForMapState.get());
@@ -99,7 +100,7 @@ namespace GSL
 
     void Spiral::doSpiral()
     {
-        NavigateToPose::Goal goal = nextGoalSpiral(current_robot_pose.pose.pose);
+        NavigateToPose::Goal goal = nextGoalSpiral(currentRobotPose.pose.pose);
         int numberOfTries = 0;
         bool hasAlreadyReset = false;
         while (rclcpp::ok() && !movingState->checkGoal(goal))
