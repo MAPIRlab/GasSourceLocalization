@@ -78,11 +78,10 @@ namespace GSL
         virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
         virtual void OnCompleteNavigation(GSLResult result);
 
-        bool isPointInsideMapBounds(const Vector2& point) const;
-
         float ppmFromGasMsg(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
         geometry_msgs::msg::PoseStamped getRandomPoseInMap();
-        bool isPositionFree(Vector2 point);
+        bool isPointInsideMapBounds(const Vector2& point) const;
+        bool isPointFree(const Vector2& point);
 
         template <typename T> T getParam(const std::string& name, T defaultValue)
         {

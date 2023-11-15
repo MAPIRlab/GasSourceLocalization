@@ -21,7 +21,11 @@ namespace GSL
     protected:
         rclcpp::Time startTime;
         NavigationClient nav_client;
+        NavigateToPose::Goal currentGoal;
+
         void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result);
+
+        virtual void Fail();
 
 #ifdef USE_NAV_ASSISTANT
         rclcpp::Client<MakePlan>::SharedPtr make_plan_client;

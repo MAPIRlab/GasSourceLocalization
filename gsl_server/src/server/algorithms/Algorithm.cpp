@@ -76,9 +76,9 @@ namespace GSL
         map = *msg;
 
         {
-            GSL_INFO("--------------GSL---------------"
-                     "Occupancy Map dimensions:"
-                     "x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}"
+            GSL_INFO("\n--------------GSL---------------\n"
+                     "Occupancy Map dimensions:\n"
+                     "x_min:{:.2} x_max:{:.2}   -   y_min:{:.2} y_max:{:.2}\n"
                      "--------------------------------",
                      map.info.origin.position.x, map.info.origin.position.x + map.info.width * map.info.resolution, map.info.origin.position.y,
                      map.info.origin.position.y + map.info.height * map.info.resolution);
@@ -273,7 +273,7 @@ namespace GSL
         return p;
     }
 
-    bool Algorithm::isPositionFree(Vector2 point)
+    bool Algorithm::isPointFree(const Vector2& point)
     {
         double x = point.x;
         double y = point.y;

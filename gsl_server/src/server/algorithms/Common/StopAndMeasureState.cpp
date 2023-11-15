@@ -48,7 +48,8 @@ namespace GSL
 
     void StopAndMeasureState::OnExitState(State* next)
     {
-        algorithm->currentResult = algorithm->checkSourceFound();
+        if (next != this)
+            algorithm->currentResult = algorithm->checkSourceFound();
     }
 
     double StopAndMeasureState::average_concentration()

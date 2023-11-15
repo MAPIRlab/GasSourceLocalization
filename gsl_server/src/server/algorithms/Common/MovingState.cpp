@@ -45,7 +45,7 @@ namespace GSL
         {
             GSL_ERROR("Timed out trying to reach target. Cancelling navigation");
             nav_client->async_cancel_all_goals();
-            algorithm->OnCompleteNavigation(GSLResult::Failure);
+            Fail();
         }
     }
 
@@ -54,7 +54,7 @@ namespace GSL
         if (result.code != rclcpp_action::ResultCode::SUCCEEDED)
         {
             GSL_ERROR("Couldn't reach the target. Navigation goal ReturnCode: {}", (int)result.code);
-            algorithm->OnCompleteNavigation(GSLResult::Failure);
+            Fail();
         }
         else
         {
@@ -64,6 +64,7 @@ namespace GSL
 
     void MovingState::sendGoal(const NavigateToPose::Goal& goal)
     {
+        GSL_INFO("Sending goal ({:.2f}, {:.2f})", goal.pose.pose.position.x, goal.pose.pose.position.y);
         rclcpp_action::Client<NavigateToPose>::SendGoalOptions options;
         options.result_callback = std::bind(&MovingState::goalDoneCallback, this, std::placeholders::_1);
         auto future = nav_client->async_send_goal(goal, options);
@@ -73,10 +74,11 @@ namespace GSL
             GSL_ERROR("Error sending goal to navigation server! Received code {}", (int)code);
             rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult result;
             result.code = rclcpp_action::ResultCode::ABORTED;
-            algorithm->OnCompleteNavigation(GSLResult::Failure);
+            Fail();
         }
         else
         {
+            currentGoal = goal;
             algorithm->stateMachine.forceSetState(this);
         }
     }
@@ -157,5 +159,10 @@ namespace GSL
             return false;
         }
         return true;
+    }
+
+    void MovingState::Fail()
+    {
+        algorithm->OnCompleteNavigation(GSLResult::Failure);
     }
 } // namespace GSL

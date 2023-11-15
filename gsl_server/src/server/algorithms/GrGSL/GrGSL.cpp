@@ -430,7 +430,7 @@ namespace GSL
 
     GSLResult GrGSL::checkSourceFound()
     {
-        if (stateMachine.getCurrentState() == waitForMapState.get())
+        if (stateMachine.getCurrentState() == waitForMapState.get() || stateMachine.getCurrentState() == waitForGasState.get())
             return GSLResult::Running;
 
         rclcpp::Duration time_spent = node->now() - start_time;

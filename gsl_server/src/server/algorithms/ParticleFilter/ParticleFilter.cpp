@@ -92,7 +92,7 @@ namespace GSL
             double x = Utils::randomFromGaussian(estSourcePos[i].x, stDev[i].x);
             double y = Utils::randomFromGaussian(estSourcePos[i].y, stDev[i].y);
 
-            if (isPositionFree({x, y}))
+            if (isPointFree({x, y}))
                 particles.emplace_back(x, y, 0);
         }
     }
@@ -165,7 +165,7 @@ namespace GSL
                 {
                     double x = Utils::randomFromGaussian(0, 1) + particles[i].x;
                     double y = Utils::randomFromGaussian(0, 1) + particles[i].y;
-                    if (isPositionFree({x, y}))
+                    if (isPointFree({x, y}))
                     {
                         newParticles.emplace_back(x, y, 0);
                         count++;

@@ -1,6 +1,7 @@
 #pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <fmt/format.h>
+#include <fmt/color.h>
 
 #define GSL_INFO(...) RCLCPP_INFO(rclcpp::get_logger("GSL"), fmt::format(__VA_ARGS__).c_str())
 

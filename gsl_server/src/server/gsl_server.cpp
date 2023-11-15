@@ -4,6 +4,7 @@
 #include <gsl_server/algorithms/Spiral/Spiral.hpp>
 #include <gsl_server/algorithms/ParticleFilter/ParticleFilter.hpp>
 #include <gsl_server/algorithms/GrGSL/GrGSL.hpp>
+#include <gsl_server/algorithms/PMFS/PMFS.hpp>
 
 int main(int argc, char** argv)
 {
@@ -70,10 +71,10 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
     {
         algorithm = std::make_shared<GrGSL>(shared_from_this());
     }
-    //   else if (goal_handle->get_goal()->gsl_method == "PMFS")
-    //{
-    //       algorithm = std::make_shared<PMFS>(shared_from_this());
-    //   }
+    else if (goal_handle->get_goal()->gsl_method == "PMFS")
+    {
+        algorithm = std::make_shared<PMFS>(shared_from_this());
+    }
     else
     {
         GSL_ERROR("Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'",

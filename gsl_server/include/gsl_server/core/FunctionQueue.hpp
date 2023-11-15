@@ -28,6 +28,13 @@ namespace GSL
                 func();
         }
 
+        void clear()
+        {
+            mutex.lock();
+            queue.clear();
+            mutex.unlock();
+        }
+
     private:
         std::mutex mutex;
         std::vector<std::function<void()>> queue;

@@ -6,16 +6,16 @@
 #include <cmath>
 #include <float.h>
 
-namespace Utils
+namespace GSL::Utils::NQA
 {
     using namespace GSL;
-    NQAQuadtree::NQAQuadtree(const std::vector<std::vector<uint8_t>>& _map) : map(_map)
+    Quadtree::Quadtree(const std::vector<std::vector<uint8_t>>& _map) : map(_map)
     {
         root = Node::createNode(this, Vector2Int(0, 0), Vector2Int(map.size(), map[0].size()), map);
         root->parent = nullptr;
     }
 
-    std::shared_ptr<Node> Node::createNode(NQAQuadtree* qt, Vector2Int _origin, Vector2Int _size, const std::vector<std::vector<uint8_t>>& _map)
+    std::shared_ptr<Node> Node::createNode(Quadtree* qt, Vector2Int _origin, Vector2Int _size, const std::vector<std::vector<uint8_t>>& _map)
     {
         std::shared_ptr<Node> noderef{new Node(qt, _origin, _size, _map)};
 
@@ -26,7 +26,7 @@ namespace Utils
         return noderef;
     }
 
-    Node::Node(NQAQuadtree* qt, Vector2Int _origin, Vector2Int _size, const std::vector<std::vector<uint8_t>>& _map)
+    Node::Node(Quadtree* qt, Vector2Int _origin, Vector2Int _size, const std::vector<std::vector<uint8_t>>& _map)
         : quadtree(qt), origin(_origin), size(_size), isLeaf(true), value(-1), map(_map)
     {
         children[0] = nullptr;
@@ -147,7 +147,7 @@ namespace Utils
         return true;
     }
 
-    std::vector<Node> NQAQuadtree::fusedLeaves(int maxSize)
+    std::vector<Node> Quadtree::fusedLeaves(int maxSize)
     {
         std::list<Node> free_leaves; //__copies__ of all the leaves that correspond to free parts of the map. Not actually part of the tree!
 
@@ -200,8 +200,7 @@ namespace Utils
         std::unordered_map<Node*, std::unordered_set<Node*>> allNeighbours;
         allNeighbours.reserve(leaves.size());
         {
-            auto checkAndAdd = [](Node* current, Node* neighbour, std::unordered_set<Node*>& neighboursSet)
-            {
+            auto checkAndAdd = [](Node* current, Node* neighbour, std::unordered_set<Node*>& neighboursSet) {
                 if (current == nullptr || neighbour == nullptr)
                     return;
                 if (neighbour != current)
@@ -231,8 +230,7 @@ namespace Utils
             for (Node& node : free_leaves)
                 to_be_evaluated.insert(&node);
 
-            auto sizeFused = [](Node* a, Node* b, Vector2Int& outOrigin, Vector2Int& outSize)
-            {
+            auto sizeFused = [](Node* a, Node* b, Vector2Int& outOrigin, Vector2Int& outSize) {
                 int minX = std::min(a->origin.x, b->origin.x);
                 int minY = std::min(a->origin.y, b->origin.y);
 
@@ -242,8 +240,7 @@ namespace Utils
                 outSize = Vector2Int{maxX, maxY} - outOrigin;
             };
 
-            auto fuse = [&free_leaves, &allNeighbours, &deletedNodes, &to_be_evaluated, this, sizeFused](Node* a, Node* b)
-            {
+            auto fuse = [&free_leaves, &allNeighbours, &deletedNodes, &to_be_evaluated, this, sizeFused](Node* a, Node* b) {
                 Vector2Int origin;
                 Vector2Int size;
                 sizeFused(a, b, origin, size);
@@ -326,4 +323,4 @@ namespace Utils
 
         return std::vector<Node>(free_leaves.begin(), free_leaves.end());
     }
-} // namespace Utils
+} // namespace GSL::Utils::NQA

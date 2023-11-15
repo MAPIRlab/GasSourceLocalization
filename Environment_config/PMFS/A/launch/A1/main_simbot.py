@@ -41,19 +41,19 @@ def launch_setup(context, *args, **kwargs):
 				executable="gsl_actionserver_call",
 				name="gsl_call",
 				parameters=[
-					{"method": "GrGSL"},
+					{"method": "PMFS"},
 				],
 			),
 			Node(
 				package="gsl_server",
 				executable="gsl_actionserver_node",
 				name="gsl_node",
-				prefix="xterm -hold -e",
+				prefix="xterm -e gdb --args",
 				parameters=[
 					# Common
 					{"verbose": True},
 					{"robot_location_topic": "ground_truth"},
-					{"stop_and_measure_time": 2.0},
+					{"stop_and_measure_time": 1.0},
 					{"th_gas_present": 0.2},
 					{"th_wind_present": 0.1},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
@@ -93,8 +93,7 @@ def launch_setup(context, *args, **kwargs):
 					{"noiseSTDev": 0.5},
 					{"iterationsToRecord": 200},
 					{"maxWarmupIterations": 500},
-
-					
+					{'use_sim_time': True},					
 				],
 			),
 		])
