@@ -4,6 +4,7 @@
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <gsl_server/core/Navigation.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
+#include <optional>
 
 namespace GSL
 {
@@ -16,12 +17,13 @@ namespace GSL
         bool checkGoal(const NavigateToPose::Goal& goal);
         void sendGoal(const NavigateToPose::Goal& goal);
         void OnEnterState(State* previous) override;
+        void OnExitState(State* next) override;
         void OnUpdate() override;
 
     protected:
         rclcpp::Time startTime;
         NavigationClient nav_client;
-        NavigateToPose::Goal currentGoal;
+        std::optional<NavigateToPose::Goal> currentGoal = std::nullopt;
 
         void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result);
 

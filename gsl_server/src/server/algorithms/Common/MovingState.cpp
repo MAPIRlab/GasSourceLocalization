@@ -36,6 +36,9 @@ namespace GSL
     void MovingState::OnEnterState(State* previous)
     {
         GSL_TRACE("Entering Moving");
+        GSL_ASSERT_MSG(
+            currentGoal.has_value(),
+            "Entering moving state without a goal set! You should never set this state directly, only through 'sendGoal' or 'chooseGoalAndMove'");
         startTime = algorithm->node->now();
     }
 
@@ -47,6 +50,12 @@ namespace GSL
             nav_client->async_cancel_all_goals();
             Fail();
         }
+    }
+
+    void MovingState::OnExitState(State* next)
+    {
+        if (next != this)
+            currentGoal = std::nullopt;
     }
 
     void MovingState::goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result)
@@ -64,11 +73,14 @@ namespace GSL
 
     void MovingState::sendGoal(const NavigateToPose::Goal& goal)
     {
+        GSL_ASSERT_MSG(currentGoal == std::nullopt, "Sending new goal while there is one active");
         GSL_INFO("Sending goal ({:.2f}, {:.2f})", goal.pose.pose.position.x, goal.pose.pose.position.y);
         rclcpp_action::Client<NavigateToPose>::SendGoalOptions options;
         options.result_callback = std::bind(&MovingState::goalDoneCallback, this, std::placeholders::_1);
         auto future = nav_client->async_send_goal(goal, options);
         rclcpp::FutureReturnCode code = rclcpp::spin_until_future_complete(algorithm->node, future);
+
+        currentGoal = goal;
         if (code != rclcpp::FutureReturnCode::SUCCESS)
         {
             GSL_ERROR("Error sending goal to navigation server! Received code {}", (int)code);
@@ -78,8 +90,7 @@ namespace GSL
         }
         else
         {
-            currentGoal = goal;
-            algorithm->stateMachine.forceSetState(this);
+            algorithm->stateMachine.forceResetState(this);
         }
     }
 
@@ -163,6 +174,9 @@ namespace GSL
 
     void MovingState::Fail()
     {
+        if (!currentGoal.has_value())
+            return;
+        currentGoal = std::nullopt;
         algorithm->OnCompleteNavigation(GSLResult::Failure);
     }
 } // namespace GSL

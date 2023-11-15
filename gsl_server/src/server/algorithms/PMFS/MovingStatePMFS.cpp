@@ -12,13 +12,6 @@ namespace GSL
 
     void MovingStatePMFS::chooseGoalAndMove()
     {
-        if (pmfs->stateMachine.getCurrentState() == this)
-        {
-            GSL_ERROR("Trying to re-enter moving state. This should not happen");
-            GSL_ASSERT(false);
-            return;
-        }
-
         {
             int i = pmfs->currentPosIndex().x, j = pmfs->currentPosIndex().y;
 
@@ -124,7 +117,15 @@ namespace GSL
 
     void MovingStatePMFS::Fail()
     {
-        Vector2Int indicesGoal = pmfs->gridData.coordinatesToIndex(currentGoal.pose.pose.position.x, currentGoal.pose.pose.position.y);
+        // There is a somewhat inconsistent behaviour when a goal times out and is manually cancelled.
+        // sometimes we get a callback notifying of the cancelation, sometimes not
+        // when we do, Fail() gets called twice: once by us, once inside the callback
+        // if this is the second time, we should not do anything
+        if (!currentGoal.has_value())
+            return;
+
+        Vector2Int indicesGoal =
+            pmfs->gridData.coordinatesToIndex(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
         openMoveSet.erase(indicesGoal);
         closedMoveSet.insert(indicesGoal);
         MovingState::Fail();
