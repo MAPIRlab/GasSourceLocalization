@@ -9,7 +9,14 @@ namespace GSL
 
     void PMFS::OnUpdate()
     {
-        Algorithm::OnUpdate();
+        if(!paused)
+            Algorithm::OnUpdate();
+        else
+        {
+            showWeights();
+            dynamic_cast<MovingStatePMFS*>(movingState.get())->publishMarkers();
+        }
+
         functionQueue.run();
     }
 
@@ -248,5 +255,15 @@ namespace GSL
         float prob = Utils::clamp(Utils::lerp(settings.hitProbability.prior, kernel.valueAt1, sampleGaussian / maxPossible), 0.001, 0.999);
         return std::log(prob / (1 - prob));
     }
+
+    float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) 
+    {
+        float ppm = Algorithm::gasCallback(msg);
+#if USE_GUI
+        ui.addConcentrationReading(ppm);
+#endif
+        return ppm;
+    }
+
 
 } // namespace GSL

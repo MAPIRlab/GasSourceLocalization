@@ -6,6 +6,7 @@
 #include <gsl_server/algorithms/PMFS/internal/PublishersAndSubscribers.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
+#include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 
 #include <gsl_server/algorithms/Common/GridData.hpp>
@@ -18,6 +19,9 @@ namespace GSL
         friend class MovingStatePMFS;
         friend class PMFS_internal::Simulations;
         friend class PMFS_internal::SimulationSource;
+#ifdef USE_GUI
+        friend class PMFS_internal::UI;
+#endif
         using hashSet = std::unordered_set<Vector2Int>;
         using Cell = PMFS_internal::Cell;
         using HitProbKernel = PMFS_internal::HitProbKernel;
@@ -34,6 +38,7 @@ namespace GSL
         GSLResult checkSourceFound() override;
         void saveResultsToFile(GSLResult result) override;
         void OnCompleteNavigation(GSLResult result) override;
+        float gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
 
         void initializeMap();
 
@@ -57,6 +62,7 @@ namespace GSL
         PMFS_internal::PublishersAndSubscribers pubs;
 
         //-------------Utils-------------
+        bool paused = false;
         std::unordered_map<Vector2Int, hashSet> visibilityMap;
         FunctionQueue functionQueue;
         uint iterationsCounter;
@@ -76,7 +82,8 @@ namespace GSL
         void showWeights();
         void debugMapSegmentation();
         void plotWindVectors();
-
-        void renderImgui();
+#ifdef USE_GUI
+        PMFS_internal::UI ui;
+#endif
     };
 } // namespace GSL

@@ -151,6 +151,4 @@ namespace GSL
         pubs.markers.windArrowMarkers->publish(arrow_array);
     }
 
-    void PMFS::renderImgui()
-    {}
 } // namespace GSL

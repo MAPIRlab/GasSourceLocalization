@@ -111,6 +111,7 @@ namespace GSL
     void MovingStatePMFS::debugMoveTo(int i, int j)
     {
         GSL_INFO("Sending a goal from UI. This is not part of the normal execution flow of the algorithm");
+        currentGoal = std::nullopt;
         NavigateToPose::Goal goal = indexToGoal(i, j);
         sendGoal(goal);
     }

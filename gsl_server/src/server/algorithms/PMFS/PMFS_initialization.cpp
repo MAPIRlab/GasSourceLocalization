@@ -4,6 +4,9 @@ namespace GSL
 {
     using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
     PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node)
+#ifdef USE_GUI
+    ,ui(this)
+#endif
     {}
 
     void PMFS::initialize()
