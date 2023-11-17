@@ -26,7 +26,7 @@ namespace GSL
         wind_sub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
             getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
 
-        localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 100,
+        localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
                                                                                 std::bind(&Algorithm::localizationCallback, this, _1));
 
         start_time = node->now();

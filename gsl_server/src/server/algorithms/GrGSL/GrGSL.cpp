@@ -148,11 +148,11 @@ namespace GSL
             positionOfLastHit = Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
 
         if (gasHit && significantWind)
-            GSL_INFO("GAS HIT");
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         else if (gasHit)
-            GSL_INFO("GAS BUT NO WIND");
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS BUT NO WIND");
         else
-            GSL_INFO("NOTHING");
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING");
 
         estimateProbabilitiesfromGasAndWind(grid, gasHit, significantWind, wind_direction, currentPosIndex());
 

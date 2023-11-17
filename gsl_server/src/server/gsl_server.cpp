@@ -10,6 +10,9 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
 
+    // arbitrary wait to let the simulation start. Not strictly required, but avoids some annoying problems 
+    rclcpp::sleep_for(std::chrono::seconds(5));
+
     auto gsl_node = std::make_shared<GSLServer>("gsl_server");
     GSL_INFO("GSL action server is ready for action!");
 
