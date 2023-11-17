@@ -24,7 +24,7 @@ namespace GSL::PMFS_internal
         void renderImgui();
         void addConcentrationReading(double ppm);
     protected:
-        std::thread renderThread;
+        std::jthread renderThread;
         PMFS* pmfs;
         double last_concentration_reading = 0;
         void createUI();

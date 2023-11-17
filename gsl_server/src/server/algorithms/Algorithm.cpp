@@ -172,7 +172,7 @@ namespace GSL
         double nav_t = nav_d / 0.4; // assumming a constant speed of 0.4m/s
         std::string result_string =
             fmt::format("RESULT IS: Success={}, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}\n", (int)result, search_d, nav_d, search_t, nav_t);
-        GSL_INFO(result_string.c_str());
+        GSL_INFO("{}", result_string);
 
         if (FILE* output_file = fopen(resultLogging.results_file.c_str(), "w"))
         {

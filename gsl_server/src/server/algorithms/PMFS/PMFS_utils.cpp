@@ -237,7 +237,7 @@ namespace GSL
         double search_t = time_spent.seconds();
 
         std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={} \n", (int)result, search_t);
-        GSL_INFO(resultString.c_str());
+        GSL_INFO("{}", resultString);
 
         Vector2 sourceLocationAll = expectedValueSource(1);
         Vector2 sourceLocation = expectedValueSource(0.05);

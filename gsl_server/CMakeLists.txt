@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_server)
 set(CMAKE_BUILD_TYPE "None") 
-set(CMAKE_CXX_FLAGS "-std=c++17 -g ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++20 -g ${CMAKE_CXX_FLAGS}")
 
 
 
