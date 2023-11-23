@@ -535,7 +535,7 @@ namespace GSL
         double search_t = time_spent.seconds();
 
         std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={} \n", (int)result, search_t);
-        GSL_INFO("{}",resultString);
+        GSL_INFO("{}", resultString);
 
         Vector2 sourceLocationAll = expectedValueSource(1);
         Vector2 sourceLocation = expectedValueSource(0.05);
@@ -552,6 +552,7 @@ namespace GSL
 
             file << resultLogging.navigationTime << " " << search_t << " " << errorAll << " " << error << " " << exploredCells << " "
                  << varianceSourcePosition() << "\n";
+            file.close();
         }
         else
             GSL_WARN("No file provided for logging result. Skipping it.");
@@ -563,6 +564,7 @@ namespace GSL
             file << "------------------------\n";
             for (PoseWithCovarianceStamped p : resultLogging.robot_poses_vector)
                 file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
+            file.close();
         }
         else
             GSL_WARN("No file provided for logging path. Skipping it.");

@@ -254,6 +254,7 @@ namespace GSL
 
             file << resultLogging.navigationTime << " " << search_t << " " << errorAll << " " << error << " " << iterationsCounter << " "
                  << varianceSourcePosition() << "\n";
+            file.close();
         }
         else
             GSL_WARN("No file provided for logging result. Skipping it.");
@@ -265,6 +266,7 @@ namespace GSL
             file << "------------------------\n";
             for (PoseWithCovarianceStamped p : resultLogging.robot_poses_vector)
                 file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
+            file.close();
         }
         else
             GSL_WARN("No file provided for logging path. Skipping it.");

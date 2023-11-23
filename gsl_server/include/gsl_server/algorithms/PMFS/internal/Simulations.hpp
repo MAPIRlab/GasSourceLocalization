@@ -41,22 +41,21 @@ namespace GSL::PMFS_internal
     class Simulations
     {
     public:
-        Simulations() = default;
-        PMFS* pmfs;
-
+        Simulations(PMFS* _pmfs) : pmfs(_pmfs){}
         void updateSourceProbability(float refineFraction);
-        void compareRefineFractions();
+        void printImage(const SimulationSource& source);
+
         std::vector<std::vector<Utils::NQA::Node*>> mapSegmentation;
         std::unique_ptr<Utils::NQA::Quadtree> quadtree;
         std::vector<Utils::NQA::Node> QTleaves;
         std::vector<std::vector<double>> varianceOfHitProb; // calculated from the simulations, used for movement
-
+    protected:
+        PMFS* pmfs;
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev);
         void simulateSourceInPosition(const SimulationSource& source, std::vector<std::vector<float>>& hitMap, bool warmup, int warmupLimit,
                                       int timesteps, float deltaTime, float noiseSTDev);
         bool filamentIsOutside(Filament& filament);
         double weightedDifference(const std::vector<std::vector<Cell>>& hitRandomVariable, const std::vector<std::vector<float>>& hitMap);
-        void printImage(const SimulationSource& source);
         bool moveAlongPath(Vector2& beginning, const Vector2& end);
     };
 } // namespace GSL::PMFS_internal

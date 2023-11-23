@@ -6,6 +6,7 @@
 namespace GSL
 {
     static constexpr int max_navigation_time = 20;
+    static constexpr int8_t lethal_cost = 10;
 
     MovingState::MovingState(Algorithm* _algorithm) : State(_algorithm)
     {
@@ -158,6 +159,10 @@ namespace GSL
 
     bool MovingState::checkGoal(const NavigateToPose::Goal& goal)
     {
+        Vector2 goalPosition = {goal.pose.pose.position.x, goal.pose.pose.position.y};
+        if(!algorithm->isPointInsideMapBounds(goalPosition) || !algorithm->sampleCostmap(goalPosition) > lethal_cost)
+            return false;
+
         PoseStamped start;
         start.pose = algorithm->currentRobotPose.pose.pose;
         start.header = algorithm->currentRobotPose.header;

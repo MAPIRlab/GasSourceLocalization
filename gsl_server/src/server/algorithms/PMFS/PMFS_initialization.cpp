@@ -3,9 +3,10 @@
 namespace GSL
 {
     using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
-    PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node)
+    PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node),
+        simulations(this)
 #ifdef USE_GUI
-    ,ui(this)
+        ,ui(this)
 #endif
     {}
 
@@ -32,7 +33,6 @@ namespace GSL
         pubs.clientWindGroundTruth = node->create_client<gaden_player::srv::WindPosition>("/wind_value");
 #endif
         iterationsCounter = 0;
-        simulations.pmfs = this;
 
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);

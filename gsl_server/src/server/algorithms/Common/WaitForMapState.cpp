@@ -17,7 +17,9 @@ namespace GSL
     }
 
     void WaitForMapState::OnExitState(State* previous)
-    {}
+    {
+        algorithm->start_time = algorithm->node->now();
+    }
 
     void WaitForMapState::mapCallback(OccupancyGrid::SharedPtr msg)
     {

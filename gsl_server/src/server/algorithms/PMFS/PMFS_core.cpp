@@ -44,7 +44,6 @@ namespace GSL
 
         if (number_of_updates >= settings.hitProbability.max_updates_per_stop)
         {
-            iterationsCounter++;
             number_of_updates = 0;
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.steps_between_source_updates == 0;

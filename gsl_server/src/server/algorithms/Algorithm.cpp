@@ -29,7 +29,6 @@ namespace GSL
         localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
                                                                                 std::bind(&Algorithm::localizationCallback, this, _1));
 
-        start_time = node->now();
         GSL_INFO("INITIALIZATON COMPLETED");
     }
 
@@ -275,17 +274,24 @@ namespace GSL
 
     bool Algorithm::isPointFree(const Vector2& point)
     {
-        double x = point.x;
-        double y = point.y;
-        if (x < map.info.origin.position.x || x >= map.info.origin.position.x + map.info.width * map.info.resolution ||
-            y < map.info.origin.position.y || y >= map.info.origin.position.y + map.info.height * map.info.resolution)
-        {
+        if (!isPointInsideMapBounds(point))
             return false;
-        }
 
-        int h = (x - map.info.origin.position.x) / map.info.resolution;
-        int v = (y - map.info.origin.position.y) / map.info.resolution;
+        int h = (point.x - map.info.origin.position.x) / map.info.resolution;
+        int v = (point.y - map.info.origin.position.y) / map.info.resolution;
 
         return map.data[v * map.info.width + h] == 0;
     }
+
+    int8_t Algorithm::sampleCostmap(const Vector2& point)
+    {
+        if (!isPointInsideMapBounds(point))
+            return 255;
+
+        int h = (point.x - map.info.origin.position.x) / map.info.resolution;
+        int v = (point.y - map.info.origin.position.y) / map.info.resolution;
+
+        return map.data[v * map.info.width + h];
+    }
+
 } // namespace GSL

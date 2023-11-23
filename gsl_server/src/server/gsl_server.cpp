@@ -24,6 +24,8 @@ int main(int argc, char** argv)
         if (gsl_node->m_activeGoal.get() != nullptr)
         {
             gsl_node->execute(gsl_node->m_activeGoal);
+            rclcpp::sleep_for(std::chrono::seconds(1));
+            rclcpp::shutdown();
         }
     }
 
@@ -99,7 +101,6 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
         GSL_INFO("Could not find the source. Sorry!");
     }
     goal_handle->succeed(actionResult);
-    rclcpp::shutdown();
 }
 
 GSLResult GSLServer::runMethod(std::shared_ptr<GSL::Algorithm> algorithm)
