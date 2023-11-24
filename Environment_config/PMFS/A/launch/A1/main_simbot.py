@@ -51,7 +51,7 @@ def launch_setup(context, *args, **kwargs):
 				prefix="xterm -e gdb --args",
 				parameters=[
 					# Common
-					{"verbose": True},
+					{'use_sim_time': False},	
 					{"robot_location_topic": "ground_truth"},
 					{"stop_and_measure_time": 1.0},
 					{"th_gas_present": 0.2},
@@ -92,8 +92,7 @@ def launch_setup(context, *args, **kwargs):
 					{"deltaTime": 0.1},
 					{"noiseSTDev": 0.5},
 					{"iterationsToRecord": 200},
-					{"maxWarmupIterations": 500},
-					{'use_sim_time': True},					
+					{"maxWarmupIterations": 500},				
 				],
 			),
 		])

@@ -27,7 +27,7 @@ def launch_arguments():
 				"scenario",	default_value=["A"],
 			),
 			DeclareLaunchArgument(
-				"method",	default_value=["PMFS"],
+				"method",	default_value=["GrGSL"],
 			),
 			DeclareLaunchArgument(
 				"use_infotaxis", default_value=["False"],
@@ -55,7 +55,7 @@ def launch_setup(context, *args, **kwargs):
 				parameters=[
 					# Common
 					{"max_search_time": 300.0},
-					{"verbose": True},
+										{'use_sim_time': False},	
 					{"robot_location_topic": "ground_truth"},
 					{"stop_and_measure_time": 0.5},
 					{"th_gas_present": 0.2},
@@ -310,16 +310,16 @@ def launch_setup(context, *args, **kwargs):
 	)
 
 	returnList = []
-	returnList.append(publish_pose)
 	returnList.extend(gaden)
 	returnList.extend(anemometer)
 	returnList.extend(PID)
 	returnList.append(gmrf_wind)
 	returnList.extend(gsl)
-	#returnList.extend(coppelia)
 	returnList.append(nav2)
+	#returnList.extend(coppelia)
 	#returnList.extend(nav_assistant)
 	#returnList.append(rviz)
+	returnList.append(publish_pose)
 
 	return returnList
 

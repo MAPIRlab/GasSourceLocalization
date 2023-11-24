@@ -80,7 +80,7 @@ def launch_setup(context, *args, **kwargs):
 	
 
 	returnList = []
-	returnList.extend(coppelia)
+	#returnList.extend(coppelia)
 	#returnList.append(nav2)
 	returnList.append(rviz)
 

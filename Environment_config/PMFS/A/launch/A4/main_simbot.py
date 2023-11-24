@@ -27,7 +27,7 @@ def launch_arguments():
 				"scenario",	default_value=["A"],
 			),
 			DeclareLaunchArgument(
-				"method",	default_value=["PMFS"],
+				"method",	default_value=["GrGSL"],
 			),
 			DeclareLaunchArgument(
 				"use_infotaxis",	default_value=["True"],
@@ -51,10 +51,11 @@ def launch_setup(context, *args, **kwargs):
 				package="gsl_server",
 				executable="gsl_actionserver_node",
 				name="gsl_node",
-				prefix="xterm -e gdb --args",
+				#prefix="xterm -maximized -e gdb -batch -ex run --args",
+				prefix="xterm -e gdb -batch -ex run --args",
 				parameters=[
 					# Common
-					{"verbose": True},
+					{'use_sim_time': False},	
 					{"max_search_time": 300.0},
 					{"robot_location_topic": "ground_truth"},
 					{"stop_and_measure_time": 0.5},
@@ -62,7 +63,7 @@ def launch_setup(context, *args, **kwargs):
 					{"th_wind_present": 0.1},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
 					{"ground_truth_y": parse_substitution("$(var source_location_y)")},
-					{"results_file": parse_substitution("Results/A3/$(var method).csv")},
+					{"results_file": parse_substitution("Results/A4/$(var method).csv")},
 					
 					{"scale": 25},
 					{"markers_height": 0.2},
@@ -71,7 +72,7 @@ def launch_setup(context, *args, **kwargs):
 					{"allowMovementRepetition": True},
 					{"openMoveSetExpasion": 5},
 					{"explorationProbability": 0.1},
-					{"convergence_thr": 1.0},
+					{"convergence_thr": 1.5},
 					{"convergence_steps": 5},
 					
 					#GrGSL
@@ -309,13 +310,25 @@ def launch_setup(context, *args, **kwargs):
 		]
 	)
 
+	basic_sim = Node(
+		package="basic_sim",
+		executable="basic_sim",
+		#prefix = "xterm -e gdb --args",
+		parameters=[
+			{"deltaTime": 0.1},
+			{"speed": 5.0},
+			{"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/sim.yaml")}
+			],
+	)
+
 	returnList = []
-	returnList.append(publish_pose)
+	#returnList.append(publish_pose)
 	returnList.extend(gaden)
 	returnList.extend(anemometer)
 	returnList.extend(PID)
 	returnList.append(gmrf_wind)
-	returnList.extend(gsl)
+	#returnList.extend(gsl)
+	returnList.append(basic_sim)
 	#returnList.extend(coppelia)
 	returnList.append(nav2)
 	#returnList.extend(nav_assistant)

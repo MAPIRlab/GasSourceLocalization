@@ -51,7 +51,6 @@ def launch_setup(context, *args, **kwargs):
 				prefix="xterm -hold -e",
 				parameters=[
 					# Common
-					{"verbose": True},
 					{"robot_location_topic": "ground_truth"},
 					{"stop_and_measure_time": 3.0},
 					{"th_gas_present": 0.2},

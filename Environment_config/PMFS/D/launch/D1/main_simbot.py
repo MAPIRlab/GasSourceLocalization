@@ -51,7 +51,7 @@ def launch_setup(context, *args, **kwargs):
 				prefix="xterm -e",
 				parameters=[
 					# Common
-					{"verbose": True},
+					{'use_sim_time': False},	
 					{"max_search_time": 300.0},
 					{"robot_location_topic": "ground_truth"},
 					{"stop_and_measure_time": 0.5},
