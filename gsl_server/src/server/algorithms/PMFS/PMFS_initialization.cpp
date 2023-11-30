@@ -14,7 +14,6 @@ namespace GSL
     {
         Algorithm::initialize();
         // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
-        // see the file grid_callbacks.cpp
 
         pubs.markers.source_probability_markers = node->create_publisher<Marker>("probability_markers", 1);
         pubs.markers.hitProbabilityMarkers = node->create_publisher<Marker>("hitProbabilityMarkers", 1);
@@ -32,6 +31,12 @@ namespace GSL
 #ifdef USE_GADEN
         pubs.clientWindGroundTruth = node->create_client<gaden_player::srv::WindPosition>("/wind_value");
 #endif
+
+#ifdef USE_GUI
+		if(!settings.visualization.headless)
+        	ui.run();
+#endif
+
         iterationsCounter = 0;
 
         waitForGasState = std::make_unique<WaitForGasState>(this);
@@ -77,6 +82,9 @@ namespace GSL
         settings.simulation.maxWarmupIterations = getParam<int>("maxWarmupIterations", 500);
 
         settings.visualization.markers_height = getParam<double>("markers_height", 0);
+#if USE_GUI
+        settings.visualization.headless = getParam<bool>("headless", false);
+#endif
 
         settings.declaration.threshold = getParam<double>("convergence_thr", 0.5); // threshold for source declaration
         settings.declaration.steps = getParam<int>("convergence_steps", 5);
@@ -236,14 +244,17 @@ namespace GSL
             {
                 for (int j = 0; j < grid[0].size(); j++)
                 {
+                    Vector2Int ij(i, j);
                     if (!grid[i][j].free)
+					{
+						visibilityMap.emplace(ij, hashSet{});
                         continue;
+					}
                     int oI = std::max(0, i - visibility_map_range) - i;
                     int fI = std::min((int)grid.size() - 1, i + visibility_map_range) - i;
                     int oJ = std::max(0, j - visibility_map_range) - j;
                     int fJ = std::min((int)grid[0].size() - 1, j + visibility_map_range) - j;
 
-                    Vector2Int ij(i, j);
                     hashSet visibleCells;
                     double totalX = 0;
                     double totalY = 0;

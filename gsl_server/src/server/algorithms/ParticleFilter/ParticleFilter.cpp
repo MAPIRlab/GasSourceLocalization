@@ -42,8 +42,13 @@ namespace GSL
         {
             lastWindObservation = node->now();
             // store the measurement in the list of wind history as a (x,y) vector
-            double speed = Utils::getAverageVector(windSpeed_v);
-            double angle = Utils::getAverageDirection(windDirection_v);
+            double speed = Utils::getAverageFloatCollection(windSpeed_v.begin(), windSpeed_v.end());
+			if(speed == Utils::INVALID_AVERAGE)
+			{
+				GSL_WARN("Trying to take average of wind measurements, but no measurements were received!");
+				speed = 0;
+			}
+            double angle = Utils::getAverageDirection(windDirection_v.begin(), windDirection_v.end());
             historicWind.push_back(Vector2(speed * cos(angle), speed * sin(angle)));
 
             if (historicWind.size() > numberOfWindObs)

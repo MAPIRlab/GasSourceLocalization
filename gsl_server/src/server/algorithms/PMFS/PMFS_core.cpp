@@ -28,13 +28,13 @@ namespace GSL
         {
             // Gas & wind
             estimateHitProbabilities(grid, true, wind_direction, wind_speed, currentPosIndex());
-            GSL_WARN(" GAS HIT");
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
             estimateHitProbabilities(grid, false, wind_direction, wind_speed, currentPosIndex());
-            GSL_WARN(" NOTHING ");
+           GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
         estimateWind(settings.simulation.useWindGroundTruth);

@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <gsl_actions/action/do_gsl.hpp>
+#include <std_msgs/msg/string.hpp>
 
 using DoGSL = gsl_actions::action::DoGSL;
 
@@ -16,7 +17,15 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
 
+
     rclcpp::Node::SharedPtr call_node = std::make_shared<rclcpp::Node>("gsl_call");
+	auto resetSimulatorPub =  call_node->create_publisher<std_msgs::msg::String>("/basic_sim/reset", rclcpp::QoS(1).transient_local());
+	{
+		std_msgs::msg::String msg;
+		msg.data = "all";
+		resetSimulatorPub->publish(msg);
+	}
+	
     std::string method = getParam<std::string>(call_node, "method", "surge_cast");
 
     auto action_client = rclcpp_action::create_client<DoGSL>(call_node, "gsl_server");

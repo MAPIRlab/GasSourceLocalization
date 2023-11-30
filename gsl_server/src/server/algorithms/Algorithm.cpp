@@ -89,9 +89,12 @@ namespace GSL
         costmap = *msg;
     }
 
-    void Algorithm::OnCompleteNavigation(GSLResult result)
+    void Algorithm::OnCompleteNavigation(GSLResult result, State* previousState)
     {
-        stateMachine.forceResetState(stopAndMeasureState.get());
+		if(previousState == waitForGasState.get())
+        	stateMachine.forceResetState(waitForGasState.get());
+        else
+			stateMachine.forceResetState(stopAndMeasureState.get());
     }
 
     GSLResult Algorithm::checkSourceFound()

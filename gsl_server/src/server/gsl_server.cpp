@@ -51,7 +51,7 @@ void GSLServer::handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalH
 void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
 {
     using namespace GSL;
-    GSL_INFO("Request received: {}", goal_handle->get_goal()->gsl_method);
+    GSL_INFO_COLOR(fmt::terminal_color::yellow, "Request received: {}", goal_handle->get_goal()->gsl_method);
     auto actionResult = std::make_shared<DoGSL::Result>();
 
     // 1. Start the localization of the gas source

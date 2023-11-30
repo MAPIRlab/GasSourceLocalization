@@ -8,13 +8,18 @@
 
 namespace GSL::PMFS_internal
 {
-    UI::UI(PMFS* _pmfs) : pmfs(_pmfs), renderThread(std::bind(&UI::renderImgui, this))
+    UI::UI(PMFS* _pmfs) : pmfs(_pmfs)
     {}
 
     UI::~UI()
     {
         renderThread.join();
     }
+
+	void UI::run()
+	{
+		renderThread = std::jthread(std::bind(&UI::renderImgui, this));
+	}
     
     void UI::renderImgui()
     {

@@ -41,6 +41,7 @@ namespace GSL
             currentGoal.has_value(),
             "Entering moving state without a goal set! You should never set this state directly, only through 'sendGoal' or 'chooseGoalAndMove'");
         startTime = algorithm->node->now();
+		previousState = previous;
     }
 
     void MovingState::OnUpdate()
@@ -68,7 +69,7 @@ namespace GSL
         }
         else
         {
-            algorithm->OnCompleteNavigation(GSLResult::Success);
+            algorithm->OnCompleteNavigation(GSLResult::Success, previousState);
         }
     }
 
@@ -182,6 +183,6 @@ namespace GSL
         if (!currentGoal.has_value())
             return;
         currentGoal = std::nullopt;
-        algorithm->OnCompleteNavigation(GSLResult::Failure);
+        algorithm->OnCompleteNavigation(GSLResult::Failure, previousState);
     }
 } // namespace GSL

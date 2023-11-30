@@ -3,7 +3,7 @@
 
 namespace GSL
 {
-    void PMFS::OnCompleteNavigation(GSLResult result)
+    void PMFS::OnCompleteNavigation(GSLResult result, State* previousState)
     {
         if (result == GSLResult::Success)
             stateMachine.forceSetState(stopAndMeasureState.get());

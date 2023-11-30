@@ -40,25 +40,32 @@ namespace GSL
             }
         }
 
-        NavigateToPose::Goal goal;
+        std::optional<NavigateToPose::Goal> goal;
         if (settings.infoTaxis)
             goal = getInfotaxisGoal();
         else
             goal = getNormalGoal();
+		
+		if(!goal)
+		{
+			GSL_ERROR("Cannot move anywhere! Probably got stuck on an obstacle. Aborting movement.");
+			Fail();
+			return;
+		}
 
         grgsl->exploredCells++;
 
-        Vector2Int indices = gridData.coordinatesToIndex(goal.pose.pose.position.x, goal.pose.pose.position.y);
+        Vector2Int indices = gridData.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
         closedMoveSet.insert(indices);
         openMoveSet.erase(indices);
 
-        GSL_INFO("MOVING TO {:.2f},{:.2f}", goal.pose.pose.position.x, goal.pose.pose.position.y);
-        sendGoal(goal);
+        GSL_INFO("MOVING TO {:.2f},{:.2f}", goal->pose.pose.position.x, goal->pose.pose.position.y);
+        sendGoal(*goal);
 
         // close nearby cells to avoid repeating the same pose with only minor variations
         if (!settings.allowMovementRepetition)
         {
-            Vector2Int goalIndices = gridData.coordinatesToIndex(goal.pose.pose.position.x, goal.pose.pose.position.y);
+            Vector2Int goalIndices = gridData.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
             int i = goalIndices.x, j = goalIndices.y;
             int oI = std::max(0, i - 1);
             int fI = std::min((int)grid.size() - 1, i + 1);
@@ -80,13 +87,13 @@ namespace GSL
         }
     }
 
-    NavigateToPose::Goal MovingStateGrGSL::getNormalGoal()
+    std::optional<NavigateToPose::Goal> MovingStateGrGSL::getNormalGoal()
     {
         const auto& settings = grgsl->settings;
         const auto& grid = grgsl->grid;
         const auto& gridData = grgsl->gridData;
         // Graph exploration
-        NavigateToPose::Goal goal;
+        std::optional<NavigateToPose::Goal> goal = std::nullopt;
 
         if (!openMoveSet.empty())
         {
@@ -109,18 +116,18 @@ namespace GSL
         }
         else
             GSL_ERROR("Set of open nodes is empty! Are you certain the source is reachable?");
-
+	
         return goal;
     }
 
-    NavigateToPose::Goal MovingStateGrGSL::getInfotaxisGoal()
+    std::optional<NavigateToPose::Goal> MovingStateGrGSL::getInfotaxisGoal()
     {
         const auto& settings = grgsl->settings;
         const auto& grid = grgsl->grid;
         const auto& gridData = grgsl->gridData;
 
         // Infotactic navigation
-        NavigateToPose::Goal goal;
+        std::optional<NavigateToPose::Goal> goal = std::nullopt;
         std::vector<GrGSL::WindVector> wind = estimateWind();
         std::mutex mtx;
         double ent = -DBL_MAX;

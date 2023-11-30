@@ -29,6 +29,7 @@ namespace GSL
     void GrGSL::declareParameters()
     {
         Algorithm::declareParameters();
+        settings.useDiffusionTerm = getParam<bool>("useDiffusionTerm", false); //experimental way to extract useful info from low-wind measurements, not very reliable
         settings.stdev_hit = getParam<double>("stdev_hit", 1.0);
         settings.stdev_miss = getParam<double>("stdev_miss", 2.0);
         settings.infoTaxis = getParam<bool>("infoTaxis", false);
@@ -138,7 +139,7 @@ namespace GSL
 
         normalizeWeights(grid);
     }
-
+	
     void GrGSL::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
     {
         bool gasHit = concentration > thresholdGas;
@@ -151,10 +152,15 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         else if (gasHit)
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS BUT NO WIND");
-        else
+        else if(significantWind)
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "ONLY WIND");
+		else
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING");
-
-        estimateProbabilitiesfromGasAndWind(grid, gasHit, significantWind, wind_direction, currentPosIndex());
+		
+		if(gasHit)
+        	estimateProbabilitiesfromGasAndWind(grid, gasHit, significantWind, wind_direction, currentPosIndex());
+		else
+        	estimateProbabilitiesfromGasAndWind(grid, gasHit, true, wind_direction, currentPosIndex());
 
         dynamic_cast<MovingStateGrGSL*>(movingState.get())->chooseGoalAndMove();
         showWeights();
@@ -163,6 +169,9 @@ namespace GSL
     void GrGSL::estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell>>& map, bool hit, bool advection, double wind_direction,
                                                     Vector2Int robot_pos)
     {
+		if(!advection && !(settings.useDiffusionTerm && hit))
+			return;
+
         // ADVECTION
         // this part is always done, to calculate the distance field to the current robot position
         // the actual advection-based source probabilities are discarded if the wind speed is too low for the direction to be reliable
@@ -227,74 +236,47 @@ namespace GSL
         if (advection)
         {
             double sum = 0;
-            for (int r = 0; r < map.size(); r++)
-            {
-                for (int c = 0; c < map[0].size(); c++)
-                {
-                    if (map[r][c].free)
-                    {
-                        sum += map[r][c].auxWeight;
-                    }
-                }
-            }
-            for (int r = 0; r < map.size(); r++)
-            {
-                for (int c = 0; c < map[0].size(); c++)
-                {
-                    if (map[r][c].free)
-                    {
-                        map[r][c].auxWeight /= sum;
-                    }
-                }
-            }
+			mapFunctionToCells(map, [&sum](Cell& cell, size_t row, size_t column)
+				{sum += cell.auxWeight;}
+			);
+			mapFunctionToCells(map, [&sum](Cell& cell, size_t row, size_t column)
+				{cell.auxWeight /= sum;}
+			, MapFunctionMode::Parallel);
         }
         else
         {
-            for (int r = 0; r < map.size(); r++)
-            {
-                for (int c = 0; c < map[0].size(); c++)
-                {
-                    if (map[r][c].free)
-                    {
-                        map[r][c].auxWeight = 0;
-                    }
-                }
-            }
+			mapFunctionToCells(map, [](Cell& cell, size_t row, size_t column)
+				{cell.auxWeight = 0;}, MapFunctionMode::Parallel);
         }
 
         // DIFFUSION
-        // calculate and normalize these probabilities before combining them with the advection ones
-
-        std::vector<std::vector<double>> diffusionProb = std::vector<std::vector<double>>(map.size(), std::vector<double>(map[0].size()));
-        double sum = 0;
-        for (int r = 0; r < map.size(); r++)
-        {
-            for (int c = 0; c < map[0].size(); c++)
+        if(settings.useDiffusionTerm && hit)
+		{
+        	// calculate and normalize these probabilities before combining them with the advection ones
+        	std::vector<std::vector<double>> diffusionProb = std::vector<std::vector<double>>(map.size(), std::vector<double>(map[0].size(), 0));
+			double sum = 0;
+			mapFunctionToCells(map, [&sum, &diffusionProb](Cell& cell, size_t row, size_t column)
+			{
+				diffusionProb[row][column] = std::max(0.1, Utils::evaluate1DGaussian(cell.distance, 3));
+				sum += diffusionProb[row][column];
+			});
+			
+			if(sum>0)
             {
-                if (map[r][c].free)
-                {
-                    if (hit)
-                        diffusionProb[r][c] = std::max(0.1, Utils::evaluate1DGaussian(map[r][c].distance, 3));
-                    else
-                        diffusionProb[r][c] = std::max(0.1, 1 - Utils::evaluate1DGaussian(map[r][c].distance, 3)); // this is no good
-                    sum += diffusionProb[r][c];
-                }
+				mapFunctionToCells(map, [&sum, &diffusionProb](Cell& cell, size_t row, size_t column)
+				{
+					diffusionProb[row][column] /= sum;
+					cell.auxWeight += diffusionProb[row][column];
+				}, MapFunctionMode::Parallel);
             }
         }
 
-        for (int r = 0; r < map.size(); r++)
-        {
-            for (int c = 0; c < map[0].size(); c++)
-            {
-                if (map[r][c].free)
-                {
-                    map[r][c].auxWeight += diffusionProb[r][c] / sum;
-
-                    map[r][c].weight *= map[r][c].auxWeight;
-                    map[r][c].auxWeight = 0;
-                }
-            }
-        }
+		// BAYESIAN FILTER
+		mapFunctionToCells(map, [](Cell& cell, size_t row, size_t column)
+		{
+			cell.weight *= cell.auxWeight;
+			cell.auxWeight = 0;
+		}, MapFunctionMode::Parallel);
 
         normalizeWeights(map);
     }
@@ -614,4 +596,33 @@ namespace GSL
         }
         markers.probability_markers->publish(points);
     }
+
+
+	void GrGSL::mapFunctionToCells(std::vector<std::vector<Cell>>& cells, std::function<void(Cell&, size_t, size_t)> function, MapFunctionMode mode)
+    {
+        if (mode == MapFunctionMode::Parallel)
+        {
+#pragma omp parallel for collapse(2)
+            for (int r = 0; r < cells.size(); r++)
+            {
+                for (int c = 0; c < cells[0].size(); c++)
+                {
+                    if (cells[r][c].free)
+                        function(cells[r][c], r,c);
+                }
+            }
+        }
+		else
+		{
+			for (int r = 0; r < cells.size(); r++)
+            {
+                for (int c = 0; c < cells[0].size(); c++)
+                {
+                    if (cells[r][c].free)
+                        function(cells[r][c], r,c);
+                }
+            }
+		}
+    }
+
 } // namespace GSL
