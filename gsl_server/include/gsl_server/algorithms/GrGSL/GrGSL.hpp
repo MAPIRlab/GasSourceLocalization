@@ -46,6 +46,7 @@ namespace GSL
 
             bool infoTaxis;
             bool allowMovementRepetition;
+			bool useDiffusionTerm;
         } settings;
 
         struct Markers
@@ -87,5 +88,8 @@ namespace GSL
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
         void showWeights();
+
+		enum MapFunctionMode {Sequential, Parallel};
+		void mapFunctionToCells(std::vector<std::vector<Cell>>& cells, std::function<void(Cell&, size_t, size_t)> function, MapFunctionMode mode = MapFunctionMode::Sequential);
     };
 } // namespace GSL

@@ -76,7 +76,7 @@ namespace GSL
         virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
 
         virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
-        virtual void OnCompleteNavigation(GSLResult result);
+        virtual void OnCompleteNavigation(GSLResult result, State* previousState);
 
         float ppmFromGasMsg(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
         geometry_msgs::msg::PoseStamped getRandomPoseInMap();

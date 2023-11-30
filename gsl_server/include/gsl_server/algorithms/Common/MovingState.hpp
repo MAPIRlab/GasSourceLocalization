@@ -22,6 +22,7 @@ namespace GSL
 
     protected:
         rclcpp::Time startTime;
+		State* previousState;
         NavigationClient nav_client;
         std::optional<NavigateToPose::Goal> currentGoal = std::nullopt;
 

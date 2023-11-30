@@ -24,8 +24,8 @@ namespace GSL
 
         NavigateToPose::Goal indexToGoal(int i, int j);
 
-        NavigateToPose::Goal getNormalGoal();
-        NavigateToPose::Goal getInfotaxisGoal();
+        std::optional<NavigateToPose::Goal> getNormalGoal();
+        std::optional<NavigateToPose::Goal> getInfotaxisGoal();
 
         // Wind Estimation (for infotaxis)
         //-------------

@@ -60,6 +60,7 @@ namespace GSL::PMFS_internal
 
         struct VisualizationSettings
         {
+			bool headless;
             Utils::valueColorMode hitMode = Utils::valueColorMode::Linear;
             Utils::valueColorMode sourceMode = Utils::valueColorMode::Logarithmic;
 

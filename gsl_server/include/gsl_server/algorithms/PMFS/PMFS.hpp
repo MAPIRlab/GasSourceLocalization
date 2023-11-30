@@ -37,7 +37,7 @@ namespace GSL
         void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
         GSLResult checkSourceFound() override;
         void saveResultsToFile(GSLResult result) override;
-        void OnCompleteNavigation(GSLResult result) override;
+        void OnCompleteNavigation(GSLResult result, State* previousState) override;
         float gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
 
         void initializeMap();

@@ -5,9 +5,39 @@
 
 namespace GSL::Utils
 {
-    float getAverageVector(const std::vector<float>& v);
-    float getAverageDirection(const std::vector<float>& v);
-    float getAverageDeque(const std::deque<float>& v);
+	static constexpr float INVALID_AVERAGE = -FLT_MAX;
+	
+	template <typename CollectionIterator>
+    float getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
+	{
+		int length = std::distance(startIt, endIt);
+        if (length == 0)
+            return Utils::INVALID_AVERAGE;
+        float sum = 0.0;
+        for (CollectionIterator i = startIt; i != endIt; ++i)
+            sum += *i;
+
+        return sum / length;
+	}
+
+	template <typename CollectionIterator>
+	float getAverageDirection(const CollectionIterator startIt, const CollectionIterator endIt)
+    {
+        // Average of wind direction, avoiding the problems of +/- pi angles.
+        int length = std::distance(startIt, endIt);
+        if (length == 0)
+            return Utils::INVALID_AVERAGE;
+
+		float x = 0.0, y = 0.0;
+        for (CollectionIterator i = startIt; i != endIt; ++i)
+        {
+            x += cos(*i);
+            y += sin(*i);
+        }
+        float average_angle = atan2(y, x);
+
+        return average_angle;
+    }
 
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);
