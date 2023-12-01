@@ -80,7 +80,7 @@ namespace GSL
         rclcpp_action::Client<NavigateToPose>::SendGoalOptions options;
         options.result_callback = std::bind(&MovingState::goalDoneCallback, this, std::placeholders::_1);
         auto future = nav_client->async_send_goal(goal, options);
-        rclcpp::FutureReturnCode code = rclcpp::spin_until_future_complete(algorithm->node, future);
+        rclcpp::FutureReturnCode code = rclcpp::spin_until_future_complete(algorithm->node, future, std::chrono::seconds(1));
 
         currentGoal = goal;
         if (code != rclcpp::FutureReturnCode::SUCCESS)
@@ -136,7 +136,7 @@ namespace GSL
         goal_options.result_callback = callback;
 
         auto future = make_plan_client->async_send_goal(plan_request, goal_options);
-        auto result = rclcpp::spin_until_future_complete(algorithm->node, future);
+        auto result = rclcpp::spin_until_future_complete(algorithm->node, future, std::chrono::seconds(1));
 
         // Check if valid goal with move_base srv
         if (result != rclcpp::FutureReturnCode::SUCCESS)
