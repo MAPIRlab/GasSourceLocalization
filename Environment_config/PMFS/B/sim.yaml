@@ -1,0 +1,14 @@
+map: "occupancy.yaml"
+robots: 
+  - name: "PioneerP3DX"
+    #position: [-2.7, -5.6, -0.7] #B3
+    position: [-1.16, 0.0, -0.7] #B4
+    angle: 1
+    sensors:
+      - type: "laser"
+        name: "laser_scan" 
+        minAngleRad: -0.7
+        maxAngleRad: 3.8
+        angleResolutionRad: 0.005 
+        minDistance: 0.1
+        maxDistance: 4.0

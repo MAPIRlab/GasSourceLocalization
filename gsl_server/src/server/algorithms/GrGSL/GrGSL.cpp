@@ -516,14 +516,16 @@ namespace GSL
         rclcpp::Duration time_spent = node->now() - start_time;
         double search_t = time_spent.seconds();
 
-        std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={} \n", (int)result, search_t);
-        GSL_INFO("{}", resultString);
-
+        
         Vector2 sourceLocationAll = expectedValueSource(1);
         Vector2 sourceLocation = expectedValueSource(0.05);
 
         double error = sqrt(pow(resultLogging.source_pose.x - sourceLocation.x, 2) + pow(resultLogging.source_pose.y - sourceLocation.y, 2));
         double errorAll = sqrt(pow(resultLogging.source_pose.x - sourceLocationAll.x, 2) + pow(resultLogging.source_pose.y - sourceLocationAll.y, 2));
+        
+		std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}\n", (int)result, search_t, error);
+        GSL_INFO_COLOR(fmt::terminal_color::cyan, "{}", resultString);
+		
         // Save to file
         if (resultLogging.results_file != "")
         {

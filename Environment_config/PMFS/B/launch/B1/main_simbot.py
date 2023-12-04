@@ -100,35 +100,6 @@ def launch_setup(context, *args, **kwargs):
 		])
 	]
 
-
-	coppelia = [
-		IncludeLaunchDescription(
-			PythonLaunchDescriptionSource(
-					os.path.join(
-						get_package_share_directory("pmfs_env"),
-						"navigation_config/conditional_coppelia_launch.py",
-					)
-				),
-				launch_arguments={
-					"launchCoppelia": LaunchConfiguration("launchCoppelia").perform(context),
-					"scenePath" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/coppeliaScene.ttt"),
-					"autoplay" : "False",
-					"headless" : "True"
-				}.items(),
-		),
-		Node(
-			package="gaden_preprocessing",
-			executable="configureCoppeliaSim",
-			name="configureCoppeliaSim",
-			condition=IfCondition(LaunchConfiguration("launchCoppelia")),
-			parameters=[
-				{"permanentChange" : False},
-				{"robotName" : LaunchConfiguration("robot_name")},
-				{"position" : [-3.3, -3.4, -0.7]},
-            ],
-		)
-	]
-	
 	nav2 = IncludeLaunchDescription(
 			PythonLaunchDescriptionSource(
 					os.path.join(
@@ -142,41 +113,6 @@ def launch_setup(context, *args, **kwargs):
 				}.items(),
 		)
 	
-	nav_assistant = [
-		GroupAction(actions=[
-			PushRosNamespace(LaunchConfiguration("robot_name")),
-			Node(
-            package="topology_graph",
-            executable="topology_graph_node",
-            name="topology_graph",
-            parameters=[
-                {"verbose": False},
-				{"get_plan_server":"compute_path_to_pose"},
-            ],
-			),
-			Node(
-				package="navigation_assistant",
-				executable="nav_assistant_node",
-				name="nav_assistant",
-				prefix="xterm -e",
-				parameters=[
-					{"use_CNP": "False"},
-					{"init_from_file": ""},
-					{"save_to_file": ""},
-					{"localization_topic" : "ground_truth"},
-				],
-			),
-			Node(
-				package="nav_assistant_functions",
-				executable="nav_assistant_functions_node",
-				name="nav_assistant_functions",
-				parameters=[
-					{"verbose": False},
-				],
-			)
-		]),     
-	]
-
 	rviz = Node(
 		package="rviz2",
 		executable="rviz2",
@@ -293,16 +229,26 @@ def launch_setup(context, *args, **kwargs):
 		]
 	)
 
+
+	basic_sim = Node(
+		package="basic_sim",
+		executable="basic_sim",
+		#prefix = "xterm -e gdb --args",
+		parameters=[
+			{"deltaTime": 0.1},
+			{"speed": 5.0},
+			{"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/sim.yaml")}
+			],
+	)
 	
 	returnList = []
-	returnList.extend(coppelia)
 	returnList.extend(gaden)
 	returnList.append(nav2)
-	returnList.extend(nav_assistant)
+	returnList.append(basic_sim)
 	returnList.extend(anemometer)
 	returnList.extend(PID)
 	returnList.append(gmrf_wind)
-	returnList.append(rviz)
+	#returnList.append(rviz)
 	returnList.extend(gsl)
 
 	return returnList

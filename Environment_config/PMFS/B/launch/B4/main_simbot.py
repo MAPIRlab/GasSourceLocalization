@@ -14,8 +14,8 @@ from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, SetLau
 from launch.substitutions import LaunchConfiguration
 from launch.frontend.parse_substitution import parse_substitution
 from launch_ros.actions import Node, PushRosNamespace
-from launch.conditions import IfCondition
 from ament_index_python.packages import get_package_share_directory
+from launch.conditions import IfCondition
 
 def launch_arguments():
 	return [
@@ -24,13 +24,13 @@ def launch_arguments():
 				"launchCoppelia", default_value=["True"],
 			),
 			DeclareLaunchArgument(
-				"scenario",	default_value=["A"],
+				"scenario",	default_value=["B"],
 			),
 			DeclareLaunchArgument(
-				"method",	default_value=["GrGSL"],
+				"use_infotaxis", default_value=["False"],
 			),
 			DeclareLaunchArgument(
-				"use_infotaxis",	default_value=["True"],
+				"method",	default_value=["PMFS"],
 			),
 	]
 
@@ -51,22 +51,21 @@ def launch_setup(context, *args, **kwargs):
 				package="gsl_server",
 				executable="gsl_actionserver_node",
 				name="gsl_node",
-				#prefix="xterm -maximized -e gdb -batch -ex run --args",
-				prefix="xterm -e gdb -batch -ex run --args",
+				#prefix="xterm -e",
 				parameters=[
 					# Common
+					{'headless': True},	
 					{'use_sim_time': False},	
-					{"max_search_time": 300.0},
 					{"robot_location_topic": "ground_truth"},
-					{"stop_and_measure_time": 0.5},
+					{"stop_and_measure_time": 0.4},
 					{"th_gas_present": 0.1},
-					{"th_wind_present": 0.1},
+					{"th_wind_present": 0.02},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
 					{"ground_truth_y": parse_substitution("$(var source_location_y)")},
-					{"results_file": parse_substitution("Results/A4/$(var method).csv")},
+					{"results_file": parse_substitution("Results/B4/$(var method).csv")},
 					
 					{"scale": 25},
-					{"markers_height": 0.2},
+					{"markers_height": 0.0},
 
 					{"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
 					{"allowMovementRepetition": True},
@@ -78,7 +77,7 @@ def launch_setup(context, *args, **kwargs):
 					#GrGSL
 					{"stdev_hit": 1.0},
 					{"stdev_miss": 1.2},
-					{"infoTaxis": parse_substitution("$(var use_infotaxis)")},
+					{"infoTaxis": False},
 
 					#PMFS
 						# Hit probabilities
@@ -89,23 +88,24 @@ def launch_setup(context, *args, **kwargs):
 					{"confidence_sigma_spatial": 1.0},
 					{"confidence_measurement_weight": 1.0},
 						#Filament simulation
-					{"useWindGroundTruth": True},
+					{"useWindGroundTruth": False},
 					{"stepsSourceUpdate": 3},
 					{"maxRegionSize": 5},
-					{"sourceDiscriminationPower": 0.2},
+					{"sourceDiscriminationPower": 0.4},
 					{"refineFraction": 0.25},
 					{"deltaTime": 0.1},
-					{"noiseSTDev": 0.5},
+					{"noiseSTDev": 0.2},
 					{"iterationsToRecord": 200},
 					{"maxWarmupIterations": 500},
 
 					
 				],
+			
 				on_exit=Shutdown()
 			),
 		])
 	]
-	
+
 	nav2 = IncludeLaunchDescription(
 			PythonLaunchDescriptionSource(
 					os.path.join(
@@ -123,7 +123,7 @@ def launch_setup(context, *args, **kwargs):
 		package="rviz2",
 		executable="rviz2",
 		name="rviz",
-		prefix="xterm -e",
+		prefix="xterm -hold -e",
 		arguments=[
 			"-d" + os.path.join(get_package_share_directory("pmfs_env"), "gaden.rviz")
 		],
@@ -139,11 +139,9 @@ def launch_setup(context, *args, **kwargs):
 				{"wait_preprocessing" : False},
 				{"fixed_frame" : "map"},
 
-				{"CAD_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-walls.dae")},
-				{"CAD_0_color" : [0.82, 0.86, 0.86]},
+				{"CAD_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/$(var scenario).dae")},
+				{"CAD_0_color" : [0.62, 0.66, 0.66]},
 
-				{"CAD_1" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-outlets.dae")},
-				{"CAD_1_color" : [0.82, 0.16, 0.16]},
 
 				{"occupancy3D_data" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/OccupancyGrid3D.csv")},
 				
@@ -163,10 +161,10 @@ def launch_setup(context, *args, **kwargs):
 			parameters=[
 				{"verbose" : False},
 				{"player_freq" : 2.0},
-				{"initial_iteration" : 40},
+				{"initial_iteration" : 600},
 				{"num_simulators" : 1},
 
-				{"simulation_data_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/A4")},
+				{"simulation_data_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/B4")},
 				{"occupancyFile" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/OccupancyGrid3D.csv")},
 
 				{"allow_looping" : True},
@@ -237,6 +235,7 @@ def launch_setup(context, *args, **kwargs):
 		]
 	)
 
+	
 	basic_sim = Node(
 		package="basic_sim",
 		executable="basic_sim",
@@ -250,13 +249,13 @@ def launch_setup(context, *args, **kwargs):
 
 	returnList = []
 	returnList.extend(gaden)
+	returnList.append(basic_sim)
+	returnList.append(nav2)
 	returnList.extend(anemometer)
 	returnList.extend(PID)
 	returnList.append(gmrf_wind)
-	returnList.extend(gsl)
-	returnList.append(basic_sim)
-	returnList.append(nav2)
 	#returnList.append(rviz)
+	returnList.extend(gsl)
 
 	return returnList
 
@@ -271,23 +270,19 @@ def generate_launch_description():
         
 		SetLaunchConfiguration(
             name="source_location_x",
-            value=["3.10"],
+            value=["-3.20"],
         ),
 		SetLaunchConfiguration(
             name="source_location_y",
-            value=["4.30"],
+            value=["-3.30"],
         ),
 		SetLaunchConfiguration(
             name="source_location_z",
-            value=["0.50"],
+            value=["-0.50"],
         ),
 		SetLaunchConfiguration(
             name="robot_name",
             value=["PioneerP3DX"],
-        ),
-		SetLaunchConfiguration(
-            name="floor_height",
-            value=["0.0"],
         ),
     ]
     

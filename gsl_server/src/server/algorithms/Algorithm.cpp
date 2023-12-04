@@ -28,6 +28,16 @@ namespace GSL
 
         localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
                                                                                 std::bind(&Algorithm::localizationCallback, this, _1));
+		
+
+		//extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
+		static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.max_search_time + 10), //extra time to make sure this only happens if the node is deadlocked 
+		[]()
+		{
+			rclcpp::shutdown();
+			GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
+			raise(SIGTRAP);
+		});
 
         GSL_INFO("INITIALIZATON COMPLETED");
     }

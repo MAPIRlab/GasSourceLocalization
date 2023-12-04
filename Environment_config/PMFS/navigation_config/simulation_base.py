@@ -27,6 +27,17 @@ def launch_arguments():
 
 def launch_setup(context, *args, **kwargs):
 
+	basic_sim = Node(
+		package="basic_sim",
+		executable="basic_sim",
+		#prefix = "xterm -e gdb --args",
+		parameters=[
+			{"deltaTime": 0.1},
+			{"speed": 5.0},
+			{"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/B/sim.yaml")}
+			],
+	)
+
 	coppelia = [
 		IncludeLaunchDescription(
 			PythonLaunchDescriptionSource(
@@ -55,24 +66,11 @@ def launch_setup(context, *args, **kwargs):
 		)
 	]
 	
-	nav2 = IncludeLaunchDescription(
-			PythonLaunchDescriptionSource(
-					os.path.join(
-						get_package_share_directory("pmfs_env"),
-						"navigation_config/nav2_launch.py",
-					)
-				),
-				launch_arguments={
-					"scenario": LaunchConfiguration("scenario"),
-					"namespace" : LaunchConfiguration("robot_name")
-				}.items(),
-		)
-	
 	rviz = Node(
 		package="rviz2",
 		executable="rviz2",
 		name="rviz",
-		prefix="xterm -e",
+		#prefix="xterm -e",
 		arguments=[
 			"-d" + os.path.join(get_package_share_directory("pmfs_env"), "gaden.rviz")
 		],
@@ -81,7 +79,7 @@ def launch_setup(context, *args, **kwargs):
 
 	returnList = []
 	#returnList.extend(coppelia)
-	#returnList.append(nav2)
+	#returnList.append(basic_sim)
 	returnList.append(rviz)
 
 	return returnList

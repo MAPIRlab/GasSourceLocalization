@@ -80,7 +80,6 @@ Visualization Manager:
       Name: Environment_CAD
       Namespaces:
         part_0: true
-        part_1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -165,7 +164,28 @@ Visualization Manager:
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
       Draw Behind: false
-      Enabled: true
+      Enabled: false
+      Name: GlobalCostMap
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/global_costmap/costmap
+      Update Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/global_costmap/costmap_updates
+      Use Timestamp: false
+      Value: false
+    - Alpha: 0.699999988079071
+      Class: rviz_default_plugins/Map
+      Color Scheme: costmap
+      Draw Behind: false
+      Enabled: false
       Name: LocalCostMap
       Topic:
         Depth: 5
@@ -181,7 +201,7 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /PioneerP3DX/local_costmap/costmap_updates
       Use Timestamp: false
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
@@ -290,7 +310,7 @@ Visualization Manager:
       Enabled: true
       Name: GMRF
       Namespaces:
-        {}
+        WindVector: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -299,7 +319,7 @@ Visualization Manager:
         Value: /PioneerP3DX/arrowMarkers
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Source
       Namespaces:
         {}
@@ -310,12 +330,12 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/probability_markers
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Hit
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -384,25 +404,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 12.157605171203613
+      Distance: 7.420153617858887
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 4.612977504730225
-        Y: 2.2692360877990723
-        Z: 3.1987264156341553
+        X: 2.268752336502075
+        Y: 3.494602680206299
+        Z: 1.9760308265686035
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5547963380813599
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.148577928543091
+      Yaw: 3.148573160171509
     Saved: ~
 Window Geometry:
   Displays:
