@@ -36,7 +36,7 @@ set(USE_GUI ON)
 
 
 if(GSL_DEBUG)
-  add_definitions(-DGSL_DEBUG)
+  add_definitions(-DGSL_DEBUG=1)
   set(CMAKE_CXX_FLAGS "-O0 ${CMAKE_CXX_FLAGS}")
 else()
   set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")

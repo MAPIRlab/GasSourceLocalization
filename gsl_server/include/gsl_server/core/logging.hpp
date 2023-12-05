@@ -17,7 +17,7 @@
 #define GSL_TRACE(...)
 #endif
 
-#ifdef GSL_DEBUG
+#if GSL_DEBUG
 #define GSL_ASSERT_MSG(cnd, msg)                                                                                                                     \
     {                                                                                                                                                \
         if (!(cnd))                                                                                                                                  \

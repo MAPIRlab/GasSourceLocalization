@@ -1,0 +1,37 @@
+<launch>
+	<arg name="scenario" default="E" />
+	<arg name="simulation" default="W1" />
+	<arg name="generateCoppeliaScene" default="False"/>
+    
+    <node pkg="gaden_preprocessing" exec="preprocessing" name="preprocessing" output="screen" >
+     #Cell size
+     <param name="cell_size" value="0.1"/>
+     #CAD models of the enviroment (.stl)
+     <param name="model_0" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/MAPIRlab_tables.stl"/>
+     <param name="model_1" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/MAPIRlab_walls.stl"/>
+     <param name="model_2" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/MAPIRlab_wardrobes.stl"/>
+
+    #CAD model of the outlets (.stl)
+     <param name="outlets_model_0" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/MAPIRlab_windows.stl"/>
+     <param name="outlets_model_1" value="$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/MAPIRlab_doors.stl"/>
+
+        #3D Location of a point in free-space
+     <param name="empty_point_x" value="-2.0"/>
+     <param name="empty_point_y" value="2.0"/>
+     <param name="empty_point_z" value="0.3"/>
+
+     <param name="floor_height" value="0.1"/>
+
+     #Wind Data (the node will append _i.csv to the name that is specified here)
+     <param name="uniformWind" value="false"/>
+     <param name="wind_files" value="$(find-pkg-share pmfs_env)/$(var scenario)/wind_simulations/$(var simulation)/wind_at_cell_centers"/>
+
+     #Where to write the output files
+		<param name="output_path" value="$(find-pkg-share pmfs_env)/$(var scenario)" />
+        <param name="generateCoppeliaScene" value="$(var generateCoppeliaScene)" />
+    </node>
+
+	<include file="$(find-pkg-share pmfs_env)/navigation_config/conditional_coppelia_launch.py" >
+      <arg name="launchCoppelia" value="$(var generateCoppeliaScene)"/>
+    </include>  
+</launch>

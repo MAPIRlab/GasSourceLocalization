@@ -63,7 +63,7 @@ def launch_setup(context, *args, **kwargs):
 					{"th_wind_present": 0.02},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
 					{"ground_truth_y": parse_substitution("$(var source_location_y)")},
-					{"results_file": parse_substitution("Results/C4/$(var method).csv")},
+					{"results_file": parse_substitution("Results/D4/$(var method).csv")},
 					
 					{"scale": 25},
 					{"markers_height": 0.2},
@@ -165,7 +165,7 @@ def launch_setup(context, *args, **kwargs):
 				{"initial_iteration" : 600},
 				{"num_simulators" : 1},
 
-				{"simulation_data_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/C4")},
+				{"simulation_data_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/D4")},
 				{"occupancyFile" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/OccupancyGrid3D.csv")},
 
 				{"allow_looping" : True},

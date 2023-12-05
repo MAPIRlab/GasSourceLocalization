@@ -83,7 +83,7 @@ def launch_setup(context, *args, **kwargs):
 
 					#PMFS
 						# Hit probabilities
-					{"headless": False},
+					{"headless": True},
 					{"max_updates_per_stop": 5},
 					{"kernel_sigma": 1.5},
 					{"kernel_stretch_constant": 1.5},
@@ -91,7 +91,7 @@ def launch_setup(context, *args, **kwargs):
 					{"confidence_sigma_spatial": 1.0},
 					{"confidence_measurement_weight": 1.0},
 						#Filament simulation
-					{"useWindGroundTruth": False},
+					{"useWindGroundTruth": True},
 					{"stepsSourceUpdate": 3},
 					{"maxRegionSize": 5},
 					{"sourceDiscriminationPower": 0.2},
@@ -270,11 +270,11 @@ def generate_launch_description():
         
 		SetLaunchConfiguration(
             name="source_location_x",
-            value=["2.20"],
+            value=["4.20"],
         ),
 		SetLaunchConfiguration(
             name="source_location_y",
-            value=["2.30"],
+            value=["6.00"],
         ),
 		SetLaunchConfiguration(
             name="source_location_z",

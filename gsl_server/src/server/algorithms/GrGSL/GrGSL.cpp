@@ -523,8 +523,8 @@ namespace GSL
         double error = sqrt(pow(resultLogging.source_pose.x - sourceLocation.x, 2) + pow(resultLogging.source_pose.y - sourceLocation.y, 2));
         double errorAll = sqrt(pow(resultLogging.source_pose.x - sourceLocationAll.x, 2) + pow(resultLogging.source_pose.y - sourceLocationAll.y, 2));
         
-		std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}\n", (int)result, search_t, error);
-        GSL_INFO_COLOR(fmt::terminal_color::cyan, "{}", resultString);
+		std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}", (int)result, search_t, error);
+        GSL_INFO_COLOR(fmt::terminal_color::blue, "{}", resultString);
 		
         // Save to file
         if (resultLogging.results_file != "")

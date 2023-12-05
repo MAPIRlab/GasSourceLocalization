@@ -1,8 +1,8 @@
 <launch>
    <arg name="scenario" default="D" />
    <arg name="simulation" default="2,5-1,4_0.05ms" />
-   <arg name="source_location_x" default="2.20" />
-   <arg name="source_location_y" default="2.30" />
+   <arg name="source_location_x" default="4.20" />
+   <arg name="source_location_y" default="6.00" />
    <arg name="source_location_z" default="0.50" />
    <arg name="gas_type" default="0" />
    

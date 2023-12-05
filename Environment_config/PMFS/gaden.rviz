@@ -319,10 +319,10 @@ Visualization Manager:
         Value: /PioneerP3DX/arrowMarkers
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Source
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -330,7 +330,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/probability_markers
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Hit
@@ -404,25 +404,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 7.420153617858887
+      Distance: 14.022424697875977
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.268752336502075
-        Y: 3.494602680206299
-        Z: 1.9760308265686035
+        X: 0.22947314381599426
+        Y: -0.5108323693275452
+        Z: 2.6959471702575684
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.3897966146469116
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 3.148573160171509
+      Yaw: 1.593568205833435
     Saved: ~
 Window Geometry:
   Displays:
