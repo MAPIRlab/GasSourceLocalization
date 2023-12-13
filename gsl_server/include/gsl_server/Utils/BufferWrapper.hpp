@@ -6,8 +6,7 @@ class BufferWrapper
 {
 public:
     BufferWrapper(rclcpp::Clock::SharedPtr clock) : buffer(clock), tf_listener(buffer)
-    {
-    }
+    {}
 
     tf2_ros::Buffer buffer;
 

@@ -58,7 +58,7 @@ def launch_setup(context, *args, **kwargs):
 					{'use_sim_time': False},	
 					{"max_search_time": 300.0},
 					{"robot_location_topic": "ground_truth"},
-					{"stop_and_measure_time": 0.5},
+					{"stop_and_measure_time": 0.4},
 					{"th_gas_present": 0.1},
 					{"th_wind_present": 0.02},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
@@ -97,7 +97,7 @@ def launch_setup(context, *args, **kwargs):
 					{"sourceDiscriminationPower": 0.2},
 					{"refineFraction": 0.25},
 					{"deltaTime": 0.1},
-					{"noiseSTDev": 0.5},
+					{"noiseSTDev": 0.25},
 					{"iterationsToRecord": 200},
 					{"maxWarmupIterations": 500},
 
@@ -242,7 +242,7 @@ def launch_setup(context, *args, **kwargs):
 		#prefix = "xterm -e gdb --args",
 		parameters=[
 			{"deltaTime": 0.1},
-			{"speed": 5.0},
+			{"speed": 10.0},
 			{"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/sim.yaml")}
 			],
 	)

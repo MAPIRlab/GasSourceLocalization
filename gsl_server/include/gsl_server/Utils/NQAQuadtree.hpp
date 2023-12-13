@@ -4,6 +4,9 @@
 #include <memory>
 #include <gsl_server/core/Vectors.hpp>
 
+// NQA Quadtree stands for Not Quite A Quadtree, as we are allowing some nodes to have 2 children rather than 4 under special circumstances
+// Why? Well, why not?
+
 namespace GSL::Utils::NQA
 {
     class Quadtree;
@@ -11,6 +14,7 @@ namespace GSL::Utils::NQA
     struct Node
     {
         friend class Quadtree;
+        Node(Quadtree* qt, GSL::Vector2Int _origin, GSL::Vector2Int _size, const std::vector<std::vector<uint8_t>>& map);
 
         GSL::Vector2Int origin;
         GSL::Vector2Int size;
@@ -20,6 +24,8 @@ namespace GSL::Utils::NQA
 
         bool isLeaf;
         uint8_t value; // all "cells" (or pixels, or whatever) in this node have the same value in the image
+        
+        //children are arranged in this order: top-left, top-right, bottom-left, bottom-right
         std::array<std::shared_ptr<Node>, 4> children;
 
         static std::shared_ptr<Node> createNode(Quadtree* qt, GSL::Vector2Int _origin, GSL::Vector2Int _size,
@@ -27,25 +33,25 @@ namespace GSL::Utils::NQA
 
         bool subdivide(); // returns false if it is not a leaf or is too small to subdivide
 
-        Node(Quadtree* qt, GSL::Vector2Int _origin, GSL::Vector2Int _size, const std::vector<std::vector<uint8_t>>& map);
 
     private:
         const std::vector<std::vector<uint8_t>>& map;
         bool initialize();
     };
 
-    // Not-Quite-A-Quadtree. Some nodes have two children instead of 4!
     class Quadtree
     {
     public:
-        std::shared_ptr<Node> root;
-
-        std::vector<std::weak_ptr<Node>> leaves;
-
         Quadtree(const std::vector<std::vector<uint8_t>>& map);
+        
+        std::shared_ptr<Node> root; //there is no global collection of nodes, each node owns its direct children
+        std::vector<std::weak_ptr<Node>> leaves;
 
         const std::vector<std::vector<uint8_t>> map;
 
+        // returns a vector that contains Nodes created by fusing free leaves together to create larger blocks
+        // *tries* to keep the resulting nodes square-ish, and never exceeds maxSize in either dimension
+        // ultimately, this a greedy heuristic method that is not guaranteed to generate the minimum number of nodes possible for the given size
         std::vector<Node> fusedLeaves(int maxSize);
     };
 } // namespace GSL::Utils::NQA

@@ -18,13 +18,15 @@ namespace GSL
 
         virtual void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
 
+        virtual void OnUpdate() override;
+
     protected:
         double surgeStepSize;
         virtual void declareParameters() override;
 
         void setExplorationGoal();
-        void setSurgeGoal(double downWind_direction);
-        virtual void setCastGoal(double downWind_direction) = 0;
+        void setSurgeGoal(double upWind_direction);
+        virtual void setCastGoal(double upWind_direction) = 0;
 
         std::deque<float> lastConcentrationReadings;
         float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg) override;

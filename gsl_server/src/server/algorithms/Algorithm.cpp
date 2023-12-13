@@ -3,6 +3,7 @@
 #include <gsl_server/Utils/RosUtils.hpp>
 #include <angles/angles.h>
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include <fstream>
 
 namespace GSL
 {
@@ -141,7 +142,6 @@ namespace GSL
         double search_t = time_spent.seconds();
 
         // 2. Search distance
-        // Get distance from array of path followed (vector of PoseWithCovarianceStamped
         double search_d = 0;
 
         const auto& robot_poses_vector = resultLogging.robot_poses_vector;
@@ -186,14 +186,18 @@ namespace GSL
             fmt::format("RESULT IS: Success={}, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}\n", (int)result, search_d, nav_d, search_t, nav_t);
         GSL_INFO("{}", result_string);
 
-        if (FILE* output_file = fopen(resultLogging.results_file.c_str(), "w"))
+        std::ofstream output_file(resultLogging.results_file, std::ios_base::app);
+        if (output_file.is_open())
         {
-            fprintf(output_file, "%s", result_string.c_str());
+            output_file << "---------------------------------------------------\n";
+            for (const auto& prox : resultLogging.proximityResult)
+                output_file << prox.time <<" "<< prox.distance <<"\n";
+
+#if 0
             for (PoseWithCovarianceStamped p : robot_poses_vector)
-            {
-                fprintf(output_file, "%f, %f\n", p.pose.pose.position.x, p.pose.pose.position.y);
-            }
-            fclose(output_file);
+                output_file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
+#endif
+            output_file.close();
         }
         else
             GSL_ERROR("Unable to open Results file at: {}", resultLogging.results_file.c_str());

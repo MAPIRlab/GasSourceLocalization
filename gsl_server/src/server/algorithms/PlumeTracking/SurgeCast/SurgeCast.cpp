@@ -34,7 +34,7 @@ namespace GSL
             return;
         }
 
-        GSL_INFO("Cast");
+        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Cast");
 
         NavigateToPose::Goal goal;
         do

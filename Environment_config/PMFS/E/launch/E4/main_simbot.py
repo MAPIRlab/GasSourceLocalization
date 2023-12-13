@@ -14,8 +14,8 @@ from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, SetLau
 from launch.substitutions import LaunchConfiguration
 from launch.frontend.parse_substitution import parse_substitution
 from launch_ros.actions import Node, PushRosNamespace
-from launch.conditions import IfCondition
 from ament_index_python.packages import get_package_share_directory
+from launch.conditions import IfCondition
 
 def launch_arguments():
 	return [
@@ -24,18 +24,19 @@ def launch_arguments():
 				"launchCoppelia", default_value=["True"],
 			),
 			DeclareLaunchArgument(
-				"scenario",	default_value=["A"],
+				"scenario",	default_value=["E"],
 			),
 			DeclareLaunchArgument(
-				"method",	default_value=["GrGSL"],
+				"method",	default_value=["PMFS"],
 			),
 			DeclareLaunchArgument(
-				"use_infotaxis", default_value=["False"],
+				"use_infotaxis",	default_value=["True"],
 			),
 	]
 
 def launch_setup(context, *args, **kwargs):
 	
+	method = LaunchConfiguration("method").perform(context)
 	gsl = [
 		GroupAction(actions=[
 			PushRosNamespace(LaunchConfiguration("robot_name")),
@@ -51,17 +52,19 @@ def launch_setup(context, *args, **kwargs):
 				package="gsl_server",
 				executable="gsl_actionserver_node",
 				name="gsl_node",
+				#prefix="xterm -e gdb -batch -ex run --args",
+				#prefix="xterm -e",
 				parameters=[
 					# Common
+					{'use_sim_time': False},	
 					{"max_search_time": 300.0},
-										{'use_sim_time': False},	
 					{"robot_location_topic": "ground_truth"},
-					{"stop_and_measure_time": 0.5},
-					{"th_gas_present": 0.2},
-					{"th_wind_present": 0.1},
+					{"stop_and_measure_time": 0.4 if method == "PMFS" else 2.0},
+					{"th_gas_present": 0.1},
+					{"th_wind_present": 0.02},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
 					{"ground_truth_y": parse_substitution("$(var source_location_y)")},
-					{"results_file": parse_substitution("Results/A1/$(var method).csv")},
+					{"results_file": parse_substitution("Results/E4/$(var method).csv")},
 					
 					{"scale": 25},
 					{"markers_height": 0.2},
@@ -74,12 +77,14 @@ def launch_setup(context, *args, **kwargs):
 					{"convergence_steps": 5},
 					
 					#GrGSL
+					{"useDiffusionTerm": True},
 					{"stdev_hit": 1.0},
 					{"stdev_miss": 1.2},
 					{"infoTaxis": parse_substitution("$(var use_infotaxis)")},
 
 					#PMFS
 						# Hit probabilities
+					{"headless": True},
 					{"max_updates_per_stop": 5},
 					{"kernel_sigma": 1.5},
 					{"kernel_stretch_constant": 1.5},
@@ -87,7 +92,7 @@ def launch_setup(context, *args, **kwargs):
 					{"confidence_sigma_spatial": 1.0},
 					{"confidence_measurement_weight": 1.0},
 						#Filament simulation
-					{"useWindGroundTruth": True},
+					{"useWindGroundTruth": False},
 					{"stepsSourceUpdate": 3},
 					{"maxRegionSize": 5},
 					{"sourceDiscriminationPower": 0.2},
@@ -103,7 +108,6 @@ def launch_setup(context, *args, **kwargs):
 			),
 		])
 	]
-	
 	nav2 = IncludeLaunchDescription(
 			PythonLaunchDescriptionSource(
 					os.path.join(
@@ -116,12 +120,12 @@ def launch_setup(context, *args, **kwargs):
 					"namespace" : LaunchConfiguration("robot_name")
 				}.items(),
 		)
-
+	
 	rviz = Node(
 		package="rviz2",
 		executable="rviz2",
 		name="rviz",
-		prefix="xterm -e",
+		prefix="xterm -hold -e",
 		arguments=[
 			"-d" + os.path.join(get_package_share_directory("pmfs_env"), "gaden.rviz")
 		],
@@ -137,11 +141,9 @@ def launch_setup(context, *args, **kwargs):
 				{"wait_preprocessing" : False},
 				{"fixed_frame" : "map"},
 
-				{"CAD_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-walls.dae")},
-				{"CAD_0_color" : [0.82, 0.86, 0.86]},
+				{"CAD_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/$(var scenario).dae")},
+				{"CAD_0_color" : [0.62, 0.66, 0.66]},
 
-				{"CAD_1" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/cad_models/ROOMS-outlets.dae")},
-				{"CAD_1_color" : [0.82, 0.16, 0.16]},
 
 				{"occupancy3D_data" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/OccupancyGrid3D.csv")},
 				
@@ -161,10 +163,10 @@ def launch_setup(context, *args, **kwargs):
 			parameters=[
 				{"verbose" : False},
 				{"player_freq" : 2.0},
-				{"initial_iteration" : 40},
+				{"initial_iteration" : 600},
 				{"num_simulators" : 1},
 
-				{"simulation_data_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/A1")},
+				{"simulation_data_0" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/gas_simulations/E4")},
 				{"occupancyFile" : parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/OccupancyGrid3D.csv")},
 
 				{"allow_looping" : True},
@@ -242,18 +244,19 @@ def launch_setup(context, *args, **kwargs):
 		parameters=[
 			{"deltaTime": 0.1},
 			{"speed": 5.0},
-			{"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/sim.yaml")}
+			{"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/$(var scenario)/launch/E4/sim.yaml")}
 			],
 	)
-
+	
 	returnList = []
 	returnList.extend(gaden)
+	returnList.append(basic_sim)
+	returnList.append(nav2)
 	returnList.extend(anemometer)
 	returnList.extend(PID)
 	returnList.append(gmrf_wind)
+	#returnList.append(rviz)
 	returnList.extend(gsl)
-	returnList.append(nav2)
-	returnList.append(basic_sim)
 
 	return returnList
 
@@ -268,23 +271,19 @@ def generate_launch_description():
         
 		SetLaunchConfiguration(
             name="source_location_x",
-            value=["5.00"],
+            value=["-1.00"],
         ),
 		SetLaunchConfiguration(
             name="source_location_y",
-            value=["6.20"],
+            value=["-0.90"],
         ),
 		SetLaunchConfiguration(
             name="source_location_z",
-            value=["0.50"],
+            value=["1.00"],
         ),
 		SetLaunchConfiguration(
             name="robot_name",
             value=["PioneerP3DX"],
-        ),
-		SetLaunchConfiguration(
-            name="floor_height",
-            value=["0.0"],
         ),
     ]
     

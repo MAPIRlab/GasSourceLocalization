@@ -65,6 +65,13 @@ namespace GSL
             double navigationTime = -1;
             std::string results_file;
             std::string path_file;
+            
+            struct ProximityResult
+            {
+                double time = 0;
+                double distance = 100;
+            };
+            std::vector<ProximityResult> proximityResult;
         };
         ResultLogging resultLogging;
         GSLResult currentResult = GSLResult::Running;

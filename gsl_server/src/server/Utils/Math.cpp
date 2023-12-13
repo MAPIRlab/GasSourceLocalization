@@ -5,6 +5,8 @@
 
 namespace GSL::Utils
 {
+    static thread_local std::mt19937 RNGengine;
+
     double lerp(double start, double end, double proportion)
     {
         if (proportion < 0 || std::isnan(proportion))
@@ -43,7 +45,6 @@ namespace GSL::Utils
 
     double randomFromGaussian(double mean, double stdev)
     {
-        static thread_local std::mt19937 engine;
 
         static thread_local std::normal_distribution<> dist{0, stdev};
         static thread_local double previousStdev = stdev;
@@ -54,15 +55,14 @@ namespace GSL::Utils
             previousStdev = stdev;
         }
 
-        return mean + dist(engine);
+        return mean + dist(RNGengine);
     }
 
     double uniformRandom(double min, double max)
     {
-        static thread_local std::mt19937 engine;
         static thread_local std::uniform_real_distribution<double> distribution{0.0, 0.999};
 
-        return min + distribution(engine) * (max - min);
+        return min + distribution(RNGengine) * (max - min);
     }
 
     double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b)

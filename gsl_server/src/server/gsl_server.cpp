@@ -82,7 +82,7 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
     }
     else
     {
-        GSL_ERROR("Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'grid', 'PMFS'",
+        GSL_ERROR("Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'GrGSL', 'PMFS'",
                   goal_handle->get_goal()->gsl_method.c_str());
         actionResult->success = false;
         goal_handle->abort(actionResult);

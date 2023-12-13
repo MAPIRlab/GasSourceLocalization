@@ -67,13 +67,12 @@ namespace GSL::Utils::NQA
         // unlike a proper quadtree, we can have a node that only has two children, rather than four. This can happen if we have a non-square cell
         // that reaches the minimum size on one of the dimensions
 
-        // if it's like this          we divide it like this  and keep the *bottom* children
+        // if it's like this          we divide it like this and consider these the *bottom* children (for array-indexing purposes)
         //   -------------              -------------
         //   |           |              |     |     |
         //   -------------              -------------
-        //  we keep
 
-        // if it's like this          we divide it like this and keep the *left* children
+        // if it's like this          we divide it like this and consider these the *left* children (for array-indexing purposes)
         //  ----------                   ----------
         //  |        |                   |        |
         //  |        |                   |        |
@@ -149,7 +148,7 @@ namespace GSL::Utils::NQA
 
     std::vector<Node> Quadtree::fusedLeaves(int maxSize)
     {
-        std::list<Node> free_leaves; //__copies__ of all the leaves that correspond to free parts of the map. Not actually part of the tree!
+        std::list<Node> free_leaves; //**copies** of all the leaves that correspond to free parts of the map. Not actually part of the tree!
 
 #if 1
         // use the existing leaves
@@ -186,7 +185,7 @@ namespace GSL::Utils::NQA
             Node* leaf = &(*itr);
             Vector2Int start = leaf->origin;
             Vector2Int end = leaf->origin + leaf->size;
-#pragma omp parallel for collapse(2)
+            #pragma omp parallel for collapse(2)
             for (int r = start.x; r < end.x; r++)
             {
                 for (int c = start.y; c < end.y; c++)

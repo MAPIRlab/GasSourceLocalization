@@ -17,12 +17,26 @@ namespace GSL
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<MovingStatePlumeTracking>(this);
         stateMachine.forceSetState(waitForMapState.get());
+        start_time = node->now();
     }
 
     void PlumeTracking::declareParameters()
     {
         Algorithm::declareParameters();
         surgeStepSize = getParam<double>("step", 1);
+    }
+    
+    void PlumeTracking::OnUpdate()
+    {
+        Algorithm::OnUpdate();
+        
+        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x;
+        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y;
+        double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
+        
+        constexpr double rewrite_distance = 0.5;
+        if(resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance-rewrite_distance))
+            resultLogging.proximityResult.push_back({(node->now()-start_time).seconds(), dist});
     }
 
     void PlumeTracking::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
@@ -45,12 +59,9 @@ namespace GSL
         }
     }
 
-    void PlumeTracking::setSurgeGoal(double downWind_direction)
+    void PlumeTracking::setSurgeGoal(double upwind_dir)
     {
-        GSL_INFO("Surge");
-
-        // Initially, get Upwind direction with respect reference /map
-        double upwind_dir = angles::normalize_angle(downWind_direction + 3.14159);
+        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Surge");
 
         // Set goal in the Upwind direction
         NavigateToPose::Goal goal;
@@ -80,7 +91,7 @@ namespace GSL
 
     void PlumeTracking::setExplorationGoal()
     {
-        GSL_INFO("Exploration");
+        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Exploration");
         NavigateToPose::Goal goal;
         goal.pose = getRandomPoseInMap();
 

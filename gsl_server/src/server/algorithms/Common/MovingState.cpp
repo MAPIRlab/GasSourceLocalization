@@ -3,10 +3,15 @@
 #include <gsl_server/core/GSLResult.hpp>
 #include <gsl_server/algorithms/Algorithm.hpp>
 
+#define NAVIGATION_FIXES 0 // enables some navigation checks that should be handled by nav2 directly, but can cause problems if it is not correcly configured
+                           // honestly, don't use this, just configure nav2 properly
+
 namespace GSL
 {
+#if NAVIGATION_FIXES
     static constexpr int max_navigation_time = 20;
-    static constexpr int8_t lethal_cost = 10;
+    static constexpr int8_t lethal_cost = 70;
+#endif 
 
     MovingState::MovingState(Algorithm* _algorithm) : State(_algorithm)
     {
@@ -45,13 +50,15 @@ namespace GSL
     }
 
     void MovingState::OnUpdate()
-    {
+    {  
+#if NAVIGATION_FIXES   
         if ((algorithm->node->now() - startTime).seconds() > max_navigation_time)
         {
             GSL_ERROR("Timed out trying to reach target. Cancelling navigation");
             nav_client->async_cancel_all_goals();
             Fail();
         }
+#endif
     }
 
     void MovingState::OnExitState(State* next)
@@ -161,7 +168,11 @@ namespace GSL
     bool MovingState::checkGoal(const NavigateToPose::Goal& goal)
     {
         Vector2 goalPosition = {goal.pose.pose.position.x, goal.pose.pose.position.y};
-        if(!algorithm->isPointInsideMapBounds(goalPosition) || !algorithm->sampleCostmap(goalPosition) > lethal_cost)
+        if(!algorithm->isPointInsideMapBounds(goalPosition)       
+#if NAVIGATION_FIXES
+            || !algorithm->sampleCostmap(goalPosition) > lethal_cost
+#endif
+            )
             return false;
 
         PoseStamped start;
