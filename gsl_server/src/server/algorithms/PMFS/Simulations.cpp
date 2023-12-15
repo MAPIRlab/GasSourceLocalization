@@ -26,7 +26,7 @@ namespace GSL::PMFS_internal
 
     void Simulations::updateSourceProbability(float refineFraction)
     {
-        GSL_INFO("Started simulations. Might take a while!");
+        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Started simulations. Might take a while!");
         Utils::Time::Stopwatch stopwatch;
         const Settings::SimulationSettings& setts = pmfs->settings.simulation;
         std::vector<NQA::Node> localCopyLeaves = QTleaves;
@@ -209,7 +209,7 @@ namespace GSL::PMFS_internal
                                                int timesteps, float deltaTime, float noiseSTDev)
     {
 
-        const int numFilamentsIteration = 5;
+        constexpr int numFilamentsIteration = 5;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
 
         std::vector<std::vector<bool>> updated(hitMap.size(), std::vector<bool>(hitMap[0].size(), false));

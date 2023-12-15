@@ -161,7 +161,7 @@ namespace GSL
             {
                 try
                 {
-                    geometry_msgs::msg::TransformStamped tfm = tf_buffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+                    tfm = tf_buffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
                     has_tf = true;
                 }
                 catch (std::exception& e)

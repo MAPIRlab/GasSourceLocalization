@@ -27,6 +27,7 @@ def launch_setup(context, *args, **kwargs):
 	my_dir = get_package_share_directory("pmfs_env")
 	map_file = os.path.join(
 		my_dir,
+		"scenarios",
 		LaunchConfiguration("scenario").perform(context),
 		"occupancy.yaml",
 	)
