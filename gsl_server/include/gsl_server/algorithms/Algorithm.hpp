@@ -90,6 +90,7 @@ namespace GSL
         bool isPointInsideMapBounds(const Vector2& point) const;
         bool isPointFree(const Vector2& point);
         int8_t sampleCostmap(const Vector2& point);
+        void updateProximityResults();
 
         template <typename T> T getParam(const std::string& name, T defaultValue)
         {

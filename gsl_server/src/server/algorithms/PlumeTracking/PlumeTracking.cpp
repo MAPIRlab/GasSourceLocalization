@@ -29,14 +29,7 @@ namespace GSL
     void PlumeTracking::OnUpdate()
     {
         Algorithm::OnUpdate();
-        
-        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x;
-        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y;
-        double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
-        
-        constexpr double rewrite_distance = 0.5;
-        if(resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance-rewrite_distance))
-            resultLogging.proximityResult.push_back({(node->now()-start_time).seconds(), dist});
+        updateProximityResults();
     }
 
     void PlumeTracking::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
@@ -66,7 +59,9 @@ namespace GSL
         // Set goal in the Upwind direction
         NavigateToPose::Goal goal;
         double current_step = surgeStepSize;
-        do
+
+        constexpr int safetyLimit = 10;
+        for(int i = 0; i<safetyLimit;i++)
         {
             goal.pose.header.frame_id = "map";
             goal.pose.header.stamp = node->now();
@@ -82,7 +77,9 @@ namespace GSL
                 return;
             }
             current_step = current_step - 0.05;
-        } while (!movingState->checkGoal(goal));
+            if(movingState->checkGoal(goal))
+                break;
+        }
 
         // Send goal to the Move_Base node for execution
         dynamic_cast<MovingStatePlumeTracking*>(movingState.get())->currentMovement = PTMovement::FollowPlume;

@@ -52,15 +52,6 @@ namespace GSL
 
     void GrGSL::initializeMap()
     {
-        // wait until we know where the robot is
-        rclcpp::Rate rate(1);
-        while (resultLogging.robot_poses_vector.size() == 0)
-        {
-            rate.sleep();
-            rclcpp::spin_some(node);
-            GSL_INFO("Waiting to hear from localization topic: {}", localization_sub->get_topic_name());
-        }
-
         // i is y, j is x
 
         std::vector<std::vector<bool>> boolMap(map.info.height, std::vector<bool>(map.info.width));

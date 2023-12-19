@@ -21,14 +21,22 @@ namespace GSL
         // Subscribers
         //------------
         using namespace std::placeholders;
+        localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
+                                                                                std::bind(&Algorithm::localizationCallback, this, _1));
+        rclcpp::Rate rate(1);
+        while (resultLogging.robot_poses_vector.size() == 0)
+        {
+            rate.sleep();
+            rclcpp::spin_some(node);
+            GSL_INFO("Waiting to hear from localization topic: {}", localization_sub->get_topic_name());
+        }
+
         gas_sub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
                                                                             std::bind(&Algorithm::gasCallback, this, _1));
 
         wind_sub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
             getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
 
-        localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
-                                                                                std::bind(&Algorithm::localizationCallback, this, _1));
 		
 
 		//extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
@@ -40,7 +48,8 @@ namespace GSL
 			raise(SIGTRAP);
 		});
 
-        GSL_INFO("INITIALIZATON COMPLETED");
+        start_time = node->now();
+        GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
     }
 
     void Algorithm::declareParameters()
@@ -64,6 +73,12 @@ namespace GSL
 
     bool Algorithm::hasEnded()
     {
+        if((node->now()-start_time).seconds() > resultLogging.max_search_time)
+        {
+            saveResultsToFile(GSLResult::Failure);
+            return true;
+        }
+
         return getResult() != GSLResult::Running;
     }
 
@@ -189,6 +204,7 @@ namespace GSL
         std::ofstream output_file(resultLogging.results_file, std::ios_base::app);
         if (output_file.is_open())
         {
+            updateProximityResults();
             output_file << "---------------------------------------------------\n";
             for (const auto& prox : resultLogging.proximityResult)
                 output_file << prox.time <<" "<< prox.distance <<"\n";
@@ -270,8 +286,10 @@ namespace GSL
         geometry_msgs::msg::PoseStamped p;
         p.header.frame_id = "map";
         p.header.stamp = node->now();
-        double randomPoseDistance = 1;
-        do
+        double randomPoseDistance = 0.5;
+        
+        constexpr int safetyLimit = 10;
+        for(int i = 0; i<safetyLimit;i++)
         {
             p.pose.position.x = Utils::uniformRandom(currentRobotPose.pose.pose.position.x - randomPoseDistance,
                                                      currentRobotPose.pose.pose.position.x + randomPoseDistance);
@@ -284,7 +302,9 @@ namespace GSL
             }
             idx++;
             goal.pose = p;
-        } while (!movingState->checkGoal(goal));
+            if(movingState->checkGoal(goal))
+                return p;
+        }
 
         return p;
     }
@@ -309,6 +329,17 @@ namespace GSL
         int v = (point.y - map.info.origin.position.y) / map.info.resolution;
 
         return map.data[v * map.info.width + h];
+    }
+
+    void Algorithm::updateProximityResults()
+    {
+        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x;
+        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y;
+        double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
+        
+        constexpr double rewrite_distance = 0.5;
+        if(resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance-rewrite_distance))
+            resultLogging.proximityResult.push_back({(node->now()-start_time).seconds(), dist});
     }
 
 } // namespace GSL

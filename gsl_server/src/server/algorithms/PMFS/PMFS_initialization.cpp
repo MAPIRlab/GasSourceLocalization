@@ -98,14 +98,6 @@ namespace GSL
 
     void PMFS::initializeMap()
     {
-        rclcpp::Rate rate(1);
-        while (resultLogging.robot_poses_vector.size() == 0)
-        {
-            rate.sleep();
-            rclcpp::spin_some(node);
-            GSL_INFO("Waiting to hear from localization topic: {}", localization_sub->get_topic_name());
-        }
-
         std::vector<std::vector<uint8_t>> mapa(map.info.height, std::vector<uint8_t>(map.info.width));
         int index = 0;
         for (int i = 0; i < mapa.size(); i++)

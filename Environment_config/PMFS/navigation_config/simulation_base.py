@@ -72,7 +72,7 @@ def launch_setup(context, *args, **kwargs):
 		name="rviz",
 		#prefix="xterm -e",
 		arguments=[
-			"-d" + os.path.join(get_package_share_directory("pmfs_env"), "gaden.rviz")
+			"-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "gaden.rviz")
 		],
 	)
 	

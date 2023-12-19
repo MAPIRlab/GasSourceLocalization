@@ -7,11 +7,6 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, PushRosNamespace
 from ament_index_python.packages import get_package_share_directory
 from launch.frontend.parse_substitution import parse_substitution
-import xacro
-
-# TODO:
-# move all the scenario-specific things to a yaml
-# implement the simulation file structure
 
 #===========================
 def launch_arguments():
@@ -25,7 +20,7 @@ def launch_arguments():
 
 def launch_setup(context, *args, **kwargs):
     method = LaunchConfiguration("method").perform(context)
-    gsl = [
+    gsl_call = [
         GroupAction(actions=[
             PushRosNamespace(LaunchConfiguration("robot_name")),
             Node(
@@ -36,10 +31,16 @@ def launch_setup(context, *args, **kwargs):
                     {"method": parse_substitution("$(var method)")},
                 ],
             ),
+        ])
+    ]
+    gsl_node = [
+        GroupAction(actions=[
+            PushRosNamespace(LaunchConfiguration("robot_name")),
             Node(
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="gsl_node",
+                #prefix="xterm -e gdb --args",
                 parameters=[
                     # Common
                     {'use_sim_time': False},	
@@ -85,8 +86,11 @@ def launch_setup(context, *args, **kwargs):
                     {"refineFraction": 0.25},
                     {"deltaTime": 0.1},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
-                    {"iterationsToRecord": 100},
+                    {"iterationsToRecord": 200},
                     {"maxWarmupIterations": 500},
+
+					#Surge-Cast
+					{"step": 0.5},
 
                     
                 ],
@@ -127,7 +131,7 @@ def launch_setup(context, *args, **kwargs):
             ]
         ),
         launch_arguments={
-            "use_rviz": "True",
+            "use_rviz": "False",
             "scenario": LaunchConfiguration("scenario").perform(context),
             "simulation": LaunchConfiguration("simulation").perform(context)
         }.items(),
@@ -203,7 +207,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(nav2)
     actions.append(gmrf_wind)
     actions.append(basic_sim)
-    actions.extend(gsl)
+    actions.extend(gsl_node)
+    actions.extend(gsl_call)
 
     return actions
 

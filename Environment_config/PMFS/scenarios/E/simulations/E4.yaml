@@ -8,7 +8,7 @@ wind_sim_path: "W1/wind_at_cell_centers" # _i.csv automatically appended
 sim_time: 1000.0
 time_step: 0.1
 num_filaments_sec: 10
-variable_rate: true
+variable_rate: false
 filament_stop_steps: 0
 ppm_filament_center: 10.0
 filament_initial_std: 10.0
@@ -29,5 +29,5 @@ outlets_models:
 
 # simulation playback params
 allow_looping: False
-loop_from_iteration: 100
-loop_to_iteration: 200
+loop_from_iteration: 800
+loop_to_iteration: 900

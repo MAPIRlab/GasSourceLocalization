@@ -52,7 +52,7 @@ namespace GSL::PMFS_internal
                                                                                   std::vector<VarianceCalculationData>(pmfs->grid[0].size()));
 
         int numberOfSimulations = 0;
-#pragma omp parallel for
+        #pragma omp parallel for
         for (int leafIndex = 0; leafIndex < localCopyLeaves.size(); leafIndex++)
         {
             NQA::Node* node = &localCopyLeaves[leafIndex];
@@ -76,8 +76,8 @@ namespace GSL::PMFS_internal
                 }
             }
 
-// update the information for the variance calulation
-#pragma omp critical
+            // update the information for the variance calulation
+            #pragma omp critical
             {
                 numberOfSimulations++;
                 for (int cellI = 0; cellI < hitMap.size(); cellI++)
@@ -91,8 +91,8 @@ namespace GSL::PMFS_internal
             }
         }
 
-// update the variance thing
-#pragma omp parallel for collapse(2)
+        // update the variance thing
+        #pragma omp parallel for collapse(2)
         for (int cellI = 0; cellI < pmfs->grid.size(); cellI++)
         {
             for (int cellJ = 0; cellJ < pmfs->grid[0].size(); cellJ++)
@@ -133,8 +133,8 @@ namespace GSL::PMFS_internal
             numberOfLevelsSimulated++;
             numberOfSimulations += scores.size();
 
-// run the simulations of the new level and get scores for each node
-#pragma omp parallel for
+            // run the simulations of the new level and get scores for each node
+            #pragma omp parallel for
             for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
             {
                 NQA::Node* node = scores[leafIndex].leaf;

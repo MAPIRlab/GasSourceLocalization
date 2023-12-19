@@ -37,7 +37,9 @@ namespace GSL
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Cast");
 
         NavigateToPose::Goal goal;
-        do
+        
+        constexpr int safetyLimit = 10;
+        for(int i = 0; i<safetyLimit;i++)
         {
             goal.pose.header.frame_id = "map";
             goal.pose.header.stamp = node->now();
@@ -55,7 +57,9 @@ namespace GSL
                 return;
             }
             current_step = current_step - 0.3;
-        } while (!movingState->checkGoal(goal));
+            if(movingState->checkGoal(goal))
+                break;
+        }
 
         dynamic_cast<MovingStatePlumeTracking*>(movingState.get())->currentMovement = PTMovement::RecoverPlume;
         movingState->sendGoal(goal);
