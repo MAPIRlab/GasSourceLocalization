@@ -31,3 +31,9 @@ outlets_models:
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
+
+#GSL params
+filament_movement_stdev: 0.5
+iterationsToRecord: 300
+maxWarmupIterations: 800
+initialExplorationMoves: 5

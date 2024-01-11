@@ -14,7 +14,7 @@ def launch_arguments():
         DeclareLaunchArgument("scenario", default_value="A"),
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
-        DeclareLaunchArgument("use_infotaxis", default_value=["False"]),
+        DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
     ]
 #==========================
 
@@ -47,8 +47,8 @@ def launch_setup(context, *args, **kwargs):
                     {"max_search_time": 300.0},
                     {"robot_location_topic": "ground_truth"},
                     {"stop_and_measure_time": 0.4 if method == "PMFS" else 2.0},
-                    {"th_gas_present": 0.1},
-                    {"th_wind_present": 0.02},
+                    {"th_gas_present": parse_substitution("$(var th_gas_present)")},
+                    {"th_wind_present": parse_substitution("$(var th_wind_present)")},
                     {"ground_truth_x": parse_substitution("$(var source_x)")},
                     {"ground_truth_y": parse_substitution("$(var source_y)")},
                     {"results_file": parse_substitution("Results/$(var simulation)/$(var method).csv")},
@@ -57,17 +57,16 @@ def launch_setup(context, *args, **kwargs):
                     {"markers_height": 0.2},
 
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
-                    {"allowMovementRepetition": True},
                     {"openMoveSetExpasion": 5},
                     {"explorationProbability": 0.1},
                     {"convergence_thr": 1.5},
-                    {"convergence_steps": 5},
                     
                     #GrGSL
                     {"useDiffusionTerm": True},
                     {"stdev_hit": 1.0},
                     {"stdev_miss": 1.2},
                     {"infoTaxis": parse_substitution("$(var use_infotaxis)")},
+                    {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
 
                     #PMFS
                         # Hit probabilities
@@ -78,16 +77,17 @@ def launch_setup(context, *args, **kwargs):
                     {"hitPriorProbability": 0.3},
                     {"confidence_sigma_spatial": 1.0},
                     {"confidence_measurement_weight": 1.0},
+                    {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
-                    {"useWindGroundTruth": True},
+                    {"useWindGroundTruth": False},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
-                    {"sourceDiscriminationPower": 0.2},
+                    {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
                     {"refineFraction": 0.25},
-                    {"deltaTime": 0.1},
+                    {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
-                    {"iterationsToRecord": 200},
-                    {"maxWarmupIterations": 500},
+                    {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
+                    {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
 					#Surge-Cast
 					{"step": 0.5},
@@ -235,9 +235,41 @@ def generate_launch_description():
             value="PioneerP3DX"
         ),
 
+
+        # GSL params (overwritable in each YAML)
+        ##############################################
+        SetLaunchConfiguration(
+            name="th_gas_present", 
+            value="0.1"
+        ),
+        SetLaunchConfiguration(
+            name="th_wind_present", 
+            value="0.02"
+        ),
+
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
             value="0.5"
+        ),
+        SetLaunchConfiguration(
+            name="sourceDiscriminationPower", 
+            value="0.2"
+        ),
+        SetLaunchConfiguration(
+            name="iterationsToRecord", 
+            value="200"
+        ),
+        SetLaunchConfiguration(
+            name="maxWarmupIterations", 
+            value="500"
+        ),
+        SetLaunchConfiguration(
+            name="initialExplorationMoves", 
+            value="5"
+        ),
+        SetLaunchConfiguration(
+            name="filamentDeltaTime", 
+            value="0.1"
         ),
     ]
     

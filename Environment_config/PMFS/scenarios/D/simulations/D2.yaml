@@ -31,8 +31,15 @@ outlets_models:
 
 # simulation playback params
 allow_looping: False
-loop_from_iteration: 800
-loop_to_iteration: 900
+loop_from_iteration: 200
+loop_to_iteration: 800
 
 #GSL
-filament_movement_stdev: 0.2
+th_gas_present: 0.3
+th_wind_present: 0.01
+filamentDeltaTime: 0.5
+filament_movement_stdev: 0.05
+sourceDiscriminationPower: 0.2
+initialExplorationMoves: 8
+iterationsToRecord: 100
+maxWarmupIterations: 500

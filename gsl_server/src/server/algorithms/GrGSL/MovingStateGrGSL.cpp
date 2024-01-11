@@ -140,24 +140,21 @@ namespace GSL
             {
                 int r = wind[index].i;
                 int c = wind[index].j;
-                NavigateToPose::Goal tempGoal = indexToGoal(r, c);
 
+                double entAux = grgsl->informationGain(wind[index]);
                 mtx.lock();
-                bool pathExists = checkGoal(tempGoal);
-                mtx.unlock();
-                if (pathExists)
+                if (entAux > ent || (ent == entAux && grid[r][c].distance > maxDist))
                 {
-                    double entAux = grgsl->informationGain(wind[index]);
-                    mtx.lock();
-                    if (entAux > ent || (ent == entAux && grid[r][c].distance > maxDist))
+                    NavigateToPose::Goal tempGoal = indexToGoal(r, c);
+                    bool pathExists = checkGoal(tempGoal);
+                    if (pathExists)
                     {
-
                         ent = entAux;
                         maxDist = grid[r][c].distance;
                         goal = tempGoal;
                     }
-                    mtx.unlock();
                 }
+                mtx.unlock();
             }
         }
         else
@@ -201,7 +198,7 @@ namespace GSL
         std::vector<Vector2Int> indices;
         for (auto& p : openMoveSet)
         {
-            if (grid[p.x][p.y].distance < 10)
+            if (grid[p.x][p.y].distance < 5)
             {
                 Vector2 coords = gridData.indexToCoordinates(p.x, p.y);
                 request->x.push_back(coords.x);

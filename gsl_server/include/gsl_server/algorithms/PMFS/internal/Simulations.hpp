@@ -52,6 +52,7 @@ namespace GSL::PMFS_internal
     protected:
         PMFS* pmfs;
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev);
+        void moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev);
         void simulateSourceInPosition(const SimulationSource& source, std::vector<std::vector<float>>& hitMap, bool warmup, int warmupLimit,
                                       int timesteps, float deltaTime, float noiseSTDev);
         bool filamentIsOutside(Filament& filament);

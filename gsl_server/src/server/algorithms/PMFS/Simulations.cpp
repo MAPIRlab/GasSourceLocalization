@@ -189,12 +189,66 @@ namespace GSL::PMFS_internal
 
     void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev)
     {
-
-        Vector2 newPos =
-            filament.position + deltaTime * (pmfs->estimatedWindVectors[indices.x][indices.y] +
-                                             Vector2(Utils::randomFromGaussian(0, noiseSTDev), Utils::randomFromGaussian(0, noiseSTDev)));
-
+        Vector2 velocity = pmfs->estimatedWindVectors[indices.x][indices.y] +
+                                             Vector2(Utils::randomFromGaussian(0, noiseSTDev), Utils::randomFromGaussian(0, noiseSTDev));
+        
+        Vector2 newPos = filament.position + deltaTime * velocity;
         moveAlongPath(filament.position, newPos);
+    }
+
+    //moves exactly one cell at a time, independently of the magnitude of the vector. For warmup.
+    void Simulations::moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev)
+    {
+        Vector2 velocity = pmfs->estimatedWindVectors[indices.x][indices.y] +
+                                             Vector2(Utils::randomFromGaussian(0, noiseSTDev), Utils::randomFromGaussian(0, noiseSTDev));
+        
+        float angle = atan2(velocity.x, velocity.y);
+        Vector2Int next = indices;
+        if(angle >= 0)
+        {
+
+            if(angle < M_PI/8)
+                next.x += 1;
+            else if(angle < M_PI/4 + M_PI/8)
+            {
+                next.x += 1;
+                next.y += 1;
+            }
+            else if(angle < M_PI/2 + M_PI/8)
+                next.y += 1;
+            else if (angle < 3*M_PI/4 + M_PI/8)
+            {
+                next.x -= 1;
+                next.y += 1;
+            }
+            else
+                next.x -= 1;
+        }
+        else
+        {
+            angle = -angle;
+
+            if(angle < M_PI/8)
+                next.x += 1;
+            else if(angle < M_PI/4 + M_PI/8)
+            {
+                next.x += 1;
+                next.y -= 1;
+            }
+            else if(angle < M_PI/2 + M_PI/8)
+                next.y -= 1;
+            else if (angle < 3*M_PI/4 + M_PI/8)
+            {
+                next.x -= 1;
+                next.y -= 1;
+            }
+            else
+                next.x -= 1;
+        }
+        
+        bool isOutside = next.x < 0 || next.x >= pmfs->grid.size() || next.y < 0 || next.y >= pmfs->grid[0].size();
+        if(isOutside || pmfs->grid[next.x][next.y].free)
+            filament.position = pmfs->gridData.indexToCoordinates(next.x, next.y);
     }
 
     bool Simulations::filamentIsOutside(Filament& filament)
@@ -212,7 +266,7 @@ namespace GSL::PMFS_internal
         constexpr int numFilamentsIteration = 5;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
 
-        std::vector<std::vector<bool>> updated(hitMap.size(), std::vector<bool>(hitMap[0].size(), false));
+        std::vector<std::vector<uint16_t>> updated(hitMap.size(), std::vector<uint16_t>(hitMap[0].size(), 0));
 
         int lastActivated = 0;
 
@@ -237,17 +291,22 @@ namespace GSL::PMFS_internal
                     auto indices = pmfs->gridData.coordinatesToIndex(filament.position.x, filament.position.y);
 
                     // move active filaments
+
+#define WARMUP_DISCRETE_MOVEMENT 0 
+#if WARMUP_DISCRETE_MOVEMENT
+                    //TODO this seems to work a fair bit better when the source is out of the main airflow current, but causes some problems in other places
+                    //TODO should run some testing with different weights for the noise and maybe selective application of the discrete movement based on wind speed
+                    //moveFilamentDiscretePosition(filament, indices, noiseSTDev * 0.2);
+#else
                     moveFilament(filament, indices, deltaTime * 2, noiseSTDev);
+#endif
 
                     // remove filaments
                     if (filamentIsOutside(filament))
                     {
                         filament.active = false;
-                        if (warmup)
-                        {
-                            stable = true;
-                            break;
-                        }
+                        stable = true;
+                        break;
                     }
                 }
                 count++;
@@ -274,10 +333,10 @@ namespace GSL::PMFS_internal
                 auto indices = pmfs->gridData.coordinatesToIndex(filament.position.x, filament.position.y);
 
                 // mark as updated so it doesn't count multiple filaments in the same timestep
-                if (!updated[indices.x][indices.y])
+                if (updated[indices.x][indices.y] < t)
                 {
                     hitMap[indices.x][indices.y]++;
-                    updated[indices.x][indices.y] = true;
+                    updated[indices.x][indices.y] = t;
                 }
 
                 // move active filaments
@@ -287,15 +346,6 @@ namespace GSL::PMFS_internal
                 if (filamentIsOutside(filament))
                 {
                     filament.active = false;
-                }
-            }
-
-            // reset the updated status
-            for (int i = 0; i < updated.size(); i++)
-            {
-                for (int j = 0; j < updated[0].size(); j++)
-                {
-                    updated[i][j] = false;
                 }
             }
         }

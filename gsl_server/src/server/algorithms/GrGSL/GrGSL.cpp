@@ -128,6 +128,7 @@ namespace GSL
             }
         }
 
+        positionOfLastHit = {currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y};
         normalizeWeights(grid);
     }
 	
