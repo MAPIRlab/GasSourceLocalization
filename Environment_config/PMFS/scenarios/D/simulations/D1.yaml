@@ -36,3 +36,4 @@ loop_to_iteration: 900
 
 #GSL
 filament_movement_stdev: 0.25
+th_wind_present: 0.01

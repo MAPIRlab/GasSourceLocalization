@@ -59,7 +59,7 @@ def launch_setup(context, *args, **kwargs):
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
                     {"openMoveSetExpasion": 5},
                     {"explorationProbability": 0.1},
-                    {"convergence_thr": 1.5},
+                    {"convergence_thr": 1.5 if method == "PMFS" else 1.0},
                     
                     #GrGSL
                     {"useDiffusionTerm": True},

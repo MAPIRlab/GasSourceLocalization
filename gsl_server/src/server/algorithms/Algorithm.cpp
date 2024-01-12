@@ -204,7 +204,7 @@ namespace GSL
         std::ofstream output_file(resultLogging.results_file, std::ios_base::app);
         if (output_file.is_open())
         {
-            updateProximityResults();
+            updateProximityResults(true);
             output_file << "---------------------------------------------------\n";
             for (const auto& prox : resultLogging.proximityResult)
                 output_file << prox.time <<" "<< prox.distance <<"\n";
@@ -331,14 +331,14 @@ namespace GSL
         return map.data[v * map.info.width + h];
     }
 
-    void Algorithm::updateProximityResults()
+    void Algorithm::updateProximityResults(bool forceUpdate)
     {
         double Ax = currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x;
         double Ay = currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y;
         double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
         
         constexpr double rewrite_distance = 0.5;
-        if(resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance-rewrite_distance))
+        if(forceUpdate || resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance-rewrite_distance))
             resultLogging.proximityResult.push_back({(node->now()-start_time).seconds(), dist});
     }
 

@@ -31,8 +31,9 @@ outlets_models:
 
 # simulation playback params
 allow_looping: False
-loop_from_iteration: 800
+loop_from_iteration: 500
 loop_to_iteration: 900
 
 #GSL
 filament_movement_stdev: 0.5
+th_wind_present: 0.01

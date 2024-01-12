@@ -37,19 +37,27 @@ namespace GSL
         if (concentration > thresholdGas && wind_speed > thresholdWind)
         {
             setSurgeGoal(wind_direction);
+            return;
         }
-        else if (wind_speed > thresholdWind)
-        {
-            if (dynamic_cast<MovingStatePlumeTracking*>(movingState.get())->currentMovement == PTMovement::FollowPlume)
-                setCastGoal(wind_direction);
 
-            else
-                setExplorationGoal();
-        }
-        else
+        PTMovement currentMovement = dynamic_cast<MovingStatePlumeTracking*>(movingState.get())->currentMovement;
+
+        static double wind_direction_cast;
+
+        // When a cast phase begins, we try to lock in the current wind direction, which will be used to direct all succesive cast attempts
+        // if there is no wind, however, we cant cast at all
+        if (currentMovement==PTMovement::FollowPlume)
         {
-            setExplorationGoal();
+            if(wind_speed > thresholdWind)
+                wind_direction_cast = wind_direction;
+            else 
+                wind_direction_cast = DBL_MAX;
         }
+
+        if (currentMovement != PTMovement::Exploration && wind_direction_cast != DBL_MAX)
+            setCastGoal(wind_direction_cast);
+        else
+            setExplorationGoal();
     }
 
     void PlumeTracking::setSurgeGoal(double upwind_dir)
