@@ -1,5 +1,5 @@
 source_x: 0.0
-source_y: -1.0
+source_y: -0.7
 source_z: 0.2
 
 wind_sim_path: "3,5-1_fast/3,5-1_fast" # _i.csv automatically appended

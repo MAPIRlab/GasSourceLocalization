@@ -41,9 +41,9 @@ namespace GSL
 
     void WaitForMapState::setNextState()
     {
-        if (shouldWaitForGas)
-            algorithm->stateMachine.forceSetState(algorithm->waitForGasState.get());
-        else
-            algorithm->stateMachine.forceSetState(algorithm->stopAndMeasureState.get());
+        //if (shouldWaitForGas)
+        //    algorithm->stateMachine.forceSetState(algorithm->waitForGasState.get());
+        //else
+        //    algorithm->stateMachine.forceSetState(algorithm->stopAndMeasureState.get());
     }
 } // namespace GSL

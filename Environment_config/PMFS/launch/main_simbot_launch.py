@@ -72,14 +72,14 @@ def launch_setup(context, *args, **kwargs):
                         # Hit probabilities
                     {"headless": True},
                     {"max_updates_per_stop": 5},
-                    {"kernel_sigma": 1.5},
+                    {"kernel_sigma": 0.7},
                     {"kernel_stretch_constant": 1.5},
                     {"hitPriorProbability": 0.3},
                     {"confidence_sigma_spatial": 1.0},
                     {"confidence_measurement_weight": 1.0},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
-                    {"useWindGroundTruth": False},
+                    {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
@@ -240,7 +240,7 @@ def generate_launch_description():
         ##############################################
         SetLaunchConfiguration(
             name="th_gas_present", 
-            value="0.1"
+            value="0.3"
         ),
         SetLaunchConfiguration(
             name="th_wind_present", 

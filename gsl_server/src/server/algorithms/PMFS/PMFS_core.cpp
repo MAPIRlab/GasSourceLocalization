@@ -2,6 +2,7 @@
 #include <gsl_server/Utils/Math.hpp>
 #include <angles/angles.h>
 
+
 namespace GSL
 {
     using hashSet = std::unordered_set<Vector2Int>;
@@ -67,6 +68,7 @@ namespace GSL
 
         showWeights();
     }
+    
 
     //---------------
     // P(H)
@@ -100,7 +102,7 @@ namespace GSL
                     settings.hitProbability.kernel_sigma /
                         (1 + settings.hitProbability.kernel_stretch_constant * wind_speed / settings.hitProbability.kernel_sigma) // semi-minor axis
                     ),
-            (hit ? 0.6f : 0.1f)};
+            (hit ? settings.hitProbability.prior+0.02 : settings.hitProbability.prior-0.01)};
 
         for (int r = oI; r <= fI; r++)
         {

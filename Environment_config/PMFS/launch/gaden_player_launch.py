@@ -27,6 +27,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterFile
 from ament_index_python.packages import get_package_share_directory
+from launch.frontend.parse_substitution import parse_substitution
 
 # Internal gaden utilities
 import sys
@@ -99,7 +100,12 @@ def launch_setup(context, *args, **kwargs):
             executable="player",
             name="gaden_player",
             output="screen",
-            parameters=[ParameterFile(params_yaml_file, allow_substs=True)],
+            parameters=[ParameterFile(params_yaml_file, allow_substs=True),
+                    {"createHeatmapImage":True},
+                    {"heatmapPath":"gadenHitmap.png"},
+                    {"heatmapHeight":0.5},
+                    {"heatmapThreshold":parse_substitution("$(var th_gas_present)")},
+                    {"heatMapIterations":30}],
         ),
     ]
 

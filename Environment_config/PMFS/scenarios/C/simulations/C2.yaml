@@ -1,5 +1,5 @@
 source_x: 1.50
-source_y: -2.24
+source_y: -2.6
 source_z: -0.10
 
 wind_sim_path: "3,5-1_fast/3,5-1_fast" # _i.csv automatically appended
@@ -31,3 +31,7 @@ outlets_models:
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
+
+filament_movement_stdev: 0.7
+maxWarmupIterations: 700
+filamentDeltaTime: 0.2

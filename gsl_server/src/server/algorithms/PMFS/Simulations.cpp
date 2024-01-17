@@ -274,8 +274,8 @@ namespace GSL::PMFS_internal
         // environment through an outlet, or a maximum number of steps
         {
             bool stable = false;
-            int count = 0;
-            while (!stable && count < warmupLimit)
+            int warmupIterations = 0;
+            while (warmupIterations < warmupLimit)
             {
                 for (int i = 0; i < numFilamentsIteration; i++)
                 {
@@ -292,7 +292,7 @@ namespace GSL::PMFS_internal
 
                     // move active filaments
 
-#define WARMUP_DISCRETE_MOVEMENT 0 
+#define WARMUP_DISCRETE_MOVEMENT 0
 #if WARMUP_DISCRETE_MOVEMENT
                     //TODO this seems to work a fair bit better when the source is out of the main airflow current, but causes some problems in other places
                     //TODO should run some testing with different weights for the noise and maybe selective application of the discrete movement based on wind speed
@@ -309,8 +309,9 @@ namespace GSL::PMFS_internal
                         break;
                     }
                 }
-                count++;
+                warmupIterations++;
             }
+            GSL_WARN("WARMUP ITERATIONS: {}", warmupIterations);
         }
 
         // now, we do the thing
@@ -435,7 +436,7 @@ namespace GSL::PMFS_internal
         if (source.mode == SimulationSource::Mode::Quadtree)
             filename = fmt::format("leaf_{}.png", source.nqaNode->origin);
         else
-            filename = fmt::format("point_{}.png", source.point);
+            filename = "pmfs_filament.png";
 
         cv::imwrite(filename, image);
 

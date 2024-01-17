@@ -7,6 +7,7 @@
 
 #ifdef USE_GADEN
 #include <gaden_player/srv/wind_position.hpp>
+#include <gaden_player/srv/gas_position.hpp>
 #endif
 
 namespace GSL

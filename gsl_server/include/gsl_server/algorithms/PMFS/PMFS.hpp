@@ -8,6 +8,7 @@
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
+#include <gsl_server/algorithms/PMFS/DebugCreateMapState.hpp>
 
 #include <gsl_server/algorithms/Common/GridData.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
@@ -16,6 +17,7 @@ namespace GSL
 {
     class PMFS : public Algorithm
     {
+        friend class DebugCreateMapState;
         friend class MovingStatePMFS;
         friend class PMFS_internal::Simulations;
         friend class PMFS_internal::SimulationSource;
@@ -62,6 +64,8 @@ namespace GSL
         PMFS_internal::PublishersAndSubscribers pubs;
 
         //-------------Utils-------------
+        std::unique_ptr<DebugCreateMapState> debugCreateMapState;
+
         bool paused = false;
         std::unordered_map<Vector2Int, hashSet> visibilityMap;
         FunctionQueue functionQueue;

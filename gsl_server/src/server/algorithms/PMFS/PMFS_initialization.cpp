@@ -43,6 +43,8 @@ namespace GSL
         waitForMapState = std::make_unique<WaitForMapState>(this);
         waitForMapState->shouldWaitForGas = false;
 
+        debugCreateMapState = std::make_unique<DebugCreateMapState>(this);
+
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<MovingStatePMFS>(this);
         stateMachine.forceSetState(waitForMapState.get());
@@ -279,6 +281,6 @@ namespace GSL
         estimateWind(settings.simulation.useWindGroundTruth);
 
         simulations.varianceOfHitProb.resize(grid.size(), std::vector<double>(grid[0].size(), 0));
-        stateMachine.forceSetState(stopAndMeasureState.get());
+        stateMachine.forceSetState(debugCreateMapState.get());
     }
 } // namespace GSL
