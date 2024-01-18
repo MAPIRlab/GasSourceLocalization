@@ -101,7 +101,7 @@ def launch_setup(context, *args, **kwargs):
             name="gaden_player",
             output="screen",
             parameters=[ParameterFile(params_yaml_file, allow_substs=True),
-                    {"createHeatmapImage":True},
+                    {"createHeatmapImage":False},
                     {"heatmapPath":"gadenHitmap.png"},
                     {"heatmapHeight":0.5},
                     {"heatmapThreshold":parse_substitution("$(var th_gas_present)")},

@@ -70,9 +70,10 @@ def launch_setup(context, *args, **kwargs):
 
                     #PMFS
                         # Hit probabilities
-                    {"headless": True},
+                    {"headless": False},
                     {"max_updates_per_stop": 5},
-                    {"kernel_sigma": 0.7},
+                    {"kernel_sigma": 1.5},
+                    {"hitmapFilename" : "navigation_measurements"},
                     {"kernel_stretch_constant": 1.5},
                     {"hitPriorProbability": 0.3},
                     {"confidence_sigma_spatial": 1.0},

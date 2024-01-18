@@ -1,4 +1,4 @@
-source_x: 3.20
+source_x: 2.80
 source_y: -2.90
 source_z: 1.00
 
@@ -32,4 +32,4 @@ allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
 filamentDeltaTime: 0.2
-filament_movement_stdev: 0.1
+filament_movement_stdev: 0.15
