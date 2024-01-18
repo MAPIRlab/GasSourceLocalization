@@ -311,7 +311,6 @@ namespace GSL::PMFS_internal
                 }
                 warmupIterations++;
             }
-            GSL_WARN("WARMUP ITERATIONS: {}", warmupIterations);
         }
 
         // now, we do the thing

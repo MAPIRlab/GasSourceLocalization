@@ -162,6 +162,7 @@ namespace GSL
 
         if (variance < settings.declaration.threshold)
         {
+            debugCreateMapState->printHitmap();
             saveResultsToFile(GSLResult::Success);
             return GSLResult::Success;
         }

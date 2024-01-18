@@ -96,13 +96,15 @@ namespace GSL
 
         double kernel_rotation_wind = -angles::normalize_angle(
             downwind_direction + M_PI / 2); // the orientation of the anemometer's frame of reference and the way it uses angles is weird, man
+        
+        constexpr double measurementStrength = 10;
         HitProbKernel kernel = {
             kernel_rotation_wind,
             Vector2(settings.hitProbability.kernel_sigma + settings.hitProbability.kernel_stretch_constant * wind_speed, // semi-major ellipse axis
                     settings.hitProbability.kernel_sigma /
                         (1 + settings.hitProbability.kernel_stretch_constant * wind_speed / settings.hitProbability.kernel_sigma) // semi-minor axis
                     ),
-            (hit ? settings.hitProbability.prior+0.02 : settings.hitProbability.prior-0.01)};
+            (hit ? settings.hitProbability.prior+0.02 * measurementStrength : settings.hitProbability.prior-0.01 * measurementStrength)};
 
         for (int r = oI; r <= fI; r++)
         {

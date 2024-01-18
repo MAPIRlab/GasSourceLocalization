@@ -133,6 +133,12 @@ namespace GSL::PMFS_internal
                     pmfs->showWeights();
                 });
             }
+            if (ImGui::Button("Print Measurement Hitmap"))
+            {
+                pmfs->functionQueue.submit([this]() {
+                    pmfs->debugCreateMapState->printHitmap();
+                });
+            }
         }
         ImGui::End();
         ImGui::Begin("Quadtree");

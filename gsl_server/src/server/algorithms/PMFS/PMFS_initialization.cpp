@@ -281,6 +281,6 @@ namespace GSL
         estimateWind(settings.simulation.useWindGroundTruth);
 
         simulations.varianceOfHitProb.resize(grid.size(), std::vector<double>(grid[0].size(), 0));
-        stateMachine.forceSetState(debugCreateMapState.get());
+        stateMachine.forceSetState(stopAndMeasureState.get());
     }
 } // namespace GSL
