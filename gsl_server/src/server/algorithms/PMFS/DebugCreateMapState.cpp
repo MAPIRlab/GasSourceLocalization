@@ -10,12 +10,13 @@
 namespace GSL
 {
     DebugCreateMapState::DebugCreateMapState(Algorithm* _algorithm) : State(_algorithm)
-    {}
+    {
+        pmfs = dynamic_cast<PMFS*>(algorithm);
+    }
 
     void DebugCreateMapState::OnEnterState(State* previousState)
     {
         GSL_TRACE("Entering DebugCreateMap");
-        pmfs = dynamic_cast<PMFS*>(algorithm);
         gasClient = pmfs->node->create_client<gaden_player::srv::GasPosition>("/odor_value");
 
         //get z coord of anemometer
@@ -45,7 +46,7 @@ namespace GSL
 
     void DebugCreateMapState::OnUpdate()
     {
-        if(iterationsCount > 10)
+        if(iterationsCount > 5)
         {
             pmfs->stateMachine.forceSetState(pmfs->stopAndMeasureState.get());
             return;
@@ -65,9 +66,10 @@ namespace GSL
         
         // Get the measurements from the services
         
-        for(int i=0; i<grid.size(); i+=1)
+        constexpr int stepsBetweenMeasurements = 3;
+        for(int i=0; i<grid.size(); i+=stepsBetweenMeasurements)
         {
-            for(int j=0; j<grid[0].size(); j+=1)
+            for(int j=0; j<grid[0].size(); j+=stepsBetweenMeasurements)
             {
                 if(!grid[i][j].free)
                     continue;
@@ -108,6 +110,13 @@ namespace GSL
 
     void DebugCreateMapState::OnExitState(State* nextState) 
     {
+        printHitmap();
+        //pmfs->simulations.printImage(PMFS_internal::SimulationSource(pmfs->resultLogging.source_pose, pmfs));
+        exit(-1);
+    }
+
+    void DebugCreateMapState::printHitmap()
+    {
         // Save image
         auto& grid = pmfs->grid;
         auto& gridData = pmfs->gridData;
@@ -128,11 +137,9 @@ namespace GSL
             }
         }
 
-        std::string filename = pmfs->getParam<std::string>("simulation", "measurements");
+        std::string filename = pmfs->getParam<std::string>("hitmapFilename", "measurements");
         cv::imwrite(fmt::format("{}.png", filename), image);
         GSL_WARN("MAP IMAGE SAVED: {}.png", filename);
-
-        pmfs->simulations.printImage(PMFS_internal::SimulationSource(pmfs->resultLogging.source_pose, pmfs));
     }
 
 }
