@@ -14,8 +14,8 @@ namespace GSL::Utils::Time
 
     struct Stopwatch
     {
-        std::chrono::high_resolution_clock clock;
-        std::chrono::_V2::system_clock::time_point start;
+        Clock clock;
+        TimePoint start;
 
         Stopwatch() : clock(), start(clock.now())
         {
@@ -30,5 +30,45 @@ namespace GSL::Utils::Time
         {
             start = clock.now();
         }
+    };
+
+    struct Countdown
+    {
+    public:
+
+        Countdown(): clock(), start(clock.now()), length(0)
+        {}
+
+        Countdown(double _length) : clock(), start(clock.now()), length(_length)
+        {}
+
+        void Restart()
+        {
+            start = clock.now();
+        }
+
+        void Restart(double _length)
+        {
+            start = clock.now();
+            length = _length;
+        }
+
+        bool isDone()
+        {
+            return toSeconds(clock.now() - start) >= length;
+        } 
+
+        float proportionComplete()
+        {
+            if (length <= 0)
+                return 1;
+            else
+                return toSeconds(clock.now() - start) / length;
+        }
+
+    private:
+        Clock clock;
+        TimePoint start;
+        double length;
     };
 } // namespace GSL::Utils::Time
