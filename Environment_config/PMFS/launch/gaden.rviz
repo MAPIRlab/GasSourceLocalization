@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
+        - /ExplorationValue1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 620
   - Class: rviz_common/Selection
@@ -80,7 +81,6 @@ Visualization Manager:
       Name: Environment_CAD
       Namespaces:
         part_0: true
-        part_1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -357,6 +357,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /PioneerP3DX/quadtree
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: ExplorationValue
+      Namespaces:
+        cells: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/explorationValue
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -405,25 +418,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 19.13720703125
+      Distance: 13.469244003295898
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 7.0141706466674805
-        Y: 5.064701080322266
-        Z: 2.7133255004882812
+        X: 2.3130111694335938
+        Y: 2.5706911087036133
+        Z: 2.4206247329711914
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4547964334487915
+      Pitch: 1.5297963619232178
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.7085723876953125
+      Yaw: 4.708570957183838
     Saved: ~
 Window Geometry:
   Displays:

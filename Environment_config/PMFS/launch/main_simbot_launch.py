@@ -58,7 +58,7 @@ def launch_setup(context, *args, **kwargs):
 
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
                     {"openMoveSetExpasion": 5},
-                    {"explorationProbability": 0.1},
+                    {"explorationProbability": 0.05},
                     {"convergence_thr": 1.5 if method == "PMFS" else 1.0},
                     
                     #GrGSL
@@ -70,7 +70,7 @@ def launch_setup(context, *args, **kwargs):
 
                     #PMFS
                         # Hit probabilities
-                    {"headless": True},
+                    {"headless": False},
                     {"max_updates_per_stop": 5},
                     {"kernel_sigma": 1.5},
                     {"kernel_stretch_constant": 1.5},
@@ -83,7 +83,7 @@ def launch_setup(context, *args, **kwargs):
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
-                    {"refineFraction": 0.25},
+                    {"refineFraction": 0.1},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
