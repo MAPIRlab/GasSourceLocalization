@@ -3,6 +3,10 @@
 #include <gsl_server/algorithms/PMFS/internal/Cell.hpp>
 #include <ament_imgui/ament_imgui.h>
 #include <implot/implot.h>
+
+#include <geometry_msgs/msg/point_stamped.hpp>
+#include <rclcpp/subscription.hpp>
+
 #include <vector>
 #include <string>
 #include <thread>
@@ -30,9 +34,12 @@ namespace GSL::PMFS_internal
         double last_concentration_reading = 0;
         void createUI();
         void createPlots();
-        static bool useCoordinates();
-        static int selectVariable();
-        static std::string printCell(const std::vector<std::vector<Cell>>& cells, const int& x, const int& y);
+        bool useCoordinates();
+        int selectVariable();
+        std::string printCell(const std::vector<std::vector<Cell>>& cells, const int& x, const int& y);
+        rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
+        Vector2 selectedCoordinates;
+        Vector2 goalCoordinates;
     };
 
     // utility structure for realtime plot

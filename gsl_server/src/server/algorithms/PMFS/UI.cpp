@@ -9,7 +9,14 @@
 namespace GSL::PMFS_internal
 {
     UI::UI(PMFS* _pmfs) : pmfs(_pmfs)
-    {}
+    {
+        clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1, 
+            [this](const geometry_msgs::msg::PointStamped::SharedPtr point )
+            {
+                selectedCoordinates.x = point->point.x;
+                selectedCoordinates.y = point->point.y;
+            });
+    }
 
     UI::~UI()
     {
@@ -54,10 +61,9 @@ namespace GSL::PMFS_internal
 
             if (PMFS_internal::UI::useCoordinates())
             {
-                static float fx, fy;
-                ImGui::InputFloat("X", &fx);
-                ImGui::InputFloat("Y", &fy);
-                auto indices = pmfs->gridData.coordinatesToIndex(fx, fy);
+                ImGui::InputFloat("X", &selectedCoordinates.x);
+                ImGui::InputFloat("Y", &selectedCoordinates.y);
+                auto indices = pmfs->gridData.coordinatesToIndex(selectedCoordinates.x, selectedCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }
@@ -99,10 +105,9 @@ namespace GSL::PMFS_internal
             ImGui::TextWrapped("Set a goal manually to be visited during the next movement phase.");
             if (PMFS_internal::UI::useCoordinates())
             {
-                static float fx, fy;
-                ImGui::InputFloat("X", &fx);
-                ImGui::InputFloat("Y", &fy);
-                auto indices = pmfs->gridData.coordinatesToIndex(fx, fy);
+                ImGui::InputFloat("X", &goalCoordinates.x);
+                ImGui::InputFloat("Y", &goalCoordinates.y);
+                auto indices = pmfs->gridData.coordinatesToIndex(goalCoordinates.x, goalCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }
