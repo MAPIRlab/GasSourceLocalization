@@ -74,6 +74,7 @@ def launch_setup(context, *args, **kwargs):
                     {"max_updates_per_stop": 5},
                     {"kernel_sigma": 1.5},
                     {"hitmapFilename" : "navigation_measurements"},
+                    {"groundTruthFilename": parse_substitution("/mnt/HDD/colcon_ws/Hitmaps/$(var simulation)/gadenHitmap.png")},
                     {"kernel_stretch_constant": 1.5},
                     {"hitPriorProbability": 0.3},
                     {"confidence_sigma_spatial": 1.0},

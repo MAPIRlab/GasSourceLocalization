@@ -139,6 +139,12 @@ namespace GSL::PMFS_internal
                     pmfs->debugCreateMapState->printHitmap();
                 });
             }
+            if (ImGui::Button("Calculate Error"))
+            {
+                pmfs->functionQueue.submit([this]() {
+                    pmfs->debugCreateMapState->calculateError();
+                });
+            }
         }
         ImGui::End();
         ImGui::Begin("Quadtree");

@@ -49,12 +49,13 @@ namespace GSL::PMFS_internal
         std::unique_ptr<Utils::NQA::Quadtree> quadtree;
         std::vector<Utils::NQA::Node> QTleaves;
         std::vector<std::vector<double>> varianceOfHitProb; // calculated from the simulations, used for movement
+        void simulateSourceInPosition(const SimulationSource& source, std::vector<std::vector<float>>& hitMap, bool warmup, int warmupLimit,
+                                      int timesteps, float deltaTime, float noiseSTDev);
     protected:
         PMFS* pmfs;
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev);
         void moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev);
-        void simulateSourceInPosition(const SimulationSource& source, std::vector<std::vector<float>>& hitMap, bool warmup, int warmupLimit,
-                                      int timesteps, float deltaTime, float noiseSTDev);
+        
         bool filamentIsOutside(Filament& filament);
         double weightedDifference(const std::vector<std::vector<Cell>>& hitRandomVariable, const std::vector<std::vector<float>>& hitMap);
         bool moveAlongPath(Vector2& beginning, const Vector2& end);

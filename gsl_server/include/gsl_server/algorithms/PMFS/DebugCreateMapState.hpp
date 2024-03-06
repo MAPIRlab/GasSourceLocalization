@@ -15,6 +15,7 @@ namespace GSL
         void OnExitState(State* nextState) override;
         void OnUpdate() override;
         void printHitmap();
+        void calculateError();
     private:
         PMFS* pmfs;
         rclcpp::Client<gaden_player::srv::GasPosition>::SharedPtr gasClient;

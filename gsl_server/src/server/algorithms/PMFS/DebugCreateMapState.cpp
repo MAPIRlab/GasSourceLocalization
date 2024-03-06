@@ -140,6 +140,66 @@ namespace GSL
         std::string filename = pmfs->getParam<std::string>("hitmapFilename", "measurements");
         cv::imwrite(fmt::format("{}.png", filename), image);
         GSL_WARN("MAP IMAGE SAVED: {}.png", filename);
+
+        calculateError();
     }
 
+    void DebugCreateMapState::calculateError()
+    {
+        auto& grid = pmfs->grid;
+        auto& gridData = pmfs->gridData;
+
+        std::string filename = pmfs->getParam<std::string>("groundTruthFilename", "");
+        cv::Mat groundTruthMat = cv::imread(fmt::format("{}", filename), cv::IMREAD_GRAYSCALE); //uint8
+
+        GSL_INFO("mat type: {}", groundTruthMat.type());
+
+        float heightRatio = static_cast<float>(groundTruthMat.size[0]) / grid.size();
+        float widthRatio = static_cast<float>(groundTruthMat.size[1]) / grid[0].size();
+
+        float accum = 0;
+        for (int i = 0; i < grid.size(); i++)
+        {
+            for (int j = 0; j < grid[0].size(); j++)
+            {
+                if (grid[i][j].free)
+                {
+                    int u = (grid.size() - i -1) * heightRatio;
+                    int v = j * widthRatio;
+
+                    double hitProb = Utils::logOddsToProbability(grid[i][j].hitProbability.logOdds);
+                    float gt = groundTruthMat.at<uint8_t>(u, v) / 255.0;
+                    accum += std::abs(hitProb - gt) * grid[i][j].hitProbability.confidence;
+                }
+            }
+        }
+
+
+        GSL_INFO("Error Measured: {}", accum / gridData.numFreeCells);
+
+        PMFS_internal::SimulationSource source({pmfs->resultLogging.source_pose.x, pmfs->resultLogging.source_pose.y}, pmfs);
+        const PMFS_internal::Settings::SimulationSettings& setts = pmfs->settings.simulation;
+        std::vector<std::vector<float>> hitMap(pmfs->grid.size(), std::vector<float>(pmfs->grid[0].size(), 0.0));
+        pmfs->simulations.simulateSourceInPosition(source, hitMap, false, setts.maxWarmupIterations, setts.iterationsToRecord, setts.deltaTime, setts.noiseSTDev);
+    
+        accum = 0;
+        for (int i = 0; i < grid.size(); i++)
+        {
+            for (int j = 0; j < grid[0].size(); j++)
+            {
+                if (grid[i][j].free)
+                {
+                    int u = (grid.size() - i -1) * heightRatio;
+                    int v = j * widthRatio;
+
+                    double hitProb = hitMap[i][j];
+                    float gt = groundTruthMat.at<uint8_t>(u, v) / 255.0;
+                    accum += std::abs(hitProb - gt);
+                }
+            }
+        }
+
+
+        GSL_INFO("Error Simulated: {}", accum / gridData.numFreeCells);
+    }
 }
