@@ -158,6 +158,7 @@ namespace GSL
         float widthRatio = static_cast<float>(groundTruthMat.size[1]) / grid[0].size();
 
         float accum = 0;
+        float totalConfidence = 0;
         for (int i = 0; i < grid.size(); i++)
         {
             for (int j = 0; j < grid[0].size(); j++)
@@ -169,7 +170,8 @@ namespace GSL
 
                     double hitProb = Utils::logOddsToProbability(grid[i][j].hitProbability.logOdds);
                     float gt = groundTruthMat.at<uint8_t>(u, v) / 255.0;
-                    accum += std::abs(hitProb - gt) * grid[i][j].hitProbability.confidence;
+                    accum += std::abs(hitProb - gt);// * grid[i][j].hitProbability.confidence;
+                    totalConfidence += grid[i][j].hitProbability.confidence;
                 }
             }
         }
