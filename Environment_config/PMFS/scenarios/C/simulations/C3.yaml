@@ -1,0 +1,36 @@
+source_x: -2.7
+source_y: 0.8
+source_z: -0.1
+
+wind_sim_path: "3,5-1_fast/3,5-1_fast" # _i.csv automatically appended
+
+# filament simulation params
+sim_time: 1000.0
+time_step: 0.1
+num_filaments_sec: 10
+variable_rate: false
+filament_stop_steps: 0
+ppm_filament_center: 10.0
+filament_initial_std: 10.0
+filament_growth_gamma: 15.0
+filament_noise_std: 0.02
+gas_type: 10
+temperature: 298.0
+
+models: 
+  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House02-main.stl"
+  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House02Outlet002.stl"
+  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House02Outlet004.stl"
+
+outlets_models:
+  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House02Outlet001.stl"
+  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House02Outlet003.stl"
+  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House02Outlet005.stl"
+
+# simulation playback params
+allow_looping: False
+loop_from_iteration: 800
+loop_to_iteration: 900
+
+#GSL
+filament_movement_stdev: 0.25

@@ -2,6 +2,6 @@
 string gsl_method                   # Method for searching the gas source 
 ---
 # Define the result
-uint32 success
+bool success
 ---
 # Define a feedback message

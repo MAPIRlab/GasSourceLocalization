@@ -15,14 +15,21 @@ from launch_ros.parameter_descriptions import ParameterFile
 from ament_index_python.packages import get_package_share_directory
 import xacro
 
+def launch_arguments():
+	return[
+		DeclareLaunchArgument("namespace", default_value="PioneerP3DX"),
+		DeclareLaunchArgument("scenario", default_value="A"),  # required
+		DeclareLaunchArgument("log_level", default_value=["ERROR"]), 
+	]
 
 def launch_setup(context, *args, **kwargs):
 	# Get the launch directory
 	my_dir = get_package_share_directory("pmfs_env")
 	map_file = os.path.join(
 		my_dir,
+		"scenarios",
 		LaunchConfiguration("scenario").perform(context),
-		"occupancy.yaml",
+		"_occupancy.yaml",
 	)
 	namespace = LaunchConfiguration("namespace").perform(context)
 	
@@ -37,7 +44,7 @@ def launch_setup(context, *args, **kwargs):
 			package="nav2_map_server",
 			executable="map_server",
 			name="map_server",
-			output="screen",
+			arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 			parameters=[
 				{"use_sim_time": use_sim_time},
 				{"yaml_filename": map_file},
@@ -49,7 +56,7 @@ def launch_setup(context, *args, **kwargs):
 			package="nav2_bt_navigator",
 			executable="bt_navigator",
 			name="bt_navigator",
-			output="screen",
+			arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 			parameters=[configured_params],
 		),
 		# PLANNER (global path planning)
@@ -57,7 +64,7 @@ def launch_setup(context, *args, **kwargs):
 			package="nav2_planner",
 			executable="planner_server",
 			name="planner_server",
-			output="screen",
+			arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 			parameters=[configured_params],
 		),
 		# CONTROLLER (local planner / path following)
@@ -65,15 +72,15 @@ def launch_setup(context, *args, **kwargs):
 			package="nav2_controller",
 			executable="controller_server",
 			name="controller_server",
-			output="screen",
+			arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 			parameters=[configured_params],
 		),
-		# RECOVERIES (recovery behaviours NOT YET in HUMBLE)
+		# RECOVERIES
 		Node(
 			package="nav2_behaviors",
 			executable="behavior_server",
 			name="behavior_server",
-			output="screen",
+			arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 			parameters=[configured_params],
 		),
 		# LIFECYCLE MANAGER
@@ -81,7 +88,7 @@ def launch_setup(context, *args, **kwargs):
 			package="nav2_lifecycle_manager",
 			executable="lifecycle_manager",
 			name="lifecycle_manager_navigation",
-			output="screen",
+			arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 			parameters=[
 				{"use_sim_time": use_sim_time},
 				{"autostart": True},
@@ -110,6 +117,7 @@ def launch_setup(context, *args, **kwargs):
 		Node(
 			package="robot_state_publisher",
 			executable="robot_state_publisher",
+			arguments=['--ros-args', '--log-level', LaunchConfiguration('log_level')],
 			parameters=[{"use_sim_time": True, "robot_description": robot_desc}],
 		),
 	]
@@ -121,25 +129,21 @@ def launch_setup(context, *args, **kwargs):
 
 
 def generate_launch_description():
-	my_dir = get_package_share_directory("test_env")
+	my_dir = get_package_share_directory("pmfs_env")
 
-	return LaunchDescription(
-		[
-			# Set env var to print messages to stdout immediately
-			SetEnvironmentVariable("RCUTILS_LOGGING_BUFFERED_STREAM", "1"),
-			DeclareLaunchArgument(
-				"log_level",
-				default_value=["info"],  # debug, info
-				description="Logging level",
+
+	launch_description = [
+		# Set env var to print messages to stdout immediately
+		SetEnvironmentVariable("RCUTILS_LOGGING_BUFFERED_STREAM", "1"),
+        SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
+		
+		DeclareLaunchArgument(
+			"nav_params_yaml",
+			default_value=os.path.join(
+				my_dir, "navigation_config", "nav2_params.yaml"
 			),
-			DeclareLaunchArgument("namespace", default_value="PioneerP3DX"),
-			DeclareLaunchArgument("scenario", default_value="Exp_C"),  # required
-			DeclareLaunchArgument(
-				"nav_params_yaml",
-				default_value=os.path.join(
-					my_dir, "navigation_config", "nav2_params.yaml"
-				),
-			),
-			OpaqueFunction(function=launch_setup),
-		]
-	)
+		),
+	]
+	launch_description.extend(launch_arguments())
+	launch_description.append(OpaqueFunction(function=launch_setup))
+	return LaunchDescription(launch_description)
