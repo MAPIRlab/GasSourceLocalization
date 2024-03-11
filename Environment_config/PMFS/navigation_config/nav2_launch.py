@@ -29,7 +29,7 @@ def launch_setup(context, *args, **kwargs):
 		my_dir,
 		"scenarios",
 		LaunchConfiguration("scenario").perform(context),
-		"occupancy.yaml",
+		"_occupancy.yaml",
 	)
 	namespace = LaunchConfiguration("namespace").perform(context)
 	

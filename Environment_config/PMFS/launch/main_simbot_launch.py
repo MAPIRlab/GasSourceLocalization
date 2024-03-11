@@ -89,8 +89,8 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
-					#Surge-Cast
-					{"step": 0.5},
+                    #Surge-Cast
+                    {"step": 0.5},
 
                     
                 ],
@@ -200,6 +200,16 @@ def launch_setup(context, *args, **kwargs):
         ])
     ]
 
+    rviz = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        #prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "gaden.rviz")
+        ],
+    )
+
     actions = []
     actions.append(gaden_player)
     actions.extend(anemometer)
@@ -209,6 +219,7 @@ def launch_setup(context, *args, **kwargs):
     actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
+    actions.extend(rviz)
 
     return actions
 

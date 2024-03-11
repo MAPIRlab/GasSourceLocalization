@@ -1,4 +1,4 @@
-map: "../occupancy.yaml"
+map: "../_occupancy.yaml"
 robots: 
   - name: "PioneerP3DX"
     position: [3.00, 7.7, 0.1]
