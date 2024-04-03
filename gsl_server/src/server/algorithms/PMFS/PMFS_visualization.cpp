@@ -18,7 +18,7 @@ namespace GSL
             {
                 if (grid[a][b].free)
                 {
-                    auto coords = gridData.indexToCoordinates(a, b);
+                    auto coords = gridMetadata.indexToCoordinates(a, b);
                     Point p;
                     p.x = coords.x;
                     p.y = coords.y;
@@ -64,9 +64,9 @@ namespace GSL
             NQA::Node* leaf = &simulations.QTleaves[i];
             Marker mark = Utils::emptyMarker({0.2, 0.2}, node->get_clock());
             mark.type = Marker::CUBE;
-            Vector2 worldSpaceScale = (Vector2(leaf->size.y, leaf->size.x)) * gridData.cellSize;
+            Vector2 worldSpaceScale = (Vector2(leaf->size.y, leaf->size.x)) * gridMetadata.cellSize;
 
-            auto coords = gridData.indexToCoordinates(leaf->origin.x, leaf->origin.y, false) + (worldSpaceScale * 0.5f);
+            auto coords = gridMetadata.indexToCoordinates(leaf->origin.x, leaf->origin.y, false) + (worldSpaceScale * 0.5f);
 
             Point p;
             p.x = coords.x;
@@ -126,13 +126,13 @@ namespace GSL
                     {
                         marker.id = i * estimatedWindVectors[0].size() + j;
                         // Set the pose of the marker.
-                        Vector2 coords = gridData.indexToCoordinates(i, j);
+                        Vector2 coords = gridMetadata.indexToCoordinates(i, j);
                         marker.pose.position.x = coords.x;
                         marker.pose.position.y = coords.y;
                         marker.pose.position.z = settings.visualization.markers_height;
                         marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
                         // shape
-                        marker.scale.x = gridData.cellSize * (module / max_module); // arrow length,
+                        marker.scale.x = gridMetadata.cellSize * (module / max_module); // arrow length,
                         marker.scale.y = 0.03;                                      // arrow width
                         marker.scale.z = 0.05;                                      // arrow height
                         // color -> must normalize to [0-199]

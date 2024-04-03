@@ -63,7 +63,7 @@ namespace GSL::PMFS_internal
             {
                 ImGui::InputFloat("X", &selectedCoordinates.x);
                 ImGui::InputFloat("Y", &selectedCoordinates.y);
-                auto indices = pmfs->gridData.coordinatesToIndex(selectedCoordinates.x, selectedCoordinates.y);
+                auto indices = pmfs->gridMetaData.coordinatesToIndex(selectedCoordinates.x, selectedCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }
@@ -92,7 +92,7 @@ namespace GSL::PMFS_internal
             }
             else if (ImGui::Button("Simulate cell") && pmfs->indicesInBounds({x, y}))
             {
-                pmfs->simulations.printImage(SimulationSource(pmfs->gridData.indexToCoordinates(x, y), pmfs));
+                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetaData.indexToCoordinates(x, y), pmfs));
             }
 
             ImGui::Text("%s", result.c_str());
@@ -107,7 +107,7 @@ namespace GSL::PMFS_internal
             {
                 ImGui::InputFloat("X", &goalCoordinates.x);
                 ImGui::InputFloat("Y", &goalCoordinates.y);
-                auto indices = pmfs->gridData.coordinatesToIndex(goalCoordinates.x, goalCoordinates.y);
+                auto indices = pmfs->gridMetaData.coordinatesToIndex(goalCoordinates.x, goalCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }

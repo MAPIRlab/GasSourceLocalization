@@ -14,12 +14,6 @@ namespace GSL
         }
     }
 
-    // this will be overriden when there are several variables affecting the final probability
-    double PMFS::sourceProbability(int i, int j)
-    {
-        return grid[i][j].sourceProbability;
-    }
-
     bool PMFS::indicesInBounds(const Vector2Int indices) const
     {
         return indices.x >= 0 && indices.x < grid.size() && indices.y >= 0 && indices.y < grid[0].size();
@@ -32,16 +26,16 @@ namespace GSL
             return false;
 
         bool pathIsFree = true;
-        Vector2 vector = gridData.indexToCoordinates(end.x, end.y) - gridData.indexToCoordinates(origin.x, origin.y);
-        Vector2 increment = glm::normalize(vector) * (gridData.cellSize);
-        int steps = glm::length(vector) / (gridData.cellSize);
+        Vector2 vector = gridMetadata.indexToCoordinates(end.x, end.y) - gridMetadata.indexToCoordinates(origin.x, origin.y);
+        Vector2 increment = glm::normalize(vector) * (gridMetadata.cellSize);
+        int steps = glm::length(vector) / (gridMetadata.cellSize);
         int index = 0;
-        Vector2 current_point = gridData.indexToCoordinates(origin.x, origin.y);
+        Vector2 current_point = gridMetadata.indexToCoordinates(origin.x, origin.y);
         while (index < steps && pathIsFree)
         {
             current_point += increment;
             index++;
-            Vector2Int pair = gridData.coordinatesToIndex(current_point.x, current_point.y);
+            Vector2Int pair = gridMetadata.coordinatesToIndex(current_point.x, current_point.y);
             pathIsFree = indicesInBounds(pair) && grid[pair.x][pair.y].free;
         }
 
@@ -97,7 +91,7 @@ namespace GSL
                 auto response = future.get();
                 for (int ind = 0; ind < GMRFRequest->x.size(); ind++)
                 {
-                    Vector2Int pair = gridData.coordinatesToIndex(GMRFRequest->x[ind], GMRFRequest->y[ind]);
+                    Vector2Int pair = gridMetadata.coordinatesToIndex(GMRFRequest->x[ind], GMRFRequest->y[ind]);
                     estimatedWindVectors[pair.x][pair.y] = Vector2(std::cos(response->v[ind]), std::sin(response->v[ind])) * (float)response->u[ind];
                 }
             }
@@ -120,7 +114,7 @@ namespace GSL
                 auto response = future.get();
                 for (int ind = 0; ind < groundTruthWindRequest->x.size(); ind++)
                 {
-                    Vector2Int pair = gridData.coordinatesToIndex(groundTruthWindRequest->x[ind], groundTruthWindRequest->y[ind]);
+                    Vector2Int pair = gridMetadata.coordinatesToIndex(groundTruthWindRequest->x[ind], groundTruthWindRequest->y[ind]);
                     estimatedWindVectors[pair.x][pair.y] = Vector2(response->u[ind], response->v[ind]);
                 }
             }
@@ -202,7 +196,7 @@ namespace GSL
         for (int i = 0; i < data.size() * proportionBest; i++)
         {
             CellData& cd = data[i];
-            Vector2 coord = gridData.indexToCoordinates(cd.indices.x, cd.indices.y);
+            Vector2 coord = gridMetadata.indexToCoordinates(cd.indices.x, cd.indices.y);
             averageX += cd.probability * coord.x;
             averageY += cd.probability * coord.y;
             sum += cd.probability;
@@ -220,7 +214,7 @@ namespace GSL
             {
                 if (grid[i][j].free)
                 {
-                    Vector2 coords = gridData.indexToCoordinates(i, j);
+                    Vector2 coords = gridMetadata.indexToCoordinates(i, j);
                     double p = sourceProbability(i, j);
                     x += pow(coords.x - expected.x, 2) * p;
                     y += pow(coords.y - expected.y, 2) * p;

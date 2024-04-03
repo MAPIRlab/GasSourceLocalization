@@ -1,6 +1,6 @@
 #pragma once
 #include <gsl_server/algorithms/Algorithm.hpp>
-#include <gsl_server/algorithms/Common/GridData.hpp>
+#include <gsl_server/algorithms/Common/Grid.hpp>
 #include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
 
@@ -36,7 +36,7 @@ namespace GSL
             double distance;
         };
         std::vector<std::vector<Cell>> grid;
-        GridData gridData;
+        GridMetadata gridMetadata;
 
         struct Settings
         {
@@ -83,7 +83,7 @@ namespace GSL
 
         Vector2Int currentPosIndex()
         {
-            return gridData.coordinatesToIndex(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
+            return gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
         }
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();

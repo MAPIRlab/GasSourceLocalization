@@ -248,13 +248,13 @@ namespace GSL::PMFS_internal
         
         bool isOutside = next.x < 0 || next.x >= pmfs->grid.size() || next.y < 0 || next.y >= pmfs->grid[0].size();
         if(isOutside || pmfs->grid[next.x][next.y].free)
-            filament.position = pmfs->gridData.indexToCoordinates(next.x, next.y);
+            filament.position = pmfs->gridMetaData.indexToCoordinates(next.x, next.y);
     }
 
     bool Simulations::filamentIsOutside(Filament& filament)
     {
 
-        Vector2Int newIndices = pmfs->gridData.coordinatesToIndex(filament.position.x, filament.position.y);
+        Vector2Int newIndices = pmfs->gridMetaData.coordinatesToIndex(filament.position.x, filament.position.y);
 
         return (newIndices.x < 0 || newIndices.x >= pmfs->grid.size() || newIndices.y < 0 || newIndices.y >= pmfs->grid[0].size());
     }
@@ -288,7 +288,7 @@ namespace GSL::PMFS_internal
                 {
                     if (!filament.active)
                         continue;
-                    auto indices = pmfs->gridData.coordinatesToIndex(filament.position.x, filament.position.y);
+                    auto indices = pmfs->gridMetaData.coordinatesToIndex(filament.position.x, filament.position.y);
 
                     // move active filaments
 
@@ -330,7 +330,7 @@ namespace GSL::PMFS_internal
                     continue;
 
                 // update map
-                auto indices = pmfs->gridData.coordinatesToIndex(filament.position.x, filament.position.y);
+                auto indices = pmfs->gridMetaData.coordinatesToIndex(filament.position.x, filament.position.y);
 
                 // mark as updated so it doesn't count multiple filaments in the same timestep
                 if (updated[indices.x][indices.y] < t)
@@ -366,8 +366,8 @@ namespace GSL::PMFS_internal
         if (mode == Mode::Point)
             return point;
 
-        Vector2 start = pmfs->gridData.indexToCoordinates(nqaNode->origin.x, nqaNode->origin.y, false);
-        Vector2 end = pmfs->gridData.indexToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
+        Vector2 start = pmfs->gridMetaData.indexToCoordinates(nqaNode->origin.x, nqaNode->origin.y, false);
+        Vector2 end = pmfs->gridMetaData.indexToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
 
         Vector2 randP(Utils::uniformRandom(start.x, end.x), Utils::uniformRandom(start.y, end.y));
 
@@ -378,8 +378,8 @@ namespace GSL::PMFS_internal
     bool Simulations::moveAlongPath(Vector2& beginning, const Vector2& end)
     {
 
-        Vector2Int indexEnd = pmfs->gridData.coordinatesToIndex(end.x, end.y);
-        Vector2Int indexOrigin = pmfs->gridData.coordinatesToIndex(beginning.x, beginning.y);
+        Vector2Int indexEnd = pmfs->gridMetaData.coordinatesToIndex(end.x, end.y);
+        Vector2Int indexOrigin = pmfs->gridMetaData.coordinatesToIndex(beginning.x, beginning.y);
 
         if (!pmfs->grid[indexOrigin.x][indexOrigin.y].free)
         {
@@ -395,15 +395,15 @@ namespace GSL::PMFS_internal
 
         bool pathIsFree = true;
         Vector2 vector = end - beginning;
-        Vector2 increment = glm::normalize(vector) * (pmfs->gridData.cellSize);
-        int steps = glm::length(vector) / (pmfs->gridData.cellSize);
+        Vector2 increment = glm::normalize(vector) * (pmfs->gridMetaData.cellSize);
+        int steps = glm::length(vector) / (pmfs->gridMetaData.cellSize);
 
         int index = 0;
         while (index < steps && pathIsFree)
         {
             beginning += increment;
             index++;
-            Vector2Int pair = pmfs->gridData.coordinatesToIndex(beginning.x, beginning.y);
+            Vector2Int pair = pmfs->gridMetaData.coordinatesToIndex(beginning.x, beginning.y);
             pathIsFree = !pmfs->indicesInBounds(pair) || pmfs->grid[pair.x][pair.y].free;
             if (!pathIsFree)
                 beginning -= increment;

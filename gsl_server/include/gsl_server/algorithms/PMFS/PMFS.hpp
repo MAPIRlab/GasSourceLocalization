@@ -9,7 +9,6 @@
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 
-#include <gsl_server/algorithms/Common/GridData.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
 
 namespace GSL
@@ -23,7 +22,10 @@ namespace GSL
         friend class PMFS_internal::UI;
 #endif
         using hashSet = std::unordered_set<Vector2Int>;
-        using Cell = PMFS_internal::Cell;
+
+        template <typename T>
+        using Grid = Grid<T>;
+        using HitProbability = PMFS_internal::HitProbability;
         using HitProbKernel = PMFS_internal::HitProbKernel;
 
     public:
@@ -40,18 +42,15 @@ namespace GSL
         void OnCompleteNavigation(GSLResult result, State* previousState) override;
         float gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
 
-        void initializeMap();
 
         //-------------Core-------------
-        std::vector<std::vector<Cell>> grid;
-        GridData gridData;
-        void estimateHitProbabilities(std::vector<std::vector<Cell>>& hitLocalVariable, bool hit, double wind_direction, double wind_speed,
-                                      Vector2Int robot_pos, bool infotaxis_sim = false);
+        std::vector<double> sourceProbability;
+        std::vector<HitProbability> hitProbability;
+        std::vector<Occupancy> navigationOccupancy;
+        std::vector<Occupancy> simulationOccupancy;
 
-        // returns the sum of all auxWeights, for normalization purposes
-        double propagateProbabilities(std::vector<std::vector<Cell>>& var, hashSet& openSet, hashSet& closedSet, hashSet& activeSet,
-                                      const HitProbKernel& kernel);
-        double applyFalloffLogOdds(Vector2 originalVectorScaled, const HitProbKernel& kernel);
+        GridMetadata gridMetadata;
+        
 
         std::vector<std::vector<Vector2>> estimatedWindVectors;
         void estimateWind(bool groundTruth);
@@ -69,14 +68,13 @@ namespace GSL
 
         Vector2Int currentPosIndex()
         {
-            return gridData.coordinatesToIndex(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
+            return gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
         }
         bool pathFree(const Vector2Int& origin, const Vector2Int& end);
         bool indicesInBounds(const Vector2Int indices) const;
-        void normalizeSourceProb(std::vector<std::vector<Cell>>& variable);
+        void normalizeSourceProb(std::vector<std::vector<double>>& variable, const std::vector<std::vector<Occupancy>>& occupancy);
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
-        double sourceProbability(int i, int j);
 
         // Visualization
         void showWeights();

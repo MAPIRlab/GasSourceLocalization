@@ -14,7 +14,7 @@ namespace GSL
     {
         const auto& settings = grgsl->settings;
         const auto& grid = grgsl->grid;
-        const auto& gridData = grgsl->gridData;
+        const auto& gridMetadata = grgsl->gridMetadata;
 
         // update sets
         {
@@ -55,7 +55,7 @@ namespace GSL
 
         grgsl->exploredCells++;
 
-        Vector2Int indices = gridData.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
+        Vector2Int indices = gridMetadata.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
         closedMoveSet.insert(indices);
         openMoveSet.erase(indices);
 
@@ -65,7 +65,7 @@ namespace GSL
         // close nearby cells to avoid repeating the same pose with only minor variations
         if (!settings.allowMovementRepetition)
         {
-            Vector2Int goalIndices = gridData.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
+            Vector2Int goalIndices = gridMetadata.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
             int i = goalIndices.x, j = goalIndices.y;
             int oI = std::max(0, i - 1);
             int fI = std::min((int)grid.size() - 1, i + 1);
@@ -91,7 +91,7 @@ namespace GSL
     {
         const auto& settings = grgsl->settings;
         const auto& grid = grgsl->grid;
-        const auto& gridData = grgsl->gridData;
+        const auto& gridMetadata = grgsl->gridMetadata;
         // Graph exploration
         std::optional<NavigateToPose::Goal> goal = std::nullopt;
 
@@ -124,7 +124,7 @@ namespace GSL
     {
         const auto& settings = grgsl->settings;
         const auto& grid = grgsl->grid;
-        const auto& gridData = grgsl->gridData;
+        const auto& gridMetadata = grgsl->gridMetadata;
 
         // Infotactic navigation
         std::optional<NavigateToPose::Goal> goal = std::nullopt;
@@ -174,7 +174,7 @@ namespace GSL
         goal.pose.header.frame_id = "map";
         goal.pose.header.stamp = grgsl->node->now();
 
-        Vector2 pos = grgsl->gridData.indexToCoordinates(i, j);
+        Vector2 pos = grgsl->gridMetadata.indexToCoordinates(i, j);
         Vector2 coordR = {grgsl->currentRobotPose.pose.pose.position.x, grgsl->currentRobotPose.pose.pose.position.y};
 
         double move_angle = (atan2(pos.y - coordR.y, pos.x - coordR.x));
@@ -190,7 +190,7 @@ namespace GSL
     std::vector<GrGSL::WindVector> MovingStateGrGSL::estimateWind()
     {
         const auto& grid = grgsl->grid;
-        const auto& gridData = grgsl->gridData;
+        const auto& gridMetadata = grgsl->gridMetadata;
 
         // ask the gmrf_wind service for the estimated wind vector in cell i,j
         auto request = std::make_shared<GrGSL::WindEstimation::Request>();
@@ -200,7 +200,7 @@ namespace GSL
         {
             if (grid[p.x][p.y].distance < 5)
             {
-                Vector2 coords = gridData.indexToCoordinates(p.x, p.y);
+                Vector2 coords = gridMetadata.indexToCoordinates(p.x, p.y);
                 request->x.push_back(coords.x);
                 request->y.push_back(coords.y);
                 indices.push_back(p);

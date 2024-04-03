@@ -95,7 +95,7 @@ namespace GSL
         goal.pose.header.frame_id = "map";
         goal.pose.header.stamp = pmfs->node->now();
 
-        Vector2 pos = pmfs->gridData.indexToCoordinates(i, j);
+        Vector2 pos = pmfs->gridMetaData.indexToCoordinates(i, j);
         Vector2 coordR = {pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y};
 
         double move_angle = (std::atan2(pos.y - coordR.y, pos.x - coordR.x));
@@ -126,7 +126,7 @@ namespace GSL
             return;
 
         Vector2Int indicesGoal =
-            pmfs->gridData.coordinatesToIndex(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
+            pmfs->gridMetaData.coordinatesToIndex(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
         openMoveSet.erase(indicesGoal);
         closedMoveSet.insert(indicesGoal);
         MovingState::Fail();
@@ -135,7 +135,7 @@ namespace GSL
     void MovingStatePMFS::publishMarkers()
     {
         const auto& grid = pmfs->grid;
-        const auto& gridData = pmfs->gridData;
+        const auto& gridMetaData = pmfs->gridMetaData;
 
         Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());
 
@@ -167,7 +167,7 @@ namespace GSL
             {
                 if (!grid[a][b].free)
                     continue;
-                auto coords = gridData.indexToCoordinates(a, b);
+                auto coords = gridMetaData.indexToCoordinates(a, b);
                 Point p;
                 p.x = coords.x;
                 p.y = coords.y;
