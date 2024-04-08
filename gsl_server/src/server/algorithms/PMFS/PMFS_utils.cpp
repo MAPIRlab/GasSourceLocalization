@@ -14,115 +14,32 @@ namespace GSL
         }
     }
 
-    bool PMFS::indicesInBounds(const Vector2Int indices) const
-    {
-        return indices.x >= 0 && indices.x < grid.size() && indices.y >= 0 && indices.y < grid[0].size();
-    }
 
-    bool PMFS::pathFree(const Vector2Int& origin, const Vector2Int& end)
-    {
-        // check there are no obstacles between origin and end
-        if (!(grid[origin.x][origin.y].free && grid[end.x][end.y].free))
-            return false;
-
-        bool pathIsFree = true;
-        Vector2 vector = gridMetadata.indexToCoordinates(end.x, end.y) - gridMetadata.indexToCoordinates(origin.x, origin.y);
-        Vector2 increment = glm::normalize(vector) * (gridMetadata.cellSize);
-        int steps = glm::length(vector) / (gridMetadata.cellSize);
-        int index = 0;
-        Vector2 current_point = gridMetadata.indexToCoordinates(origin.x, origin.y);
-        while (index < steps && pathIsFree)
-        {
-            current_point += increment;
-            index++;
-            Vector2Int pair = gridMetadata.coordinatesToIndex(current_point.x, current_point.y);
-            pathIsFree = indicesInBounds(pair) && grid[pair.x][pair.y].free;
-        }
-
-        return pathIsFree;
-    }
-
-    void PMFS::normalizeSourceProb(std::vector<std::vector<Cell>>& variable)
+    void PMFS::normalizeSourceProb(Grid<double>& variable)
     {
         // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
         // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens
         double total = 0;
         int count = 0;
-        for (int i = 0; i < variable.size(); i++)
+        for (int i = 0; i < variable.data.size(); i++)
         {
-            for (int j = 0; j < variable[0].size(); j++)
+            if (variable.occupancy[i] == Occupancy::Free)
             {
-                if (grid[i][j].free)
-                {
-                    total += variable[i][j].sourceProbability;
-                    count++;
-                }
+                total += variable.data[i];
+                count++;
             }
         }
 
-#pragma omp parallel for collapse(2)
-        for (int i = 0; i < variable.size(); i++)
+        #pragma omp parallel for collapse(2)
+        for (int i = 0; i < variable.data.size(); i++)
         {
-            for (int j = 0; j < variable[0].size(); j++)
+            if (variable.occupancy[i] == Occupancy::Free)
             {
-                if (grid[i][j].free)
-                {
-                    variable[i][j].sourceProbability = (variable[i][j].sourceProbability) / total;
-                }
+                variable.data[i] = variable.data[i] / total;
             }
         }
     }
 
-    void PMFS::estimateWind(bool groundTruth)
-    {
-        // if not compiled with gaden support, you have no choice but to use GMRF :)
-#ifdef USE_GADEN
-        if (!groundTruth)
-        {
-#endif
-            auto& clientWindGMRF = pubs.clientWindGMRF;
-            auto& GMRFRequest = pubs.GMRFRequest;
-            // ask the gmrf_wind service for the estimated wind vector in cell i,j
-            auto future = clientWindGMRF->async_send_request(GMRFRequest);
-            auto result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(5));
-
-            if (result == rclcpp::FutureReturnCode::SUCCESS)
-            {
-                auto response = future.get();
-                for (int ind = 0; ind < GMRFRequest->x.size(); ind++)
-                {
-                    Vector2Int pair = gridMetadata.coordinatesToIndex(GMRFRequest->x[ind], GMRFRequest->y[ind]);
-                    estimatedWindVectors[pair.x][pair.y] = Vector2(std::cos(response->v[ind]), std::sin(response->v[ind])) * (float)response->u[ind];
-                }
-            }
-            else
-                GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
-
-#ifdef USE_GADEN
-        }
-
-        else
-        {
-
-            auto& clientWindGroundTruth = pubs.clientWindGroundTruth;
-            auto& groundTruthWindRequest = pubs.groundTruthWindRequest;
-
-            auto future = clientWindGroundTruth->async_send_request(groundTruthWindRequest);
-            auto result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(5));
-            if (result == rclcpp::FutureReturnCode::SUCCESS)
-            {
-                auto response = future.get();
-                for (int ind = 0; ind < groundTruthWindRequest->x.size(); ind++)
-                {
-                    Vector2Int pair = gridMetadata.coordinatesToIndex(groundTruthWindRequest->x[ind], groundTruthWindRequest->y[ind]);
-                    estimatedWindVectors[pair.x][pair.y] = Vector2(response->u[ind], response->v[ind]);
-                }
-            }
-            else
-                GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
-        }
-#endif
-    }
 
     GSLResult PMFS::checkSourceFound()
     {
@@ -176,13 +93,13 @@ namespace GSL
             }
         };
         std::vector<CellData> data;
-        for (int i = 0; i < grid.size(); i++)
+        for (int i = 0; i < gridMetadata.height; i++)
         {
-            for (int j = 0; j < grid[0].size(); j++)
+            for (int j = 0; j < gridMetadata.width; j++)
             {
-                if (grid[i][j].free)
+                if (simulationOccupancy[gridMetadata.indexOf(i,j)] == Occupancy::Free)
                 {
-                    CellData cd(Vector2Int(i, j), sourceProbability(i, j));
+                    CellData cd(Vector2Int(i, j), sourceProbability[gridMetadata.indexOf(i, j)]);
                     data.push_back(cd);
                 }
             }
@@ -208,14 +125,14 @@ namespace GSL
     {
         Vector2 expected = expectedValueSource(1);
         double x = 0, y = 0;
-        for (int i = 0; i < grid.size(); i++)
+        for (int i = 0; i < gridMetadata.height; i++)
         {
-            for (int j = 0; j < grid[0].size(); j++)
+            for (int j = 0; j < gridMetadata.width; j++)
             {
-                if (grid[i][j].free)
+                if (simulationOccupancy[gridMetadata.indexOf(i,j)] == Occupancy::Free)
                 {
                     Vector2 coords = gridMetadata.indexToCoordinates(i, j);
-                    double p = sourceProbability(i, j);
+                    double p = sourceProbability[gridMetadata.indexOf(i, j)];
                     x += pow(coords.x - expected.x, 2) * p;
                     y += pow(coords.y - expected.y, 2) * p;
                 }

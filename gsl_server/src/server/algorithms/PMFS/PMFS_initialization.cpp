@@ -28,9 +28,9 @@ namespace GSL
         pubs.markers.debug.varianceHit = node->create_publisher<Marker>("varianceHit", 1);
         pubs.markers.debug.movementSets = node->create_publisher<Marker>("movementSets", 1);
 
-        pubs.clientWindGMRF = node->create_client<WindEstimation>("/WindEstimation");
+        pubs.gmrfWind.client = node->create_client<WindEstimation>("/WindEstimation");
 #ifdef USE_GADEN
-        pubs.clientWindGroundTruth = node->create_client<gaden_player::srv::WindPosition>("/wind_value");
+        pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value");
 #endif
 
 #ifdef USE_GUI
@@ -103,7 +103,25 @@ namespace GSL
         navigationOccupancy.resize(gridMetadata.height * gridMetadata.width);
         simulationOccupancy.resize(gridMetadata.height * gridMetadata.width);
 
-        functionQueue.submit(std::bind(&PMFS::initializeMap, this));
+        PMFSLib::initializeMap(*this, 
+            Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+            settings, simulations, visibilityMap);
+
+        // source probability before we get any observations
+        for (double& p : sourceProbability)
+        {
+            p = 1.0 / gridMetadata.numFreeCells;
+        }
+
+        // the wind estimation stuff requires spinning, so it must be done through the function queue
+        functionQueue.submit([this]()
+        {
+            Grid<Vector2> windGrid (estimatedWindVectors, simulationOccupancy, gridMetadata);
+            PMFSLib::initializeWindPredictions(*this, windGrid,
+                pubs.gmrfWind.request, pubs.groundTruthWind.request);
+            PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind, pubs.groundTruthWind);
+            stateMachine.forceSetState(stopAndMeasureState.get());
+        });
     }
 
 } // namespace GSL

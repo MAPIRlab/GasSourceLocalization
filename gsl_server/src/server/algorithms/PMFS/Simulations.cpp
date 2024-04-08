@@ -11,7 +11,7 @@
 namespace GSL::PMFS_internal
 {
     namespace NQA = Utils::NQA;
-    using hashSet = std::unordered_set<Vector2Int>;
+    using HashSet = std::unordered_set<Vector2Int>;
 
     static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
                                               double& variance)
@@ -386,7 +386,7 @@ namespace GSL::PMFS_internal
             return false;
         }
 
-        hashSet& set = pmfs->visibilityMap.at(indexOrigin);
+        HashSet& set = pmfs->visibilityMap.at(indexOrigin);
         if (set.find(indexEnd) != set.end())
         {
             beginning = end;

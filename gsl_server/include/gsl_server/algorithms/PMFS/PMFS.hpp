@@ -21,7 +21,7 @@ namespace GSL
 #ifdef USE_GUI
         friend class PMFS_internal::UI;
 #endif
-        using hashSet = std::unordered_set<Vector2Int>;
+        using HashSet = std::unordered_set<Vector2Int>;
 
         template <typename T>
         using Grid = Grid<T>;
@@ -52,8 +52,7 @@ namespace GSL
         GridMetadata gridMetadata;
         
 
-        std::vector<std::vector<Vector2>> estimatedWindVectors;
-        void estimateWind(bool groundTruth);
+        std::vector<Vector2> estimatedWindVectors;
 
         //-------------Data-------------
         PMFS_internal::Simulations simulations;
@@ -62,7 +61,7 @@ namespace GSL
 
         //-------------Utils-------------
         bool paused = false;
-        std::unordered_map<Vector2Int, hashSet> visibilityMap;
+        std::unordered_map<Vector2Int, HashSet> visibilityMap;
         FunctionQueue functionQueue;
         uint iterationsCounter;
 
@@ -72,7 +71,7 @@ namespace GSL
         }
         bool pathFree(const Vector2Int& origin, const Vector2Int& end);
         bool indicesInBounds(const Vector2Int indices) const;
-        void normalizeSourceProb(std::vector<std::vector<double>>& variable, const std::vector<std::vector<Occupancy>>& occupancy);
+        void normalizeSourceProb(Grid<double>& variable);
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
 

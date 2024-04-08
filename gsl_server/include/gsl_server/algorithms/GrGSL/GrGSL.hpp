@@ -11,7 +11,7 @@ namespace GSL
     {
         friend class MovingStateGrGSL;
         using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
-        using hashSet = std::unordered_set<Vector2Int>;
+        using HashSet = std::unordered_set<Vector2Int>;
 
     public:
         GrGSL(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node)
@@ -74,10 +74,10 @@ namespace GSL
         //-------------
         void estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell>>& map, bool hit, bool advection, double wind_direction,
                                                  Vector2Int robot_pos);
-        void propagateProbabilities(std::vector<std::vector<Cell>>& map, hashSet& openSet, hashSet& closedSet, hashSet& activeSet);
+        void propagateProbabilities(std::vector<std::vector<Cell>>& map, HashSet& openSet, HashSet& closedSet, HashSet& activeSet);
 
-        void calculateWeight(std::vector<std::vector<Cell>>& map, int i, int j, Vector2Int p, hashSet& openPropagationSet,
-                             hashSet& closedPropagationSet, hashSet& activePropagationSet);
+        void calculateWeight(std::vector<std::vector<Cell>>& map, int i, int j, Vector2Int p, HashSet& openPropagationSet,
+                             HashSet& closedPropagationSet, HashSet& activePropagationSet);
         void normalizeWeights(std::vector<std::vector<Cell>>& map);
         double informationGain(const WindVector& windVec);
 

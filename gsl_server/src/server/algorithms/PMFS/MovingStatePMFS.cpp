@@ -26,7 +26,7 @@ namespace GSL
                 for (int c = oJ; c <= fJ; c++)
                 {
                     Vector2Int p(r, c);
-                    hashSet& visibilitySet = pmfs->visibilityMap.at(Vector2Int(i, j));
+                    HashSet& visibilitySet = pmfs->visibilityMap.at(Vector2Int(i, j));
                     if (closedMoveSet.find(p) == closedMoveSet.end() && visibilitySet.find(p) != visibilitySet.end())
                         openMoveSet.insert(p);
                 }

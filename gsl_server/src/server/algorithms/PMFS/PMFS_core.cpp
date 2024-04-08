@@ -5,7 +5,7 @@
 
 namespace GSL
 {
-    using hashSet = std::unordered_set<Vector2Int>;
+    using HashSet = std::unordered_set<Vector2Int>;
 
     void PMFS::OnUpdate()
     {
@@ -28,17 +28,20 @@ namespace GSL
         if (concentration > thresholdGas)
         {
             // Gas & wind
-            PMFSLib::estimateHitProbabilities(grid, settings.hitProbability, true, wind_direction, wind_speed, currentPosIndex());
+            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, true, wind_direction, wind_speed, currentPosIndex());
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
-            PMFSLib::estimateHitProbabilities(grid, settings.hitProbability, false, wind_direction, wind_speed, currentPosIndex());
+            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, false, wind_direction, wind_speed, currentPosIndex());
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-        estimateWind(settings.simulation.useWindGroundTruth);
+        PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, 
+                            Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), 
+                            node,
+                            pubs.gmrfWind, pubs.groundTruthWind);
         plotWindVectors();
 
         number_of_updates++;

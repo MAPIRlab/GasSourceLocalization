@@ -107,9 +107,9 @@ namespace GSL
         }
 
         // remove "free" cells that are actually unreachable
-        hashSet openPropagationSet;
-        hashSet activePropagationSet;
-        hashSet closedPropagationSet;
+        HashSet openPropagationSet;
+        HashSet activePropagationSet;
+        HashSet closedPropagationSet;
 
         Vector2Int currentIndices = currentPosIndex();
         grid[currentIndices.x][currentIndices.y].auxWeight = 1;
@@ -167,9 +167,9 @@ namespace GSL
         // ADVECTION
         // this part is always done, to calculate the distance field to the current robot position
         // the actual advection-based source probabilities are discarded if the wind speed is too low for the direction to be reliable
-        hashSet openPropagationSet;
-        hashSet activePropagationSet;
-        hashSet closedPropagationSet;
+        HashSet openPropagationSet;
+        HashSet activePropagationSet;
+        HashSet closedPropagationSet;
 
         int i = robot_pos.x, j = robot_pos.y;
 
@@ -273,8 +273,8 @@ namespace GSL
         normalizeWeights(map);
     }
 
-    void GrGSL::propagateProbabilities(std::vector<std::vector<Cell>>& map, hashSet& openPropagationSet, hashSet& closedPropagationSet,
-                                       hashSet& activePropagationSet)
+    void GrGSL::propagateProbabilities(std::vector<std::vector<Cell>>& map, HashSet& openPropagationSet, HashSet& closedPropagationSet,
+                                       HashSet& activePropagationSet)
     {
 
         while (!activePropagationSet.empty())
@@ -313,8 +313,8 @@ namespace GSL
         }
     }
 
-    void GrGSL::calculateWeight(std::vector<std::vector<Cell>>& map, int i, int j, Vector2Int p, hashSet& openPropagationSet,
-                                hashSet& closedPropagationSet, hashSet& activePropagationSet)
+    void GrGSL::calculateWeight(std::vector<std::vector<Cell>>& map, int i, int j, Vector2Int p, HashSet& openPropagationSet,
+                                HashSet& closedPropagationSet, HashSet& activePropagationSet)
     {
         if (closedPropagationSet.find(Vector2Int(i, j)) == closedPropagationSet.end() &&
             activePropagationSet.find(Vector2Int(i, j)) == activePropagationSet.end())

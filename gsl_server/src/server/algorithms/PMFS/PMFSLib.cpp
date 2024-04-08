@@ -1,8 +1,8 @@
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
-#include <angles/angles.h>
 #include <gsl_server/core/logging.hpp>
 #include <gsl_server/Utils/Math.hpp>
 #include <gsl_server/Utils/NQAQuadtree.hpp>
+#include <angles/angles.h>
 
 namespace GSL
 {
@@ -11,16 +11,16 @@ namespace GSL
     // P(H)
     //---------------
 
-    void PMFSLib::estimateHitProbabilities(Grid<HitProbability>& localVariable, PMFS_internal::Settings::HitProbabilitySettings& settings, bool hit,
+    void PMFSLib::estimateHitProbabilities(Grid<HitProbability>& localVariable, const std::unordered_map<Vector2Int, HashSet>& visibilityMap, PMFS_internal::Settings::HitProbabilitySettings& settings, bool hit,
                                            double downwind_direction, double wind_speed, Vector2Int robot_pos)
     {
 
         // receiving propagation this step. Can still be modified by better estimations.
-        hashSet openPropagationSet;
+        HashSet openPropagationSet;
         // causing propagation this step. No longer modifyable
-        hashSet activePropagationSet;
+        HashSet activePropagationSet;
         // old news
-        hashSet closedPropagationSet;
+        HashSet closedPropagationSet;
 
         int i = robot_pos.x, j = robot_pos.y;
 
@@ -46,7 +46,7 @@ namespace GSL
             for (int c = oJ; c <= fJ; c++)
             {
                 Vector2Int rc(r, c);
-                hashSet& set = visibilityMap.at(ij);
+                const HashSet& set = visibilityMap.at(ij);
                 if (set.find(rc) == set.end())
                     continue;
 
@@ -87,8 +87,8 @@ namespace GSL
         }
     }
 
-    double PMFSLib::propagateProbabilities(Grid<HitProbability>& var, PMFS_internal::Settings::HitProbabilitySettings& settings,
-                                           hashSet& openPropagationSet, hashSet& closedPropagationSet, hashSet& activePropagationSet,
+    double PMFSLib::propagateProbabilities(Grid<HitProbability>& var, const PMFS_internal::Settings::HitProbabilitySettings& settings,
+                                           HashSet& openPropagationSet, HashSet& closedPropagationSet, HashSet& activePropagationSet,
                                            const HitProbKernel& kernel)
     {
         double total = 0;
@@ -177,7 +177,7 @@ namespace GSL
     }
 
     double PMFSLib::applyFalloffLogOdds(Vector2 originalVectorScaled, const HitProbKernel& kernel,
-                                        PMFS_internal::Settings::HitProbabilitySettings& settings)
+                                        const PMFS_internal::Settings::HitProbabilitySettings& settings)
     {
         double sampleGaussian = Utils::evaluate2DGaussian(originalVectorScaled, kernel.sigma, kernel.angle);
         double maxPossible = Utils::evaluate2DGaussian({0, 0}, kernel.sigma, kernel.angle);
@@ -195,17 +195,17 @@ namespace GSL
         metadata.width = floor((float)map.info.width / scale);
     }
 
-    void PMFSLib::initializeMap(std::shared_ptr<Algorithm> algorithm, Grid<HitProbability> grid, const PMFS_internal::Settings& settings,
-                                PMFS_internal::Simulations& simulations)
+    void PMFSLib::initializeMap(Algorithm& algorithm, Grid<HitProbability> grid, const PMFS_internal::Settings& settings,
+                                PMFS_internal::Simulations& simulations, std::unordered_map<Vector2Int, HashSet>& visibilityMap)
     {
-        std::vector<std::vector<uint8_t>> mapa(algorithm->map.info.height, std::vector<uint8_t>(algorithm->map.info.width));
+        std::vector<std::vector<uint8_t>> mapa(algorithm.map.info.height, std::vector<uint8_t>(algorithm.map.info.width));
         {
             int index = 0;
             for (int i = 0; i < mapa.size(); i++)
             {
                 for (int j = 0; j < mapa[0].size(); j++)
                 {
-                    mapa[i][j] = algorithm->map.data[index];
+                    mapa[i][j] = algorithm.map.data[index];
                     index++;
                 }
             }
@@ -214,7 +214,7 @@ namespace GSL
 
         // create the cells
         {
-            int scale = algorithm->getParam<int>("scale", 65); // scale for dynamic map reduction
+            int scale = algorithm.getParam<int>("scale", 65); // scale for dynamic map reduction
             for (int i = 0; i < grid.metadata.height; i++)
             {
                 for (int j = 0; j < grid.metadata.width; j++)
@@ -240,6 +240,17 @@ namespace GSL
 
         // pruning unreachable free cells
         {
+            {
+                HashSet openPropagationSet;
+                HashSet activePropagationSet;
+                HashSet closedPropagationSet;
+                Vector2Int currentIndices = grid.metadata.coordinatesToIndex(algorithm.currentRobotPose.pose.pose.position.x,
+                                                                             algorithm.currentRobotPose.pose.pose.position.y);
+                grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0;
+                activePropagationSet.insert(currentIndices);
+                PMFSLib::propagateProbabilities(grid, settings.hitProbability, openPropagationSet, closedPropagationSet, activePropagationSet, {1, {1, 0}, 0});
+            }
+
             std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.height, std::vector<uint8_t>(grid.metadata.width));
             for (int i = 0; i < grid.metadata.height; i++)
             {
@@ -286,9 +297,9 @@ namespace GSL
                 for (int j = 0; j < grid.metadata.width; j++)
                 {
                     Vector2Int ij(i, j);
-                    if (simulationOccupancy[grid.metadata.indexOf(i,j)] != Occupancy::Free)
+                    if (grid.freeAt(i,j))
 					{
-						visibilityMap.emplace(ij, hashSet{});
+						visibilityMap.emplace(ij, HashSet{});
                         continue;
 					}
                     int oI = std::max(0, i - visibility_map_range) - i;
@@ -296,7 +307,7 @@ namespace GSL
                     int oJ = std::max(0, j - visibility_map_range) - j;
                     int fJ = std::min(grid.metadata.width - 1, j + visibility_map_range) - j;
 
-                    hashSet visibleCells;
+                    HashSet visibleCells;
                     double totalX = 0;
                     double totalY = 0;
                     for (int r = oI; r <= fI; r++)
@@ -304,7 +315,7 @@ namespace GSL
                         for (int c = oJ; c <= fJ; c++)
                         {
                             Vector2Int thisCell(i + r, j + c);
-                            if (pathFree(ij, thisCell))
+                            if (pathFree(grid, ij, thisCell))
                             {
                                 visibleCells.insert(thisCell);
                             }
@@ -315,20 +326,20 @@ namespace GSL
             }
         }
 
-        // source probability before we get any observations
-        for (double& p : sourceProbability)
-        {
-            p = 1.0 / grid.metadata.numFreeCells;
-        }
+        
 
 
         simulations.varianceOfHitProb.resize(grid.metadata.height, std::vector<double>(grid.metadata.width, 0));
-        stateMachine.forceSetState(stopAndMeasureState.get());
     }
 
-    void PMFSLib::initializeWindPredictions()
+    void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid<Vector2> grid, std::shared_ptr<WindEstimation::Request>& GMRFRequest
+#ifdef USE_GADEN
+        , std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest
+#endif
+    )
     {
-        std::string anemometer_frame = algorithm->getParam<std::string>("anemometer_frame", "anemometer_frame");
+        grid.data.resize(grid.metadata.height * grid.metadata.width);
+        std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
 
         geometry_msgs::msg::TransformStamped tfm;
         bool has_tf = false;
@@ -336,30 +347,22 @@ namespace GSL
         {
             try
             {
-                tfm = algorithm->tf_buffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+                tfm = algorithm.tf_buffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
                 has_tf = true;
             }
             catch (std::exception& e)
             {
                 GSL_ERROR("TF error when looking up map -> anemometer:\n{}", e.what());
-                rclcpp::spin_some(algorithm->node);
+                rclcpp::spin_some(algorithm.node);
             }
         } while (!has_tf);
 
         float anemometer_Z = tfm.transform.translation.z;
         GSL_INFO("anemometer z is {}", anemometer_Z);
-        hashSet openPropagationSet;
-        hashSet activePropagationSet;
-        hashSet closedPropagationSet;
 
-        Vector2Int currentIndices = currentPosIndex();
-        grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0;
-        activePropagationSet.insert(currentIndices);
-        PMFSLib::propagateProbabilities(grid, settings.hitProbability, openPropagationSet, closedPropagationSet, activePropagationSet, {1, {1, 0}, 0});
-
-        pubs.GMRFRequest = std::make_shared<WindEstimation::Request>();
+        GMRFRequest = std::make_shared<WindEstimation::Request>();
 #ifdef USE_GADEN
-        pubs.groundTruthWindRequest = std::make_shared<gaden_player::srv::WindPosition::Request>();
+        groundTruthWindRequest = std::make_shared<gaden_player::srv::WindPosition::Request>();
 #endif
 
         for (int i = 0; i < grid.metadata.height; i++)
@@ -370,20 +373,75 @@ namespace GSL
                 {
                     grid.metadata.numFreeCells++;
                     Vector2 coords = grid.metadata.indexToCoordinates(i, j);
-                    pubs.GMRFRequest->x.push_back(coords.x);
-                    pubs.GMRFRequest->y.push_back(coords.y);
+                    GMRFRequest->x.push_back(coords.x);
+                    GMRFRequest->y.push_back(coords.y);
 #ifdef USE_GADEN
-                    pubs.groundTruthWindRequest->x.push_back(coords.x);
-                    pubs.groundTruthWindRequest->y.push_back(coords.y);
-                    pubs.groundTruthWindRequest->z.push_back(anemometer_Z);
+                    groundTruthWindRequest->x.push_back(coords.x);
+                    groundTruthWindRequest->y.push_back(coords.y);
+                    groundTruthWindRequest->z.push_back(anemometer_Z);
 #endif
                 }
             }
         }
 
-        estimatedWindVectors = std::vector<std::vector<Vector2>>(grid.metadata.height, std::vector<Vector2>(grid.metadata.width));
-        estimateWind(settings.simulation.useWindGroundTruth);
     }
 
+    void PMFSLib::estimateWind(bool useGroundTruth, Grid<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
+                               PMFS_internal::PublishersAndSubscribers::GMRFWind& gmrf
+#ifdef USE_GADEN
+                               , PMFS_internal::PublishersAndSubscribers::GroundTruthWind& groundTruth
+#endif
+    )
+    {
+        // if not compiled with gaden support, you have no choice but to use GMRF :)
+#ifdef USE_GADEN
+        if (!useGroundTruth)
+        {
+#endif
+            // ask the gmrf_wind service for the estimated wind vector in cell i,j
+            auto future = gmrf.client->async_send_request(gmrf.request);
+            auto result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(5));
+
+            if (result == rclcpp::FutureReturnCode::SUCCESS)
+            {
+                auto response = future.get();
+                for (int ind = 0; ind < gmrf.request->x.size(); ind++)
+                {
+                    Vector2Int pair = estimatedWind.metadata.coordinatesToIndex(gmrf.request->x[ind], gmrf.request->y[ind]);
+                    estimatedWind.dataAt(pair.x, pair.y) = Vector2(std::cos(response->v[ind]), std::sin(response->v[ind])) * (float)response->u[ind];
+                }
+            }
+            else
+                GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
+
+#ifdef USE_GADEN
+        }
+
+        else
+        {
+
+            auto future = groundTruth.client->async_send_request(groundTruth.request);
+            auto result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(5));
+            if (result == rclcpp::FutureReturnCode::SUCCESS)
+            {
+                auto response = future.get();
+                for (int ind = 0; ind < groundTruth.request->x.size(); ind++)
+                {
+                    Vector2Int pair = estimatedWind.metadata.coordinatesToIndex(groundTruth.request->x[ind], groundTruth.request->y[ind]);
+                    estimatedWind.dataAt(pair.x, pair.y) = Vector2(response->u[ind], response->v[ind]);
+                }
+            }
+            else
+                GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
+        }
+#endif
+    }
+
+
+
+    bool PMFSLib::indicesInBounds(const Vector2Int indices, const GridMetadata& metadata)
+    {
+        return indices.x >= 0 && indices.x < metadata.width && indices.y >= 0 && indices.y < metadata.height;
+    }
 
 } // namespace GSL

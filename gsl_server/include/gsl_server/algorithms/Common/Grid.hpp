@@ -33,7 +33,7 @@ namespace GSL
     {
         std::vector<T>& data;
         std::vector<Occupancy>& occupancy;
-        const GridMetadata& metadata;
+        GridMetadata& metadata;
 
         Grid(std::vector<T>& _data, std::vector<Occupancy>& _occupancy, GridMetadata& _metadata)
             : data(_data), occupancy(_occupancy), metadata(_metadata)

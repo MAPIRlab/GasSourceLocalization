@@ -9,7 +9,7 @@ namespace GSL
     class MovingStateGrGSL : public MovingState
     {
 
-        typedef std::unordered_set<Vector2Int> hashSet;
+        typedef std::unordered_set<Vector2Int> HashSet;
 
     public:
         MovingStateGrGSL(Algorithm* _algorithm);
@@ -19,8 +19,8 @@ namespace GSL
     protected:
         GrGSL* grgsl;
 
-        hashSet openMoveSet;
-        hashSet closedMoveSet;
+        HashSet openMoveSet;
+        HashSet closedMoveSet;
 
         NavigateToPose::Goal indexToGoal(int i, int j);
 

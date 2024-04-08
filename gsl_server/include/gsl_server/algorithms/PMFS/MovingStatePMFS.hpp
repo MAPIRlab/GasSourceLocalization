@@ -7,7 +7,7 @@ namespace GSL
     class PMFS;
     class MovingStatePMFS : public MovingState
     {
-        using hashSet = std::unordered_set<Vector2Int>;
+        using HashSet = std::unordered_set<Vector2Int>;
 
     public:
         MovingStatePMFS(Algorithm* _algorithm);
@@ -25,8 +25,8 @@ namespace GSL
         void publishMarkers();
 
     protected:
-        hashSet closedMoveSet;
-        hashSet openMoveSet;
+        HashSet closedMoveSet;
+        HashSet openMoveSet;
         NavigateToPose::Goal indexToGoal(int i, int j);
         void Fail() override;
 
