@@ -15,32 +15,6 @@ namespace GSL
     }
 
 
-    void PMFS::normalizeSourceProb(Grid<double>& variable)
-    {
-        // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
-        // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens
-        double total = 0;
-        int count = 0;
-        for (int i = 0; i < variable.data.size(); i++)
-        {
-            if (variable.occupancy[i] == Occupancy::Free)
-            {
-                total += variable.data[i];
-                count++;
-            }
-        }
-
-        #pragma omp parallel for collapse(2)
-        for (int i = 0; i < variable.data.size(); i++)
-        {
-            if (variable.occupancy[i] == Occupancy::Free)
-            {
-                variable.data[i] = variable.data[i] / total;
-            }
-        }
-    }
-
-
     GSLResult PMFS::checkSourceFound()
     {
         if (stateMachine.getCurrentState() == waitForMapState.get())

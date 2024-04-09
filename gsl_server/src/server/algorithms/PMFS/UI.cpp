@@ -63,7 +63,7 @@ namespace GSL::PMFS_internal
             {
                 ImGui::InputFloat("X", &selectedCoordinates.x);
                 ImGui::InputFloat("Y", &selectedCoordinates.y);
-                auto indices = pmfs->gridMetaData.coordinatesToIndex(selectedCoordinates.x, selectedCoordinates.y);
+                auto indices = pmfs->gridMetadata.coordinatesToIndex(selectedCoordinates.x, selectedCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }
@@ -74,25 +74,25 @@ namespace GSL::PMFS_internal
             }
 
             static std::string result;
-            if (ImGui::Button("Print") && pmfs->indicesInBounds({x, y}))
+            if (ImGui::Button("Print") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
                 if (selectedVar == 0)
-                    result = PMFS_internal::UI::printCell(pmfs->grid, x, y);
+                    result = PMFS_internal::UI::printCell(Grid<HitProbability>(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata), x, y);
                 else if (selectedVar == 1)
-                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->grid[x][y].sourceProbability);
+                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf(x,y)]);
             }
-            if (ImGui::Button("Simulate leaf") && pmfs->indicesInBounds({x, y}))
+            if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
 
                 Utils::NQA::Node* leaf = pmfs->simulations.mapSegmentation[x][y];
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else
-                    pmfs->simulations.printImage(SimulationSource(leaf, pmfs));
+                    pmfs->simulations.printImage(SimulationSource(leaf, pmfs->gridMetadata));
             }
-            else if (ImGui::Button("Simulate cell") && pmfs->indicesInBounds({x, y}))
+            else if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
-                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetaData.indexToCoordinates(x, y), pmfs));
+                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetadata.indexToCoordinates(x, y), pmfs->gridMetadata));
             }
 
             ImGui::Text("%s", result.c_str());
@@ -107,7 +107,7 @@ namespace GSL::PMFS_internal
             {
                 ImGui::InputFloat("X", &goalCoordinates.x);
                 ImGui::InputFloat("Y", &goalCoordinates.y);
-                auto indices = pmfs->gridMetaData.coordinatesToIndex(goalCoordinates.x, goalCoordinates.y);
+                auto indices = pmfs->gridMetadata.coordinatesToIndex(goalCoordinates.x, goalCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }
@@ -242,20 +242,20 @@ namespace GSL::PMFS_internal
         return selected;
     }
 
-    std::string UI::printCell(const std::vector<std::vector<Cell>>& grid, const int& x, const int& y)
+    std::string UI::printCell(const Grid<HitProbability>& grid, const int& x, const int& y)
     {
 
         static std::string queryResult;
 
-        if (x < 0 || x > grid.size() || y < 0 || y > grid[0].size())
+        if (x < 0 || x > grid.metadata.height || y < 0 || y > grid.metadata.width)
         {
             GSL_ERROR("Querying cell outside the map!");
         }
         else
         {
-            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid[x][y].free) +
-                          fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid[x][y].hitProbability.auxWeight)) +
-                          fmt::format("weight:{} \n", Utils::logOddsToProbability(grid[x][y].hitProbability.logOdds));
+            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x,y)) +
+                          fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x,y).auxWeight)) +
+                          fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x,y).logOdds));
         }
 
         return queryResult.c_str();

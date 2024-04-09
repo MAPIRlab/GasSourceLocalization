@@ -45,7 +45,7 @@ namespace GSL
 #endif
         );
 
-        static void PMFSLib::estimateWind(bool useGroundTruth, Grid<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
+        static void estimateWind(bool useGroundTruth, Grid<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
                                           PMFS_internal::PublishersAndSubscribers::GMRFWind& gmrf
 #ifdef USE_GADEN
                                           , PMFS_internal::PublishersAndSubscribers::GroundTruthWind& groundTruth
@@ -69,12 +69,13 @@ namespace GSL
                 current_point += increment;
                 index++;
                 Vector2Int pair = grid.metadata.coordinatesToIndex(current_point.x, current_point.y);
-                pathIsFree = indicesInBounds(pair, grid.metadata) && grid.freeAt(pair.x, pair.y);
+                pathIsFree = grid.metadata.indicesInBounds(pair) && grid.freeAt(pair.x, pair.y);
             }
 
             return pathIsFree;
         }
-        static bool indicesInBounds(const Vector2Int indices, const GridMetadata& metadata);
+        
+        static void normalizeSourceProb(Grid<double>& variable);
         
     };
 

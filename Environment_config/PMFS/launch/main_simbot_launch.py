@@ -39,7 +39,7 @@ def launch_setup(context, *args, **kwargs):
             Node(
                 package="gsl_server",
                 executable="gsl_actionserver_node",
-                name="gsl_node",
+                name="GSL",
                 #prefix="xterm -e gdb --args",
                 parameters=[
                     # Common
@@ -219,7 +219,7 @@ def launch_setup(context, *args, **kwargs):
     actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.extend(rviz)
+    actions.append(rviz)
 
     return actions
 

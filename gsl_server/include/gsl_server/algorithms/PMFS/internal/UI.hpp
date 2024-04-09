@@ -36,7 +36,7 @@ namespace GSL::PMFS_internal
         void createPlots();
         bool useCoordinates();
         int selectVariable();
-        std::string printCell(const std::vector<std::vector<Cell>>& cells, const int& x, const int& y);
+        std::string printCell(const Grid<HitProbability>& grid, const int& x, const int& y);
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         Vector2 selectedCoordinates;
         Vector2 goalCoordinates;

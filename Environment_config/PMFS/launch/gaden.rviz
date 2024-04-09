@@ -81,6 +81,7 @@ Visualization Manager:
       Name: Environment_CAD
       Namespaces:
         part_0: true
+        part_1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -358,10 +359,10 @@ Visualization Manager:
         Value: /PioneerP3DX/quadtree
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: ExplorationValue
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -369,7 +370,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/explorationValue
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217

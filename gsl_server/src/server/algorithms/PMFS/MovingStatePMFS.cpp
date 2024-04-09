@@ -1,5 +1,7 @@
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include <gsl_server/algorithms/PMFS/internal/Cell.hpp>
+#include <gsl_server/algorithms/Common/Grid.hpp>
 #include <gsl_server/Utils/Math.hpp>
 #include <angles/angles.h>
 
@@ -12,14 +14,15 @@ namespace GSL
 
     void MovingStatePMFS::chooseGoalAndMove()
     {
+        auto& gridMetadata = pmfs->gridMetadata;
         {
             int i = pmfs->currentPosIndex().x, j = pmfs->currentPosIndex().y;
 
             int openMoveSetExpasion = pmfs->settings.movement.openMoveSetExpasion;
             int oI = std::max(0, i - openMoveSetExpasion);
-            int fI = std::min((int)pmfs->grid.size() - 1, i + openMoveSetExpasion);
+            int fI = std::min((int)gridMetadata.height - 1, i + openMoveSetExpasion);
             int oJ = std::max(0, j - openMoveSetExpasion);
-            int fJ = std::min((int)pmfs->grid[0].size() - 1, j + openMoveSetExpasion);
+            int fJ = std::min((int)gridMetadata.width - 1, j + openMoveSetExpasion);
 
             for (int r = oI; r <= fI; r++)
             {
@@ -48,7 +51,7 @@ namespace GSL
             NavigateToPose::Goal tempGoal = indexToGoal(r, c);
 
             double explorationTerm = explorationValue(r, c);
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[r][c] * (1 - pmfs->grid[r][c].hitProbability.confidence);
+            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(r,c)] * (1 - pmfs->hitProbability[gridMetadata.indexOf(r,c)].confidence);
 
             double this_interest =
                 currentMovement == MovementType::Exploration || varianceTerm == 0 || explorationC < pmfs->settings.movement.explorationProbability
@@ -62,7 +65,7 @@ namespace GSL
                     interest = this_interest;
                     goalI = r;
                     goalJ = c;
-                    maxDist = pmfs->grid[r][c].distanceFromRobot;
+                    maxDist = pmfs->hitProbability[gridMetadata.indexOf(r,c)].distanceFromRobot;
                     goal = tempGoal;
                 }
             }
@@ -84,7 +87,7 @@ namespace GSL
         for (const auto& p : set)
         {
             float distance = glm::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
-            sum += (1 - pmfs->grid[p.x][p.y].hitProbability.confidence) * std::exp(-distance);
+            sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p.x, p.y)].confidence) * std::exp(-distance);
         }
         return sum;
     }
@@ -95,7 +98,7 @@ namespace GSL
         goal.pose.header.frame_id = "map";
         goal.pose.header.stamp = pmfs->node->now();
 
-        Vector2 pos = pmfs->gridMetaData.indexToCoordinates(i, j);
+        Vector2 pos = pmfs->gridMetadata.indexToCoordinates(i, j);
         Vector2 coordR = {pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y};
 
         double move_angle = (std::atan2(pos.y - coordR.y, pos.x - coordR.x));
@@ -126,7 +129,7 @@ namespace GSL
             return;
 
         Vector2Int indicesGoal =
-            pmfs->gridMetaData.coordinatesToIndex(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
+            pmfs->gridMetadata.coordinatesToIndex(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
         openMoveSet.erase(indicesGoal);
         closedMoveSet.insert(indicesGoal);
         MovingState::Fail();
@@ -134,8 +137,9 @@ namespace GSL
 
     void MovingStatePMFS::publishMarkers()
     {
-        const auto& grid = pmfs->grid;
-        const auto& gridMetaData = pmfs->gridMetaData;
+        GridMetadata& gridMetadata = pmfs->gridMetadata;
+        Grid<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->navigationOccupancy, gridMetadata);
+
 
         Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());
 
@@ -147,27 +151,27 @@ namespace GSL
         double maxVar = -DBL_MAX;
         double minExpl = DBL_MAX;
         double minVar = DBL_MAX;
-        for (int a = 0; a < grid.size(); a++)
+        for (int a = 0; a < gridMetadata.height; a++)
         {
-            for (int b = 0; b < grid[0].size(); b++)
+            for (int b = 0; b < gridMetadata.width; b++)
             {
-                if (!grid[a][b].free)
+                if (!grid.freeAt(a,b))
                     continue;
                 maxExpl = std::max(maxExpl, explorationValue(a, b));
-                maxVar = std::max(maxVar, pmfs->simulations.varianceOfHitProb[a][b] * (1 - grid[a][b].hitProbability.confidence));
+                maxVar = std::max(maxVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(a,b)] * (1 - grid.dataAt(a,b).confidence));
 
                 minExpl = std::min(minExpl, explorationValue(a, b));
-                minVar = std::min(minVar, pmfs->simulations.varianceOfHitProb[a][b] * (1 - grid[a][b].hitProbability.confidence));
+                minVar = std::min(minVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(a,b)] * (1 - grid.dataAt(a,b).confidence));
             }
         }
 
-        for (int a = 0; a < grid.size(); a++)
+        for (int a = 0; a < gridMetadata.height; a++)
         {
-            for (int b = 0; b < grid[0].size(); b++)
+            for (int b = 0; b < gridMetadata.width; b++)
             {
-                if (!grid[a][b].free)
+                if (!grid.freeAt(a,b))
                     continue;
-                auto coords = gridMetaData.indexToCoordinates(a, b);
+                auto coords = gridMetadata.indexToCoordinates(a, b);
                 Point p;
                 p.x = coords.x;
                 p.y = coords.y;
@@ -189,7 +193,7 @@ namespace GSL
                 {
                     explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::valueColorMode::Linear);
                 }
-                varianceColor = Utils::valueToColor(pmfs->simulations.varianceOfHitProb[a][b] * (1 - grid[a][b].hitProbability.confidence), minVar,
+                varianceColor = Utils::valueToColor(pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(a,b)] * (1 - grid.dataAt(a,b).confidence), minVar,
                                                     maxVar, Utils::valueColorMode::Linear);
 
                 explorationMarker.points.push_back(p);

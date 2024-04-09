@@ -69,9 +69,6 @@ namespace GSL
         {
             return gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
         }
-        bool pathFree(const Vector2Int& origin, const Vector2Int& end);
-        bool indicesInBounds(const Vector2Int indices) const;
-        void normalizeSourceProb(Grid<double>& variable);
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
 

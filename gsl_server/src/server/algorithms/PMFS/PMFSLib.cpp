@@ -261,6 +261,8 @@ namespace GSL
                         grid.dataAt(i,j).logOdds = DBL_MIN;
                         grid.occupancyAt(i,j) = Occupancy::Obstacle;
                     }
+                    else
+                        grid.metadata.numFreeCells++;
                     occupancyMap[i][j] = grid.occupancyAt(i,j) == Occupancy::Free ? 1 : 0;
                 }
             }
@@ -297,7 +299,7 @@ namespace GSL
                 for (int j = 0; j < grid.metadata.width; j++)
                 {
                     Vector2Int ij(i, j);
-                    if (grid.freeAt(i,j))
+                    if (!grid.freeAt(i,j))
 					{
 						visibilityMap.emplace(ij, HashSet{});
                         continue;
@@ -328,8 +330,8 @@ namespace GSL
 
         
 
-
-        simulations.varianceOfHitProb.resize(grid.metadata.height, std::vector<double>(grid.metadata.width, 0));
+        simulations.visibilityMap = &visibilityMap;
+        simulations.varianceOfHitProb.resize(grid.metadata.height*grid.metadata.width, 0);
     }
 
     void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid<Vector2> grid, std::shared_ptr<WindEstimation::Request>& GMRFRequest
@@ -371,7 +373,6 @@ namespace GSL
             {
                 if (grid.freeAt(i,j))
                 {
-                    grid.metadata.numFreeCells++;
                     Vector2 coords = grid.metadata.indexToCoordinates(i, j);
                     GMRFRequest->x.push_back(coords.x);
                     GMRFRequest->y.push_back(coords.y);
@@ -437,11 +438,29 @@ namespace GSL
 #endif
     }
 
-
-
-    bool PMFSLib::indicesInBounds(const Vector2Int indices, const GridMetadata& metadata)
+    void PMFSLib::normalizeSourceProb(Grid<double>& variable)
     {
-        return indices.x >= 0 && indices.x < metadata.width && indices.y >= 0 && indices.y < metadata.height;
+        // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
+        // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens
+        double total = 0;
+        int count = 0;
+        for (int i = 0; i < variable.data.size(); i++)
+        {
+            if (variable.occupancy[i] == Occupancy::Free)
+            {
+                total += variable.data[i];
+                count++;
+            }
+        }
+
+        #pragma omp parallel for
+        for (int i = 0; i < variable.data.size(); i++)
+        {
+            if (variable.occupancy[i] == Occupancy::Free)
+            {
+                variable.data[i] = variable.data[i] / total;
+            }
+        }
     }
 
 } // namespace GSL

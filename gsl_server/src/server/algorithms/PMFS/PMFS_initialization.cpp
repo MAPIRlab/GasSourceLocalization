@@ -5,7 +5,10 @@ namespace GSL
 {
     using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
     PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node),
-        simulations(this)
+        simulations(Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+                    Grid<double>(sourceProbability, simulationOccupancy, gridMetadata),
+                    Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata),
+                    settings.simulation)
 #ifdef USE_GUI
         ,ui(this)
 #endif

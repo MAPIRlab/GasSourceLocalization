@@ -72,10 +72,10 @@ namespace GSL
             cell.resize(ceil((float)map.info.width / scale), Cell(false, 0));
         }
 
-        gridMetaData.cellSize = map.info.resolution * scale;
-        gridMetaData.origin.x = map.info.origin.position.x;
-        gridMetaData.origin.y = map.info.origin.position.y;
-        gridMetaData.numFreeCells = 0;
+        gridMetadata.cellSize = map.info.resolution * scale;
+        gridMetadata.origin.x = map.info.origin.position.x;
+        gridMetadata.origin.y = map.info.origin.position.y;
+        gridMetadata.numFreeCells = 0;
 
         int cellsI = 0, cellsJ = 0;
         for (int i = 0; i < boolMap.size(); i += scale)
@@ -94,14 +94,14 @@ namespace GSL
                         }
                     }
                 }
-                Vector2 coord = gridMetaData.indexToCoordinates(cellsI, cellsJ, true);
+                Vector2 coord = gridMetadata.indexToCoordinates(cellsI, cellsJ, true);
                 grid[cellsI][cellsJ].free = cellFree;
                 grid[cellsI][cellsJ].weight = 1;
                 grid[cellsI][cellsJ].auxWeight = -1; // this is used to prune the cells that are free but unreachable
                 cellsJ++;
 
                 if (cellFree)
-                    gridMetaData.numFreeCells++;
+                    gridMetadata.numFreeCells++;
             }
             cellsI++;
         }
@@ -123,7 +123,7 @@ namespace GSL
                 {
                     grid[i][j].weight = 0;
                     grid[i][j].free = false;
-                    gridMetaData.numFreeCells--;
+                    gridMetadata.numFreeCells--;
                 }
             }
         }
@@ -179,7 +179,7 @@ namespace GSL
         int fJ = std::min((int)map[0].size() - 1, j + 2);
 
         // estimate the probabilities for the immediate neighbours
-        Vector2 coordR = gridMetaData.indexToCoordinates(i, j);
+        Vector2 coordR = gridMetadata.indexToCoordinates(i, j);
         double upwind_dir = angles::normalize_angle(wind_direction + M_PI);
         double move_dir = atan2((positionOfLastHit.y - coordR.y), (positionOfLastHit.x - coordR.x)) + M_PI;
 
@@ -191,7 +191,7 @@ namespace GSL
                     continue;
                 if (std::abs(c - j) > 1 || std::abs(r - i) > 1)
                 {
-                    Vector2 coordP = gridMetaData.indexToCoordinates(r, c);
+                    Vector2 coordP = gridMetadata.indexToCoordinates(r, c);
                     double dist;
                     double cell_vector = atan2((coordR.y - coordP.y), (coordR.x - coordP.x));
 
@@ -474,7 +474,7 @@ namespace GSL
         for (int i = 0; i < data.size() * proportionBest; i++)
         {
             CellData& cd = data[i];
-            Vector2 coord = gridMetaData.indexToCoordinates(cd.indices.x, cd.indices.y);
+            Vector2 coord = gridMetadata.indexToCoordinates(cd.indices.x, cd.indices.y);
             averageX += cd.probability * coord.x;
             averageY += cd.probability * coord.y;
             sum += cd.probability;
@@ -492,7 +492,7 @@ namespace GSL
             {
                 if (grid[i][j].free)
                 {
-                    Vector2 coords = gridMetaData.indexToCoordinates(i, j);
+                    Vector2 coords = gridMetadata.indexToCoordinates(i, j);
                     double p = probability(Vector2Int(i, j));
                     x += pow(coords.x - expected.x, 2) * p;
                     y += pow(coords.y - expected.y, 2) * p;
@@ -574,7 +574,7 @@ namespace GSL
             {
                 if (grid[a][b].free)
                 {
-                    auto coords = gridMetaData.indexToCoordinates(a, b);
+                    auto coords = gridMetadata.indexToCoordinates(a, b);
                     Point p;
                     p.x = coords.x;
                     p.y = coords.y;

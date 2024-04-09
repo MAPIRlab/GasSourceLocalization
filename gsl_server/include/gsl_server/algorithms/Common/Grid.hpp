@@ -25,6 +25,16 @@ namespace GSL
         {
             return j + i * width;
         }
+
+        Vector2Int indices2D(size_t index)
+        {
+            return Vector2Int(index/width, index%width);
+        }
+
+        bool indicesInBounds(const Vector2Int indices)
+        {
+            return indices.x >= 0 && indices.x < height && indices.y >= 0 && indices.y < width;
+        }
     };
 
     enum class Occupancy {Free, Obstacle};
@@ -39,17 +49,17 @@ namespace GSL
             : data(_data), occupancy(_occupancy), metadata(_metadata)
         {}
 
-        T& dataAt(size_t i, size_t j)
+        T& dataAt(size_t i, size_t j) const
         {
             return data[metadata.indexOf(i,j)];
         }
 
-        Occupancy& occupancyAt(size_t i, size_t j)
+        Occupancy& occupancyAt(size_t i, size_t j) const
         {
             return occupancy[metadata.indexOf(i,j)];
         }
 
-        bool freeAt(size_t i, size_t j)
+        bool freeAt(size_t i, size_t j) const
         {
             return occupancyAt(i,j) == Occupancy::Free;
         }
