@@ -1,6 +1,6 @@
 #pragma once
 #ifdef USE_GUI
-#include <gsl_server/algorithms/PMFS/internal/Cell.hpp>
+#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <ament_imgui/ament_imgui.h>
 #include <implot/implot.h>
 

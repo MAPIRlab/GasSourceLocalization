@@ -1,8 +1,8 @@
 #pragma once
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
 #include <gsl_server/Utils/NQAQuadtree.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Cell.hpp>
-#include <unordered_set>
+#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
 
 namespace GSL
 {
@@ -43,9 +43,11 @@ namespace GSL::PMFS_internal
     {
         using HashSet = std::unordered_set<Vector2Int>;
     public:
-        Simulations(Grid<HitProbability> _measuredHitProb, Grid<double> _sourceProb, Grid<Vector2> _wind, const PMFS_internal::Settings::SimulationSettings& _settings)
+        Simulations(Grid<HitProbability> _measuredHitProb, Grid<double> _sourceProb, Grid<Vector2> _wind, const PMFS_internal::SimulationSettings& _settings)
             : measuredHitProb(_measuredHitProb), sourceProb(_sourceProb), wind(_wind), settings(_settings)
         {}
+
+        void initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap);
         void updateSourceProbability(float refineFraction);
         void printImage(const SimulationSource& source);
 
@@ -53,9 +55,9 @@ namespace GSL::PMFS_internal
         std::unique_ptr<Utils::NQA::Quadtree> quadtree;
         std::vector<Utils::NQA::Node> QTleaves;
         std::vector<double> varianceOfHitProb; // calculated from the simulations, used for movement
-        std::unordered_map<Vector2Int, HashSet>* visibilityMap;
+        VisibilityMap* visibilityMap;
     protected:
-        const PMFS_internal::Settings::SimulationSettings& settings;
+        const PMFS_internal::SimulationSettings& settings;
         Grid<HitProbability> measuredHitProb;
         Grid<double> sourceProb;
         Grid<Vector2> wind;

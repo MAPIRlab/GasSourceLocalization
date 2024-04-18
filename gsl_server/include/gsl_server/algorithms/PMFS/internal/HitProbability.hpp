@@ -12,6 +12,11 @@ namespace GSL::PMFS_internal
         double omega = 0;      // intermediate step for the confidence value, goes from 0 to +infinity
         double confidence = 0; // 0-1
         double distanceFromRobot = 0;
+
+        void setProbability(double probability)
+        {
+            logOdds = std::log(probability)/(1-std::log(probability));
+        }
     };
 
 } // namespace GSL::PMFS

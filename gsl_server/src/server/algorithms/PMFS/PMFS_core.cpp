@@ -75,9 +75,7 @@ namespace GSL
     float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) 
     {
         float ppm = Algorithm::gasCallback(msg);
-#if USE_GUI
-        ui.addConcentrationReading(ppm);
-#endif
+        IF_GUI(ui.addConcentrationReading(ppm));
         return ppm;
     }
 

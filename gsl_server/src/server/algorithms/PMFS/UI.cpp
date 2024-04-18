@@ -36,7 +36,7 @@ namespace GSL::PMFS_internal
 
         rclcpp::Rate rate(30);
 
-        while (rclcpp::ok() && !pmfs->hasEnded())
+        while (rclcpp::ok() && !pmfs->HasEnded())
         {
             AMENT_IMGUI::StartFrame();
             createUI();

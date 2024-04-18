@@ -7,9 +7,9 @@
 namespace GSL
 {
     static constexpr int sizeOfGasMsgBuffer = 10;
-    void PlumeTracking::initialize()
+    void PlumeTracking::Initialize()
     {
-        Algorithm::initialize();
+        Algorithm::Initialize();
         lastConcentrationReadings.resize(sizeOfGasMsgBuffer);
 
         waitForMapState = std::make_unique<WaitForMapState>(this);

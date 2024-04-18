@@ -105,13 +105,13 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
 
 GSLResult GSLServer::runMethod(std::shared_ptr<GSL::Algorithm> algorithm)
 {
-    algorithm->initialize();
+    algorithm->Initialize();
 
     rclcpp::Rate rate(20);
-    while (rclcpp::ok() && !algorithm->hasEnded())
+    while (rclcpp::ok() && !algorithm->HasEnded())
     {
         algorithm->OnUpdate();
         rate.sleep();
     }
-    return algorithm->getResult();
+    return algorithm->GetResult();
 }

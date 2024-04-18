@@ -4,9 +4,9 @@
 
 namespace GSL
 {
-    void Spiral::initialize()
+    void Spiral::Initialize()
     {
-        Algorithm::initialize();
+        Algorithm::Initialize();
         resetSpiral();
         waitForMapState = std::make_unique<WaitForMapState>(this);
         waitForGasState = std::make_unique<WaitForGasState>(this);

@@ -7,7 +7,7 @@
 #include <olfaction_msgs/msg/gas_sensor.hpp>
 #include <gsl_server/algorithms/Common/GSLState.hpp>
 #include <gsl_server/core/GSLResult.hpp>
-#include <gsl_server/core/logging.hpp>
+#include <gsl_server/core/Logging.hpp>
 
 #include <gsl_server/algorithms/Common/WaitForMapState.hpp>
 #include <gsl_server/algorithms/Common/WaitForGasState.hpp>
@@ -30,11 +30,11 @@ namespace GSL
         Algorithm() = delete;
         Algorithm(std::shared_ptr<rclcpp::Node> _node);
         ~Algorithm();
-        virtual void initialize();
+        virtual void Initialize();
         virtual void OnUpdate();
 
-        bool hasEnded();
-        GSLResult getResult();
+        bool HasEnded();
+        GSLResult GetResult();
         
         template <typename T> T getParam(const std::string& name, T defaultValue)
         {

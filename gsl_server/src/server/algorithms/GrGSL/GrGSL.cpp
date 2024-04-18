@@ -10,9 +10,9 @@ namespace GSL
     GrGSL::Cell::Cell(bool _free, double _weight) : free(_free), weight(_weight), auxWeight(0), distance(0)
     {}
 
-    void GrGSL::initialize()
+    void GrGSL::Initialize()
     {
-        Algorithm::initialize();
+        Algorithm::Initialize();
 
         markers.probability_markers = node->create_publisher<Marker>("probability_markers", 10);
         markers.estimation_markers = node->create_publisher<Marker>("estimation_markers", 10);

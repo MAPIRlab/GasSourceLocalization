@@ -60,7 +60,7 @@ namespace GSL
         Vector2 positionOfLastHit;
         FunctionQueue functionQueue;
 
-        void initialize() override;
+        void Initialize() override;
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void initializeMap();

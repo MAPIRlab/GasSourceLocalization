@@ -5,9 +5,9 @@
 
 namespace GSL
 {
-    void ParticleFilter::initialize()
+    void ParticleFilter::Initialize()
     {
-        SurgeSpiral::initialize();
+        SurgeSpiral::Initialize();
 
         particle_markers = node->create_publisher<Marker>("particle_markers", 10);
         estimation_markers = node->create_publisher<Marker>("estimation_markers", 10);

@@ -3,7 +3,7 @@
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/Utils/Math.hpp>
 #include <gsl_server/Utils/Time.hpp>
-#include <gsl_server/core/logging.hpp>
+#include <gsl_server/core/Logging.hpp>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -23,6 +23,33 @@ namespace GSL::PMFS_internal
         double mean_old = mean;
         mean = mean_old + (weight / weight_sum) * (value - mean_old);
         variance = variance + weight * (value - mean_old) * (value - mean);
+    }
+
+    void Simulations::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
+    // create the Quadtree
+    {
+        quadtree = std::make_unique<Utils::NQA::Quadtree>(occupancyMap);
+        QTleaves = quadtree->fusedLeaves(settings.maxRegionSize);
+
+        mapSegmentation.resize(occupancyMap.size(), std::vector<Utils::NQA::Node*>(occupancyMap[0].size(), nullptr));
+
+        GSL_INFO("Number of cells after fusing quadtree: {0}", QTleaves.size());
+        // generate the image of indices so you can map a cell in the map to the corresponding leaf of the quatree
+        for (int i = 0; i < QTleaves.size(); i++)
+        {
+            Utils::NQA::Node& node = QTleaves[i];
+            Vector2Int start = node.origin;
+            Vector2Int end = node.origin + node.size;
+
+            for (int r = start.x; r < end.x; r++)
+            {
+                for (int c = start.y; c < end.y; c++)
+                {
+                    GSL_ASSERT_MSG(mapSegmentation[r][c] == nullptr, "fused cells are overlapping");
+                    mapSegmentation[r][c] = &node;
+                }
+            }
+        }
     }
 
     void Simulations::updateSourceProbability(float refineFraction)
@@ -51,7 +78,7 @@ namespace GSL::PMFS_internal
         std::vector<VarianceCalculationData> varianceCalculationData(measuredHitProb.data.size());
 
         int numberOfSimulations = 0;
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < localCopyLeaves.size(); leafIndex++)
         {
             NQA::Node* node = &localCopyLeaves[leafIndex];
@@ -127,7 +154,7 @@ namespace GSL::PMFS_internal
             numberOfSimulations += scores.size();
 
             // run the simulations of the new level and get scores for each node
-            #pragma omp parallel for
+            #pragma omp parallel for schedule(dynamic)
             for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
             {
                 NQA::Node* node = scores[leafIndex].leaf;
@@ -358,11 +385,11 @@ namespace GSL::PMFS_internal
         return randP;
     }
 
-    bool Simulations::moveAlongPath(Vector2& beginning, const Vector2& end)
+    bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end)
     {
 
         Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndex(end.x, end.y);
-        Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndex(beginning.x, beginning.y);
+        Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
 
         if (!measuredHitProb.freeAt(indexOrigin.x, indexOrigin.y))
         {
@@ -371,28 +398,27 @@ namespace GSL::PMFS_internal
 
         if(visibilityMap)
         {
-            HashSet& set = visibilityMap->at(indexOrigin);
-            if (set.find(indexEnd) != set.end())
+            if (visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
             {
-                beginning = end;
+                currentPosition = end;
                 return true;
             }
         }
 
         bool pathIsFree = true;
-        Vector2 vector = end - beginning;
+        Vector2 vector = end - currentPosition;
         Vector2 increment = glm::normalize(vector) * (measuredHitProb.metadata.cellSize);
         int steps = glm::length(vector) / (measuredHitProb.metadata.cellSize);
 
         int index = 0;
         while (index < steps && pathIsFree)
         {
-            beginning += increment;
+            currentPosition += increment;
             index++;
-            Vector2Int pair = measuredHitProb.metadata.coordinatesToIndex(beginning.x, beginning.y);
+            Vector2Int pair = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
             pathIsFree = measuredHitProb.metadata.indicesInBounds(pair) || measuredHitProb.freeAt(pair.x, pair.y);
             if (!pathIsFree)
-                beginning -= increment;
+                currentPosition -= increment;
         }
 
         return pathIsFree;

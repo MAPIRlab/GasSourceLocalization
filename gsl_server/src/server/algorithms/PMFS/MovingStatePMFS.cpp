@@ -1,6 +1,6 @@
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Cell.hpp>
+#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/Common/Grid.hpp>
 #include <gsl_server/Utils/Math.hpp>
 #include <angles/angles.h>
@@ -29,8 +29,7 @@ namespace GSL
                 for (int c = oJ; c <= fJ; c++)
                 {
                     Vector2Int p(r, c);
-                    HashSet& visibilitySet = pmfs->visibilityMap.at(Vector2Int(i, j));
-                    if (closedMoveSet.find(p) == closedMoveSet.end() && visibilitySet.find(p) != visibilitySet.end())
+                    if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap.isVisible({i,j}, p) == Visibility::Visible)
                         openMoveSet.insert(p);
                 }
             }

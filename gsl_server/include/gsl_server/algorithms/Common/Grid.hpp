@@ -8,8 +8,8 @@ namespace GSL
     {
         Vector2 origin;
         float cellSize;
-        int numFreeCells;
-        int width, height;
+        size_t numFreeCells;
+        size_t width, height;
         Vector2Int coordinatesToIndex(double x, double y) const
         {
             return Vector2Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize));

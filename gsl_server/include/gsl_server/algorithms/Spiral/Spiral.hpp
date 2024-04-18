@@ -15,7 +15,7 @@ namespace GSL
         {
         }
 
-        void initialize() override;
+        void Initialize() override;
 
     protected:
         void declareParameters() override;

@@ -14,7 +14,7 @@ namespace GSL
     Algorithm::~Algorithm()
     {}
 
-    void Algorithm::initialize()
+    void Algorithm::Initialize()
     {
         declareParameters();
 
@@ -71,7 +71,7 @@ namespace GSL
         stateMachine.getCurrentState()->OnUpdate();
     }
 
-    bool Algorithm::hasEnded()
+    bool Algorithm::HasEnded()
     {
         if((node->now()-start_time).seconds() > resultLogging.max_search_time)
         {
@@ -79,10 +79,10 @@ namespace GSL
             return true;
         }
 
-        return getResult() != GSLResult::Running;
+        return GetResult() != GSLResult::Running;
     }
 
-    GSLResult Algorithm::getResult()
+    GSLResult Algorithm::GetResult()
     {
         return currentResult;
     }

@@ -9,14 +9,12 @@ namespace GSL
                     Grid<double>(sourceProbability, simulationOccupancy, gridMetadata),
                     Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata),
                     settings.simulation)
-#ifdef USE_GUI
-        ,ui(this)
-#endif
+        IF_GUI(,ui(this))
     {}
 
-    void PMFS::initialize()
+    void PMFS::Initialize()
     {
-        Algorithm::initialize();
+        Algorithm::Initialize();
         // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
 
         pubs.markers.source_probability_markers = node->create_publisher<Marker>("probability_markers", 1);
@@ -32,14 +30,13 @@ namespace GSL
         pubs.markers.debug.movementSets = node->create_publisher<Marker>("movementSets", 1);
 
         pubs.gmrfWind.client = node->create_client<WindEstimation>("/WindEstimation");
-#ifdef USE_GADEN
-        pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value");
-#endif
+        IF_GADEN( pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value") );
 
-#ifdef USE_GUI
-		if(!settings.visualization.headless)
-        	ui.run();
-#endif
+        IF_GUI
+        (
+            if(!settings.visualization.headless)
+                ui.run();
+        );
 
         iterationsCounter = 0;
 
@@ -86,9 +83,7 @@ namespace GSL
         settings.simulation.maxWarmupIterations = getParam<int>("maxWarmupIterations", 500);
 
         settings.visualization.markers_height = getParam<double>("markers_height", 0);
-#if USE_GUI
-        settings.visualization.headless = getParam<bool>("headless", false);
-#endif
+        IF_GUI(settings.visualization.headless = getParam<bool>("headless", false));
 
         settings.declaration.threshold = getParam<double>("convergence_thr", 0.5); // threshold for source declaration
         settings.declaration.steps = getParam<int>("convergence_steps", 5);
@@ -106,15 +101,20 @@ namespace GSL
         navigationOccupancy.resize(gridMetadata.height * gridMetadata.width);
         simulationOccupancy.resize(gridMetadata.height * gridMetadata.width);
 
+        visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
+
         PMFSLib::initializeMap(*this, 
             Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
-            settings, simulations, visibilityMap);
+            simulations, visibilityMap);
 
-        // source probability before we get any observations
+
+
+        // set all variables to the prior probability
+        for(HitProbability& h : hitProbability)
+            h.setProbability(settings.hitProbability.prior);
+
         for (double& p : sourceProbability)
-        {
             p = 1.0 / gridMetadata.numFreeCells;
-        }
 
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         functionQueue.submit([this]()

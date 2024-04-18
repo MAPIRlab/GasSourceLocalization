@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gsl_server/core/logging.hpp>
+#include <gsl_server/core/Logging.hpp>
 #include <gsl_server/core/GSLResult.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <gsl_actions/action/do_gsl.hpp>

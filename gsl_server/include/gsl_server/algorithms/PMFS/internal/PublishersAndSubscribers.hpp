@@ -15,19 +15,25 @@ namespace GSL
     {
 
         using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
+
+        struct GMRFWind
+        {
+            WindEstimation::Request::SharedPtr request;
+            rclcpp::Client<WindEstimation>::SharedPtr client;
+        };
+#ifdef USE_GADEN
+        struct GroundTruthWind
+        {
+            gaden_player::srv::WindPosition::Request::SharedPtr request;
+            rclcpp::Client<gaden_player::srv::WindPosition>::SharedPtr client;
+        };
+#endif
+
         struct PublishersAndSubscribers
         {
-            struct GMRFWind
-            {
-                WindEstimation::Request::SharedPtr request;
-                rclcpp::Client<WindEstimation>::SharedPtr client;
-            } gmrfWind;
+            GMRFWind gmrfWind;
 #ifdef USE_GADEN
-            struct GroundTruthWind
-            {
-                gaden_player::srv::WindPosition::Request::SharedPtr request;
-                rclcpp::Client<gaden_player::srv::WindPosition>::SharedPtr client;
-            } groundTruthWind;
+            GroundTruthWind groundTruthWind;
 #endif
 
             struct Markers

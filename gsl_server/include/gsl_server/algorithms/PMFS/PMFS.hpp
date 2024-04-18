@@ -1,15 +1,17 @@
 #pragma once
 #include <gsl_server/algorithms/Algorithm.hpp>
 
-#include <gsl_server/algorithms/PMFS/internal/Cell.hpp>
+#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
 #include <gsl_server/algorithms/PMFS/internal/PublishersAndSubscribers.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
+#include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 
 #include <gsl_server/core/FunctionQueue.hpp>
+#include <gsl_server/core/ConditionalMacros.hpp>
 
 namespace GSL
 {
@@ -30,10 +32,10 @@ namespace GSL
 
     public:
         PMFS(std::shared_ptr<rclcpp::Node> _node);
+        void Initialize() override;
         void OnUpdate() override;
 
     protected:
-        void initialize() override;
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
@@ -44,24 +46,22 @@ namespace GSL
 
 
         //-------------Core-------------
+        GridMetadata gridMetadata;
         std::vector<double> sourceProbability;
         std::vector<HitProbability> hitProbability;
         std::vector<Occupancy> navigationOccupancy;
         std::vector<Occupancy> simulationOccupancy;
-
-        GridMetadata gridMetadata;
-        
-
         std::vector<Vector2> estimatedWindVectors;
 
-        //-------------Data-------------
         PMFS_internal::Simulations simulations;
+
+        //-------------Data-------------
         PMFS_internal::Settings settings;
         PMFS_internal::PublishersAndSubscribers pubs;
 
         //-------------Utils-------------
         bool paused = false;
-        std::unordered_map<Vector2Int, HashSet> visibilityMap;
+        VisibilityMap visibilityMap;
         FunctionQueue functionQueue;
         uint iterationsCounter;
 
@@ -76,8 +76,6 @@ namespace GSL
         void showWeights();
         void debugMapSegmentation();
         void plotWindVectors();
-#ifdef USE_GUI
-        PMFS_internal::UI ui;
-#endif
+        IF_GUI(PMFS_internal::UI ui);
     };
 } // namespace GSL
