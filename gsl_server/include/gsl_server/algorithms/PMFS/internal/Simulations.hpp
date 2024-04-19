@@ -61,12 +61,12 @@ namespace GSL::PMFS_internal
         Grid<HitProbability> measuredHitProb;
         Grid<double> sourceProb;
         Grid<Vector2> wind;
-        void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev);
-        void moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev);
+        void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
+        void moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev) const;
         void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
-                                      int timesteps, float deltaTime, float noiseSTDev);
-        bool filamentIsOutside(Filament& filament);
-        double weightedDifference(const Grid<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap);
-        bool moveAlongPath(Vector2& beginning, const Vector2& end);
+                                      int timesteps, float deltaTime, float noiseSTDev) const;
+        bool filamentIsOutside(const Filament& filament) const;
+        double weightedDifference(const Grid<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
+        bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
     };
 } // namespace GSL::PMFS_internal

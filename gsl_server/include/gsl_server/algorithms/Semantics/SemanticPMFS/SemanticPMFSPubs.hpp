@@ -5,7 +5,9 @@ namespace GSL::SemanticPMFS_internal
 {
     struct PublishersAndSubscribers
     {
-        PMFS_internal::GMRFWind gmrfWind;
-        PMFS_internal::GroundTruthWind groundTruthWind;
+        PMFS_internal::PublishersAndSubscribers pmfsPubs;
+        //...
+
+        PublishersAndSubscribers(std::shared_ptr<rclcpp::Clock> clock) : pmfsPubs(clock){}
     };
 }

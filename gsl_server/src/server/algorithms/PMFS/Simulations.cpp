@@ -9,6 +9,9 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
+//TODO make it so you don't need this file
+#include <tracy/Tracy.hpp>
+
 namespace GSL::PMFS_internal
 {
     namespace NQA = Utils::NQA;
@@ -25,9 +28,10 @@ namespace GSL::PMFS_internal
         variance = variance + weight * (value - mean_old) * (value - mean);
     }
 
-    void Simulations::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
     // create the Quadtree
+    void Simulations::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
     {
+        ZoneScoped;
         quadtree = std::make_unique<Utils::NQA::Quadtree>(occupancyMap);
         QTleaves = quadtree->fusedLeaves(settings.maxRegionSize);
 
@@ -54,6 +58,7 @@ namespace GSL::PMFS_internal
 
     void Simulations::updateSourceProbability(float refineFraction)
     {
+        ZoneScoped;
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Started simulations. Might take a while!");
         Utils::Time::Stopwatch stopwatch;
         std::vector<NQA::Node> localCopyLeaves = QTleaves;
@@ -128,7 +133,6 @@ namespace GSL::PMFS_internal
         int numberOfLevelsSimulated = 1;
         while (scores.size() > 0)
         {
-
             std::sort(scores.begin(), scores.end(), [](SimulationResult result1, SimulationResult result2) { return result1.score > result2.score; });
 
             // subdivide the good cells and add the children to the list of cells to simulate
@@ -187,8 +191,9 @@ namespace GSL::PMFS_internal
         GSL_INFO("Time ellapsed in simulation = {} s", stopwatch.ellapsed());
     }
 
-    double Simulations::weightedDifference(const Grid<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap)
+    double Simulations::weightedDifference(const Grid<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const
     {
+        ZoneScoped;
         double total = 1;
         for (int i = 0; i < measuredHitProb.data.size(); i++)
         {
@@ -204,8 +209,10 @@ namespace GSL::PMFS_internal
         return total;
     }
 
-    void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev)
+    void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
     {
+        ZoneScoped;
+
         Vector2 velocity = wind.dataAt(indices.x, indices.y) +
                                 Vector2(Utils::randomFromGaussian(0, noiseSTDev), Utils::randomFromGaussian(0, noiseSTDev));
         
@@ -214,7 +221,7 @@ namespace GSL::PMFS_internal
     }
 
     //moves exactly one cell at a time, independently of the magnitude of the vector. For warmup.
-    void Simulations::moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev)
+    void Simulations::moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev) const
     {
         Vector2 velocity = wind.dataAt(indices.x, indices.y) +
                                              Vector2(Utils::randomFromGaussian(0, noiseSTDev), Utils::randomFromGaussian(0, noiseSTDev));
@@ -267,15 +274,17 @@ namespace GSL::PMFS_internal
             filament.position = measuredHitProb.metadata.indexToCoordinates(next.x, next.y);
     }
 
-    bool Simulations::filamentIsOutside(Filament& filament)
+    bool Simulations::filamentIsOutside(const Filament& filament) const
     {
+        ZoneScoped;
         Vector2Int newIndices = measuredHitProb.metadata.coordinatesToIndex(filament.position.x, filament.position.y);
         return !measuredHitProb.metadata.indicesInBounds(newIndices);
     }
 
     void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
-                                      int timesteps, float deltaTime, float noiseSTDev)
+                                      int timesteps, float deltaTime, float noiseSTDev) const
     {
+        ZoneScoped;
 
         constexpr int numFilamentsIteration = 5;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
@@ -385,9 +394,8 @@ namespace GSL::PMFS_internal
         return randP;
     }
 
-    bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end)
+    bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
     {
-
         Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndex(end.x, end.y);
         Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
 

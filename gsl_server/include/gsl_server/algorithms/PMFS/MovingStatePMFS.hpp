@@ -31,5 +31,13 @@ namespace GSL
         void Fail() override;
 
         PMFS* pmfs;
+
+
+        struct Publishers
+        {
+            rclcpp::Publisher<Marker>::SharedPtr explorationValue;
+            rclcpp::Publisher<Marker>::SharedPtr varianceHit;
+            rclcpp::Publisher<Marker>::SharedPtr movementSets;
+        } publishers;
     };
 } // namespace GSL

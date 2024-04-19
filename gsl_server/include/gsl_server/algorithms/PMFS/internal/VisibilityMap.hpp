@@ -9,7 +9,7 @@ namespace GSL
     class VisibilityMap
     {
     public:
-        size_t range = 0;
+        uint range = 0;
 
         Visibility isVisible(const Vector2Int& from, const Vector2Int& to) const
         {

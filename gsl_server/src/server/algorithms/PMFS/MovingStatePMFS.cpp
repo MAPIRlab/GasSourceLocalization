@@ -10,13 +10,17 @@ namespace GSL
     MovingStatePMFS::MovingStatePMFS(Algorithm* _algorithm) : MovingState(_algorithm)
     {
         pmfs = dynamic_cast<PMFS*>(_algorithm);
+
+        publishers.explorationValue = pmfs->node->create_publisher<Marker>("explorationValue", 1);
+        publishers.varianceHit = pmfs->node->create_publisher<Marker>("varianceHit", 1);
+        publishers.movementSets = pmfs->node->create_publisher<Marker>("movementSets", 1);
     }
 
     void MovingStatePMFS::chooseGoalAndMove()
     {
         auto& gridMetadata = pmfs->gridMetadata;
         {
-            int i = pmfs->currentPosIndex().x, j = pmfs->currentPosIndex().y;
+            int i = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose).x, j = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose).y;
 
             int openMoveSetExpasion = pmfs->settings.movement.openMoveSetExpasion;
             int oI = std::max(0, i - openMoveSetExpasion);
@@ -35,7 +39,7 @@ namespace GSL
             }
         }
 
-        openMoveSet.erase(pmfs->currentPosIndex());
+        openMoveSet.erase(pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose));
         NavigateToPose::Goal goal;
         int goalI = -1, goalJ = -1;
         double interest = -DBL_MAX;
@@ -70,8 +74,8 @@ namespace GSL
             }
         }
 
-        if (closedMoveSet.find(pmfs->currentPosIndex()) == closedMoveSet.end())
-            openMoveSet.insert(pmfs->currentPosIndex());
+        if (closedMoveSet.find(pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose)) == closedMoveSet.end())
+            openMoveSet.insert(pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose));
         GSL_ASSERT_MSG(closedMoveSet.find({goalI, goalJ}) == closedMoveSet.end(), "Goal is in closed set, what the hell");
 
         pmfs->iterationsCounter++;
@@ -137,7 +141,7 @@ namespace GSL
     void MovingStatePMFS::publishMarkers()
     {
         GridMetadata& gridMetadata = pmfs->gridMetadata;
-        Grid<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->navigationOccupancy, gridMetadata);
+        Grid<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->occupancy, gridMetadata);
 
 
         Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());
@@ -211,9 +215,9 @@ namespace GSL
                     movementSetsMarker.colors.push_back(Utils::create_color(0, 0, 1, 1));
             }
         }
-        pmfs->pubs.markers.debug.explorationValue->publish(explorationMarker);
-        pmfs->pubs.markers.debug.varianceHit->publish(varianceMarker);
-        pmfs->pubs.markers.debug.movementSets->publish(movementSetsMarker);
+        publishers.explorationValue->publish(explorationMarker);
+        publishers.varianceHit->publish(varianceMarker);
+        publishers.movementSets->publish(movementSetsMarker);
     }
 
 } // namespace GSL

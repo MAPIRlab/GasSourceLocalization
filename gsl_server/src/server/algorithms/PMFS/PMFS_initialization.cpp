@@ -5,10 +5,11 @@ namespace GSL
 {
     using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
     PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node),
-        simulations(Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
-                    Grid<double>(sourceProbability, simulationOccupancy, gridMetadata),
-                    Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata),
-                    settings.simulation)
+        simulations(Grid<HitProbability>(hitProbability, occupancy, gridMetadata),
+                    Grid<double>(sourceProbability, occupancy, gridMetadata),
+                    Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
+                    settings.simulation),
+        pubs(node->get_clock())
         IF_GUI(,ui(this))
     {}
 
@@ -21,13 +22,8 @@ namespace GSL
         pubs.markers.hitProbabilityMarkers = node->create_publisher<Marker>("hitProbabilityMarkers", 1);
         pubs.markers.confidenceMarkers = node->create_publisher<Marker>("confidenceMarkers", 1);
         pubs.markers.windArrowMarkers = node->create_publisher<MarkerArray>("arrowMarkers", 1);
-        pubs.markers.gradientMarkers = node->create_publisher<MarkerArray>("gradientMarkers", 1);
 
         pubs.markers.quadtreePublisher = node->create_publisher<MarkerArray>("quadtree", 1);
-
-        pubs.markers.debug.explorationValue = node->create_publisher<Marker>("explorationValue", 1);
-        pubs.markers.debug.varianceHit = node->create_publisher<Marker>("varianceHit", 1);
-        pubs.markers.debug.movementSets = node->create_publisher<Marker>("movementSets", 1);
 
         pubs.gmrfWind.client = node->create_client<WindEstimation>("/WindEstimation");
         IF_GADEN( pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value") );
@@ -52,35 +48,13 @@ namespace GSL
     void PMFS::declareParameters()
     {
         Algorithm::declareParameters();
-        settings.hitProbability.prior = getParam<double>("hitPriorProbability", 0.1);
-
-        settings.movement.openMoveSetExpasion =
-            getParam<int>("openMoveSetExpasion", 5); // number of cells in each direction that we add to the open move set in each step
+        PMFSLib::GetHitProbabilitySettings(*this, settings.hitProbability);
+        PMFSLib::GetSimulationSettings(*this, settings.simulation);
+        
+        // number of cells in each direction that we add to the open move set in each step
+        settings.movement.openMoveSetExpasion = getParam<int>("openMoveSetExpasion", 5);
         settings.movement.explorationProbability = getParam<double>("explorationProbability", 0.1);
         settings.movement.initialExplorationMoves = getParam<int>("initialExplorationMoves", 5);
-
-        // hit probability
-        settings.hitProbability.max_updates_per_stop = getParam<int>("max_updates_per_stop", 3);
-
-        settings.hitProbability.kernel_sigma = getParam<double>("kernel_sigma", 0.5);
-        settings.hitProbability.kernel_stretch_constant = getParam<double>("kernel_stretch_constant", 1);
-
-        settings.hitProbability.confidence_measurement_weight = getParam<double>("confidence_measurement_weight", 0.5);
-        settings.hitProbability.confidence_sigma_spatial = getParam<double>("confidence_sigma_spatial", 0.5);
-        settings.hitProbability.localEstimationWindowSize = getParam<int>("localEstimationWindowSize", 2);
-
-        // Simulation
-        settings.simulation.useWindGroundTruth = getParam<bool>("useWindGroundTruth", false);
-
-        settings.simulation.sourceDiscriminationPower = getParam<double>("sourceDiscriminationPower", 1);
-        settings.simulation.refineFraction = getParam<double>("refineFraction", 10);
-        settings.simulation.steps_between_source_updates = getParam<int>("stepsSourceUpdate", 10);
-
-        settings.simulation.maxRegionSize = getParam<int>("maxRegionSize", 5);
-        settings.simulation.deltaTime = getParam<double>("deltaTime", 0.2);
-        settings.simulation.noiseSTDev = getParam<double>("noiseSTDev", 0.5);
-        settings.simulation.iterationsToRecord = getParam<int>("iterationsToRecord", 200);
-        settings.simulation.maxWarmupIterations = getParam<int>("maxWarmupIterations", 500);
 
         settings.visualization.markers_height = getParam<double>("markers_height", 0);
         IF_GUI(settings.visualization.headless = getParam<bool>("headless", false));
@@ -98,15 +72,13 @@ namespace GSL
 
         hitProbability.resize(gridMetadata.height * gridMetadata.width);
         sourceProbability.resize(gridMetadata.height * gridMetadata.width);
-        navigationOccupancy.resize(gridMetadata.height * gridMetadata.width);
-        simulationOccupancy.resize(gridMetadata.height * gridMetadata.width);
+        occupancy.resize(gridMetadata.height * gridMetadata.width);
 
         visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
 
         PMFSLib::initializeMap(*this, 
-            Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+            Grid<HitProbability>(hitProbability, occupancy, gridMetadata),
             simulations, visibilityMap);
-
 
 
         // set all variables to the prior probability
@@ -119,10 +91,10 @@ namespace GSL
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         functionQueue.submit([this]()
         {
-            Grid<Vector2> windGrid (estimatedWindVectors, simulationOccupancy, gridMetadata);
+            Grid<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
             PMFSLib::initializeWindPredictions(*this, windGrid,
-                pubs.gmrfWind.request, pubs.groundTruthWind.request);
-            PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind, pubs.groundTruthWind);
+                pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
+            PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
             stateMachine.forceSetState(stopAndMeasureState.get());
         });
     }

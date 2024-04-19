@@ -75,6 +75,8 @@ namespace GSL
         
         static void normalizeSourceProb(Grid<double>& variable);
         
+        static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
+        static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
     };
 
 } // namespace GSL

@@ -31,6 +31,7 @@ namespace GSL
 
         struct PublishersAndSubscribers
         {
+            std::shared_ptr<rclcpp::Clock> clock;
             GMRFWind gmrfWind;
 #ifdef USE_GADEN
             GroundTruthWind groundTruthWind;
@@ -41,20 +42,12 @@ namespace GSL
                 rclcpp::Publisher<Marker>::SharedPtr source_probability_markers;
                 rclcpp::Publisher<Marker>::SharedPtr hitProbabilityMarkers;
                 rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePublisher;
-                rclcpp::Publisher<MarkerArray>::SharedPtr gradientMarkers;
                 rclcpp::Publisher<MarkerArray>::SharedPtr windArrowMarkers;
                 rclcpp::Publisher<Marker>::SharedPtr confidenceMarkers;
-
-                struct Debug
-                {
-                    rclcpp::Publisher<Marker>::SharedPtr explorationValue;
-                    rclcpp::Publisher<Marker>::SharedPtr varianceHit;
-                    rclcpp::Publisher<Marker>::SharedPtr movementSets;
-                } debug;
             };
             Markers markers;
-            PublishersAndSubscribers()
-            {}
+
+            PublishersAndSubscribers(std::shared_ptr<rclcpp::Clock> _clock) : clock(_clock){} 
         };
     } // namespace PMFS_internal
 } // namespace GSL

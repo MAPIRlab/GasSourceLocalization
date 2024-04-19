@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(gsl_server)
-set(CMAKE_BUILD_TYPE "None") 
+project(gsl_server) 
 set(CMAKE_CXX_FLAGS "-std=c++20 -g ${CMAKE_CXX_FLAGS}")
 
 
@@ -17,6 +16,7 @@ set(USE_NAV_ASSISTANT OFF) # if ON uses the nav_assistant package rather than di
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
 
+set(USE_TRACY OFF)
 ##############################################################################
 
 
@@ -34,11 +34,12 @@ set(USE_GUI ON)
 
 
 
-
 if(GSL_DEBUG)
+  set(CMAKE_BUILD_TYPE "Debug")
   add_definitions(-DGSL_DEBUG=1)
   set(CMAKE_CXX_FLAGS "-O0 ${CMAKE_CXX_FLAGS}")
 else()
+  set(CMAKE_BUILD_TYPE "Release")
   set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
 endif(GSL_DEBUG)
 
@@ -79,6 +80,13 @@ if(USE_NAV_ASSISTANT)
     set(CONDITIONAL_NAV_ASSISTANT "nav_assistant_msgs")  
 endif()
 
+
+if(USE_TRACY)
+    find_package(Tracy)
+    add_definitions(-DTRACY_ENABLE)
+    set(CONDITIONAL_TRACY "Tracy::TracyClient")
+else()
+endif(USE_TRACY)
 
 #other stuff
 find_package(OpenMP REQUIRED)
@@ -153,6 +161,7 @@ target_link_libraries(gsl_actionserver_node
   ${OpenCV_LIBS}
   OpenMP::OpenMP_CXX
   fmt
+  ${CONDITIONAL_TRACY}
 )
 
 

@@ -49,8 +49,7 @@ namespace GSL
         GridMetadata gridMetadata;
         std::vector<double> sourceProbability;
         std::vector<HitProbability> hitProbability;
-        std::vector<Occupancy> navigationOccupancy;
-        std::vector<Occupancy> simulationOccupancy;
+        std::vector<Occupancy> occupancy;
         std::vector<Vector2> estimatedWindVectors;
 
         PMFS_internal::Simulations simulations;
@@ -65,17 +64,9 @@ namespace GSL
         FunctionQueue functionQueue;
         uint iterationsCounter;
 
-        Vector2Int currentPosIndex()
-        {
-            return gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
-        }
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
 
-        // Visualization
-        void showWeights();
-        void debugMapSegmentation();
-        void plotWindVectors();
         IF_GUI(PMFS_internal::UI ui);
     };
 } // namespace GSL

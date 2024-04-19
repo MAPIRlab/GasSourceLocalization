@@ -15,7 +15,7 @@ namespace GSL::PMFS_internal
 
         void setProbability(double probability)
         {
-            logOdds = std::log(probability)/(1-std::log(probability));
+            logOdds = std::log( probability/(1-probability) );
         }
     };
 

@@ -71,7 +71,7 @@ namespace GSL
         {
             for (int j = 0; j < gridMetadata.width; j++)
             {
-                if (simulationOccupancy[gridMetadata.indexOf(i,j)] == Occupancy::Free)
+                if (occupancy[gridMetadata.indexOf(i,j)] == Occupancy::Free)
                 {
                     CellData cd(Vector2Int(i, j), sourceProbability[gridMetadata.indexOf(i, j)]);
                     data.push_back(cd);
@@ -103,7 +103,7 @@ namespace GSL
         {
             for (int j = 0; j < gridMetadata.width; j++)
             {
-                if (simulationOccupancy[gridMetadata.indexOf(i,j)] == Occupancy::Free)
+                if (occupancy[gridMetadata.indexOf(i,j)] == Occupancy::Free)
                 {
                     Vector2 coords = gridMetadata.indexToCoordinates(i, j);
                     double p = sourceProbability[gridMetadata.indexOf(i, j)];

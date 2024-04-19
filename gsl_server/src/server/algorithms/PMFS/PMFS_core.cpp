@@ -2,6 +2,7 @@
 #include <gsl_server/Utils/Math.hpp>
 #include <angles/angles.h>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 
 namespace GSL
 {
@@ -11,12 +12,10 @@ namespace GSL
     {
         if(!paused)
             Algorithm::OnUpdate();
-        else
-        {
-            showWeights();
-            dynamic_cast<MovingStatePMFS*>(movingState.get())->publishMarkers();
-        }
 
+        dynamic_cast<MovingStatePMFS*>(movingState.get())->publishMarkers();
+        PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
         functionQueue.run();
     }
 
@@ -24,25 +23,27 @@ namespace GSL
     {
         static int number_of_updates = 0;
 
-        Grid<HitProbability> grid(hitProbability, simulationOccupancy, gridMetadata);
+        Grid<HitProbability> grid(hitProbability, occupancy, gridMetadata);
         if (concentration > thresholdGas)
         {
             // Gas & wind
-            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, true, wind_direction, wind_speed, currentPosIndex());
+            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, true, wind_direction, wind_speed,
+                                              gridMetadata.coordinatesToIndex(currentRobotPose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
-            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, false, wind_direction, wind_speed, currentPosIndex());
+            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, false, wind_direction, wind_speed,
+                                              gridMetadata.coordinatesToIndex(currentRobotPose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
         PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, 
-                            Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), 
+                            Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), 
                             node,
                             pubs.gmrfWind, pubs.groundTruthWind);
-        plotWindVectors();
+        PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
 
         number_of_updates++;
 
@@ -68,8 +69,10 @@ namespace GSL
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
+        
 
-        showWeights();
+        PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
     float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) 

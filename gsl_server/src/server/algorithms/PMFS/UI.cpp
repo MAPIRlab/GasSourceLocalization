@@ -1,6 +1,7 @@
 #ifdef USE_GUI
 
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -77,7 +78,7 @@ namespace GSL::PMFS_internal
             if (ImGui::Button("Print") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
                 if (selectedVar == 0)
-                    result = PMFS_internal::UI::printCell(Grid<HitProbability>(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata), x, y);
+                    result = PMFS_internal::UI::printCell(Grid<HitProbability>(pmfs->hitProbability, pmfs->occupancy, pmfs->gridMetadata), x, y);
                 else if (selectedVar == 1)
                     result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf(x,y)]);
             }
@@ -135,7 +136,7 @@ namespace GSL::PMFS_internal
             {
                 pmfs->functionQueue.submit([this]() {
                     pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
-                    pmfs->showWeights();
+                    PMFSViz::ShowSourceProb(Grid<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs);
                 });
             }
         }
@@ -144,7 +145,7 @@ namespace GSL::PMFS_internal
         {
             if (ImGui::Button("Show Quadtree"))
             {
-                pmfs->debugMapSegmentation();
+                PMFSViz::DebugMapSegmentation(pmfs->simulations.QTleaves, pmfs->pubs, pmfs->gridMetadata);
             }
         }
         ImGui::End();

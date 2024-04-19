@@ -72,16 +72,20 @@ namespace GSL
         propagateProbabilities(hitProb, settings, openPropagationSet, closedPropagationSet, activePropagationSet, kernel);
 
         double logOddsPrior = std::log(settings.prior / (1 - settings.prior));
-        for (HitProbability& hitprob : hitProb.data)
+        for (size_t i = 0; i<hitProb.data.size();i++)
         {
+            if(hitProb.occupancy[i] != Occupancy::Free)
+                continue;
+                
+            HitProbability& cell = hitProb.data[i];
             // BAYESIAN BINARY FILTER. this is the important part
-            hitprob.logOdds += hitprob.auxWeight - logOddsPrior;
-            GSL_ASSERT(!std::isnan(hitprob.logOdds));
+            cell.logOdds += cell.auxWeight - logOddsPrior;
+            GSL_ASSERT(!std::isnan(cell.logOdds));
 
             // confidence
-            hitprob.omega += Utils::evaluate1DGaussian(hitprob.distanceFromRobot, settings.confidence_sigma_spatial);
-            double exponent = -hitprob.omega / std::pow(settings.confidence_measurement_weight, 2);
-            hitprob.confidence = 1 - std::exp(exponent);
+            cell.omega += Utils::evaluate1DGaussian(cell.distanceFromRobot, settings.confidence_sigma_spatial);
+            double exponent = -cell.omega / std::pow(settings.confidence_measurement_weight, 2);
+            cell.confidence = 1 - std::exp(exponent);
         }
     }
 
@@ -191,6 +195,7 @@ namespace GSL
         metadata.numFreeCells = 0;
         metadata.height = floor((float)map.info.height / scale);
         metadata.width = floor((float)map.info.width / scale);
+        metadata.scale = scale;
     }
 
     void PMFSLib::initializeMap(Algorithm& algorithm, Grid<HitProbability> grid, PMFS_internal::Simulations& simulations,
@@ -212,7 +217,7 @@ namespace GSL
 
         // create the PMFS cells
         {
-            int scale = algorithm.getParam<int>("scale", 65); // scale for dynamic map reduction
+            int scale = grid.metadata.scale; // scale for dynamic map reduction
             for (int i = 0; i < grid.metadata.height; i++)
             {
                 for (int j = 0; j < grid.metadata.width; j++)
@@ -233,6 +238,7 @@ namespace GSL
                     grid.dataAt(i, j).auxWeight = -1; // this is used in the next step to prune the cells that are free but unreachable
                 }
             }
+            GSL_TRACE("Created grid");
         }
 
 
@@ -269,13 +275,14 @@ namespace GSL
                     occupancyMap[i][j] = grid.occupancyAt(i, j) == Occupancy::Free ? 1 : 0;
                 }
             }
+            GSL_TRACE("Pruned unreachable cells");
         }
 
         // precomputed visibility map
         {
-            for (size_t i = 0; i < grid.metadata.height; i++)
+            for (int i = 0; i < grid.metadata.height; i++)
             {
-                for (size_t j = 0; j < grid.metadata.width; j++)
+                for (int j = 0; j < grid.metadata.width; j++)
                 {
                     Vector2Int ij(i, j);
                     if (!grid.freeAt(i, j))
@@ -283,17 +290,17 @@ namespace GSL
                         visibilityMap.emplace(ij, HashSet{});
                         continue;
                     }
-                    size_t oI = std::max(0ul, i - visibilityMap.range) - i;
-                    size_t fI = std::min(grid.metadata.height - 1, i + visibilityMap.range) - i;
-                    size_t oJ = std::max(0ul, j - visibilityMap.range) - j;
-                    size_t fJ = std::min(grid.metadata.width - 1, j + visibilityMap.range) - j;
+                    int oI = std::max(0, i - (int)visibilityMap.range) - i;
+                    int fI = std::min((int)grid.metadata.height - 1, i + (int)visibilityMap.range) - i;
+                    int oJ = std::max(0, j - (int)visibilityMap.range) - j;
+                    int fJ = std::min((int)grid.metadata.width - 1, j + (int)visibilityMap.range) - j;
 
                     HashSet visibleCells;
                     double totalX = 0;
                     double totalY = 0;
-                    for (size_t r = oI; r <= fI; r++)
+                    for (int r = oI; r <= fI; r++)
                     {
-                        for (size_t c = oJ; c <= fJ; c++)
+                        for (int c = oJ; c <= fJ; c++)
                         {
                             Vector2Int thisCell(i + r, j + c);
                             if (pathFree(grid, ij, thisCell))
@@ -303,6 +310,7 @@ namespace GSL
                     visibilityMap.emplace(ij, visibleCells);
                 }
             }
+            GSL_TRACE("Created visibility map");
         }
 
         simulations.initializeMap(occupancyMap);
@@ -432,4 +440,29 @@ namespace GSL
         }
     }
     
+
+    void PMFSLib::GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings)
+    {
+        settings.useWindGroundTruth = algorithm.getParam<bool>("useWindGroundTruth", false);
+        settings.sourceDiscriminationPower = algorithm.getParam<double>("sourceDiscriminationPower", 1);
+        settings.refineFraction = algorithm.getParam<double>("refineFraction", 10);
+        settings.steps_between_source_updates = algorithm.getParam<int>("stepsSourceUpdate", 10);
+        settings.maxRegionSize = algorithm.getParam<int>("maxRegionSize", 5);
+        settings.deltaTime = algorithm.getParam<double>("deltaTime", 0.2);
+        settings.noiseSTDev = algorithm.getParam<double>("noiseSTDev", 0.5);
+        settings.iterationsToRecord = algorithm.getParam<int>("iterationsToRecord", 200);
+        settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
+    }
+
+    void PMFSLib::GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings)
+    {
+        settings.prior = algorithm.getParam<double>("hitPriorProbability", 0.1);
+        settings.max_updates_per_stop = algorithm.getParam<int>("max_updates_per_stop", 3);
+        settings.kernel_sigma = algorithm.getParam<double>("kernel_sigma", 0.5);
+        settings.kernel_stretch_constant = algorithm.getParam<double>("kernel_stretch_constant", 1);
+        settings.confidence_measurement_weight = algorithm.getParam<double>("confidence_measurement_weight", 0.5);
+        settings.confidence_sigma_spatial = algorithm.getParam<double>("confidence_sigma_spatial", 0.5);
+        settings.localEstimationWindowSize = algorithm.getParam<int>("localEstimationWindowSize", 2);
+    }
+
 } // namespace GSL

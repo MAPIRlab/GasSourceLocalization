@@ -81,10 +81,6 @@ namespace GSL
         void normalizeWeights(std::vector<std::vector<Cell>>& map);
         double informationGain(const WindVector& windVec);
 
-        Vector2Int currentPosIndex()
-        {
-            return gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
-        }
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
         void showWeights();

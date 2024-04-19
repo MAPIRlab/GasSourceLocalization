@@ -111,7 +111,7 @@ namespace GSL
         HashSet activePropagationSet;
         HashSet closedPropagationSet;
 
-        Vector2Int currentIndices = currentPosIndex();
+        Vector2Int currentIndices = gridMetadata.coordinatesToIndex(currentRobotPose);
         grid[currentIndices.x][currentIndices.y].auxWeight = 1;
         activePropagationSet.insert(currentIndices);
         propagateProbabilities(grid, openPropagationSet, closedPropagationSet, activePropagationSet);
@@ -150,9 +150,9 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING");
 		
 		if(gasHit)
-        	estimateProbabilitiesfromGasAndWind(grid, gasHit, significantWind, wind_direction, currentPosIndex());
+        	estimateProbabilitiesfromGasAndWind(grid, gasHit, significantWind, wind_direction, gridMetadata.coordinatesToIndex(currentRobotPose));
 		else
-        	estimateProbabilitiesfromGasAndWind(grid, gasHit, true, wind_direction, currentPosIndex());
+        	estimateProbabilitiesfromGasAndWind(grid, gasHit, true, wind_direction, gridMetadata.coordinatesToIndex(currentRobotPose));
 
         dynamic_cast<MovingStateGrGSL*>(movingState.get())->chooseGoalAndMove();
         showWeights();

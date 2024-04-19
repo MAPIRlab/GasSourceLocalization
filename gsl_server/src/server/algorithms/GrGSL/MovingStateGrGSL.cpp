@@ -18,7 +18,7 @@ namespace GSL
 
         // update sets
         {
-            Vector2Int currentPosition = grgsl->currentPosIndex();
+            Vector2Int currentPosition = grgsl->gridMetadata.coordinatesToIndex(grgsl->currentRobotPose);
             int i = currentPosition.x, j = currentPosition.y;
             int expansionSize = 5;
 
