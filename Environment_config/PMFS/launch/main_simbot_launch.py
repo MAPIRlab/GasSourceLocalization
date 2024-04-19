@@ -219,7 +219,7 @@ def launch_setup(context, *args, **kwargs):
     actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.extend(rviz)
+    actions.append(rviz)
 
     return actions
 
