@@ -83,7 +83,7 @@ namespace GSL::PMFS_internal
         std::vector<VarianceCalculationData> varianceCalculationData(measuredHitProb.data.size());
 
         int numberOfSimulations = 0;
-        #pragma omp parallel for schedule(dynamic)
+        #pragma omp parallel for
         for (int leafIndex = 0; leafIndex < localCopyLeaves.size(); leafIndex++)
         {
             NQA::Node* node = &localCopyLeaves[leafIndex];
@@ -158,7 +158,7 @@ namespace GSL::PMFS_internal
             numberOfSimulations += scores.size();
 
             // run the simulations of the new level and get scores for each node
-            #pragma omp parallel for schedule(dynamic)
+            #pragma omp parallel for 
             for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
             {
                 NQA::Node* node = scores[leafIndex].leaf;
@@ -286,7 +286,7 @@ namespace GSL::PMFS_internal
     {
         ZoneScoped;
 
-        constexpr int numFilamentsIteration = 5;
+        constexpr int numFilamentsIteration = 1;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
 
         std::vector<uint16_t> updated(hitMap.size(), 0); //index of the last iteration in which this cell was updated, to avoid double-counting
@@ -383,6 +383,7 @@ namespace GSL::PMFS_internal
 
     Vector2 SimulationSource::getPoint() const
     {
+        ZoneScoped;
         if (mode == Mode::Point)
             return point;
 
@@ -396,6 +397,7 @@ namespace GSL::PMFS_internal
 
     bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
     {
+        ZoneScoped;
         Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndex(end.x, end.y);
         Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
 
@@ -404,7 +406,7 @@ namespace GSL::PMFS_internal
             return false;
         }
 
-        if(visibilityMap)
+        //if(visibilityMap)
         {
             if (visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
             {

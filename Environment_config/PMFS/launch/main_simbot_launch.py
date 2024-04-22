@@ -268,11 +268,11 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
-            value="200"
+            value="100"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations", 
-            value="500"
+            value="100"
         ),
         SetLaunchConfiguration(
             name="initialExplorationMoves", 
