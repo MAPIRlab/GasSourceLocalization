@@ -40,7 +40,6 @@ def launch_setup(context, *args, **kwargs):
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="GSL",
-                #prefix="xterm -hold -e sudo -E",
                 parameters=[
                     # Common
                     {'use_sim_time': False},	
@@ -268,11 +267,11 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
-            value="100"
+            value="200"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations", 
-            value="100"
+            value="500"
         ),
         SetLaunchConfiguration(
             name="initialExplorationMoves", 

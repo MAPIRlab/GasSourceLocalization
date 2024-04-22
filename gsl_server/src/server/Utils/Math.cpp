@@ -1,11 +1,14 @@
 #include <gsl_server/Utils/Math.hpp>
+#include <xxHash/xxhash32.h>
+#include <random>
+#include <chrono>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/rotate_vector.hpp>
-#include <random>
 
 namespace GSL::Utils
 {
-    static thread_local std::mt19937 RNGengine;
+    static thread_local std::minstd_rand0 RNGengine;
 
     double lerp(double start, double end, double proportion)
     {
@@ -45,7 +48,6 @@ namespace GSL::Utils
 
     double randomFromGaussian(double mean, double stdev)
     {
-
         static thread_local std::normal_distribution<> dist{0, stdev};
         static thread_local double previousStdev = stdev;
 
@@ -60,9 +62,18 @@ namespace GSL::Utils
 
     double uniformRandom(double min, double max)
     {
-        static thread_local std::uniform_real_distribution<double> distribution{0.0, 0.999};
+#if 1
+        // xxHash-based RNG. I don't really know much about it, but it goes vroom vroom
+        static thread_local uint32_t seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+        static thread_local uint32_t state = 0xFFFF;
+        state = XXHash32::hash(&state, sizeof(state), seed);
 
-        return min + distribution(RNGengine) * (max - min);
+        double rndVal01 = Utils::remapRange(*reinterpret_cast<double*>(&state) / std::numeric_limits<double>::max(), -1, 1, 0, 1);
+        return min + rndVal01*(max-min);
+#else
+        static thread_local std::uniform_real_distribution<double> distribution{0.0, 0.999};
+        return min + distribution(RNGengine) * (max - min);  
+#endif
     }
 
     double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b)
@@ -77,6 +88,21 @@ namespace GSL::Utils
             }
         }
         return total;
+    }
+
+    PrecalculatedGaussian::PrecalculatedGaussian(size_t size)
+    {
+        precalculatedTable.resize(size);
+        for(size_t i = 0; i<size; i++)
+            precalculatedTable[i] = Utils::randomFromGaussian(0, 1);
+    }
+
+    double PrecalculatedGaussian::nextValue(double mean, double stdev)
+    {
+        static thread_local uint16_t index = uniformRandom(0, precalculatedTable.size());
+
+        index = (index+1) % precalculatedTable.size();
+        return mean + stdev*precalculatedTable[index];
     }
 
 } // namespace GSL::Utils

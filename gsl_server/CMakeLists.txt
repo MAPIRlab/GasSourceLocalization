@@ -16,7 +16,7 @@ set(USE_NAV_ASSISTANT OFF) # if ON uses the nav_assistant package rather than di
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
 
-set(USE_TRACY ON)
+set(USE_TRACY OFF)
 ##############################################################################
 
 
@@ -107,6 +107,7 @@ endif(USE_GUI)
 
 include_directories(
   include
+  third_party/xxHash/include
   third_party/glm
   third_party/StateMachine/include
 )

@@ -9,13 +9,14 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
-//TODO make it so you don't need this file
-#include <tracy/Tracy.hpp>
+#include <gsl_server/Utils/Profiling.hpp>
 
 namespace GSL::PMFS_internal
 {
     namespace NQA = Utils::NQA;
     using HashSet = std::unordered_set<Vector2Int>;
+
+    static Utils::PrecalculatedGaussian gaussian(2048);
 
     static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
                                               double& variance)
@@ -83,7 +84,7 @@ namespace GSL::PMFS_internal
         std::vector<VarianceCalculationData> varianceCalculationData(measuredHitProb.data.size());
 
         int numberOfSimulations = 0;
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < localCopyLeaves.size(); leafIndex++)
         {
             NQA::Node* node = &localCopyLeaves[leafIndex];
@@ -158,7 +159,7 @@ namespace GSL::PMFS_internal
             numberOfSimulations += scores.size();
 
             // run the simulations of the new level and get scores for each node
-            #pragma omp parallel for 
+            #pragma omp parallel for  schedule(dynamic)
             for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
             {
                 NQA::Node* node = scores[leafIndex].leaf;
@@ -214,7 +215,7 @@ namespace GSL::PMFS_internal
         ZoneScoped;
 
         Vector2 velocity = wind.dataAt(indices.x, indices.y) +
-                                Vector2(Utils::randomFromGaussian(0, noiseSTDev), Utils::randomFromGaussian(0, noiseSTDev));
+                                Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
         
         Vector2 newPos = filament.position + deltaTime * velocity;
         moveAlongPath(filament.position, newPos);
@@ -224,7 +225,7 @@ namespace GSL::PMFS_internal
     void Simulations::moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev) const
     {
         Vector2 velocity = wind.dataAt(indices.x, indices.y) +
-                                             Vector2(Utils::randomFromGaussian(0, noiseSTDev), Utils::randomFromGaussian(0, noiseSTDev));
+                                             Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
         
         float angle = atan2(velocity.x, velocity.y);
         Vector2Int next = indices;
