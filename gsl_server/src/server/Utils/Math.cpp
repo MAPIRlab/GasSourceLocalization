@@ -92,16 +92,17 @@ namespace GSL::Utils
 
     PrecalculatedGaussian::PrecalculatedGaussian(size_t size)
     {
+        m_size = size;
         precalculatedTable.resize(size);
         for(size_t i = 0; i<size; i++)
             precalculatedTable[i] = Utils::randomFromGaussian(0, 1);
     }
 
-    double PrecalculatedGaussian::nextValue(double mean, double stdev)
+    float PrecalculatedGaussian::nextValue(float mean, float stdev)
     {
-        static thread_local uint16_t index = uniformRandom(0, precalculatedTable.size());
-
-        index = (index+1) % precalculatedTable.size();
+        static thread_local uint16_t index = uniformRandom(0, m_size);
+        
+        index = (index+1) % m_size;
         return mean + stdev*precalculatedTable[index];
     }
 

@@ -59,9 +59,10 @@ namespace GSL::Utils
     {
     public:
         PrecalculatedGaussian(size_t size);
-        double nextValue(double mean, double stdev);
+        float nextValue(float mean, float stdev);
     private:
-        std::vector<double> precalculatedTable;
+        size_t m_size;
+        std::vector<float> precalculatedTable;
     };
 
 } // namespace GSL::Utils
