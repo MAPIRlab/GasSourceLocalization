@@ -112,7 +112,8 @@ endif(USE_GUI)
 include_directories(
   include
   third_party/xxHash/include
-  third_party/glm
+  third_party/DDA/include
+  third_party/DDA/third_party/glm
   third_party/StateMachine/include
 )
 
