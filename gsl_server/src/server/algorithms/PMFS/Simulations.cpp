@@ -394,6 +394,8 @@ namespace GSL::PMFS_internal
         return randP;
     }
 
+#define NEW 1
+#if NEW
     bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
     {
         Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndex(end.x, end.y);
@@ -404,8 +406,7 @@ namespace GSL::PMFS_internal
             return false;
         }
 
-        //if(visibilityMap)
-        if(false)
+        //if(false)
         {
             if (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) && 
                 visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
@@ -416,9 +417,10 @@ namespace GSL::PMFS_internal
         }
 
         bool pathIsFree = true;
+        const float stepSize = measuredHitProb.metadata.cellSize * 1;
         Vector2 vector = end - currentPosition;
-        Vector2 increment = glm::normalize(vector) * (measuredHitProb.metadata.cellSize);
-        int steps = glm::length(vector) / (measuredHitProb.metadata.cellSize*0.5);
+        Vector2 increment = glm::normalize(vector) * stepSize;
+        int steps = glm::length(vector) / stepSize;
 
         int index = 0;
         while (index < steps && pathIsFree)
@@ -426,16 +428,55 @@ namespace GSL::PMFS_internal
             currentPosition += increment;
             index++;
             Vector2Int indices = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
-            pathIsFree = !measuredHitProb.metadata.indicesInBounds(indices) || measuredHitProb.freeAt(indices.x, indices.y);
+            pathIsFree = (!measuredHitProb.metadata.indicesInBounds(indices) || measuredHitProb.freeAt(indices.x, indices.y));
+            if (!pathIsFree)
+            {
+                currentPosition -= increment;
+                return false;
+            }
+        }
+
+        currentPosition = end;
+        return true;
+    }
+#else
+    bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
+    {
+        Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndex(end.x, end.y);
+        Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
+
+        if (!measuredHitProb.freeAt(indexOrigin.x, indexOrigin.y))
+        {
+            return false;
+        }
+
+        {
+            if (visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
+            {
+                currentPosition = end;
+                return true;
+            }
+        }
+
+        bool pathIsFree = true;
+        Vector2 vector = end - currentPosition;
+        Vector2 increment = glm::normalize(vector) * (measuredHitProb.metadata.cellSize);
+        int steps = glm::length(vector) / (measuredHitProb.metadata.cellSize);
+
+        int index = 0;
+        while (index < steps && pathIsFree)
+        {
+            currentPosition += increment;
+            index++;
+            Vector2Int pair = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
+            pathIsFree = measuredHitProb.metadata.indicesInBounds(pair) || measuredHitProb.freeAt(pair.x, pair.y);
             if (!pathIsFree)
                 currentPosition -= increment;
         }
 
-        if(pathIsFree)
-            currentPosition = end;
-
         return pathIsFree;
     }
+#endif
 
     void Simulations::printImage(const SimulationSource& source)
     {

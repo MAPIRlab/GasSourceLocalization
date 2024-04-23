@@ -78,7 +78,7 @@ def launch_setup(context, *args, **kwargs):
                     {"confidence_measurement_weight": 1.0},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
-                    {"useWindGroundTruth": False},
+                    {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
