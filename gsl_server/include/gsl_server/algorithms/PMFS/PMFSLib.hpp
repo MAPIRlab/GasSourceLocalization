@@ -50,7 +50,8 @@ namespace GSL
                                IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
         );
 
-        template <typename T> static bool pathFree(Grid<T> grid, const Vector2Int& origin, const Vector2Int& end)
+        template <typename T> 
+        static bool pathFree(Grid<T> grid, const Vector2Int& origin, const Vector2Int& end)
         {
             // check there are no obstacles between origin and end
             if (!(grid.freeAt(origin.x, origin.y) && grid.freeAt(end.x, end.y)))
