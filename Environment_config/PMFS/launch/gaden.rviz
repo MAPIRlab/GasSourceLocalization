@@ -312,7 +312,7 @@ Visualization Manager:
       Enabled: true
       Name: GMRF
       Namespaces:
-        {}
+        WindVector: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -321,10 +321,10 @@ Visualization Manager:
         Value: /PioneerP3DX/arrowMarkers
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Source
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -332,7 +332,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/probability_markers
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Hit

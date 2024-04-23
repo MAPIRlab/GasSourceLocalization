@@ -62,7 +62,7 @@ namespace GSL::Utils
 
     double uniformRandom(double min, double max)
     {
-#if 1
+#if 0
         // xxHash-based RNG. I don't really know much about it, but it goes vroom vroom
         static thread_local uint32_t seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         static thread_local uint32_t state = 0xFFFF;
@@ -88,22 +88,6 @@ namespace GSL::Utils
             }
         }
         return total;
-    }
-
-    PrecalculatedGaussian::PrecalculatedGaussian(size_t size)
-    {
-        m_size = size;
-        precalculatedTable.resize(size);
-        for(size_t i = 0; i<size; i++)
-            precalculatedTable[i] = Utils::randomFromGaussian(0, 1);
-    }
-
-    float PrecalculatedGaussian::nextValue(float mean, float stdev)
-    {
-        static thread_local uint16_t index = uniformRandom(0, m_size);
-        
-        index = (index+1) % m_size;
-        return mean + stdev*precalculatedTable[index];
     }
 
 } // namespace GSL::Utils

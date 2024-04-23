@@ -5,5 +5,6 @@
 #else
 
 #define ZoneScoped
+#define ZoneScopedN(name)
 
 #endif

@@ -55,14 +55,25 @@ namespace GSL::Utils
 
     //holds a long list of N(0,1) values, and returns them one at a time, scaled as requested.
     //obviously not as good as generating them on the fly, but it's not like we are doing cryptography here
+    template<int Size>
     class PrecalculatedGaussian
     {
     public:
-        PrecalculatedGaussian(size_t size);
-        float nextValue(float mean, float stdev);
+        PrecalculatedGaussian()
+        {
+            m_index = uniformRandom(0, Size);
+            for(size_t i = 0; i<Size; i++)
+                m_precalculatedTable[i] = Utils::randomFromGaussian(0, 1);
+        }
+
+        float nextValue(float mean, float stdev)
+        {
+            m_index = (m_index+1) % Size;
+            return mean + stdev*m_precalculatedTable[m_index];
+        }
     private:
-        size_t m_size;
-        std::vector<float> precalculatedTable;
+        uint16_t m_index;
+        std::array<float, Size> m_precalculatedTable;
     };
 
 } // namespace GSL::Utils

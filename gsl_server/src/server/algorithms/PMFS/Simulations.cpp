@@ -16,7 +16,7 @@ namespace GSL::PMFS_internal
     namespace NQA = Utils::NQA;
     using HashSet = std::unordered_set<Vector2Int>;
 
-    static Utils::PrecalculatedGaussian gaussian(2048);
+    static thread_local Utils::PrecalculatedGaussian<2500> gaussian;
 
     static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
                                               double& variance)
@@ -212,8 +212,6 @@ namespace GSL::PMFS_internal
 
     void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
     {
-        ZoneScoped;
-
         Vector2 velocity = wind.dataAt(indices.x, indices.y) +
                                 Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
         
@@ -277,7 +275,6 @@ namespace GSL::PMFS_internal
 
     bool Simulations::filamentIsOutside(const Filament& filament) const
     {
-        ZoneScoped;
         Vector2Int newIndices = measuredHitProb.metadata.coordinatesToIndex(filament.position.x, filament.position.y);
         return !measuredHitProb.metadata.indicesInBounds(newIndices);
     }
@@ -285,9 +282,8 @@ namespace GSL::PMFS_internal
     void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
                                       int timesteps, float deltaTime, float noiseSTDev) const
     {
-        ZoneScoped;
 
-        constexpr int numFilamentsIteration = 1;
+        constexpr int numFilamentsIteration = 5;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
 
         std::vector<uint16_t> updated(hitMap.size(), 0); //index of the last iteration in which this cell was updated, to avoid double-counting
@@ -297,6 +293,8 @@ namespace GSL::PMFS_internal
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
         {
+            ZoneScopedN("Warmup");
+
             bool stable = false;
             int count = 0;
             while (!stable && count < warmupLimit)
@@ -337,6 +335,7 @@ namespace GSL::PMFS_internal
             }
         }
 
+        ZoneScopedN("Recording");
         // now, we do the thing
         for (int t = 1; t < timesteps+1; t++)
         {
@@ -384,7 +383,6 @@ namespace GSL::PMFS_internal
 
     Vector2 SimulationSource::getPoint() const
     {
-        ZoneScoped;
         if (mode == Mode::Point)
             return point;
 
@@ -398,7 +396,6 @@ namespace GSL::PMFS_internal
 
     bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
     {
-        ZoneScoped;
         Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndex(end.x, end.y);
         Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
 
@@ -408,8 +405,10 @@ namespace GSL::PMFS_internal
         }
 
         //if(visibilityMap)
+        if(false)
         {
-            if (visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
+            if (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) && 
+                visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
             {
                 currentPosition = end;
                 return true;
@@ -419,18 +418,21 @@ namespace GSL::PMFS_internal
         bool pathIsFree = true;
         Vector2 vector = end - currentPosition;
         Vector2 increment = glm::normalize(vector) * (measuredHitProb.metadata.cellSize);
-        int steps = glm::length(vector) / (measuredHitProb.metadata.cellSize);
+        int steps = glm::length(vector) / (measuredHitProb.metadata.cellSize*0.5);
 
         int index = 0;
         while (index < steps && pathIsFree)
         {
             currentPosition += increment;
             index++;
-            Vector2Int pair = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
-            pathIsFree = measuredHitProb.metadata.indicesInBounds(pair) || measuredHitProb.freeAt(pair.x, pair.y);
+            Vector2Int indices = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
+            pathIsFree = !measuredHitProb.metadata.indicesInBounds(indices) || measuredHitProb.freeAt(indices.x, indices.y);
             if (!pathIsFree)
                 currentPosition -= increment;
         }
+
+        if(pathIsFree)
+            currentPosition = end;
 
         return pathIsFree;
     }
@@ -449,10 +451,10 @@ namespace GSL::PMFS_internal
                 if (measuredHitProb.freeAt(i,j))
                 {
                     float v = hitMap[measuredHitProb.metadata.indexOf(i,j)] * 255;
-                    image.at<cv::Vec3f>(hitMap.size() - 1 - i, j) = cv::Vec3f(v, v, v);
+                    image.at<cv::Vec3f>(measuredHitProb.metadata.height - 1 - i, j) = cv::Vec3f(v, v, v);
                 }
                 else
-                    image.at<cv::Vec3f>(hitMap.size() - 1 - i, j) = cv::Vec3f(0, 0, 255);
+                    image.at<cv::Vec3f>(measuredHitProb.metadata.height - 1 - i, j) = cv::Vec3f(0, 0, 255);
             }
         }
 
