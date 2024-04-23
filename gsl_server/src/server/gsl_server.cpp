@@ -23,7 +23,15 @@ int main(int argc, char** argv)
         rclcpp::spin_some(gsl_node);
         if (gsl_node->m_activeGoal.get() != nullptr)
         {
-            gsl_node->execute(gsl_node->m_activeGoal);
+            try
+            {
+                gsl_node->execute(gsl_node->m_activeGoal);
+            }
+            catch(std::exception& e)
+            {
+                GSL_ERROR("Exception while running GSL: {}", e.what());
+            }
+            
             rclcpp::sleep_for(std::chrono::seconds(1));
             rclcpp::shutdown();
         }
