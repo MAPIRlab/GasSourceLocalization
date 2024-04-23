@@ -7,6 +7,3 @@
 [submodule "gsl_server/third_party/StateMachine"]
 	path = gsl_server/third_party/StateMachine
 	url = git@github.com:PepeOjeda/StateMachine.git
-[submodule "gsl_server/third_party/glm"]
-	path = gsl_server/third_party/glm
-	url = git@github.com:g-truc/glm.git
