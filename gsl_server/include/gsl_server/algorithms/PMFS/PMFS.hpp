@@ -60,7 +60,7 @@ namespace GSL
 
         //-------------Utils-------------
         bool paused = false;
-        VisibilityMap visibilityMap;
+        std::optional<VisibilityMap> visibilityMap;
         FunctionQueue functionQueue;
         uint iterationsCounter;
 

@@ -3,6 +3,8 @@
 #define USE_GLM 0
 #if USE_GLM
 
+#define GLM_FORCE_INLINE
+#define GLM_FORCE_XYZW_ONLY
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
 #include <glm/gtx/rotate_vector.hpp>

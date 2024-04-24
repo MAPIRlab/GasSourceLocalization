@@ -3,6 +3,7 @@
 #include <gsl_server/Utils/Math.hpp>
 #include <gsl_server/Utils/NQAQuadtree.hpp>
 #include <angles/angles.h>
+#include <DDA/DDA.h>
 
 namespace GSL
 {
@@ -287,7 +288,7 @@ namespace GSL
                     Vector2Int ij(i, j);
                     if (!grid.freeAt(i, j))
                     {
-                        visibilityMap.emplace(ij, HashSet{});
+                        visibilityMap.emplace(ij, {});
                         continue;
                     }
                     int oI = std::max(0, i - (int)visibilityMap.range) - i;
@@ -295,7 +296,7 @@ namespace GSL
                     int oJ = std::max(0, j - (int)visibilityMap.range) - j;
                     int fJ = std::min((int)grid.metadata.width - 1, j + (int)visibilityMap.range) - j;
 
-                    HashSet visibleCells;
+                    std::vector<Vector2Int> visibleCells;
                     double totalX = 0;
                     double totalY = 0;
                     for (int r = oI; r <= fI; r++)
@@ -303,8 +304,8 @@ namespace GSL
                         for (int c = oJ; c <= fJ; c++)
                         {
                             Vector2Int thisCell(i + r, j + c);
-                            if (pathFree(grid, ij, thisCell))
-                                visibleCells.insert(thisCell);
+                            if (thisCell == ij || pathFree(grid.metadata, grid.occupancy, ij, thisCell))
+                                visibleCells.push_back(thisCell);
                         }
                     }
                     visibilityMap.emplace(ij, visibleCells);
@@ -413,6 +414,32 @@ namespace GSL
                 GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
         }
 #endif
+    }
+
+    bool PMFSLib::pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2Int& originInd, const Vector2Int& endInd)
+    {
+        // check there are no obstacles between origin and end
+        if (!(occupancy[metadata.indexOf(originInd.x, originInd.y)] == Occupancy::Free 
+                && occupancy[metadata.indexOf(endInd.x, endInd.y)] == Occupancy::Free))
+            return false;
+        
+        Vector2 origin = metadata.indexToCoordinates(originInd);
+        Vector2 end = metadata.indexToCoordinates(endInd);
+        Vector2 direction = end-origin;
+        DDA::_2D::RayCastInfo raycastInfo = 
+            DDA::_2D::castRay<GSL::Occupancy>({origin.y, origin.x}, {direction.y, direction.x}, vmath::length(direction), 
+                DDA::_2D::Map<GSL::Occupancy>(
+                    occupancy, 
+                    metadata.origin, 
+                    metadata.cellSize, 
+                    {metadata.width, metadata.height}),
+                [](const GSL::Occupancy& occ)
+                {
+                    return occ == GSL::Occupancy::Free;
+                }
+            );
+
+        return !raycastInfo.hitSomething;
     }
 
     void PMFSLib::normalizeSourceProb(Grid<double>& variable)

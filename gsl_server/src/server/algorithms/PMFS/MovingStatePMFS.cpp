@@ -33,7 +33,7 @@ namespace GSL
                 for (int c = oJ; c <= fJ; c++)
                 {
                     Vector2Int p(r, c);
-                    if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap.isVisible({i,j}, p) == Visibility::Visible)
+                    if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i,j}, p) == Visibility::Visible)
                         openMoveSet.insert(p);
                 }
             }
@@ -86,8 +86,8 @@ namespace GSL
     {
         double sum = 0;
         Vector2Int ij(i, j);
-        auto& set = pmfs->visibilityMap.at(ij);
-        for (const auto& p : set)
+        auto range = pmfs->visibilityMap->at(ij);
+        for (const auto& p : range)
         {
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p.x, p.y)].confidence) * std::exp(-distance);

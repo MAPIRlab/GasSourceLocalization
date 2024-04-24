@@ -1,40 +1,109 @@
 #pragma once
-#include <unordered_map>
-#include <unordered_set>
 #include <gsl_server/core/Vectors.hpp>
+#include <gsl_server/core/Logging.hpp>
+#include <vector>
+#include <gsl_server/Utils/Profiling.hpp>
 
 namespace GSL
 {
-    //TODO We are not working with large enough amounts of data to make hashing worth it, I don't think
-    //TODO Replace the maps and sets with fixed-size, contiguous arrays and test the speed
-    enum class Visibility{Visible, NotVisible, OutOfRange};
+
+    template <class Iter> 
+    class Range
+    {
+        Iter b;
+        Iter e;
+
+    public:
+        Range(Iter b, Iter e) : b(b), e(e)
+        {}
+
+        Iter begin() const
+        {
+            return b;
+        }
+        Iter end() const
+        {
+            return e;
+        }
+
+        static Range<Iter> make_range(Iter beginIter, size_t startIndex, size_t endIndex)
+        {
+            return Range<Iter>(beginIter + startIndex, beginIter + endIndex);
+        }
+    };
+
+    enum class Visibility
+    {
+        Visible,
+        NotVisible,
+        OutOfRange
+    };
     class VisibilityMap
     {
     public:
-        uint range = 0;
+        VisibilityMap() = delete;
+        VisibilityMap(size_t mapWidth, size_t height, size_t _range)
+            : range(_range), bucketSize(std::pow(2 * _range, 2)), 
+              m_width(mapWidth*bucketSize),
+              m_map(mapWidth * height * bucketSize, Vector2Int{-1,-1})
+        {}
+
+        const size_t range;
 
         Visibility isVisible(const Vector2Int& from, const Vector2Int& to) const
         {
-            if(std::abs(from.x-to.x) > range || std::abs(from.y-to.y) > range)
+            if (std::abs(from.x - to.x) > range || std::abs(from.y - to.y) > range)
                 return Visibility::OutOfRange;
 
-            const std::unordered_set<Vector2Int>& set = map.at(from);
-            if (set.find(to) == set.end())
+            auto set = at_c(from);
+            //if (!find(set, to))
+            if (std::find(set.begin(), set.end(), to) == set.end())
                 return Visibility::NotVisible;
             return Visibility::Visible;
         }
 
-        void emplace(const Vector2Int& key, const std::unordered_set<Vector2Int>& value)
+        void emplace(const Vector2Int& key, const std::vector<Vector2Int>& value)
         {
-            map.emplace(key, value);
+            for (size_t i = 0; i < value.size(); i++)
+            {
+                size_t index = indexOf(key) + i;
+                m_map[index] = value[i];
+            }
         }
 
-        std::unordered_set<Vector2Int>& at(const Vector2Int& key)
+        Range<std::vector<Vector2Int>::iterator> at(const Vector2Int& key)
         {
-            return map.at(key);
+            size_t beginIndex = indexOf(key);
+            return Range<std::vector<Vector2Int>::iterator>::make_range(m_map.begin(), beginIndex, beginIndex + bucketSize);
         }
+
+        const Range<std::vector<Vector2Int>::const_iterator> at_c(const Vector2Int& key) const
+        {
+            size_t beginIndex = indexOf(key);
+            return Range<std::vector<Vector2Int>::const_iterator>::make_range(m_map.begin(), beginIndex, beginIndex + bucketSize);
+        }
+
 
     private:
-        std::unordered_map<Vector2Int, std::unordered_set<Vector2Int>> map;
+        const size_t bucketSize;
+        const size_t m_width;
+        std::vector<Vector2Int> m_map;
+
+        size_t indexOf(const Vector2Int& key) const
+        {
+            return key.x * m_width + key.y * bucketSize;
+        }
+
+        bool find(const Range<std::vector<Vector2Int>::const_iterator>& range, const Vector2Int& value) const
+        {
+            for(const Vector2Int& v : range)
+            {
+                if(v == value)
+                    return true;
+                else if (v == Vector2Int{-1,-1})
+                    return false;
+            }
+            return false;
+        }
     };
-}
+} // namespace GSL

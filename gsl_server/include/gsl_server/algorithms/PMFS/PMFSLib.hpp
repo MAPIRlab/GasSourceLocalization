@@ -50,29 +50,7 @@ namespace GSL
                                IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
         );
 
-        template <typename T> 
-        static bool pathFree(Grid<T> grid, const Vector2Int& origin, const Vector2Int& end)
-        {
-            // check there are no obstacles between origin and end
-            if (!(grid.freeAt(origin.x, origin.y) && grid.freeAt(end.x, end.y)))
-                return false;
-
-            bool pathIsFree = true;
-            Vector2 vector = grid.metadata.indexToCoordinates(end.x, end.y) - grid.metadata.indexToCoordinates(origin.x, origin.y);
-            Vector2 increment = vmath::normalize(vector) * (grid.metadata.cellSize);
-            int steps = vmath::length(vector) / (grid.metadata.cellSize);
-            int index = 0;
-            Vector2 current_point = grid.metadata.indexToCoordinates(origin.x, origin.y);
-            while (index < steps && pathIsFree)
-            {
-                current_point += increment;
-                index++;
-                Vector2Int pair = grid.metadata.coordinatesToIndex(current_point.x, current_point.y);
-                pathIsFree = grid.metadata.indicesInBounds(pair) && grid.freeAt(pair.x, pair.y);
-            }
-
-            return pathIsFree;
-        }
+        static bool pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2Int& originInd, const Vector2Int& endInd);
         
         static void normalizeSourceProb(Grid<double>& variable);
         

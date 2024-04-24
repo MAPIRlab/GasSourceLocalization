@@ -48,7 +48,7 @@ namespace GSL
     
 
         //-------------Utils-------------
-        VisibilityMap visibilityMap;
+        std::optional<VisibilityMap> visibilityMap;
         FunctionQueue functionQueue;
     };
 }

@@ -27,14 +27,14 @@ namespace GSL
         if (concentration > thresholdGas)
         {
             // Gas & wind
-            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, true, wind_direction, wind_speed,
+            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, wind_direction, wind_speed,
                                               gridMetadata.coordinatesToIndex(currentRobotPose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
-            PMFSLib::estimateHitProbabilities(grid, visibilityMap, settings.hitProbability, false, wind_direction, wind_speed,
+            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, wind_direction, wind_speed,
                                               gridMetadata.coordinatesToIndex(currentRobotPose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
@@ -42,7 +42,8 @@ namespace GSL
         PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, 
                             Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), 
                             node,
-                            pubs.gmrfWind, pubs.groundTruthWind);
+                            pubs.gmrfWind
+                            IF_GADEN(, pubs.groundTruthWind));
         PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
 
         number_of_updates++;

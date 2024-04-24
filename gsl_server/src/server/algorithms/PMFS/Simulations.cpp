@@ -406,7 +406,7 @@ namespace GSL::PMFS_internal
         }
 
 
-#if 0
+#if 1
         if (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) && 
             visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
         {
@@ -427,7 +427,10 @@ namespace GSL::PMFS_internal
                     return occ == GSL::Occupancy::Free;
                 }
             );
-        currentPosition += direction*raycastInfo.distance; 
+        //This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
+        //ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
+        constexpr float wallStoppingProportion = 0.7;
+        currentPosition += direction*raycastInfo.distance * wallStoppingProportion; 
 
         return true;
     }

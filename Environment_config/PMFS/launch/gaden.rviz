@@ -81,6 +81,7 @@ Visualization Manager:
       Name: Environment_CAD
       Namespaces:
         part_0: true
+        part_1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -426,9 +427,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.6303876638412476
-        Y: -1.4249426126480103
-        Z: 2.256098747253418
+        X: 5.254612445831299
+        Y: 4.607738018035889
+        Z: 2.504652976989746
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

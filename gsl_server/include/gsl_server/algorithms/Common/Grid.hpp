@@ -9,9 +9,10 @@ namespace GSL
     {
         Vector2 origin;
         float cellSize; // in meters
-        size_t numFreeCells;
         size_t width, height;
         uint16_t scale; //with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
+        size_t numFreeCells;
+
         Vector2Int coordinatesToIndex(double x, double y) const
         {
             return Vector2Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize));
@@ -26,6 +27,12 @@ namespace GSL
         {
             float offset = centerOfCell ? 0.5 : 0;
             return Vector2(origin.x + (j + offset) * cellSize, origin.y + (i + offset) * cellSize);
+        }
+
+        Vector2 indexToCoordinates(const Vector2Int& indices, bool centerOfCell = true) const
+        {
+            float offset = centerOfCell ? 0.5 : 0;
+            return Vector2(origin.x + (indices.y + offset) * cellSize, origin.y + (indices.x + offset) * cellSize);
         }
 
         size_t indexOf(size_t i, size_t j) const

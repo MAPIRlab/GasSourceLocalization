@@ -74,11 +74,11 @@ namespace GSL
         sourceProbability.resize(gridMetadata.height * gridMetadata.width);
         occupancy.resize(gridMetadata.height * gridMetadata.width);
 
-        visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
+        visibilityMap.emplace(gridMetadata.width, gridMetadata.height, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
         PMFSLib::initializeMap(*this, 
             Grid<HitProbability>(hitProbability, occupancy, gridMetadata),
-            simulations, visibilityMap);
+            simulations, *visibilityMap);
 
 
         // set all variables to the prior probability
