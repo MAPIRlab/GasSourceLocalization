@@ -3,9 +3,6 @@
 #include <random>
 #include <chrono>
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/rotate_vector.hpp>
-
 namespace GSL::Utils
 {
     static thread_local std::minstd_rand0 RNGengine;
@@ -36,7 +33,7 @@ namespace GSL::Utils
     double evaluate2DGaussian(const Vector2& sampleOffset, const Vector2& sigma, float distributionRotation)
     {
         // we rotate the vector instead of the gaussian because keeping the distribution axis-aligned removes several terms from the PDF equation
-        Vector2 v = glm::rotate(sampleOffset, -distributionRotation);
+        Vector2 v = vmath::rotate(sampleOffset, -distributionRotation);
 
         return std::exp(-0.5 * (std::pow(v.x / sigma.x, 2) + std::pow(v.y / sigma.y, 2))) / (2 * M_PI * sigma.x * sigma.y);
     }

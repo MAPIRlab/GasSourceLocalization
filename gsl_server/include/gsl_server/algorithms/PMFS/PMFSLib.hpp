@@ -59,8 +59,8 @@ namespace GSL
 
             bool pathIsFree = true;
             Vector2 vector = grid.metadata.indexToCoordinates(end.x, end.y) - grid.metadata.indexToCoordinates(origin.x, origin.y);
-            Vector2 increment = glm::normalize(vector) * (grid.metadata.cellSize);
-            int steps = glm::length(vector) / (grid.metadata.cellSize);
+            Vector2 increment = vmath::normalize(vector) * (grid.metadata.cellSize);
+            int steps = vmath::length(vector) / (grid.metadata.cellSize);
             int index = 0;
             Vector2 current_point = grid.metadata.indexToCoordinates(origin.x, origin.y);
             while (index < steps && pathIsFree)

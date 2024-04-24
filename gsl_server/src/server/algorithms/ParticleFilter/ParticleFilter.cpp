@@ -260,7 +260,7 @@ namespace GSL
         double var = 0;
         for (const Particle& p : particles)
         {
-            var += std::pow(glm::length(Vector2(p.x, p.y) - average), 2) * p.weight;
+            var += std::pow(vmath::length(Vector2(p.x, p.y) - average), 2) * p.weight;
         }
         // return true;
         return std::sqrt(var) <= Rconv;

@@ -89,7 +89,7 @@ namespace GSL
         auto& set = pmfs->visibilityMap.at(ij);
         for (const auto& p : set)
         {
-            float distance = glm::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
+            float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p.x, p.y)].confidence) * std::exp(-distance);
         }
         return sum;

@@ -81,7 +81,6 @@ Visualization Manager:
       Name: Environment_CAD
       Namespaces:
         part_0: true
-        part_1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -321,10 +320,10 @@ Visualization Manager:
         Value: /PioneerP3DX/arrowMarkers
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Source
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -332,7 +331,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/probability_markers
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: false
       Name: Hit
@@ -350,7 +349,7 @@ Visualization Manager:
       Enabled: true
       Name: Quadtree
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -427,9 +426,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 6.32921028137207
-        Y: 6.345279216766357
-        Z: 2.5760953426361084
+        X: -1.6303876638412476
+        Y: -1.4249426126480103
+        Z: 2.256098747253418
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

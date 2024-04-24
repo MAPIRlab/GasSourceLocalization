@@ -62,8 +62,8 @@ namespace GSL
                     closedPropagationSet.insert(rc);
 
                 hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(rc - ij, kernel, settings);
-                hitProb.dataAt(r, c).distanceFromRobot = glm::length(Vector2(rc - ij));
-                hitProb.dataAt(r, c).originalPropagationDirection = glm::normalize(Vector2(rc - ij));
+                hitProb.dataAt(r, c).distanceFromRobot = vmath::length(Vector2(rc - ij));
+                hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalize(Vector2(rc - ij));
             }
         }
 

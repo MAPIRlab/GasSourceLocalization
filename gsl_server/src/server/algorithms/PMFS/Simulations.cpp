@@ -405,16 +405,18 @@ namespace GSL::PMFS_internal
             return false;
         }
 
+
+#if 0
         if (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) && 
             visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
         {
             currentPosition = end;
             return true;
         }
-
+#endif
         Vector2 direction = end-currentPosition;
         DDA::_2D::RayCastInfo raycastInfo = 
-            DDA::_2D::castRay<GSL::Occupancy>({currentPosition.y, currentPosition.x}, {direction.y, direction.x}, glm::length(direction), 
+            DDA::_2D::castRay<GSL::Occupancy>({currentPosition.y, currentPosition.x}, {direction.y, direction.x}, vmath::length(direction), 
                 DDA::_2D::Map<GSL::Occupancy>(
                     measuredHitProb.occupancy, 
                     measuredHitProb.metadata.origin, 

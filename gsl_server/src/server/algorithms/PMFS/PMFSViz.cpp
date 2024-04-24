@@ -130,15 +130,15 @@ namespace GSL
         double max_module = 0.0;
         for (size_t i = 0; i < estimatedWindVectors.data.size(); i++)
         {
-            if (glm::length(estimatedWindVectors.data[i]) > max_module)
-                max_module = glm::length(estimatedWindVectors.data[i]);
+            if (vmath::length(estimatedWindVectors.data[i]) > max_module)
+                max_module = vmath::length(estimatedWindVectors.data[i]);
         }
 
         for (size_t i = 0; i < estimatedWindVectors.data.size(); i++)
         {
             if (estimatedWindVectors.occupancy[i] == Occupancy::Free)
             {
-                double module = glm::length(estimatedWindVectors.data[i]);
+                double module = vmath::length(estimatedWindVectors.data[i]);
                 double angle = std::atan2(estimatedWindVectors.data[i].y, estimatedWindVectors.data[i].x);
                 if (module > 0.001)
                 {

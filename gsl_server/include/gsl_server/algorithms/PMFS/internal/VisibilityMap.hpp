@@ -5,6 +5,8 @@
 
 namespace GSL
 {
+    //TODO We are not working with large enough amounts of data to make hashing worth it, I don't think
+    //TODO Replace the maps and sets with fixed-size, contiguous arrays and test the speed
     enum class Visibility{Visible, NotVisible, OutOfRange};
     class VisibilityMap
     {

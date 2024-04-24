@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_server) 
-set(CMAKE_CXX_FLAGS "-std=c++20 -g ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++20 -g -Wno-narrowing ${CMAKE_CXX_FLAGS}")
 
 
 
