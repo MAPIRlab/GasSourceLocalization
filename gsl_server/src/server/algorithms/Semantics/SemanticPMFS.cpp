@@ -16,6 +16,7 @@ namespace GSL
     void SemanticPMFS::Initialize()
     {
         Algorithm::Initialize();
+        //TODO
         // if(semanticType == SemanticType::ClassMap)
         //     semantics = std::make_unique<ClassMap>();
 
@@ -24,6 +25,7 @@ namespace GSL
         waitForMapState->shouldWaitForGas = false;
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
+        //TODO
         // movingState = std::make_unique<MovingStatePMFS>(this);
         stateMachine.forceSetState(waitForMapState.get());
     }
