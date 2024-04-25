@@ -7,6 +7,7 @@ Panels:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
         - /ExplorationValue1
+        - /HitVariance1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 620
   - Class: rviz_common/Selection
@@ -321,10 +322,10 @@ Visualization Manager:
         Value: /PioneerP3DX/arrowMarkers
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Source
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -332,7 +333,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/probability_markers
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: false
       Name: Hit
@@ -371,6 +372,19 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /PioneerP3DX/explorationValue
       Value: false
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: HitVariance
+      Namespaces:
+        cells: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/varianceHit
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217

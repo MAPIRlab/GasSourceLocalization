@@ -38,12 +38,20 @@ namespace GSL
         NotVisible,
         OutOfRange
     };
+    
     class VisibilityMap
     {
+        // for each key, we hold a "bucket" of maximum size 2range*2range of all the cells within range that are visible
+        // eveything is stored contiguosly in a single, flat vector
+        // right at the start of each bucked is a special value telling you how many of the bucket elements are in use
+
+        // element 1                          element 2
+        // (size, size) ([n times] (x, y))  (size, size) ([n times] (x, y))
     public:
         VisibilityMap() = delete;
         VisibilityMap(size_t mapWidth, size_t height, size_t _range)
-            : range(_range), bucketSize(std::pow(2 * _range, 2)), 
+            : range(_range), 
+              bucketSize(std::pow(2 * _range+1, 2) + 1), // the extra 1 position (before the data) holds the number of valid items in the bucket
               m_width(mapWidth*bucketSize),
               m_map(mapWidth * height * bucketSize, Vector2Int{-1,-1})
         {}
@@ -64,9 +72,15 @@ namespace GSL
 
         void emplace(const Vector2Int& key, const std::vector<Vector2Int>& value)
         {
+            if(value.size() > bucketSize)
+                GSL_ERROR("VisibilityMap of range {} cannot hold vector of size {}!", range, value.size());
+
+            //store the actual size so we can quickly return the correct range later
+            m_map[indexOf(key)] = {value.size(), value.size()};
+
             for (size_t i = 0; i < value.size(); i++)
             {
-                size_t index = indexOf(key) + i;
+                size_t index = indexOf(key) + i +1;
                 m_map[index] = value[i];
             }
         }
@@ -74,13 +88,17 @@ namespace GSL
         Range<std::vector<Vector2Int>::iterator> at(const Vector2Int& key)
         {
             size_t beginIndex = indexOf(key);
-            return Range<std::vector<Vector2Int>::iterator>::make_range(m_map.begin(), beginIndex, beginIndex + bucketSize);
+            size_t usedSize = m_map[beginIndex].x;
+            beginIndex++;
+            return Range<std::vector<Vector2Int>::iterator>::make_range(m_map.begin(), beginIndex, beginIndex + usedSize);
         }
 
         const Range<std::vector<Vector2Int>::const_iterator> at_c(const Vector2Int& key) const
         {
             size_t beginIndex = indexOf(key);
-            return Range<std::vector<Vector2Int>::const_iterator>::make_range(m_map.begin(), beginIndex, beginIndex + bucketSize);
+            size_t usedSize = m_map[beginIndex].x;
+            beginIndex++;
+            return Range<std::vector<Vector2Int>::const_iterator>::make_range(m_map.begin(), beginIndex, beginIndex + usedSize);
         }
 
 

@@ -84,13 +84,15 @@ namespace GSL
 
     double MovingStatePMFS::explorationValue(int i, int j)
     {
-        double sum = 0;
         Vector2Int ij(i, j);
         auto range = pmfs->visibilityMap->at(ij);
+
+        double sum = 0;
         for (const auto& p : range)
         {
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p.x, p.y)].confidence) * std::exp(-distance);
+            GSL_ASSERT(sum>0);
         }
         return sum;
     }
