@@ -406,17 +406,18 @@ namespace GSL::PMFS_internal
         }
 
 
-#if 1
-        if (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) && 
-            visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible)
+        // try to avoid doing the raycast by looking at the pre-computed visibilityMap
+        if (indexOrigin == indexEnd ||
+            (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) && 
+            visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible))
         {
             currentPosition = end;
             return true;
         }
-#endif
-        Vector2 direction = end-currentPosition;
+
+        Vector2 movement = end-currentPosition;
         DDA::_2D::RayCastInfo raycastInfo = 
-            DDA::_2D::castRay<GSL::Occupancy>({currentPosition.y, currentPosition.x}, {direction.y, direction.x}, vmath::length(direction), 
+            DDA::_2D::castRay<GSL::Occupancy>({currentPosition.y, currentPosition.x}, {movement.y, movement.x}, vmath::length(movement), 
                 DDA::_2D::Map<GSL::Occupancy>(
                     measuredHitProb.occupancy, 
                     measuredHitProb.metadata.origin, 
@@ -430,7 +431,7 @@ namespace GSL::PMFS_internal
         //This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
         //ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
         constexpr float wallStoppingProportion = 0.7;
-        currentPosition += direction*raycastInfo.distance * wallStoppingProportion; 
+        currentPosition += movement*raycastInfo.distance * wallStoppingProportion; 
 
         return true;
     }

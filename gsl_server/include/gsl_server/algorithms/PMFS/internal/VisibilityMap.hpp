@@ -96,12 +96,14 @@ namespace GSL
 
         bool find(const Range<std::vector<Vector2Int>::const_iterator>& range, const Vector2Int& value) const
         {
-            for(const Vector2Int& v : range)
+            auto iter = range.begin();
+            while(iter != range.end())
             {
-                if(v == value)
+                if(*iter == value)
                     return true;
-                else if (v == Vector2Int{-1,-1})
+                else if (*iter == Vector2Int{-1,-1})
                     return false;
+                ++iter;
             }
             return false;
         }
