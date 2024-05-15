@@ -17,10 +17,15 @@ namespace GSL
         {
             return Vector2Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize));
         }
-
-        Vector2Int coordinatesToIndex(const geometry_msgs::msg::PoseWithCovarianceStamped& pose) const
+        
+        Vector2Int coordinatesToIndex(const Vector2& v) const
         {
-            return coordinatesToIndex(pose.pose.pose.position.x, pose.pose.pose.position.y);
+            return Vector2Int((v.y - origin.y) / (cellSize), (v.x - origin.x) / (cellSize));
+        }
+
+        Vector2Int coordinatesToIndex(const geometry_msgs::msg::Pose& pose) const
+        {
+            return coordinatesToIndex(pose.position.x, pose.position.y);
         }
 
         Vector2 indexToCoordinates(int i, int j, bool centerOfCell = true) const
@@ -35,9 +40,9 @@ namespace GSL
             return Vector2(origin.x + (indices.y + offset) * cellSize, origin.y + (indices.x + offset) * cellSize);
         }
 
-        size_t indexOf(size_t i, size_t j) const
+        size_t indexOf(const Vector2Int& v) const
         {
-            return j + i * width;
+            return v.y + v.x * width;
         }
 
         Vector2Int indices2D(size_t index) const
@@ -65,12 +70,12 @@ namespace GSL
 
         T& dataAt(size_t i, size_t j) const
         {
-            return data[metadata.indexOf(i,j)];
+            return data[metadata.indexOf({i,j})];
         }
 
         Occupancy& occupancyAt(size_t i, size_t j) const
         {
-            return occupancy[metadata.indexOf(i,j)];
+            return occupancy[metadata.indexOf({i,j})];
         }
 
         bool freeAt(size_t i, size_t j) const

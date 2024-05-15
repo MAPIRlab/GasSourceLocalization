@@ -100,4 +100,14 @@ namespace GSL::Utils
         return result;
     }
 
+    Vector3 fromMsg(const geometry_msgs::msg::Vector3& v)
+    {
+        return Vector3(v.x, v.y, v.z);
+    }
+
+    Vector3 fromMsg(const geometry_msgs::msg::Point& v)
+    {
+        return Vector3(v.x, v.y, v.z);
+    }
+
 } // namespace GSL::Utils

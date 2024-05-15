@@ -14,7 +14,15 @@ namespace GSL
 
         float ProbabilityOf(const std::string& _class)
         {
-            return probabilityDist[_class];
+            try
+            {
+                return probabilityDist[_class];
+            }
+            catch(std::exception& e)
+            {
+                GSL_ERROR("Exception while retrieving probability of object class {}: {}", _class, e.what());
+            }
+            return 0;
         }
 
         void UpdateProbOf(const std::string& _class, float prob)
@@ -39,8 +47,8 @@ namespace GSL
                 prob /= sum;
         }
 
-        Iterator begin() {return Iterator(&*probabilityDist.begin());}
-        Iterator end() {return Iterator(&*probabilityDist.end());}
+        Iterator begin() {return Iterator(probabilityDist.begin());}
+        Iterator end() {return Iterator(probabilityDist.end());}
 
 
     private:
@@ -61,22 +69,25 @@ namespace GSL
             using value_type        = std::pair<const std::string, float>;
             using pointer           = value_type*;
             using reference         = value_type&;
+            using underlying_it     = std::unordered_map<std::string, float>::iterator;
 
-            Iterator(pointer ptr) : m_ptr(ptr) {}
+            Iterator(underlying_it it) : m_iter(it) {}
 
-            reference operator*() const { return *m_ptr; }
-            pointer operator->() { return m_ptr; }
+            reference operator*() const { return *m_iter; }
+            pointer operator->() { return &*m_iter; }
 
             // Prefix increment
-            Iterator& operator++() { m_ptr++; return *this; }  
+            Iterator& operator++() { m_iter++; return *this; }  
 
             // Postfix increment
             Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
 
-            friend bool operator== (const Iterator& a, const Iterator& b) { return a.m_ptr == b.m_ptr; };
-            friend bool operator!= (const Iterator& a, const Iterator& b) { return a.m_ptr != b.m_ptr; };     
+            friend bool operator== (const Iterator& a, const Iterator& b) { return a.get_pointer() == b.get_pointer(); };
+            friend bool operator!= (const Iterator& a, const Iterator& b) { return a.get_pointer() != b.get_pointer(); };     
         private:
-            pointer m_ptr;
+            underlying_it m_iter;
+
+            pointer get_pointer() const { return &*m_iter; }
         };
     };
 } // namespace GSL

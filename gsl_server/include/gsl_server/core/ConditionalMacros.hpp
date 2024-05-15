@@ -1,5 +1,6 @@
 #pragma once 
 
+//Slight convenience macros to avoid having #if #endif everywhere (specially inside function signatures, yuck)
 
 #if USE_GUI
 #define IF_GUI(...) __VA_ARGS__

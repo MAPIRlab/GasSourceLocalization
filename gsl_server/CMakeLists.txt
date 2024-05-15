@@ -59,6 +59,7 @@ find_package(gmrf_wind_mapping REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 find_package(gsl_actions REQUIRED)
 
 
@@ -145,6 +146,7 @@ ament_target_dependencies( gsl_actionserver_node
     visualization_msgs
     nav2_msgs
     std_msgs
+    vision_msgs
 	
     gmrf_wind_mapping
     gsl_actions

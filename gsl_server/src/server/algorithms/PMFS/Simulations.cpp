@@ -189,7 +189,7 @@ namespace GSL::PMFS_internal
         GSL_INFO("Number of levels in the simulation: {0}", numberOfLevelsSimulated);
         GSL_INFO("Total number of simulations: {0}", numberOfSimulations);
 
-        PMFSLib::normalizeSourceProb(sourceProb);
+        Utils::NormalizeDistribution(sourceProb);
         GSL_INFO("Time ellapsed in simulation = {} s", stopwatch.ellapsed());
     }
 
@@ -355,7 +355,7 @@ namespace GSL::PMFS_internal
 
                 // update map
                 auto indices = measuredHitProb.metadata.coordinatesToIndex(filament.position.x, filament.position.y);
-                size_t index = measuredHitProb.metadata.indexOf(indices.x, indices.y);
+                size_t index = measuredHitProb.metadata.indexOf(indices);
                 // mark as updated so it doesn't count multiple filaments in the same timestep
                 if (updated[index] < t)
                 {
@@ -449,7 +449,7 @@ namespace GSL::PMFS_internal
             {
                 if (measuredHitProb.freeAt(i,j))
                 {
-                    float v = hitMap[measuredHitProb.metadata.indexOf(i,j)] * 255;
+                    float v = hitMap[measuredHitProb.metadata.indexOf({i,j})] * 255;
                     image.at<cv::Vec3f>(measuredHitProb.metadata.height - 1 - i, j) = cv::Vec3f(v, v, v);
                 }
                 else

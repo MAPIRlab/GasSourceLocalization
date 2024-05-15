@@ -3,6 +3,7 @@
 #include <deque>
 #include <gsl_server/core/Vectors.hpp>
 #include <cfloat>
+#include <gsl_server/algorithms/Common/Grid.hpp>
 
 namespace GSL::Utils
 {
@@ -52,6 +53,7 @@ namespace GSL::Utils
     double uniformRandom(double min, double max);
 
     double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b);
+    void NormalizeDistribution(Grid<double>& variable);
     
 
     //holds a long list of N(0,1) values, and returns them one at a time, scaled as requested.

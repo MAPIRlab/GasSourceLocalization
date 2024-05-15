@@ -62,9 +62,9 @@ namespace GSL
                 else
                     closedPropagationSet.insert(rc);
 
-                hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(rc - ij, kernel, settings);
                 hitProb.dataAt(r, c).distanceFromRobot = vmath::length(Vector2(rc - ij));
-                hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalize(Vector2(rc - ij));
+                hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalized(Vector2(rc - ij)); //TODO check this. Should be coordinates, no?
+                hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(hitProb.dataAt(r, c).originalPropagationDirection, kernel, settings);
             }
         }
 
@@ -304,7 +304,9 @@ namespace GSL
                         for (int c = oJ; c <= fJ; c++)
                         {
                             Vector2Int thisCell(i + r, j + c);
-                            if (thisCell == ij || pathFree(grid.metadata, grid.occupancy, ij, thisCell))
+                            Vector2 start = grid.metadata.indexToCoordinates(ij);
+                            Vector2 end = grid.metadata.indexToCoordinates(thisCell);
+                            if (thisCell == ij || pathFree(grid.metadata, grid.occupancy, start, end))
                                 visibleCells.push_back(thisCell);
                         }
                     }
@@ -416,15 +418,16 @@ namespace GSL
 #endif
     }
 
-    bool PMFSLib::pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2Int& originInd, const Vector2Int& endInd)
+    bool PMFSLib::pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end)
     {
-        // check there are no obstacles between origin and end
-        if (!(occupancy[metadata.indexOf(originInd.x, originInd.y)] == Occupancy::Free 
-                && occupancy[metadata.indexOf(endInd.x, endInd.y)] == Occupancy::Free))
-            return false;
         
-        Vector2 origin = metadata.indexToCoordinates(originInd);
-        Vector2 end = metadata.indexToCoordinates(endInd);
+        Vector2Int originInd = metadata.coordinatesToIndex(origin);
+        Vector2Int endInd = metadata.coordinatesToIndex(end);
+
+        // check there are no obstacles between origin and end
+        if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free 
+                && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))
+            return false;
         Vector2 direction = end-origin;
         DDA::_2D::RayCastInfo raycastInfo = 
             DDA::_2D::castRay<GSL::Occupancy>({origin.y, origin.x}, {direction.y, direction.x}, vmath::length(direction), 
@@ -440,31 +443,6 @@ namespace GSL
             );
 
         return !raycastInfo.hitSomething;
-    }
-
-    void PMFSLib::normalizeSourceProb(Grid<double>& variable)
-    {
-        // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
-        // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens
-        double total = 0;
-        int count = 0;
-        for (int i = 0; i < variable.data.size(); i++)
-        {
-            if (variable.occupancy[i] == Occupancy::Free)
-            {
-                total += variable.data[i];
-                count++;
-            }
-        }
-
-        #pragma omp parallel for
-        for (int i = 0; i < variable.data.size(); i++)
-        {
-            if (variable.occupancy[i] == Occupancy::Free)
-            {
-                variable.data[i] = variable.data[i] / total;
-            }
-        }
     }
     
 

@@ -59,7 +59,7 @@ namespace GSL::Utils
 
     double uniformRandom(double min, double max)
     {
-#if 0
+#if 1
         // xxHash-based RNG. I don't really know much about it, but it goes vroom vroom
         static thread_local uint32_t seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         static thread_local uint32_t state = 0xFFFF;
@@ -87,4 +87,28 @@ namespace GSL::Utils
         return total;
     }
 
+    void NormalizeDistribution(Grid<double>& variable)
+    {
+        // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
+        // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens
+        double total = 0;
+        int count = 0;
+        for (int i = 0; i < variable.data.size(); i++)
+        {
+            if (variable.occupancy[i] == Occupancy::Free)
+            {
+                total += variable.data[i];
+                count++;
+            }
+        }
+
+        #pragma omp parallel for
+        for (int i = 0; i < variable.data.size(); i++)
+        {
+            if (variable.occupancy[i] == Occupancy::Free)
+            {
+                variable.data[i] = variable.data[i] / total;
+            }
+        }
+    }
 } // namespace GSL::Utils

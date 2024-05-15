@@ -50,10 +50,8 @@ namespace GSL
                                IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
         );
 
-        static bool pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2Int& originInd, const Vector2Int& endInd);
-        
-        static void normalizeSourceProb(Grid<double>& variable);
-        
+        static bool pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end);
+                
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
     };

@@ -1,11 +1,13 @@
 #pragma once
 
 #include <rclcpp/clock.hpp>
+#include <rclcpp/node.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 #include <gsl_server/core/Vectors.hpp>
+#include <string>
 
 namespace GSL
 {
@@ -27,5 +29,16 @@ namespace GSL
         double getYaw(const geometry_msgs::msg::Quaternion& quat);
 
         geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw);
+
+        template <typename T> T getParam(rclcpp::Node::SharedPtr node, const std::string& name, T defaultValue)
+        {
+            if (node->has_parameter(name))
+                return node->get_parameter_or<T>(name, defaultValue);
+            else
+                return node->declare_parameter<T>(name, defaultValue);
+        }
+
+        Vector3 fromMsg(const geometry_msgs::msg::Vector3& v);
+        Vector3 fromMsg(const geometry_msgs::msg::Point& v);
     }; // namespace Utils
 };     // namespace GSL
