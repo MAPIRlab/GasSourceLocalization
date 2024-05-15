@@ -64,7 +64,7 @@ namespace GSL
 
                 hitProb.dataAt(r, c).distanceFromRobot = vmath::length(Vector2(rc - ij));
                 hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalized(Vector2(rc - ij)); //TODO check this. Should be coordinates, no?
-                hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(hitProb.dataAt(r, c).originalPropagationDirection, kernel, settings);
+                hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(Vector2(rc-ij), kernel, settings);
             }
         }
 
