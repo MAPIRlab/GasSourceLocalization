@@ -8,6 +8,6 @@ namespace GSL::SemanticPMFS_internal
         PMFS_internal::HitProbabilitySettings hitProbability;
         PMFS_internal::SimulationSettings simulation;
         PMFS_internal::VisualizationSettings visualization;
-        //movement;
+        PMFS_internal::MovementSettings movement;
     };
 }

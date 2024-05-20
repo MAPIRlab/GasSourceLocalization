@@ -470,4 +470,18 @@ namespace GSL
         settings.localEstimationWindowSize = algorithm.getParam<int>("localEstimationWindowSize", 2);
     }
 
+    void PMFSLib::InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node)
+    {
+        pubs.markers.source_probability_markers = node->create_publisher<Marker>("probability_markers", 1);
+        pubs.markers.hitProbabilityMarkers = node->create_publisher<Marker>("hitProbabilityMarkers", 1);
+        pubs.markers.confidenceMarkers = node->create_publisher<Marker>("confidenceMarkers", 1);
+        pubs.markers.windArrowMarkers = node->create_publisher<MarkerArray>("arrowMarkers", 1);
+
+        pubs.markers.quadtreePublisher = node->create_publisher<MarkerArray>("quadtree", 1);
+
+        pubs.gmrfWind.client = node->create_client<gmrf_wind_mapping::srv::WindEstimation>("/WindEstimation");
+        IF_GADEN( pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value") );
+    }
+
+
 } // namespace GSL

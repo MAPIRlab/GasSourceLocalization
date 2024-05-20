@@ -54,6 +54,7 @@ namespace GSL
                 
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
+        static void InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node);
     };
 
 } // namespace GSL

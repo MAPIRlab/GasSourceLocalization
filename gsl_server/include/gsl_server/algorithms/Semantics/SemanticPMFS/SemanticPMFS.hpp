@@ -6,6 +6,7 @@
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
+#include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/ISemantics.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
 
@@ -18,6 +19,8 @@ namespace GSL
         using HitProbability = PMFS_internal::HitProbability;
         using HitProbKernel = PMFS_internal::HitProbKernel;
         using HashSet = std::unordered_set<Vector2Int>;
+
+        friend class MovingStateSemanticPMFS;
 
     public:
         SemanticPMFS(std::shared_ptr<rclcpp::Node> _node);
@@ -50,5 +53,6 @@ namespace GSL
         //-------------Utils-------------
         std::optional<VisibilityMap> visibilityMap;
         FunctionQueue functionQueue;
+        uint iterationsCounter = 0;
     };
 }

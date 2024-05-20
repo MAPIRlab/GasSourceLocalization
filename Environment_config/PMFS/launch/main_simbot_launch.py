@@ -13,7 +13,7 @@ def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="A"),
         DeclareLaunchArgument("simulation", default_value="A1"),
-        DeclareLaunchArgument("method",	default_value=["PMFS"]),
+        DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
     ]
 #==========================
@@ -45,7 +45,7 @@ def launch_setup(context, *args, **kwargs):
                     {'use_sim_time': False},	
                     {"max_search_time": 300.0},
                     {"robot_location_topic": "ground_truth"},
-                    {"stop_and_measure_time": 0.4 if method == "PMFS" else 2.0},
+                    {"stop_and_measure_time": 0.4},
                     {"th_gas_present": parse_substitution("$(var th_gas_present)")},
                     {"th_wind_present": parse_substitution("$(var th_wind_present)")},
                     {"ground_truth_x": parse_substitution("$(var source_x)")},
@@ -58,7 +58,7 @@ def launch_setup(context, *args, **kwargs):
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
                     {"openMoveSetExpasion": 5},
                     {"explorationProbability": 0.05},
-                    {"convergence_thr": 1.5 if method == "PMFS" else 1.0},
+                    {"convergence_thr": 1.5},
                     
                     #GrGSL
                     {"useDiffusionTerm": True},

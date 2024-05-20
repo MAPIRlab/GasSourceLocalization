@@ -5,6 +5,7 @@
 #include <gsl_server/algorithms/ParticleFilter/ParticleFilter.hpp>
 #include <gsl_server/algorithms/GrGSL/GrGSL.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 
 int main(int argc, char** argv)
 {
@@ -23,6 +24,10 @@ int main(int argc, char** argv)
         rclcpp::spin_some(gsl_node);
         if (gsl_node->m_activeGoal.get() != nullptr)
         {
+            //in debug mode, don't catch the exception! It prevents the debugger from automatically stopping in the offending line
+#if GSL_DEBUG
+            gsl_node->execute(gsl_node->m_activeGoal);
+#else
             try
             {
                 gsl_node->execute(gsl_node->m_activeGoal);
@@ -31,6 +36,7 @@ int main(int argc, char** argv)
             {
                 GSL_ERROR("Exception while running GSL: {}", e.what());
             }
+#endif
             
             rclcpp::sleep_for(std::chrono::seconds(1));
             rclcpp::shutdown();
@@ -87,6 +93,10 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
     else if (goal_handle->get_goal()->gsl_method == "PMFS")
     {
         algorithm = std::make_shared<PMFS>(shared_from_this());
+    }
+    else if (goal_handle->get_goal()->gsl_method == "SemanticPMFS")
+    {
+        algorithm = std::make_shared<SemanticPMFS>(shared_from_this());
     }
     else
     {

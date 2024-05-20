@@ -21,16 +21,7 @@ namespace GSL
     {
         Algorithm::Initialize();
         // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
-
-        pubs.markers.source_probability_markers = node->create_publisher<Marker>("probability_markers", 1);
-        pubs.markers.hitProbabilityMarkers = node->create_publisher<Marker>("hitProbabilityMarkers", 1);
-        pubs.markers.confidenceMarkers = node->create_publisher<Marker>("confidenceMarkers", 1);
-        pubs.markers.windArrowMarkers = node->create_publisher<MarkerArray>("arrowMarkers", 1);
-
-        pubs.markers.quadtreePublisher = node->create_publisher<MarkerArray>("quadtree", 1);
-
-        pubs.gmrfWind.client = node->create_client<WindEstimation>("/WindEstimation");
-        IF_GADEN( pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value") );
+        PMFSLib::InitializePublishers(pubs, node);
 
         IF_GUI
         (

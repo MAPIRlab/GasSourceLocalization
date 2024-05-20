@@ -7,7 +7,7 @@
 #include <olfaction_msgs/msg/gas_sensor.hpp>
 #include <gsl_server/algorithms/Common/GSLState.hpp>
 #include <gsl_server/core/GSLResult.hpp>
-#include <gsl_server/core/Logging.hpp>
+#include <gsl_server/core/Macros.hpp>
 
 #include <gsl_server/algorithms/Common/WaitForMapState.hpp>
 #include <gsl_server/algorithms/Common/WaitForGasState.hpp>

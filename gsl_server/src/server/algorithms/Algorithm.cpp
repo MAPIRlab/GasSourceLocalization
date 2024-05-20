@@ -45,7 +45,7 @@ namespace GSL
 		{
 			rclcpp::shutdown();
 			GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
-			raise(SIGTRAP);
+			CLOSE_PROGRAM;
 		});
 
         start_time = node->now();
@@ -198,7 +198,7 @@ namespace GSL
         // 4. Nav time
         double nav_t = nav_d / 0.4; // assumming a constant speed of 0.4m/s
         std::string result_string =
-            fmt::format("RESULT IS: Success={}, Search_d={}, Nav_d={}, Search_t={}, Nav_t={}\n", (int)result, search_d, nav_d, search_t, nav_t);
+            fmt::format("RESULT IS: Success={}, Search_d={:.2}, Nav_d={:.2}, Search_t={:.2}, Nav_t={:.2}\n", (int)result, search_d, nav_d, search_t, nav_t);
         GSL_INFO("{}", result_string);
 
         std::ofstream output_file(resultLogging.results_file, std::ios_base::app);

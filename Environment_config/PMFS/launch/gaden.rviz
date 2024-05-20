@@ -313,7 +313,7 @@ Visualization Manager:
       Enabled: true
       Name: GMRF
       Namespaces:
-        WindVector: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -335,7 +335,7 @@ Visualization Manager:
         Value: /PioneerP3DX/probability_markers
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Hit
       Namespaces:
         {}
@@ -346,7 +346,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/hitProbabilityMarkers
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Quadtree
@@ -373,10 +373,10 @@ Visualization Manager:
         Value: /PioneerP3DX/explorationValue
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: HitVariance
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -384,7 +384,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/varianceHit
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217

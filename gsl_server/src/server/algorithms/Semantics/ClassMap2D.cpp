@@ -16,7 +16,7 @@ namespace GSL
     {
         node = std::make_shared<rclcpp::Node>("class_map");
         
-        std::string detectionsTopic = Utils::getParam<std::string>(node, "detectionsTopic", "");
+        std::string detectionsTopic = Utils::getParam<std::string>(node, "detectionsTopic", "objectDetections");
         cameraSub = node->create_subscription<Detection3DArray>(detectionsTopic, 1, std::bind(&ClassMap2D::detectionCallback, this, std::placeholders::_1));
 
 
