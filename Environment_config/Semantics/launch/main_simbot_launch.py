@@ -210,16 +210,27 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    send_pose = Node(
+        package="gsl_server",
+        executable="send_pose",
+        parameters=[
+            {"x":-3.4},
+            {"y":-3.5},
+            {"z":-0.73},
+            {"topic":"/giraff/resetPose"}
+        ]
+    )
+
     actions = []
     actions.append(gaden_player)
     actions.extend(anemometer)
     actions.extend(PID)
     actions.append(nav2)
     actions.append(gmrf_wind)
-    #actions.extend(gsl_node)
-    #actions.extend(gsl_call)
+    actions.extend(gsl_node)
+    actions.extend(gsl_call)
     actions.append(rviz)
-    #actions.append(unity)
+    actions.append(send_pose)
 
     return actions
 

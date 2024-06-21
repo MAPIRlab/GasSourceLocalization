@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS "-std=c++20 -g -Wno-narrowing ${CMAKE_CXX_FLAGS}")
 
 #OPTIONS
 ##############################################################################
-set(GSL_DEBUG ON) #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
+set(GSL_DEBUG OFF) #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
 set(GSL_TRACING ON) #extra logging to tell you what is being executed
 
 set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
@@ -127,12 +127,11 @@ file(GLOB_RECURSE SOURCES_SERVER "src/server/*.cpp")
 
 
 ###########
-#DECLARE EXECUTABLES
+#EXECUTABLES
 ###########
 
+#### Server node
 add_executable(gsl_actionserver_node ${SOURCES_SERVER})
-add_executable(gsl_actionserver_call src/gsl_server_call.cpp)
-
 ament_target_dependencies( gsl_actionserver_node
     rclcpp
     rclcpp_action
@@ -156,16 +155,6 @@ ament_target_dependencies( gsl_actionserver_node
     ${CONDITIONAL_GADEN_PLAYER}
     ${CONDITIONAL_IMGUI}
 )
-
-ament_target_dependencies( gsl_actionserver_call
-    rclcpp
-    rclcpp_action
-    gsl_actions
-)
-
-###########
-#LINK
-###########
 target_link_libraries(gsl_actionserver_node  
   ${OpenCV_LIBS}
   OpenMP::OpenMP_CXX
@@ -174,9 +163,24 @@ target_link_libraries(gsl_actionserver_node
   magic_enum::magic_enum
 )
 
+#### Call node
+add_executable(gsl_actionserver_call src/aux_nodes/gsl_server_call.cpp)
+ament_target_dependencies( gsl_actionserver_call
+    rclcpp
+    rclcpp_action
+    gsl_actions
+)
+
+#### Send pose node
+add_executable(send_pose src/aux_nodes/send_pose.cpp)
+ament_target_dependencies( send_pose
+    rclcpp
+    geometry_msgs
+)
+
 
 install(
-  TARGETS gsl_actionserver_node  gsl_actionserver_call
+  TARGETS gsl_actionserver_node  gsl_actionserver_call send_pose
   DESTINATION lib/${PROJECT_NAME}
 )
 

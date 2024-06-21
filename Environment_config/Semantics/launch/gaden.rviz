@@ -223,7 +223,7 @@ Visualization Manager:
       Enabled: true
       Name: GMRF
       Namespaces:
-        {}
+        WindVector: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -245,10 +245,10 @@ Visualization Manager:
         Value: /giraff/probability_markers
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Hit
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -256,7 +256,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /giraff/hitProbabilityMarkers
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Quadtree
