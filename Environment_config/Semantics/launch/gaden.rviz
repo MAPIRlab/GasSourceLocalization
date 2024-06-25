@@ -242,7 +242,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /giraff/probability_markers
+        Value: /giraff/probabilityMarkers
       Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: true

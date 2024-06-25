@@ -11,8 +11,8 @@ from launch.frontend.parse_substitution import parse_substitution
 #===========================
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="A"),
-        DeclareLaunchArgument("simulation", default_value="A1"),
+        DeclareLaunchArgument("scenario", default_value="B"),
+        DeclareLaunchArgument("simulation", default_value="B1"),
         DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
     ]
@@ -40,17 +40,18 @@ def launch_setup(context, *args, **kwargs):
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="GSL",
+                #prefix="xterm -hold -e",
                 parameters=[
                     # Common
                     {'use_sim_time': False},	
-                    {"max_search_time": 300.0},
+                    {"maxSearchTime": 300.0},
                     {"robot_location_topic": "ground_truth"},
                     {"stop_and_measure_time": 0.4},
                     {"th_gas_present": parse_substitution("$(var th_gas_present)")},
                     {"th_wind_present": parse_substitution("$(var th_wind_present)")},
                     {"ground_truth_x": parse_substitution("$(var source_x)")},
                     {"ground_truth_y": parse_substitution("$(var source_y)")},
-                    {"results_file": parse_substitution("Results/$(var simulation)/$(var method).csv")},
+                    {"resultsFile": parse_substitution("Results/$(var simulation)/$(var method).csv")},
                     
                     {"scale": 25},
                     {"markers_height": 0.2},
@@ -62,20 +63,20 @@ def launch_setup(context, *args, **kwargs):
                     
                     #GrGSL
                     {"useDiffusionTerm": True},
-                    {"stdev_hit": 1.0},
-                    {"stdev_miss": 1.2},
+                    {"stdevHit": 1.0},
+                    {"stdevMiss": 1.2},
                     {"infoTaxis": parse_substitution("$(var use_infotaxis)")},
                     {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
 
                     #PMFS
                         # Hit probabilities
                     {"headless": False},
-                    {"max_updates_per_stop": 5},
-                    {"kernel_sigma": 1.5},
-                    {"kernel_stretch_constant": 1.5},
+                    {"maxUpdatesPerStop": 5},
+                    {"kernelSigma": 1.5},
+                    {"kernelStretchConstant": 1.5},
                     {"hitPriorProbability": 0.3},
-                    {"confidence_sigma_spatial": 1.0},
-                    {"confidence_measurement_weight": 1.0},
+                    {"confidenceSigmaSpatial": 1.0},
+                    {"confidenceMeasurementWeight": 1.0},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
                     {"useWindGroundTruth": True},
@@ -88,8 +89,9 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
-                    #Surge-Cast
-                    {"step": 0.5},
+                    #Semantics
+                    {"detectionsTopic": "/semantic_instances_3D"},
+                    {"ontologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ontology.yaml")},
 
                     
                 ],

@@ -25,7 +25,7 @@ namespace GSL
         Kp = getParam<double>("Kp", 1);
     }
 
-    void Spiral::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
+    void Spiral::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
         static double previousPI = 0;
         static int consecutive_misses = 0;

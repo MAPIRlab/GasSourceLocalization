@@ -20,8 +20,8 @@ namespace GSL
         if (stateMachine.getCurrentState() == waitForMapState.get())
             return GSLResult::Running;
 
-        rclcpp::Duration time_spent = node->now() - start_time;
-        if (time_spent.seconds() > resultLogging.max_search_time)
+        rclcpp::Duration time_spent = node->now() - startTime;
+        if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
             Vector2 locationAll = expectedValueSource(1);
             Vector2 location = expectedValueSource(0.05);
@@ -31,8 +31,8 @@ namespace GSL
 
         if (resultLogging.navigationTime == -1)
         {
-            if (sqrt(pow(currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x, 2) +
-                     pow(currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y, 2)) < 0.5)
+            if (sqrt(pow(currentRobotPose.pose.pose.position.x - resultLogging.sourcePositionGT.x, 2) +
+                     pow(currentRobotPose.pose.pose.position.y - resultLogging.sourcePositionGT.y, 2)) < 0.5)
             {
                 resultLogging.navigationTime = time_spent.seconds();
             }
@@ -118,23 +118,23 @@ namespace GSL
     void PMFS::saveResultsToFile(GSLResult result)
     {
         // 1. Search time.
-        rclcpp::Duration time_spent = node->now() - start_time;
+        rclcpp::Duration time_spent = node->now() - startTime;
         double search_t = time_spent.seconds();
 
         Vector2 sourceLocationAll = expectedValueSource(1);
         Vector2 sourceLocation = expectedValueSource(0.05);
 
-        double error = sqrt(pow(resultLogging.source_pose.x - sourceLocation.x, 2) + pow(resultLogging.source_pose.y - sourceLocation.y, 2));
-        double errorAll = sqrt(pow(resultLogging.source_pose.x - sourceLocationAll.x, 2) + pow(resultLogging.source_pose.y - sourceLocationAll.y, 2));
+        double error = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocation.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocation.y, 2));
+        double errorAll = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocationAll.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocationAll.y, 2));
         
 		std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}", (int)result, search_t, error);
         GSL_INFO_COLOR(fmt::terminal_color::blue, "{}", resultString);
 
         // Save to file
-        if (resultLogging.results_file != "")
+        if (resultLogging.resultsFile != "")
         {
             std::ofstream file;
-            file.open(resultLogging.results_file, std::ios_base::app);
+            file.open(resultLogging.resultsFile, std::ios_base::app);
             if (result != GSLResult::Success)
                 file << "FAILED ";
 
@@ -145,12 +145,12 @@ namespace GSL
         else
             GSL_WARN("No file provided for logging result. Skipping it.");
 
-        if (resultLogging.path_file != "")
+        if (resultLogging.navigationPathFile != "")
         {
             std::ofstream file;
-            file.open(resultLogging.path_file, std::ios_base::app);
+            file.open(resultLogging.navigationPathFile, std::ios_base::app);
             file << "------------------------\n";
-            for (PoseWithCovarianceStamped p : resultLogging.robot_poses_vector)
+            for (PoseWithCovarianceStamped p : resultLogging.robotPosesVector)
                 file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
             file.close();
         }

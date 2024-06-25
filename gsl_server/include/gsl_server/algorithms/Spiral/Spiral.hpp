@@ -19,7 +19,7 @@ namespace GSL
 
     protected:
         void declareParameters() override;
-        void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
+        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
         double getProximityIndex();
 
         void doSpiral();

@@ -15,8 +15,8 @@ namespace GSL
         virtual void OnUpdate() override;
 
         double average_concentration();
-        double average_wind_direction();
-        double average_wind_speed();
+        double average_windDirection();
+        double average_windSpeed();
         virtual void addGasReading(double concentration);
         virtual void addWindReading(double speed, double direction);
 

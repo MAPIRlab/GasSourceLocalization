@@ -30,7 +30,7 @@ namespace GSL
 
     public:
         static void estimateHitProbabilities(Grid<HitProbability>& hitLocalVariable, const VisibilityMap& visibilityMap, PMFS_internal::HitProbabilitySettings& settings,
-                                             bool hit, double wind_direction, double wind_speed, Vector2Int robot_pos);
+                                             bool hit, double windDirection, double windSpeed, Vector2Int robotPosition);
 
         // returns the sum of all auxWeights, for normalization purposes
         static double propagateProbabilities(Grid<HitProbability>& var, const PMFS_internal::HitProbabilitySettings& settings,

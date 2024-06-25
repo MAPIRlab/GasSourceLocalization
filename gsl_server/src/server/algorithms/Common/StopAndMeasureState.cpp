@@ -23,11 +23,11 @@ namespace GSL
         if ((algorithm->node->now() - time_stopped).seconds() >= measure_time)
         {
             double concentration = average_concentration();
-            double wind_speed = average_wind_speed();
-            double wind_direction = average_wind_direction();
+            double windSpeed = average_windSpeed();
+            double windDirection = average_windDirection();
 
-            GSL_INFO("avg_gas={:.2};  avg_wind_speed={:.2};  avg_wind_dir={:.2}", concentration, wind_speed, wind_direction);
-            algorithm->processGasAndWindMeasurements(concentration, wind_speed, wind_direction);
+            GSL_INFO("avg_gas={:.2};  avg_windSpeed={:.2};  avg_wind_dir={:.2}", concentration, windSpeed, windDirection);
+            algorithm->processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         }
     }
 
@@ -62,11 +62,11 @@ namespace GSL
 		}
 		return average;
     }
-    double StopAndMeasureState::average_wind_direction()
+    double StopAndMeasureState::average_windDirection()
     {
         return Utils::getAverageDirection(windDirection_v.begin(), windDirection_v.end());
     }
-    double StopAndMeasureState::average_wind_speed()
+    double StopAndMeasureState::average_windSpeed()
     {
 		float average = Utils::getAverageFloatCollection(windSpeed_v.begin(), windSpeed_v.end());
         if(average == Utils::INVALID_AVERAGE)

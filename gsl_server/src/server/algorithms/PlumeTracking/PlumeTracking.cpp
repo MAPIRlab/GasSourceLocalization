@@ -17,7 +17,7 @@ namespace GSL
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<MovingStatePlumeTracking>(this);
         stateMachine.forceSetState(waitForMapState.get());
-        start_time = node->now();
+        startTime = node->now();
     }
 
     void PlumeTracking::declareParameters()
@@ -32,30 +32,30 @@ namespace GSL
         updateProximityResults();
     }
 
-    void PlumeTracking::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
+    void PlumeTracking::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
-        if (concentration > thresholdGas && wind_speed > thresholdWind)
+        if (concentration > thresholdGas && windSpeed > thresholdWind)
         {
-            setSurgeGoal(wind_direction);
+            setSurgeGoal(windDirection);
             return;
         }
 
         PTMovement currentMovement = dynamic_cast<MovingStatePlumeTracking*>(movingState.get())->currentMovement;
 
-        static double wind_direction_cast;
+        static double windDirection_cast;
 
         // When a cast phase begins, we try to lock in the current wind direction, which will be used to direct all succesive cast attempts
         // if there is no wind, however, we cant cast at all
         if (currentMovement==PTMovement::FollowPlume)
         {
-            if(wind_speed > thresholdWind)
-                wind_direction_cast = wind_direction;
+            if(windSpeed > thresholdWind)
+                windDirection_cast = windDirection;
             else 
-                wind_direction_cast = DBL_MAX;
+                windDirection_cast = DBL_MAX;
         }
 
-        if (currentMovement != PTMovement::Exploration && wind_direction_cast != DBL_MAX)
-            setCastGoal(wind_direction_cast);
+        if (currentMovement != PTMovement::Exploration && windDirection_cast != DBL_MAX)
+            setCastGoal(windDirection_cast);
         else
             setExplorationGoal();
     }

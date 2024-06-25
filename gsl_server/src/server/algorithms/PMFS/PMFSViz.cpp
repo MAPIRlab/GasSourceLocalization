@@ -74,7 +74,7 @@ namespace GSL
             }
         }
 
-        pubs.markers.source_probability_markers->publish(sourceProbMarker);
+        pubs.markers.sourceProbabilityMarkers->publish(sourceProbMarker);
     }
 
     void PMFSViz::DebugMapSegmentation(const std::vector<Utils::NQA::Node>& QTleaves,

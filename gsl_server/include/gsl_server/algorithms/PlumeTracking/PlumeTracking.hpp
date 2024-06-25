@@ -16,7 +16,7 @@ namespace GSL
 
         virtual void Initialize() override;
 
-        virtual void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
+        virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
 
         virtual void OnUpdate() override;
 

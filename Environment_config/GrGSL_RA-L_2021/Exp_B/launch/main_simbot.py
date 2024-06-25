@@ -57,13 +57,13 @@ def launch_setup(context, *args, **kwargs):
 					{"th_wind_present": 0.15},
 					{"ground_truth_x": parse_substitution("$(var source_location_x)")},
 					{"ground_truth_y": parse_substitution("$(var source_location_y)")},
-					{"results_file": parse_substitution("Results/GridGSL_$(var scenario)_Infotaxis_$(var use_infotaxis).csv")},
+					{"resultsFile": parse_substitution("Results/GridGSL_$(var scenario)_Infotaxis_$(var use_infotaxis).csv")},
 					{"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
 					
 					#GrGSL
 					{"scale": 55},
-					{"stdev_hit": 1.0},
-					{"stdev_miss": 1.5},
+					{"stdevHit": 1.0},
+					{"stdevMiss": 1.5},
 					{"convergence_thr": 0.5},
 					{"infoTaxis": parse_substitution("$(var use_infotaxis)")},
 					

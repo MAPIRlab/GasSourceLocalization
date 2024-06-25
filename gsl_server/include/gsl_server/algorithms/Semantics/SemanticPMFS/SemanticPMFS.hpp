@@ -30,7 +30,7 @@ namespace GSL
     protected:
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
-        void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
+        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
     
     private:
         std::unique_ptr<ISemantics> semantics;

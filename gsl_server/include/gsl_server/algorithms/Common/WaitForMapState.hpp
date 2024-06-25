@@ -20,8 +20,8 @@ namespace GSL
 
     private:
         bool hasMap = false, hasCostmap = false;
-        rclcpp::Subscription<OccupancyGrid>::SharedPtr map_sub;
-        rclcpp::Subscription<OccupancyGrid>::SharedPtr costmap_sub;
+        rclcpp::Subscription<OccupancyGrid>::SharedPtr mapSub;
+        rclcpp::Subscription<OccupancyGrid>::SharedPtr costmapSub;
 
         void mapCallback(OccupancyGrid::SharedPtr msg);
         void costmapCallback(OccupancyGrid::SharedPtr msg);

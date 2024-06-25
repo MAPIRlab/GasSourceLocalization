@@ -24,6 +24,7 @@ namespace GSL
     private:
         rclcpp::Node::SharedPtr node;
         rclcpp::Subscription<Detection3DArray>::SharedPtr cameraSub;
+        rclcpp::Publisher<Marker>::SharedPtr classMarkers;
 
         std::map<std::string, float> sourceProbByClass;
         std::vector<ClassDistribution> classDistributions;
@@ -39,12 +40,13 @@ namespace GSL
             float maxDist;
         } fov;
 
-
+        void parseOntology(const std::string& path);
         double getSourceProbByClass(const std::string& _class);
-        void updateObjectProbabilities(const Vector2Int& indices, const Detection3D& detection);
+        void updateObjectProbabilities(const Vector2Int& indices, const std::vector<std::pair<std::string, float>>& scores);
 
         void detectionCallback(Detection3DArray::ConstSharedPtr msg);
         AABB2DInt getAABB(const Detection3D& detection);
-        std::unordered_set<Vector2Int> GetCellsInFOV();
+        std::unordered_set<Vector2Int> getCellsInFOV();
+        void publishClassMarkers();
     };
 }

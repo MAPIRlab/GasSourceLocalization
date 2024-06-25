@@ -39,7 +39,7 @@ namespace GSL
 
             struct Markers
             {
-                rclcpp::Publisher<Marker>::SharedPtr source_probability_markers;
+                rclcpp::Publisher<Marker>::SharedPtr sourceProbabilityMarkers;
                 rclcpp::Publisher<Marker>::SharedPtr hitProbabilityMarkers;
                 rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePublisher;
                 rclcpp::Publisher<MarkerArray>::SharedPtr windArrowMarkers;

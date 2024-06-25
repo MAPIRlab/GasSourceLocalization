@@ -10,7 +10,7 @@ namespace GSL
         SurgeSpiral::Initialize();
 
         particle_markers = node->create_publisher<Marker>("particle_markers", 10);
-        estimation_markers = node->create_publisher<Marker>("estimation_markers", 10);
+        estimationMarkers = node->create_publisher<Marker>("estimationMarkers", 10);
         average_estimation_marker = node->create_publisher<Marker>("average_estimation_marker", 10);
     }
 
@@ -61,9 +61,9 @@ namespace GSL
         return downwind_map;
     }
 
-    void ParticleFilter::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
+    void ParticleFilter::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
-        SurgeSpiral::processGasAndWindMeasurements(concentration, wind_speed, wind_direction);
+        SurgeSpiral::processGasAndWindMeasurements(concentration, windSpeed, windDirection);
 
         if (particles.size() == 0)
             generateParticles();
@@ -313,7 +313,7 @@ namespace GSL
                 p.y = est.y;
                 estimation.points.push_back(p);
             }
-            estimation_markers->publish(estimation);
+            estimationMarkers->publish(estimation);
         }
     }
 } // namespace GSL

@@ -45,10 +45,10 @@ namespace GSL
         std::deque<Vector2> historicWind;        // record of measured wind
 
         rclcpp::Publisher<Marker>::SharedPtr particle_markers;
-        rclcpp::Publisher<Marker>::SharedPtr estimation_markers;
+        rclcpp::Publisher<Marker>::SharedPtr estimationMarkers;
         rclcpp::Publisher<Marker>::SharedPtr average_estimation_marker;
 
-        void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction);
+        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection);
         void generateParticles();
 
         void estimateSourceLocation();

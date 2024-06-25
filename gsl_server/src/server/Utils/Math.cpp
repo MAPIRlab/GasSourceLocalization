@@ -111,4 +111,12 @@ namespace GSL::Utils
             }
         }
     }
+
+    float EquallyDistributed01F()
+    {
+        constexpr float phi = 1.61803398875;
+        static float current = 0;
+        current += phi;
+        return fmod(current, 1);
+    }
 } // namespace GSL::Utils

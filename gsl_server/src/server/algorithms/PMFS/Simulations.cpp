@@ -415,7 +415,9 @@ namespace GSL::PMFS_internal
             return true;
         }
 
-        Vector2 movement = end-currentPosition;
+#define USE_DDA 0
+#if USE_DDA
+        Vector2 movement = end - currentPosition;
         DDA::_2D::RayCastInfo raycastInfo = 
             DDA::_2D::castRay<GSL::Occupancy>({currentPosition.y, currentPosition.x}, {movement.y, movement.x}, vmath::length(movement), 
                 DDA::_2D::Map<GSL::Occupancy>(
@@ -434,6 +436,27 @@ namespace GSL::PMFS_internal
         currentPosition += movement*raycastInfo.distance * wallStoppingProportion; 
 
         return true;
+#else
+        const auto& metadata = measuredHitProb.metadata;
+        bool pathIsFree = true;
+        float stepSize = metadata.cellSize * 0.2f;
+
+        Vector2 vector = end - currentPosition;
+        Vector2 increment = vmath::normalized(vector) * stepSize;
+        int steps = vmath::length(vector) / stepSize;
+
+        int index = 0;
+        while (index < steps && pathIsFree)
+        {
+            currentPosition += increment;
+            index++;
+            Vector2Int pair = metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
+            pathIsFree = !metadata.indicesInBounds(pair) || measuredHitProb.freeAt(pair.x, pair.y);
+            if (!pathIsFree)
+                currentPosition -= increment;
+        }
+        return pathIsFree;
+#endif
     }
 
     void Simulations::printImage(const SimulationSource& source)

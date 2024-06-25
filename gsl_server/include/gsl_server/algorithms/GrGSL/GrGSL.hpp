@@ -40,8 +40,8 @@ namespace GSL
 
         struct Settings
         {
-            float stdev_hit;
-            float stdev_miss;
+            float stdevHit;
+            float stdevMiss;
             float convergence_thr;
 
             bool infoTaxis;
@@ -51,8 +51,8 @@ namespace GSL
 
         struct Markers
         {
-            rclcpp::Publisher<Marker>::SharedPtr probability_markers;
-            rclcpp::Publisher<Marker>::SharedPtr estimation_markers;
+            rclcpp::Publisher<Marker>::SharedPtr probabilityMarkers;
+            rclcpp::Publisher<Marker>::SharedPtr estimationMarkers;
             float markersHeight;
         } markers;
 
@@ -64,7 +64,7 @@ namespace GSL
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void initializeMap();
-        void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) override;
+        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
         virtual double probability(const Vector2Int& indices) const;
 
         GSLResult checkSourceFound() override;
@@ -72,8 +72,8 @@ namespace GSL
 
         // core
         //-------------
-        void estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell>>& map, bool hit, bool advection, double wind_direction,
-                                                 Vector2Int robot_pos);
+        void estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell>>& map, bool hit, bool advection, double windDirection,
+                                                 Vector2Int robotPosition);
         void propagateProbabilities(std::vector<std::vector<Cell>>& map, HashSet& openSet, HashSet& closedSet, HashSet& activeSet);
 
         void calculateWeight(std::vector<std::vector<Cell>>& map, int i, int j, Vector2Int p, HashSet& openPropagationSet,

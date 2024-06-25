@@ -50,7 +50,7 @@ namespace GSL
 
         std::shared_ptr<rclcpp::Node> node;
 
-        BufferWrapper tf_buffer;
+        BufferWrapper tfBufffer;
 
         StateMachines::StateMachine<GSL::State> stateMachine;
         std::unique_ptr<WaitForMapState> waitForMapState;
@@ -58,21 +58,21 @@ namespace GSL
         std::unique_ptr<StopAndMeasureState> stopAndMeasureState;
         std::unique_ptr<MovingState> movingState;
 
-        rclcpp::Time start_time;
+        rclcpp::Time startTime;
         PoseWithCovarianceStamped currentRobotPose;
         OccupancyGrid map;
         OccupancyGrid costmap;
 
         struct ResultLogging
         {
-            std::vector<PoseWithCovarianceStamped> robot_poses_vector;
-            Vector2 source_pose;
-            double max_search_time;
-            double distance_found;
+            std::vector<PoseWithCovarianceStamped> robotPosesVector;
+            Vector2 sourcePositionGT;
+            double maxSearchTime;
+            double distanceThreshold;
 
             double navigationTime = -1;
-            std::string results_file;
-            std::string path_file;
+            std::string resultsFile;
+            std::string navigationPathFile;
             
             struct ProximityResult
             {
@@ -86,7 +86,7 @@ namespace GSL
         virtual GSLResult checkSourceFound();
         virtual void saveResultsToFile(GSLResult result);
 
-        virtual void processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction) = 0;
+        virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) = 0;
         virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
         virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
 
@@ -102,9 +102,9 @@ namespace GSL
 
 
         // Subscriptions
-        rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gas_sub;
-        rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr wind_sub;
-        rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localization_sub;
+        rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gasSub;
+        rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr windSub;
+        rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localizationSub;
 
         void onGetCostMap(const OccupancyGrid::SharedPtr msg);
         void localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg);

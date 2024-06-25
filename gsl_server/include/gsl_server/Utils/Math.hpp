@@ -55,6 +55,7 @@ namespace GSL::Utils
     double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b);
     void NormalizeDistribution(Grid<double>& variable);
     
+    float EquallyDistributed01F();
 
     //holds a long list of N(0,1) values, and returns them one at a time, scaled as requested.
     //obviously not as good as generating them on the fly, but it's not like we are doing cryptography here

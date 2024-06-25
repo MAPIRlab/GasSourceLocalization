@@ -1,9 +1,9 @@
-#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
-#include <gsl_server/core/Logging.hpp>
+#include <DDA/DDA.h>
+#include <angles/angles.h>
 #include <gsl_server/Utils/Math.hpp>
 #include <gsl_server/Utils/NQAQuadtree.hpp>
-#include <angles/angles.h>
-#include <DDA/DDA.h>
+#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
+#include <gsl_server/core/Logging.hpp>
 
 namespace GSL
 {
@@ -13,10 +13,9 @@ namespace GSL
     //---------------
 
     void PMFSLib::estimateHitProbabilities(Grid<HitProbability>& hitProb, const VisibilityMap& visibilityMap,
-                                           PMFS_internal::HitProbabilitySettings& settings, bool hit, double downwind_direction,
-                                           double wind_speed, Vector2Int robot_pos)
+                                           PMFS_internal::HitProbabilitySettings& settings, bool hit, double downwindDirection, double windSpeed,
+                                           Vector2Int robotPosition)
     {
-
         // receiving propagation this step. Can still be modified by better estimations.
         HashSet openPropagationSet;
         // causing propagation this step. No longer modifyable
@@ -24,21 +23,21 @@ namespace GSL
         // old news
         HashSet closedPropagationSet;
 
-        int i = robot_pos.x, j = robot_pos.y;
+        int i = robotPosition.x, j = robotPosition.y;
 
         int oI = std::max(0, i - settings.localEstimationWindowSize);
-        int fI = std::min((int) hitProb.metadata.height - 1, i + settings.localEstimationWindowSize);
+        int fI = std::min((int)hitProb.metadata.height - 1, i + settings.localEstimationWindowSize);
         int oJ = std::max(0, j - settings.localEstimationWindowSize);
-        int fJ = std::min((int) hitProb.metadata.width - 1, j + settings.localEstimationWindowSize);
+        int fJ = std::min((int)hitProb.metadata.width - 1, j + settings.localEstimationWindowSize);
 
         Vector2Int ij(i, j);
 
         double kernel_rotation_wind = -angles::normalize_angle(
-            downwind_direction + M_PI / 2); // the orientation of the anemometer's frame of reference and the way it uses angles is weird, man
+            downwindDirection + M_PI / 2); // the orientation of the anemometer's frame of reference and the way it uses angles is weird, man
         HitProbKernel kernel = {
             kernel_rotation_wind,
-            Vector2(settings.kernel_sigma + settings.kernel_stretch_constant * wind_speed,                              // semi-major ellipse axis
-                    settings.kernel_sigma / (1 + settings.kernel_stretch_constant * wind_speed / settings.kernel_sigma) // semi-minor axis
+            Vector2(settings.kernelSigma + settings.kernelStretchConstant * windSpeed,                             // semi-major ellipse axis
+                    settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma) // semi-minor axis
                     ),
             (hit ? 0.6f : 0.1f)};
 
@@ -63,8 +62,9 @@ namespace GSL
                     closedPropagationSet.insert(rc);
 
                 hitProb.dataAt(r, c).distanceFromRobot = vmath::length(Vector2(rc - ij));
-                hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalized(Vector2(rc - ij)); //TODO check this. Should be coordinates, no?
-                hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(Vector2(rc-ij), kernel, settings);
+                hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalized(Vector2(rc - ij)); // TODO check this. Should be coordinates,
+                                                                                                         // no?
+                hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(Vector2(rc - ij), kernel, settings);
             }
         }
 
@@ -73,19 +73,19 @@ namespace GSL
         propagateProbabilities(hitProb, settings, openPropagationSet, closedPropagationSet, activePropagationSet, kernel);
 
         double logOddsPrior = std::log(settings.prior / (1 - settings.prior));
-        for (size_t i = 0; i<hitProb.data.size();i++)
+        for (size_t i = 0; i < hitProb.data.size(); i++)
         {
-            if(hitProb.occupancy[i] != Occupancy::Free)
+            if (hitProb.occupancy[i] != Occupancy::Free)
                 continue;
-                
+
             HitProbability& cell = hitProb.data[i];
             // BAYESIAN BINARY FILTER. this is the important part
             cell.logOdds += cell.auxWeight - logOddsPrior;
             GSL_ASSERT(!std::isnan(cell.logOdds));
 
             // confidence
-            cell.omega += Utils::evaluate1DGaussian(cell.distanceFromRobot, settings.confidence_sigma_spatial);
-            double exponent = -cell.omega / std::pow(settings.confidence_measurement_weight, 2);
+            cell.omega += Utils::evaluate1DGaussian(cell.distanceFromRobot, settings.confidenceSigmaSpatial);
+            double exponent = -cell.omega / std::pow(settings.confidenceMeasurementWeight, 2);
             cell.confidence = 1 - std::exp(exponent);
         }
     }
@@ -109,7 +109,6 @@ namespace GSL
             // if the cell can still receive propagation
             if (closedPropagationSet.find(ij) == closedPropagationSet.end() && activePropagationSet.find(ij) == activePropagationSet.end())
             {
-
                 // if there already was a path to this cell
                 if (openPropagationSet.find(ij) != openPropagationSet.end())
                 {
@@ -151,9 +150,9 @@ namespace GSL
                 closedPropagationSet.insert(p);
 
                 int oR = std::max(0, p.x - 1);
-                int fR = std::min((int) hitProb.metadata.height - 1, p.x + 1);
+                int fR = std::min((int)hitProb.metadata.height - 1, p.x + 1);
                 int oC = std::max(0, p.y - 1);
-                int fC = std::min((int) hitProb.metadata.width - 1, p.y + 1);
+                int fC = std::min((int)hitProb.metadata.width - 1, p.y + 1);
 
                 // 8-neighbour propagation
                 for (int i = oR; i <= fR; i++)
@@ -200,7 +199,7 @@ namespace GSL
     }
 
     void PMFSLib::initializeMap(Algorithm& algorithm, Grid<HitProbability> grid, PMFS_internal::Simulations& simulations,
-                                  VisibilityMap& visibilityMap)
+                                VisibilityMap& visibilityMap)
     {
         // 2D-ify the map to make it a bit easier to work with
         std::vector<std::vector<uint8_t>> mapa(algorithm.map.info.height, std::vector<uint8_t>(algorithm.map.info.width));
@@ -242,7 +241,6 @@ namespace GSL
             GSL_TRACE("Created grid");
         }
 
-
         std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.height, std::vector<uint8_t>(grid.metadata.width));
         // prune unreachable free cells
         {
@@ -256,10 +254,8 @@ namespace GSL
                                                                              algorithm.currentRobotPose.pose.pose.position.y);
                 grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0; // the arbitrary value
                 activePropagationSet.insert(currentIndices);
-                PMFSLib::propagateProbabilities(grid, PMFS_internal::HitProbabilitySettings(), 
-                                                openPropagationSet, closedPropagationSet,
-                                                activePropagationSet, 
-                                                {1, {1, 0}, 0});
+                PMFSLib::propagateProbabilities(grid, PMFS_internal::HitProbabilitySettings(), openPropagationSet, closedPropagationSet,
+                                                activePropagationSet, {1, {1, 0}, 0});
             }
 
             for (int i = 0; i < grid.metadata.height; i++)
@@ -321,9 +317,9 @@ namespace GSL
         simulations.varianceOfHitProb.resize(grid.metadata.height * grid.metadata.width, 0);
     }
 
-    void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid<Vector2> grid, std::shared_ptr<WindEstimation::Request>& GMRFRequest
-                                            IF_GADEN(,std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest)
-    )
+    void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid<Vector2> grid,
+                                            std::shared_ptr<WindEstimation::Request>& GMRFRequest
+                                                IF_GADEN(, std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest))
     {
         grid.data.resize(grid.metadata.height * grid.metadata.width);
         std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
@@ -334,7 +330,7 @@ namespace GSL
         {
             try
             {
-                tfm = algorithm.tf_buffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+                tfm = algorithm.tfBufffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
                 has_tf = true;
             }
             catch (std::exception& e)
@@ -370,9 +366,7 @@ namespace GSL
     }
 
     void PMFSLib::estimateWind(bool useGroundTruth, Grid<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
-                               PMFS_internal::GMRFWind& gmrf
-                               IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
-    )
+                               PMFS_internal::GMRFWind& gmrf IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth))
     {
         // if not compiled with gaden support, you have no choice but to use GMRF :)
 #ifdef USE_GADEN
@@ -400,7 +394,6 @@ namespace GSL
 
         else
         {
-
             auto future = groundTruth.client->async_send_request(groundTruth.request);
             auto result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(5));
             if (result == rclcpp::FutureReturnCode::SUCCESS)
@@ -420,38 +413,27 @@ namespace GSL
 
     bool PMFSLib::pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end)
     {
-        
         Vector2Int originInd = metadata.coordinatesToIndex(origin);
         Vector2Int endInd = metadata.coordinatesToIndex(end);
 
         // check there are no obstacles between origin and end
-        if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free 
-                && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))
+        if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))
             return false;
-        Vector2 direction = end-origin;
-        DDA::_2D::RayCastInfo raycastInfo = 
-            DDA::_2D::castRay<GSL::Occupancy>({origin.y, origin.x}, {direction.y, direction.x}, vmath::length(direction), 
-                DDA::_2D::Map<GSL::Occupancy>(
-                    occupancy, 
-                    metadata.origin, 
-                    metadata.cellSize, 
-                    {metadata.width, metadata.height}),
-                [](const GSL::Occupancy& occ)
-                {
-                    return occ == GSL::Occupancy::Free;
-                }
-            );
+        Vector2 direction = end - origin;
+        DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
+            {origin.y, origin.x}, {direction.y, direction.x}, vmath::length(direction),
+            DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.width, metadata.height}),
+            [](const GSL::Occupancy& occ) { return occ == GSL::Occupancy::Free; });
 
         return !raycastInfo.hitSomething;
     }
-    
 
     void PMFSLib::GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings)
     {
         settings.useWindGroundTruth = algorithm.getParam<bool>("useWindGroundTruth", false);
         settings.sourceDiscriminationPower = algorithm.getParam<double>("sourceDiscriminationPower", 1);
         settings.refineFraction = algorithm.getParam<double>("refineFraction", 10);
-        settings.steps_between_source_updates = algorithm.getParam<int>("stepsSourceUpdate", 10);
+        settings.stepsBetweenSourceUpdates = algorithm.getParam<int>("stepsSourceUpdate", 10);
         settings.maxRegionSize = algorithm.getParam<int>("maxRegionSize", 5);
         settings.deltaTime = algorithm.getParam<double>("deltaTime", 0.2);
         settings.noiseSTDev = algorithm.getParam<double>("noiseSTDev", 0.5);
@@ -462,17 +444,17 @@ namespace GSL
     void PMFSLib::GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings)
     {
         settings.prior = algorithm.getParam<double>("hitPriorProbability", 0.1);
-        settings.max_updates_per_stop = algorithm.getParam<int>("max_updates_per_stop", 3);
-        settings.kernel_sigma = algorithm.getParam<double>("kernel_sigma", 0.5);
-        settings.kernel_stretch_constant = algorithm.getParam<double>("kernel_stretch_constant", 1);
-        settings.confidence_measurement_weight = algorithm.getParam<double>("confidence_measurement_weight", 0.5);
-        settings.confidence_sigma_spatial = algorithm.getParam<double>("confidence_sigma_spatial", 0.5);
+        settings.maxUpdatesPerStop = algorithm.getParam<int>("maxUpdatesPerStop", 3);
+        settings.kernelSigma = algorithm.getParam<double>("kernelSigma", 0.5);
+        settings.kernelStretchConstant = algorithm.getParam<double>("kernelStretchConstant", 1);
+        settings.confidenceMeasurementWeight = algorithm.getParam<double>("confidenceMeasurementWeight", 0.5);
+        settings.confidenceSigmaSpatial = algorithm.getParam<double>("confidenceSigmaSpatial", 0.5);
         settings.localEstimationWindowSize = algorithm.getParam<int>("localEstimationWindowSize", 2);
     }
 
     void PMFSLib::InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node)
     {
-        pubs.markers.source_probability_markers = node->create_publisher<Marker>("probability_markers", 1);
+        pubs.markers.sourceProbabilityMarkers = node->create_publisher<Marker>("probabilityMarkers", 1);
         pubs.markers.hitProbabilityMarkers = node->create_publisher<Marker>("hitProbabilityMarkers", 1);
         pubs.markers.confidenceMarkers = node->create_publisher<Marker>("confidenceMarkers", 1);
         pubs.markers.windArrowMarkers = node->create_publisher<MarkerArray>("arrowMarkers", 1);
@@ -480,8 +462,7 @@ namespace GSL
         pubs.markers.quadtreePublisher = node->create_publisher<MarkerArray>("quadtree", 1);
 
         pubs.gmrfWind.client = node->create_client<gmrf_wind_mapping::srv::WindEstimation>("/WindEstimation");
-        IF_GADEN( pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value") );
+        IF_GADEN(pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value"));
     }
-
 
 } // namespace GSL

@@ -112,7 +112,7 @@ namespace GSL
         functionQueue.run();
     }
 
-    void PMFS::processGasAndWindMeasurements(double concentration, double wind_speed, double wind_direction)
+    void PMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
         static int number_of_updates = 0;
 
@@ -120,14 +120,14 @@ namespace GSL
         if (concentration > thresholdGas)
         {
             // Gas & wind
-            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, wind_direction, wind_speed,
+            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
                                               gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
-            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, wind_direction, wind_speed,
+            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
                                               gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
@@ -141,11 +141,11 @@ namespace GSL
 
         number_of_updates++;
 
-        if (number_of_updates >= settings.hitProbability.max_updates_per_stop)
+        if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
         {
             number_of_updates = 0;
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
-                                  iterationsCounter % settings.simulation.steps_between_source_updates == 0;
+                                  iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
             if (timeToSimulate)
             {
                 // simulations.compareRefineFractions();

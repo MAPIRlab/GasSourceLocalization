@@ -19,22 +19,22 @@ namespace GSL::PMFS_internal
     struct HitProbabilitySettings
     {
         int localEstimationWindowSize;
-        int max_updates_per_stop;
+        int maxUpdatesPerStop;
         double prior;
 
-        double kernel_sigma;
-        double kernel_stretch_constant;
+        double kernelSigma;
+        double kernelStretchConstant;
 
-        double confidence_sigma_spatial;      // the sigma of the confidence normal associated with each measurement -- confidence as a function of
+        double confidenceSigmaSpatial;      // the sigma of the confidence normal associated with each measurement -- confidence as a function of
                                               // physical proximity to the measurement location, this is not variance or anything like that
-        double confidence_measurement_weight; // sigma_omega in kernel DMV. Controls how much confidence you gain from one measurement (affects
+        double confidenceMeasurementWeight; // sigma_omega in kernel DMV. Controls how much confidence you gain from one measurement (affects
                                               // all distances)
     };
     struct SimulationSettings
     {
         bool useWindGroundTruth;
         int maxRegionSize;
-        int steps_between_source_updates;
+        int stepsBetweenSourceUpdates;
         double sourceDiscriminationPower; // higher values here will lead to a larger difference in the estimated source probability from one cell
                                           // to another
         double refineFraction;            // proportion of the cells that will be subdivided for the finer simulation

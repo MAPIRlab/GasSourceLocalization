@@ -8,7 +8,7 @@
 namespace GSL
 {
 
-    Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node) : node(_node), tf_buffer(node->get_clock())
+    Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node) : node(_node), tfBufffer(node->get_clock())
     {}
 
     Algorithm::~Algorithm()
@@ -21,26 +21,26 @@ namespace GSL
         // Subscribers
         //------------
         using namespace std::placeholders;
-        localization_sub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
+        localizationSub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
                                                                                 std::bind(&Algorithm::localizationCallback, this, _1));
         rclcpp::Rate rate(1);
-        while (resultLogging.robot_poses_vector.size() == 0)
+        while (resultLogging.robotPosesVector.size() == 0)
         {
             rate.sleep();
             rclcpp::spin_some(node);
-            GSL_INFO("Waiting to hear from localization topic: {}", localization_sub->get_topic_name());
+            GSL_INFO("Waiting to hear from localization topic: {}", localizationSub->get_topic_name());
         }
 
-        gas_sub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
+        gasSub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
                                                                             std::bind(&Algorithm::gasCallback, this, _1));
 
-        wind_sub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
+        windSub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
             getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
 
 		
 
 		//extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
-		static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.max_search_time + 10), //extra time to make sure this only happens if the node is deadlocked 
+		static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), //extra time to make sure this only happens if the node is deadlocked 
 		[]()
 		{
 			rclcpp::shutdown();
@@ -48,18 +48,18 @@ namespace GSL
 			CLOSE_PROGRAM;
 		});
 
-        start_time = node->now();
+        startTime = node->now();
         GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
     }
 
     void Algorithm::declareParameters()
     {
-        resultLogging.max_search_time = getParam<double>("max_search_time", 1000.0);
-        resultLogging.distance_found = getParam<double>("distance_found", 0.5);
-        resultLogging.source_pose.x = getParam<float>("ground_truth_x", 0.0);
-        resultLogging.source_pose.y = getParam<float>("ground_truth_y", 0.0);
-        resultLogging.results_file = getParam<std::string>("results_file", "");
-        resultLogging.path_file = getParam<std::string>("path_file", "");
+        resultLogging.maxSearchTime = getParam<double>("maxSearchTime", 1000.0);
+        resultLogging.distanceThreshold = getParam<double>("distanceThreshold", 0.5);
+        resultLogging.sourcePositionGT.x = getParam<float>("ground_truth_x", 0.0);
+        resultLogging.sourcePositionGT.y = getParam<float>("ground_truth_y", 0.0);
+        resultLogging.resultsFile = getParam<std::string>("resultsFile", "");
+        resultLogging.navigationPathFile = getParam<std::string>("navigationPathFile", "");
 
         thresholdGas = getParam<double>("th_gas_present", 0.1);
         thresholdWind = getParam<double>("th_wind_present", 0.1);
@@ -73,7 +73,7 @@ namespace GSL
 
     bool Algorithm::HasEnded()
     {
-        if((node->now()-start_time).seconds() > resultLogging.max_search_time)
+        if((node->now()-startTime).seconds() > resultLogging.maxSearchTime)
         {
             saveResultsToFile(GSLResult::Failure);
             return true;
@@ -93,7 +93,7 @@ namespace GSL
         currentRobotPose = *msg;
 
         // Keep all poses for later distance estimation
-        resultLogging.robot_poses_vector.push_back(currentRobotPose);
+        resultLogging.robotPosesVector.push_back(currentRobotPose);
     }
 
     void Algorithm::onGetMap(const OccupancyGrid::SharedPtr msg)
@@ -126,20 +126,20 @@ namespace GSL
     GSLResult Algorithm::checkSourceFound()
     {
         // 1. Check that working time < max allowed time for search
-        rclcpp::Duration time_spent = node->now() - start_time;
-        if (time_spent.seconds() > resultLogging.max_search_time)
+        rclcpp::Duration time_spent = node->now() - startTime;
+        if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
             // Report failure, we were too slow
-            GSL_INFO("FAILURE-> Time spent ({} s) > max_search_time = {}", time_spent.seconds(), resultLogging.max_search_time);
+            GSL_INFO("FAILURE-> Time spent ({} s) > maxSearchTime = {}", time_spent.seconds(), resultLogging.maxSearchTime);
             saveResultsToFile(GSLResult::Failure);
             return GSLResult::Failure;
         }
 
         // 2. Distance from robot to source
-        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x;
-        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y;
+        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.sourcePositionGT.x;
+        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.sourcePositionGT.y;
         double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
-        if (dist < resultLogging.distance_found)
+        if (dist < resultLogging.distanceThreshold)
         {
             // GSL has finished with success!
             GSL_INFO("SUCCESS -> Time spent ({} s)", time_spent.seconds());
@@ -153,17 +153,17 @@ namespace GSL
 
     void Algorithm::saveResultsToFile(GSLResult result)
     {
-        rclcpp::Duration time_spent = node->now() - start_time;
+        rclcpp::Duration time_spent = node->now() - startTime;
         double search_t = time_spent.seconds();
 
         // 2. Search distance
         double search_d = 0;
 
-        const auto& robot_poses_vector = resultLogging.robot_poses_vector;
-        for (size_t h = 1; h < robot_poses_vector.size(); h++)
+        const auto& robotPosesVector = resultLogging.robotPosesVector;
+        for (size_t h = 1; h < robotPosesVector.size(); h++)
         {
-            double Ax = robot_poses_vector[h - 1].pose.pose.position.x - robot_poses_vector[h].pose.pose.position.x;
-            double Ay = robot_poses_vector[h - 1].pose.pose.position.y - robot_poses_vector[h].pose.pose.position.y;
+            double Ax = robotPosesVector[h - 1].pose.pose.position.x - robotPosesVector[h].pose.pose.position.x;
+            double Ay = robotPosesVector[h - 1].pose.pose.position.y - robotPosesVector[h].pose.pose.position.y;
             search_d += sqrt(pow(Ax, 2) + pow(Ay, 2));
         }
 
@@ -171,16 +171,16 @@ namespace GSL
         // Estimate the distances by getting a navigation path from Robot initial pose to Source points in the map
         double nav_d = 0;
         {
-            PoseStamped source_pose;
-            source_pose.header.frame_id = "map";
-            source_pose.header.stamp = node->now();
-            source_pose.pose.position.x = resultLogging.source_pose.x;
-            source_pose.pose.position.y = resultLogging.source_pose.y;
+            PoseStamped sourcePositionGT;
+            sourcePositionGT.header.frame_id = "map";
+            sourcePositionGT.header.stamp = node->now();
+            sourcePositionGT.pose.position.x = resultLogging.sourcePositionGT.x;
+            sourcePositionGT.pose.position.y = resultLogging.sourcePositionGT.y;
 
             PoseStamped startPose;
-            startPose.pose = resultLogging.robot_poses_vector[0].pose.pose;
-            startPose.header = resultLogging.robot_poses_vector[0].header;
-            std::optional<nav_msgs::msg::Path> plan = movingState->GetPlan(startPose, source_pose);
+            startPose.pose = resultLogging.robotPosesVector[0].pose.pose;
+            startPose.header = resultLogging.robotPosesVector[0].header;
+            std::optional<nav_msgs::msg::Path> plan = movingState->GetPlan(startPose, sourcePositionGT);
             if (plan)
             {
                 const auto& path = plan.value().poses;
@@ -201,7 +201,7 @@ namespace GSL
             fmt::format("RESULT IS: Success={}, Search_d={:.2}, Nav_d={:.2}, Search_t={:.2}, Nav_t={:.2}\n", (int)result, search_d, nav_d, search_t, nav_t);
         GSL_INFO("{}", result_string);
 
-        std::ofstream output_file(resultLogging.results_file, std::ios_base::app);
+        std::ofstream output_file(resultLogging.resultsFile, std::ios_base::app);
         if (output_file.is_open())
         {
             updateProximityResults(true);
@@ -210,13 +210,13 @@ namespace GSL
                 output_file << prox.time <<" "<< prox.distance <<"\n";
 
 #if 0
-            for (PoseWithCovarianceStamped p : robot_poses_vector)
+            for (PoseWithCovarianceStamped p : robotPosesVector)
                 output_file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
 #endif
             output_file.close();
         }
         else
-            GSL_ERROR("Unable to open Results file at: {}", resultLogging.results_file.c_str());
+            GSL_ERROR("Unable to open Results file at: {}", resultLogging.resultsFile.c_str());
     }
 
     bool Algorithm::isPointInsideMapBounds(const Vector2& point) const
@@ -267,7 +267,7 @@ namespace GSL
             anemometer_downWind_pose.pose.position.z = 0.0;
             anemometer_downWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
 
-            map_downWind_pose = tf_buffer.buffer.transform(anemometer_downWind_pose, "map");
+            map_downWind_pose = tfBufffer.buffer.transform(anemometer_downWind_pose, "map");
         }
         catch (tf2::TransformException& ex)
         {
@@ -333,13 +333,13 @@ namespace GSL
 
     void Algorithm::updateProximityResults(bool forceUpdate)
     {
-        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.source_pose.x;
-        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.source_pose.y;
+        double Ax = currentRobotPose.pose.pose.position.x - resultLogging.sourcePositionGT.x;
+        double Ay = currentRobotPose.pose.pose.position.y - resultLogging.sourcePositionGT.y;
         double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
         
         constexpr double rewrite_distance = 0.5;
         if(forceUpdate || resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance-rewrite_distance))
-            resultLogging.proximityResult.push_back({(node->now()-start_time).seconds(), dist});
+            resultLogging.proximityResult.push_back({(node->now()-startTime).seconds(), dist});
     }
 
 } // namespace GSL
