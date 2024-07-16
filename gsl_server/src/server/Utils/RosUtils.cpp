@@ -1,5 +1,9 @@
-#include <gsl_server/Utils/RosUtils.hpp>
+#include <filesystem>
 #include <gsl_server/Utils/Math.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
+#include <gsl_server/core/Macros.hpp>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace GSL::Utils
@@ -108,6 +112,28 @@ namespace GSL::Utils
     Vector3 fromMsg(const geometry_msgs::msg::Point& v)
     {
         return Vector3(v.x, v.y, v.z);
+    }
+
+    std::vector<Occupancy> parseMapImage(const std::string& path, GridMetadata& metadata)
+    {
+        if (!std::filesystem::exists(path))
+        {
+            GSL_ERROR("Tried to parse map image at path {}, but it does not exist", path);
+            CLOSE_PROGRAM;
+        }
+
+        cv::Mat mapImage = cv::imread(path, cv::IMREAD_GRAYSCALE);
+        cv::flip(mapImage, mapImage, 0);
+        size_t width = mapImage.size().width;
+        size_t height = mapImage.size().height;
+        std::vector<int8_t> imageAsVec(width*height);
+        for(int i = 0; i < width*height; i++)
+            imageAsVec[i] = (int8_t) std::clamp(100-(int)mapImage.data[i], 0, 100);
+
+        std::vector<Occupancy> occupancyGrid(width * height / metadata.scale);
+        GridUtils::reduceOccupancyMap(imageAsVec, width, occupancyGrid, metadata);
+
+        return occupancyGrid;
     }
 
 } // namespace GSL::Utils

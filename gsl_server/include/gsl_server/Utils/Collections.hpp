@@ -1,10 +1,10 @@
 #pragma once
-#include <c++/11/bits/stl_algo.h> 
+#include <iterator>
 
 namespace GSL::Utils
 {
-    template<typename Collection>
-    size_t indexOfMax(Collection& collection)
+    template<typename C>
+    inline size_t indexOfMax(C& collection)
     {
         return std::distance( collection.begin(), std::max_element(collection.begin(), collection.end()));
     }

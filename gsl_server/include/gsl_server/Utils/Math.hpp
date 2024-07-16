@@ -7,6 +7,9 @@
 
 namespace GSL::Utils
 {
+    static constexpr float Deg2Rad = M_PI / 180.0f;
+    static constexpr float Rad2Deg = 180.0f / M_PI;
+
 	static constexpr float INVALID_AVERAGE = -FLT_MAX;
 	
 	template <typename CollectionIterator>

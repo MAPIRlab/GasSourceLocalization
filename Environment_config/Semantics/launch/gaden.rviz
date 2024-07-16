@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
+        - /Object classes1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 593
   - Class: rviz_common/Selection
@@ -39,7 +40,7 @@ Visualization Manager:
         Value: /source_visualization
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Filaments
       Namespaces:
         {}
@@ -50,12 +51,12 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /filament_visualization
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: GasDistribution
       Namespaces:
-        Gas_Dispersion: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -63,12 +64,12 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /Gas_Distribution
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Wind_arrow
       Namespaces:
-        measured_wind_inverted: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -76,19 +77,19 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /giraff/Anemometer/WindSensor_display
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: Environment_CAD
       Namespaces:
-        part_0: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /environment_cad_visualization
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -220,33 +221,20 @@ Visualization Manager:
       Value: true
       Visual Enabled: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: GMRF
       Namespaces:
-        WindVector: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /giraff/arrowMarkers
-      Value: true
-    - Class: rviz_default_plugins/Marker
-      Enabled: false
-      Name: Source
-      Namespaces:
-        {}
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        Filter size: 10
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /giraff/probabilityMarkers
       Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: true
-      Name: Hit
+      Name: Source
       Namespaces:
         cells: true
       Topic:
@@ -255,8 +243,21 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /giraff/hitProbabilityMarkers
+        Value: /giraff/probabilityMarkers
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: false
+      Name: Hit
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /giraff/hitProbabilityMarkers
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: Quadtree
@@ -423,6 +424,19 @@ Visualization Manager:
                 {}
       Update Interval: 0
       Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Object classes
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /giraff/class_markers
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -472,16 +486,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 13.368230819702148
+      Distance: 14.334879875183105
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -2.6672816276550293
-        Y: -1.9211039543151855
-        Z: 2.199420928955078
+        X: -1.7837682962417603
+        Y: -2.933011054992676
+        Z: 2.198399066925049
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -490,7 +504,7 @@ Visualization Manager:
       Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.7204670906066895
+      Yaw: 4.705466270446777
     Saved: ~
 Window Geometry:
   Displays:

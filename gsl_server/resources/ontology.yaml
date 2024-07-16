@@ -1,10 +1,10 @@
 Gases:
   - gas: smoke
     probs:
-      oven: 0.3
+      oven: 0.4
       burner: 0.3
-      refrigerator: 0.2
       toaster: 0.2
+      refrigerator: 0.1
       other: 0.01
 
   - gas: sewage

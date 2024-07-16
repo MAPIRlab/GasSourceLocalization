@@ -29,27 +29,14 @@ namespace GSL
         //TODO
         movingState = std::make_unique<MovingStateSemanticPMFS>(this);
         stateMachine.forceSetState(waitForMapState.get());
-
-
-        // SEMANTICS 
-        std::string semanticsTypeParam = node->declare_parameter<std::string>("semanticsType", "ClassMap2D");
-        auto semanticsType = magic_enum::enum_cast<SemanticsType>(semanticsTypeParam, magic_enum::case_insensitive);
-        if(!semanticsType.has_value())
-        {
-            constexpr auto names = magic_enum::enum_names<SemanticsType>();
-            GSL_ERROR("{} is not a valid semantics type. Valid types are {}", semanticsTypeParam, fmt::join(names, ", "));
-            GSL_ERROR("Closing");
-            CLOSE_PROGRAM;
-        }
-        else if (semanticsType == SemanticsType::ClassMap2D)
-            semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBufffer,
-                       currentRobotPose);
     }
 
     void SemanticPMFS::OnUpdate()
     {
         Algorithm::OnUpdate();
-        semantics->OnUpdate();
+        if(semantics)
+            semantics->OnUpdate();
+
         PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
         PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
         functionQueue.run();
@@ -77,12 +64,12 @@ namespace GSL
         hitProbability.resize(gridMetadata.height * gridMetadata.width);
         sourceProbability.resize(gridMetadata.height * gridMetadata.width);
         navigationOccupancy.resize(gridMetadata.height * gridMetadata.width);
-        simulationOccupancy.resize(gridMetadata.height * gridMetadata.width);
+        simulationOccupancy = Utils::parseMapImage(getParam<std::string>("wallsOccupancyFile", "?"), gridMetadata);
 
         visibilityMap.emplace(gridMetadata.width, gridMetadata.height, std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
         // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
 
-        PMFSLib::initializeMap(*this, Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata), simulations, *visibilityMap);
+        PMFSLib::initializeMap(*this, Grid<HitProbability>(hitProbability, navigationOccupancy, gridMetadata), simulations, *visibilityMap);
 
         // set all variables to the prior probability
         for (HitProbability& h : hitProbability)
@@ -99,7 +86,20 @@ namespace GSL
             stateMachine.forceSetState(stopAndMeasureState.get());
         });
 
-        // TODO initialize semantics object
+
+        // SEMANTICS 
+        std::string semanticsTypeParam = node->declare_parameter<std::string>("semanticsType", "ClassMap2D");
+        auto semanticsType = magic_enum::enum_cast<SemanticsType>(semanticsTypeParam, magic_enum::case_insensitive);
+        if(!semanticsType.has_value())
+        {
+            constexpr auto names = magic_enum::enum_names<SemanticsType>();
+            GSL_ERROR("{} is not a valid semantics type. Valid types are {}", semanticsTypeParam, fmt::join(names, ", "));
+            GSL_ERROR("Closing");
+            CLOSE_PROGRAM;
+        }
+        else if (semanticsType == SemanticsType::ClassMap2D)
+            semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBufffer,
+                       currentRobotPose);
     }
 
     void SemanticPMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -132,26 +132,26 @@ namespace GSL
         number_of_updates++;
 
         //TODO
-        if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
-        {
-            number_of_updates = 0;
-            bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
-                                  iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
-            if (timeToSimulate)
-            {
-                // simulations.compareRefineFractions();
-                simulations.updateSourceProbability(settings.simulation.refineFraction);
-            }
-        
-            auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
-            if (iterationsCounter > settings.movement.initialExplorationMoves)
-                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
-            else
-                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
-            movingStatePMFS->chooseGoalAndMove();
-            movingStatePMFS->publishMarkers();
-        }
-        else
+        //if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
+        //{
+        //    number_of_updates = 0;
+        //    bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
+        //                          iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
+        //    if (timeToSimulate)
+        //    {
+        //        // simulations.compareRefineFractions();
+        //        simulations.updateSourceProbability(settings.simulation.refineFraction);
+        //    }
+        //
+        //    auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
+        //    if (iterationsCounter > settings.movement.initialExplorationMoves)
+        //        movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
+        //    else
+        //        movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
+        //    movingStatePMFS->chooseGoalAndMove();
+        //    movingStatePMFS->publishMarkers();
+        //}
+        //else
             stateMachine.forceResetState(stopAndMeasureState.get());
 
     }

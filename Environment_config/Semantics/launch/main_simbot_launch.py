@@ -90,6 +90,7 @@ def launch_setup(context, *args, **kwargs):
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     #Semantics
+                    {"wallsOccupancyFile": os.path.join(get_package_share_directory("semantic_gsl_env"), "scenarios", LaunchConfiguration("scenario").perform(context), "_occupancy_walls.pgm" )},
                     {"detectionsTopic": "/semantic_instances_3D"},
                     {"ontologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ontology.yaml")},
 

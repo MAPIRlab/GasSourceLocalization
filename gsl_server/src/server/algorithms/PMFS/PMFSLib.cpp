@@ -201,43 +201,11 @@ namespace GSL
     void PMFSLib::initializeMap(Algorithm& algorithm, Grid<HitProbability> grid, PMFS_internal::Simulations& simulations,
                                 VisibilityMap& visibilityMap)
     {
-        // 2D-ify the map to make it a bit easier to work with
-        std::vector<std::vector<uint8_t>> mapa(algorithm.map.info.height, std::vector<uint8_t>(algorithm.map.info.width));
-        {
-            int index = 0;
-            for (int i = 0; i < mapa.size(); i++)
-            {
-                for (int j = 0; j < mapa[0].size(); j++)
-                {
-                    mapa[i][j] = algorithm.map.data[index];
-                    index++;
-                }
-            }
-        }
-
         // create the PMFS cells
         {
-            int scale = grid.metadata.scale; // scale for dynamic map reduction
-            for (int i = 0; i < grid.metadata.height; i++)
-            {
-                for (int j = 0; j < grid.metadata.width; j++)
-                {
-                    bool squareIsFree = true;
-
-                    for (int row = i * scale; row < (i + 1) * scale; row++)
-                    {
-                        for (int col = j * scale; col < (j + 1) * scale; col++)
-                        {
-                            if (mapa[row][col] != 0)
-                            {
-                                squareIsFree = false;
-                            }
-                        }
-                    }
-                    grid.occupancyAt(i, j) = squareIsFree ? Occupancy::Free : Occupancy::Obstacle;
-                    grid.dataAt(i, j).auxWeight = -1; // this is used in the next step to prune the cells that are free but unreachable
-                }
-            }
+            GridUtils::reduceOccupancyMap(algorithm.map.data, algorithm.map.info.width, grid.occupancy, grid.metadata);
+            for(HitProbability& hp : grid.data)
+                hp.auxWeight = -1;
             GSL_TRACE("Created grid");
         }
 
@@ -421,7 +389,7 @@ namespace GSL
             return false;
         Vector2 direction = end - origin;
         DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
-            {origin.y, origin.x}, {direction.y, direction.x}, vmath::length(direction),
+            origin, direction, vmath::length(direction),
             DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.width, metadata.height}),
             [](const GSL::Occupancy& occ) { return occ == GSL::Occupancy::Free; });
 

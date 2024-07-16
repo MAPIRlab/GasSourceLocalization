@@ -12,11 +12,18 @@ namespace GSL
         //custom iterator to remove any reference to the fact that we internally use an unordered_map
         struct Iterator;
 
-        float ProbabilityOf(const std::string& _class)
+        void Initialize(const std::vector<std::string>& classes)
+        {
+            float p = 1.0 / classes.size();
+            for(const std::string& _class : classes)
+                probabilityDist[_class] = p;
+        }
+
+        float ProbabilityOf(const std::string& _class) const
         {
             try
             {
-                return probabilityDist[_class];
+                return probabilityDist.at(_class);
             }
             catch(std::exception& e)
             {

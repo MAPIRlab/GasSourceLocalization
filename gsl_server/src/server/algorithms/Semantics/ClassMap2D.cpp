@@ -1,5 +1,5 @@
-#include <gsl_server/Utils/RosUtils.hpp>
 #include <gsl_server/Utils/Collections.hpp>
+#include <gsl_server/Utils/RosUtils.hpp>
 #include <gsl_server/algorithms/Semantics/ClassMap2D.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
@@ -21,13 +21,18 @@ namespace GSL
         node = std::make_shared<rclcpp::Node>("class_map");
 
         std::string detectionsTopic = Utils::getParam<std::string>(node, "detectionsTopic", "objectDetections");
-        cameraSub = node->create_subscription<Detection3DArray>(detectionsTopic, 1, std::bind(&ClassMap2D::detectionCallback, this, std::placeholders::_1));
+        cameraSub =
+            node->create_subscription<Detection3DArray>(detectionsTopic, 1, std::bind(&ClassMap2D::detectionCallback, this, std::placeholders::_1));
 
         classMarkers = node->create_publisher<Marker>("class_markers", 1);
 
         classDistributions.resize(gridMetadata.height * gridMetadata.width);
         std::string ontologyPath = Utils::getParam<std::string>(node, "ontologyPath", "?");
         parseOntology(ontologyPath);
+
+        fov.maxDist = Utils::getParam<double>(node, "fovMaxDist", 4.0);
+        fov.minDist = Utils::getParam<double>(node, "fovMinDist", 0.0);
+        fov.angleRads = Utils::getParam<double>(node, "fovAngleRads", 30 * Utils::Deg2Rad);
     }
 
     std::vector<double> ClassMap2D::GetSourceProbability()
@@ -66,15 +71,19 @@ namespace GSL
             GSL_ERROR("Could not open ontology file: {}", path);
             CLOSE_PROGRAM;
         }
+
+        std::string targetGas = Utils::getParam<std::string>(node, "targetGas", "smoke");
+        std::vector<std::string> class_list;
         YAML::Node gases = YAML::LoadFile(path)["Gases"];
         for (const YAML::Node& gas : gases)
         {
-            if (gas["gas"].as<std::string>() == "sewage")
+            if (gas["gas"].as<std::string>() == targetGas)
             {
                 YAML::Node probs = gas["probs"];
                 for (YAML::const_iterator it = probs.begin(); it != probs.end(); ++it)
                 {
                     sourceProbByClass.insert({it->first.as<std::string>(), it->second.as<float>()});
+                    class_list.push_back(it->first.as<std::string>());
                 }
             }
         }
@@ -83,6 +92,11 @@ namespace GSL
         for (auto& kv : sourceProbByClass)
         {
             GSL_INFO("{}: {}", kv.first, kv.second);
+        }
+
+        for (ClassDistribution& dist : classDistributions)
+        {
+            dist.Initialize(class_list);
         }
     }
 
@@ -98,6 +112,11 @@ namespace GSL
 
             for (Vector2Int indices : aabb)
             {
+                if(!gridMetadata.indicesInBounds(indices))
+                {
+                    GSL_WARN("Indices {} out of bounds! Probably a bad mask causing a huge bounding box", indices);
+                    break;
+                }
                 updateObjectProbabilities(indices, scores);
                 remainingCellsInFOV.erase(indices);
             }
@@ -105,7 +124,7 @@ namespace GSL
 
         constexpr float true_negative_prob = 0.6;
         constexpr float false_negative_prob = 0.2;
-        //cells where we didn't see anything
+        // cells where we didn't see anything
         {
             for (Vector2Int indices : remainingCellsInFOV)
             {
@@ -113,7 +132,7 @@ namespace GSL
                 for (const auto& kv : sourceProbByClass)
                 {
                     float score;
-                    if(kv.first == "other")
+                    if (kv.first == "other")
                         score = true_negative_prob;
                     else
                         score = false_negative_prob;
@@ -197,7 +216,7 @@ namespace GSL
 
         for (Vector2Int indices : aabb)
         {
-            if (!gridMetadata.indicesInBounds(indices))
+            if (!gridMetadata.indicesInBounds(indices) || wallsOccupancy[gridMetadata.indexOf(indices)] != Occupancy::Free)
                 continue;
 
             Vector2 point = gridMetadata.indexToCoordinates(indices);
@@ -220,12 +239,12 @@ namespace GSL
     void ClassMap2D::publishClassMarkers()
     {
         static std::vector<std_msgs::msg::ColorRGBA> colors;
-        if(colors.empty())
+        if (colors.empty())
         {
-            for(const auto& kv : sourceProbByClass)
+            for (const auto& kv : sourceProbByClass)
             {
                 float randomValue = Utils::EquallyDistributed01F();
-                Utils::ColorHSV hsv = {randomValue, 1, 1};
+                Utils::ColorHSV hsv{.H = randomValue, .S = 1, .V = 1};
                 colors.push_back(Utils::HSVtoRGB(hsv.H, hsv.S, hsv.V));
             }
         }
@@ -238,14 +257,14 @@ namespace GSL
         marker.scale.y = gridMetadata.cellSize;
         marker.scale.z = gridMetadata.cellSize;
 
-        for(int i = 0; i<gridMetadata.width; i++)
+        for (int i = 0; i < gridMetadata.height; i++)
         {
-            for(int j = 0; j<gridMetadata.height; j++)
+            for (int j = 0; j < gridMetadata.width; j++)
             {
-                int cellIndex = gridMetadata.indexOf({i,j});
-                if( wallsOccupancy[cellIndex] != Occupancy::Free)
+                int cellIndex = gridMetadata.indexOf({i, j});
+                if (wallsOccupancy[cellIndex] != Occupancy::Free)
                     continue;
-                Vector2 coords = gridMetadata.indexToCoordinates(i,j);
+                Vector2 coords = gridMetadata.indexToCoordinates(i, j);
                 Point p;
                 p.x = coords.x;
                 p.y = coords.y;
@@ -259,6 +278,5 @@ namespace GSL
 
         classMarkers->publish(marker);
     }
-
 
 } // namespace GSL

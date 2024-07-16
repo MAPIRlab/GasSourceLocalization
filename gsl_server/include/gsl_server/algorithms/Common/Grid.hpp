@@ -1,7 +1,7 @@
 #pragma once
-#include <vector>
-#include <gsl_server/core/Vectors.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <gsl_server/core/Vectors.hpp>
+#include <vector>
 
 namespace GSL
 {
@@ -10,17 +10,17 @@ namespace GSL
         Vector2 origin;
         float cellSize; // in meters
         size_t width, height;
-        uint16_t scale; //with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
+        uint16_t scale; // with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
         size_t numFreeCells;
 
         Vector2Int coordinatesToIndex(double x, double y) const
         {
             return Vector2Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize));
         }
-        
+
         Vector2Int coordinatesToIndex(const Vector2& v) const
         {
-            return Vector2Int((v.y - origin.y) / (cellSize), (v.x - origin.x) / (cellSize));
+            return Vector2Int((v-origin) / cellSize);
         }
 
         Vector2Int coordinatesToIndex(const geometry_msgs::msg::Pose& pose) const
@@ -47,7 +47,7 @@ namespace GSL
 
         Vector2Int indices2D(size_t index) const
         {
-            return Vector2Int(index/width, index%width);
+            return Vector2Int(index / width, index % width);
         }
 
         bool indicesInBounds(const Vector2Int& indices) const
@@ -56,7 +56,11 @@ namespace GSL
         }
     };
 
-    enum class Occupancy {Free, Obstacle};
+    enum class Occupancy
+    {
+        Free,
+        Obstacle
+    };
     template <typename T>
     struct Grid
     {
@@ -70,17 +74,46 @@ namespace GSL
 
         T& dataAt(size_t i, size_t j) const
         {
-            return data[metadata.indexOf({i,j})];
+            return data[metadata.indexOf({i, j})];
         }
 
         Occupancy& occupancyAt(size_t i, size_t j) const
         {
-            return occupancy[metadata.indexOf({i,j})];
+            return occupancy[metadata.indexOf({i, j})];
         }
 
         bool freeAt(size_t i, size_t j) const
         {
-            return occupancyAt(i,j) == Occupancy::Free;
+            return occupancyAt(i, j) == Occupancy::Free;
+        }
+    };
+
+    class GridUtils
+    {
+    public:
+        GridUtils() = delete;
+        static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy, const GridMetadata& metadata)
+        {
+            int scale = metadata.scale; // scale for dynamic map reduction
+            for (int i = 0; i < metadata.height; i++)
+            {
+                for (int j = 0; j < metadata.width; j++)
+                {
+                    bool squareIsFree = true;
+
+                    for (int row = i * scale; row < (i + 1) * scale; row++)
+                    {
+                        for (int col = j * scale; col < (j + 1) * scale; col++)
+                        {
+                            if (map[col + row * mapWidth] != 0)
+                                squareIsFree = false;
+                        }
+                    }
+                    if(squareIsFree)
+                        occupancy[metadata.indexOf({i, j})] = Occupancy::Free;
+                    occupancy[metadata.indexOf({i, j})] = squareIsFree ? Occupancy::Free : Occupancy::Obstacle;
+                }
+            }
         }
     };
 

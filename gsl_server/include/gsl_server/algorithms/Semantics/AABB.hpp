@@ -56,7 +56,7 @@ namespace GSL
             Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
 
             friend bool operator== (const Iterator& a, const Iterator& b) { return a.aabb == b.aabb && a.current == b.current; };
-            friend bool operator!= (const Iterator& a, const Iterator& b) { return a.aabb != b.aabb && a.current != b.current; };
+            friend bool operator!= (const Iterator& a, const Iterator& b) { return !(a==b); };
         private:
             AABB2DInt& aabb;
             Vector2Int current;
