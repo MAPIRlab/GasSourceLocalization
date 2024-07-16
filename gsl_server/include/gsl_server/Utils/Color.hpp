@@ -2,10 +2,12 @@
 #include <cmath>
 #include <std_msgs/msg/color_rgba.hpp>
 
-namespace GSL::Utils
+namespace GSL::Utils::Colors
 {
-    std_msgs::msg::ColorRGBA HSVtoRGB(float& H, float& S, float& V)
+    using ColorRGBA = std_msgs::msg::ColorRGBA;
+    static ColorRGBA HSVtoRGB(float H, float S, float V)
     {
+        H *= 360;
         float fC = V * S; // Chroma
         float fHPrime = fmod(H / 60.0, 6);
         float fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
@@ -67,26 +69,29 @@ namespace GSL::Utils
     {
         float H, S, V;
     };
-    ColorHSV RGBtoHSV(const std_msgs::msg::ColorRGBA& rgb)
+    static ColorHSV RGBtoHSV(const ColorRGBA& rgb)
     {
-        float fCMax = std::max({rgb.r, rgb.g, rgb.b});
-        float fCMin = std::min({rgb.r, rgb.g, rgb.b});
+        float r = rgb.r * 255;
+        float g = rgb.g * 255;
+        float b = rgb.b * 255;
+        float fCMax = std::max({r, g, b});
+        float fCMin = std::min({r, g, b});
         float fDelta = fCMax - fCMin;
 
         ColorHSV hsv;
         if (fDelta > 0)
         {
-            if (fCMax == rgb.r)
+            if (fCMax == r)
             {
-                hsv.H = 60 * (fmod(((rgb.g - rgb.b) / fDelta), 6));
+                hsv.H = 60 * (fmod(((g - b) / fDelta), 6));
             }
-            else if (fCMax == rgb.g)
+            else if (fCMax == g)
             {
-                hsv.H = 60 * (((rgb.b - rgb.r) / fDelta) + 2);
+                hsv.H = 60 * (((b - r) / fDelta) + 2);
             }
-            else if (fCMax == rgb.b)
+            else if (fCMax == b)
             {
-                hsv.H = 60 * (((rgb.r - rgb.g) / fDelta) + 4);
+                hsv.H = 60 * (((r - g) / fDelta) + 4);
             }
 
             if (fCMax > 0)
@@ -113,4 +118,15 @@ namespace GSL::Utils
         }
         return hsv;
     }
+
+    static ColorRGBA lerp(const ColorRGBA& a, const ColorRGBA& b, float t)
+    {
+        ColorRGBA v;
+        v.r = std::lerp(a.r, b.r, t);
+        v.g = std::lerp(a.g, b.g, t);
+        v.b = std::lerp(a.b, b.b, t);
+        v.a = std::lerp(a.a, b.a, t);
+        return v;
+    }
+
 } // namespace GSL::Utils

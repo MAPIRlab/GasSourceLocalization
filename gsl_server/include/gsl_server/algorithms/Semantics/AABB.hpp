@@ -46,7 +46,7 @@ namespace GSL
                 current.x++;
                 if(current.x>aabb.max.x)
                 {
-                    current.x = 0;
+                    current.x = aabb.min.x;
                     current.y++;
                 }
                 return *this;

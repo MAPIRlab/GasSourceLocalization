@@ -28,7 +28,7 @@ namespace GSL
 
         std::map<std::string, float> sourceProbByClass;
         std::vector<ClassDistribution> classDistributions;
-        std::vector<Occupancy> wallsOccupancy; //this is a copy. Should it be?
+        std::vector<Occupancy> wallsOccupancy; //TODO this is a copy. Should it be?
         GridMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
         const PoseWithCovarianceStamped& currentRobotPose;

@@ -12,6 +12,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <yaml-cpp/yaml.h>
 
+const char* otherClassName = "other";
 namespace GSL
 {
     ClassMap2D::ClassMap2D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
@@ -122,8 +123,8 @@ namespace GSL
             }
         }
 
-        constexpr float true_negative_prob = 0.6;
-        constexpr float false_negative_prob = 0.2;
+        const float true_negative_prob = 1.0 / sourceProbByClass.size() + 0.1f;
+        const float false_negative_prob = (1.0f - true_negative_prob) / sourceProbByClass.size() -1;
         // cells where we didn't see anything
         {
             for (Vector2Int indices : remainingCellsInFOV)
@@ -132,7 +133,7 @@ namespace GSL
                 for (const auto& kv : sourceProbByClass)
                 {
                     float score;
-                    if (kv.first == "other")
+                    if (kv.first == otherClassName)
                         score = true_negative_prob;
                     else
                         score = false_negative_prob;
@@ -175,7 +176,7 @@ namespace GSL
         {
             std::string _class = pair.first;
             if (!sourceProbByClass.contains(_class))
-                _class = "other";
+                _class = otherClassName;
             float score = pair.second;
             classDistributions[index].UpdateProbOf(_class, score);
         }
@@ -227,8 +228,9 @@ namespace GSL
             double angleWorldSpace = std::atan2(camToPoint.y, camToPoint.x);
             double angleCameraSpace = std::atan2(std::sin(angleWorldSpace - cameraYaw), std::cos(angleWorldSpace - cameraYaw));
 
-            if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads &&
-                PMFSLib::pathFree(gridMetadata, wallsOccupancy, robotCoords, point))
+            if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads 
+                && PMFSLib::pathFree(gridMetadata, wallsOccupancy, robotCoords, point)
+            )
             {
                 cellsInFOV.insert(indices);
             }
@@ -238,14 +240,15 @@ namespace GSL
 
     void ClassMap2D::publishClassMarkers()
     {
-        static std::vector<std_msgs::msg::ColorRGBA> colors;
+        using namespace Utils::Colors;
+        static std::map<std::string, ColorRGBA> colors;
         if (colors.empty())
         {
             for (const auto& kv : sourceProbByClass)
             {
                 float randomValue = Utils::EquallyDistributed01F();
-                Utils::ColorHSV hsv{.H = randomValue, .S = 1, .V = 1};
-                colors.push_back(Utils::HSVtoRGB(hsv.H, hsv.S, hsv.V));
+                ColorHSV hsv{.H = randomValue, .S = 1, .V = 1};
+                colors[kv.first] = HSVtoRGB(hsv.H, hsv.S, hsv.V);
             }
         }
 
@@ -271,8 +274,15 @@ namespace GSL
                 p.z = 0.0;
                 marker.points.push_back(p);
 
-                int maxClassIndex = Utils::indexOfMax(classDistributions[cellIndex]);
-                marker.colors.push_back(colors[maxClassIndex]);
+                //int maxClassIndex = Utils::indexOfMax(classDistributions[cellIndex]);
+                //marker.colors.push_back(colors[maxClassIndex]);
+
+                ColorRGBA markerColor = colors[otherClassName];
+                for(const auto& [_class, prob] : classDistributions[cellIndex])
+                {
+                    markerColor = lerp(markerColor, colors[_class], prob);
+                }
+                marker.colors.push_back(markerColor);
             }
         }
 

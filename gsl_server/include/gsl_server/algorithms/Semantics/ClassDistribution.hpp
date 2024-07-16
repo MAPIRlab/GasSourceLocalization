@@ -1,6 +1,6 @@
 #pragma once
 #include <gsl_server/core/Logging.hpp>
-#include <unordered_map>
+#include <map>
 #include <string>
 #include <iterator>
 
@@ -9,7 +9,7 @@ namespace GSL
     class ClassDistribution
     {
     public:
-        //custom iterator to remove any reference to the fact that we internally use an unordered_map
+        //custom iterator to remove any reference to the fact that we internally use a std::map
         struct Iterator;
 
         void Initialize(const std::vector<std::string>& classes)
@@ -59,7 +59,7 @@ namespace GSL
 
 
     private:
-        std::unordered_map<std::string, float> probabilityDist;
+        std::map<std::string, float> probabilityDist;
 
 
 
@@ -76,7 +76,7 @@ namespace GSL
             using value_type        = std::pair<const std::string, float>;
             using pointer           = value_type*;
             using reference         = value_type&;
-            using underlying_it     = std::unordered_map<std::string, float>::iterator;
+            using underlying_it     = std::map<std::string, float>::iterator;
 
             Iterator(underlying_it it) : m_iter(it) {}
 
