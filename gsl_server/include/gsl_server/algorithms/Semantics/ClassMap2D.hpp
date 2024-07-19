@@ -18,9 +18,12 @@ namespace GSL
     public:
         ClassMap2D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
                  const PoseWithCovarianceStamped& _currentRobotPose);
-        std::vector<double> GetSourceProbability() override;
-        void OnUpdate() override;
 
+        std::vector<double> GetSourceProbability() override;
+        void GetSourceProbabilityInPlace(std::vector<double>& sourceProb) override;
+        double GetSourceProbability(const Vector3& point) override;
+        bool HasNewObservations() const;
+        void OnUpdate() override;
     private:
         rclcpp::Node::SharedPtr node;
         rclcpp::Subscription<Detection3DArray>::SharedPtr cameraSub;
@@ -32,6 +35,7 @@ namespace GSL
         GridMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
         const PoseWithCovarianceStamped& currentRobotPose;
+        bool hasBeenUpdated = true;
 
         struct FOV
         {
@@ -40,13 +44,14 @@ namespace GSL
             float maxDist;
         } fov;
 
+        void computeSourceProbability(ClassDistribution& distribution, double& retValue);
         void parseOntology(const std::string& path);
         double getSourceProbByClass(const std::string& _class);
         void updateObjectProbabilities(const Vector2Int& indices, const std::vector<std::pair<std::string, float>>& scores);
 
         void detectionCallback(Detection3DArray::ConstSharedPtr msg);
         AABB2DInt getAABB(const Detection3D& detection);
-        std::unordered_set<Vector2Int> getCellsInFOV();
-        void publishClassMarkers();
+        std::unordered_set<Vector2Int> getCellsInFOV(Pose robotPose);
+        void visualize();
     };
 }

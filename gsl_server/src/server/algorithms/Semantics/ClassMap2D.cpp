@@ -38,26 +38,50 @@ namespace GSL
 
     std::vector<double> ClassMap2D::GetSourceProbability()
     {
-        std::vector<double> probs(classDistributions.size(), 0.0);
+        static std::vector<double> probs(classDistributions.size(), 0.0);
+        GetSourceProbabilityInPlace(probs);
+        return probs;
+    }
 
+    void ClassMap2D::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
+    {
         for (int i = 0; i < classDistributions.size(); i++)
         {
-            auto& classDistribution = classDistributions[i];
-            for (auto& [_class, classProb] : classDistribution)
-            {
-                probs[i] += classProb * getSourceProbByClass(_class);
-            }
+            computeSourceProbability(classDistributions[i], sourceProb[i]);
         }
 
-        Grid<double> probGrid(probs, wallsOccupancy, gridMetadata);
+        Grid<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
         Utils::NormalizeDistribution(probGrid);
-        return probs;
+        hasBeenUpdated = false;
+    }
+
+    double ClassMap2D::GetSourceProbability(const Vector3& point)
+    {
+        Vector2Int indices = gridMetadata.coordinatesToIndex(point.x, point.y);
+        size_t index = gridMetadata.indexOf(indices);
+        double value;
+        computeSourceProbability(classDistributions[index], value);
+        return value;
+    }
+
+    void ClassMap2D::computeSourceProbability(ClassDistribution& distribution, double& retValue)
+    {
+        retValue = 0;
+        for (auto& [_class, classProb] : distribution)
+        {
+            retValue += classProb * getSourceProbByClass(_class);
+        }
+    }
+
+    bool ClassMap2D::HasNewObservations() const
+    {
+        return hasBeenUpdated;
     }
 
     void ClassMap2D::OnUpdate()
     {
         rclcpp::spin_some(node);
-        publishClassMarkers();
+        visualize();
     }
 
     double ClassMap2D::getSourceProbByClass(const std::string& _class)
@@ -103,17 +127,31 @@ namespace GSL
 
     void ClassMap2D::detectionCallback(Detection3DArray::ConstSharedPtr msg)
     {
-        std::unordered_set<Vector2Int> remainingCellsInFOV = getCellsInFOV();
+        std::unordered_set<Vector2Int> remainingCellsInFOV = getCellsInFOV(currentRobotPose.pose.pose);
         for (const Detection3D& detection : msg->detections)
         {
             std::vector<std::pair<std::string, float>> scores;
-            for (const auto& hyp : detection.results) scores.emplace_back(hyp.hypothesis.class_id, hyp.hypothesis.score);
+            for (const auto& hyp : detection.results)
+            {
+                std::string _class = hyp.hypothesis.class_id;
+                if (!sourceProbByClass.contains(_class))
+                    _class = otherClassName;
+                scores.emplace_back(_class, hyp.hypothesis.score);
+            }
+
+            // fill in missing classes with a low score
+            for (const auto& [_class, _] : sourceProbByClass)
+            {
+                auto predicate = [&](const auto& t) { return _class == t.first; };
+                if (!Utils::containsPred(scores, predicate))
+                    scores.emplace_back(_class, 0.1f); // TODO change the value to something meaningful
+            }
 
             AABB2DInt aabb = getAABB(detection);
 
             for (Vector2Int indices : aabb)
             {
-                if(!gridMetadata.indicesInBounds(indices))
+                if (!gridMetadata.indicesInBounds(indices))
                 {
                     GSL_WARN("Indices {} out of bounds! Probably a bad mask causing a huge bounding box", indices);
                     break;
@@ -123,8 +161,9 @@ namespace GSL
             }
         }
 
-        const float true_negative_prob = 1.0 / sourceProbByClass.size() + 0.1f;
-        const float false_negative_prob = (1.0f - true_negative_prob) / sourceProbByClass.size() -1;
+        // TODO make this a less arbitrary
+        const float true_negative_prob = 1.0 / sourceProbByClass.size() + 0.05f;
+        const float false_negative_prob = (1.0f - true_negative_prob) / (sourceProbByClass.size() - 1);
         // cells where we didn't see anything
         {
             for (Vector2Int indices : remainingCellsInFOV)
@@ -142,6 +181,7 @@ namespace GSL
                 updateObjectProbabilities(indices, scores);
             }
         }
+        hasBeenUpdated = true;
     }
 
     AABB2DInt ClassMap2D::getAABB(const Detection3D& detection)
@@ -175,34 +215,34 @@ namespace GSL
         for (const auto& pair : scores)
         {
             std::string _class = pair.first;
-            if (!sourceProbByClass.contains(_class))
-                _class = otherClassName;
             float score = pair.second;
-            classDistributions[index].UpdateProbOf(_class, score);
+            float previous = classDistributions[index].ProbabilityOf(_class);
+            float prob = std::min(0.95f, score * previous); // clamp at arbitrary high value to avoid numerical issues as more observations pile up
+            classDistributions[index].UpdateProbOf(_class, prob);
         }
 
         classDistributions[index].Normalize();
     }
 
-    std::unordered_set<Vector2Int> ClassMap2D::getCellsInFOV()
+    std::unordered_set<Vector2Int> ClassMap2D::getCellsInFOV(Pose robotPose)
     {
         std::unordered_set<Vector2Int> cellsInFOV;
 
-        Vector2Int idxRobot = gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose);
+        Vector2Int idxRobot = gridMetadata.coordinatesToIndex(robotPose);
         Vector2Int idxLeftCorner, idxRightCorner;
         {
             Pose leftCornerLocal;
             leftCornerLocal.position.x = fov.maxDist * cos(fov.angleRads);
             leftCornerLocal.position.y = fov.maxDist * sin(fov.angleRads);
             leftCornerLocal.orientation = Utils::createQuaternionMsgFromYaw(0);
-            Pose leftCornerWorld = Utils::compose(currentRobotPose.pose.pose, leftCornerLocal);
+            Pose leftCornerWorld = Utils::compose(robotPose, leftCornerLocal);
             idxLeftCorner = gridMetadata.coordinatesToIndex(leftCornerWorld);
 
             Pose rightCornerLocal;
             rightCornerLocal.position.x = fov.maxDist * cos(fov.angleRads);
             rightCornerLocal.position.y = -fov.maxDist * sin(fov.angleRads);
             rightCornerLocal.orientation = Utils::createQuaternionMsgFromYaw(0);
-            Pose rightCornerWorld = Utils::compose(currentRobotPose.pose.pose, rightCornerLocal);
+            Pose rightCornerWorld = Utils::compose(robotPose, rightCornerLocal);
             idxRightCorner = gridMetadata.coordinatesToIndex(rightCornerWorld);
         }
 
@@ -211,9 +251,9 @@ namespace GSL
             Vector2Int(std::max({idxRobot.x, idxLeftCorner.x, idxRightCorner.x}), std::max({idxRobot.y, idxLeftCorner.y, idxRightCorner.y})));
 
         // yaw of the camera in world space
-        double cameraYaw = Utils::getYaw(currentRobotPose.pose.pose.orientation);
+        double cameraYaw = Utils::getYaw(robotPose.orientation);
 
-        Vector2 robotCoords{currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y};
+        Vector2 robotCoords{robotPose.position.x, robotPose.position.y};
 
         for (Vector2Int indices : aabb)
         {
@@ -228,9 +268,8 @@ namespace GSL
             double angleWorldSpace = std::atan2(camToPoint.y, camToPoint.x);
             double angleCameraSpace = std::atan2(std::sin(angleWorldSpace - cameraYaw), std::cos(angleWorldSpace - cameraYaw));
 
-            if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads 
-                && PMFSLib::pathFree(gridMetadata, wallsOccupancy, robotCoords, point)
-            )
+            if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads &&
+                PMFSLib::pathFree(gridMetadata, wallsOccupancy, robotCoords, point))
             {
                 cellsInFOV.insert(indices);
             }
@@ -238,7 +277,7 @@ namespace GSL
         return cellsInFOV;
     }
 
-    void ClassMap2D::publishClassMarkers()
+    void ClassMap2D::visualize()
     {
         using namespace Utils::Colors;
         static std::map<std::string, ColorRGBA> colors;
@@ -274,11 +313,8 @@ namespace GSL
                 p.z = 0.0;
                 marker.points.push_back(p);
 
-                //int maxClassIndex = Utils::indexOfMax(classDistributions[cellIndex]);
-                //marker.colors.push_back(colors[maxClassIndex]);
-
                 ColorRGBA markerColor = colors[otherClassName];
-                for(const auto& [_class, prob] : classDistributions[cellIndex])
+                for (const auto& [_class, prob] : classDistributions[cellIndex])
                 {
                     markerColor = lerp(markerColor, colors[_class], prob);
                 }

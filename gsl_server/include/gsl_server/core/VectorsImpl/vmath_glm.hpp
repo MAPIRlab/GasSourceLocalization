@@ -36,4 +36,9 @@ namespace GSL::vmath
     {
         return glm::rotate(vec, signedAngleRadians);
     }
+
+    inline Vector2 transpose(const Vector2& vec)
+    {
+        return {vec.y, vec.x};
+    }
 } // namespace GSL::vmath

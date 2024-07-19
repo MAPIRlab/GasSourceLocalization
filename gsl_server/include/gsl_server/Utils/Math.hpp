@@ -56,7 +56,7 @@ namespace GSL::Utils
     double uniformRandom(double min, double max);
 
     double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b);
-    void NormalizeDistribution(Grid<double>& variable);
+    void NormalizeDistribution(Grid<double> variable);
     
     float EquallyDistributed01F();
 

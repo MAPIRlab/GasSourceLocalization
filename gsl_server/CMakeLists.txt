@@ -16,8 +16,8 @@ set(USE_NAV_ASSISTANT OFF) # if ON uses the nav_assistant package rather than di
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
 
-set(USE_TRACY ON) # Tracy is a profiler. ON enables some instrumentation macros (and adds a dependency to tracy). To do sampling-based profiling you also need to run the node as sudo
-set(USE_TRACY_INSTRUMENTATION ON) #disable to do sampling-only profiling
+set(USE_TRACY OFF) # Tracy is a profiler. ON enables some instrumentation macros (and adds a dependency to tracy). To do sampling-based profiling you also need to run the node as sudo
+set(USE_TRACY_INSTRUMENTATION OFF) #disable to do sampling-only profiling
 ##############################################################################
 
 

@@ -298,7 +298,7 @@ namespace GSL
         {
             try
             {
-                tfm = algorithm.tfBufffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+                tfm = algorithm.tfBuffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
                 has_tf = true;
             }
             catch (std::exception& e)
@@ -383,6 +383,8 @@ namespace GSL
     {
         Vector2Int originInd = metadata.coordinatesToIndex(origin);
         Vector2Int endInd = metadata.coordinatesToIndex(end);
+
+        DDA::_2D::Map<GSL::Occupancy> map(occupancy, metadata.origin, metadata.cellSize, {metadata.width, metadata.height});
 
         // check there are no obstacles between origin and end
         if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))

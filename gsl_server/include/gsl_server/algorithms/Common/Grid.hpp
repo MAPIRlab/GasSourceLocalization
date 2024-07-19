@@ -20,7 +20,7 @@ namespace GSL
 
         Vector2Int coordinatesToIndex(const Vector2& v) const
         {
-            return Vector2Int((v-origin) / cellSize);
+            return coordinatesToIndex(v.x, v.y);
         }
 
         Vector2Int coordinatesToIndex(const geometry_msgs::msg::Pose& pose) const
@@ -36,8 +36,7 @@ namespace GSL
 
         Vector2 indexToCoordinates(const Vector2Int& indices, bool centerOfCell = true) const
         {
-            float offset = centerOfCell ? 0.5 : 0;
-            return Vector2(origin.x + (indices.y + offset) * cellSize, origin.y + (indices.x + offset) * cellSize);
+            return indexToCoordinates(indices.x, indices.y, centerOfCell);
         }
 
         size_t indexOf(const Vector2Int& v) const
@@ -92,7 +91,8 @@ namespace GSL
     {
     public:
         GridUtils() = delete;
-        static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy, const GridMetadata& metadata)
+        static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy,
+                                       const GridMetadata& metadata)
         {
             int scale = metadata.scale; // scale for dynamic map reduction
             for (int i = 0; i < metadata.height; i++)
@@ -109,7 +109,7 @@ namespace GSL
                                 squareIsFree = false;
                         }
                     }
-                    if(squareIsFree)
+                    if (squareIsFree)
                         occupancy[metadata.indexOf({i, j})] = Occupancy::Free;
                     occupancy[metadata.indexOf({i, j})] = squareIsFree ? Occupancy::Free : Occupancy::Obstacle;
                 }

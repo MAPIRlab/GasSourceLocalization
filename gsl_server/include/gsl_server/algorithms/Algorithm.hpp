@@ -50,7 +50,7 @@ namespace GSL
 
         std::shared_ptr<rclcpp::Node> node;
 
-        BufferWrapper tfBufffer;
+        BufferWrapper tfBuffer;
 
         StateMachines::StateMachine<GSL::State> stateMachine;
         std::unique_ptr<WaitForMapState> waitForMapState;

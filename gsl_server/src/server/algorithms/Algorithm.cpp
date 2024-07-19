@@ -8,7 +8,7 @@
 namespace GSL
 {
 
-    Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node) : node(_node), tfBufffer(node->get_clock())
+    Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node) : node(_node), tfBuffer(node->get_clock())
     {}
 
     Algorithm::~Algorithm()
@@ -267,7 +267,7 @@ namespace GSL
             anemometer_downWind_pose.pose.position.z = 0.0;
             anemometer_downWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
 
-            map_downWind_pose = tfBufffer.buffer.transform(anemometer_downWind_pose, "map");
+            map_downWind_pose = tfBuffer.buffer.transform(anemometer_downWind_pose, "map");
         }
         catch (tf2::TransformException& ex)
         {

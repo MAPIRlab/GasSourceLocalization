@@ -33,11 +33,15 @@ namespace GSL
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
     
     private:
+        void updateSourceFromSemantics();
+    
+    private:
         std::unique_ptr<ISemantics> semantics;
+        std::vector<double> combinedSourceProbability;
 
         //-------------PMFS-------------
         GridMetadata gridMetadata;
-        std::vector<double> sourceProbability;
+        std::vector<double> sourceProbabilityPMFS;
         std::vector<HitProbability> hitProbability;
         std::vector<Occupancy> navigationOccupancy;
         std::vector<Occupancy> simulationOccupancy;
