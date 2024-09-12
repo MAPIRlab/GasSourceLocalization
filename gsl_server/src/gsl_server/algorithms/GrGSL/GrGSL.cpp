@@ -7,8 +7,7 @@
 
 namespace GSL
 {
-    GrGSL::Cell::Cell(bool _free, double _weight) : free(_free), weight(_weight), auxWeight(0), distance(0)
-    {}
+    using namespace GrGSL_internal;
 
     void GrGSL::Initialize()
     {

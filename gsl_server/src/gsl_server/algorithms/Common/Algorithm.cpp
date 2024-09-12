@@ -16,7 +16,7 @@ namespace GSL
 
     void Algorithm::Initialize()
     {
-        declareParameters();
+        declareParameters(); //this will be overriden by each method with its own parameters
 
         // Subscribers
         //------------
@@ -87,6 +87,41 @@ namespace GSL
         return currentResult;
     }
 
+    // ROS Callbacks (triggered by rclcpp::Subscription)
+    //-----------------------
+    float Algorithm::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
+    {
+        float ppm = ppmFromGasMsg(msg);
+        stopAndMeasureState->addGasReading(ppm);
+        waitForGasState->addMeasurement(ppm);
+        return ppm;
+    }
+
+    PoseStamped Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
+    {
+        float downWind_direction = angles::normalize_angle(msg->wind_direction);
+        // Transform from anemometer ref_system to map ref_system using TF
+        PoseStamped anemometer_downWind_pose, map_downWind_pose;
+        try
+        {
+            anemometer_downWind_pose.header.frame_id = msg->header.frame_id;
+            anemometer_downWind_pose.pose.position.x = 0.0;
+            anemometer_downWind_pose.pose.position.y = 0.0;
+            anemometer_downWind_pose.pose.position.z = 0.0;
+            anemometer_downWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
+
+            map_downWind_pose = tfBuffer.buffer.transform(anemometer_downWind_pose, "map");
+        }
+        catch (tf2::TransformException& ex)
+        {
+            GSL_ERROR("{} - Error: {}", __FUNCTION__, ex.what());
+            return PoseStamped();
+        }
+
+        stopAndMeasureState->addWindReading(msg->wind_speed, Utils::getYaw(map_downWind_pose.pose.orientation));
+        return map_downWind_pose;
+    }
+
     void Algorithm::localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg)
     {
         // keep the most recent robot pose
@@ -96,6 +131,10 @@ namespace GSL
         resultLogging.robotPosesVector.push_back(currentRobotPose);
     }
 
+
+
+    // Internal callbacks (triggered by our code)
+    //-------------------------
     void Algorithm::onGetMap(const OccupancyGrid::SharedPtr msg)
     {
         map = *msg;
@@ -123,6 +162,9 @@ namespace GSL
             stateMachine.forceResetState(stopAndMeasureState.get());
     }
 
+
+
+    // This is overriden by non-reactive methods to be based on the uncertainty of the estimation
     GSLResult Algorithm::checkSourceFound()
     {
         // 1. Check that working time < max allowed time for search
@@ -209,7 +251,8 @@ namespace GSL
             for (const auto& prox : resultLogging.proximityResult)
                 output_file << prox.time << " " << prox.distance << "\n";
 
-#if 0
+#define PRINT_TRAJECTORY 0
+#if PRINT_TRAJECTORY
             for (PoseWithCovarianceStamped p : robotPosesVector)
                 output_file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
 #endif
@@ -219,6 +262,9 @@ namespace GSL
             GSL_ERROR("Unable to open Results file at: {}", resultLogging.resultsFile.c_str());
     }
 
+
+    // Utils
+    //--------------------
     bool Algorithm::isPointInsideMapBounds(const Vector2& point) const
     {
         const static Vector2 mapStart = {map.info.origin.position.x, map.info.origin.position.y};
@@ -244,39 +290,6 @@ namespace GSL
             GSL_ERROR("Unknown concentration unit: {}", (int)msg->raw_units);
             return 0;
         }
-    }
-
-    float Algorithm::gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg)
-    {
-        float ppm = ppmFromGasMsg(msg);
-        stopAndMeasureState->addGasReading(ppm);
-        waitForGasState->addMeasurement(ppm);
-        return ppm;
-    }
-
-    PoseStamped Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
-    {
-        float downWind_direction = angles::normalize_angle(msg->wind_direction);
-        // Transform from anemometer ref_system to map ref_system using TF
-        PoseStamped anemometer_downWind_pose, map_downWind_pose;
-        try
-        {
-            anemometer_downWind_pose.header.frame_id = msg->header.frame_id;
-            anemometer_downWind_pose.pose.position.x = 0.0;
-            anemometer_downWind_pose.pose.position.y = 0.0;
-            anemometer_downWind_pose.pose.position.z = 0.0;
-            anemometer_downWind_pose.pose.orientation = Utils::createQuaternionMsgFromYaw(downWind_direction);
-
-            map_downWind_pose = tfBuffer.buffer.transform(anemometer_downWind_pose, "map");
-        }
-        catch (tf2::TransformException& ex)
-        {
-            GSL_ERROR("{} - Error: {}", __FUNCTION__, ex.what());
-            return PoseStamped();
-        }
-
-        stopAndMeasureState->addWindReading(msg->wind_speed, Utils::getYaw(map_downWind_pose.pose.orientation));
-        return map_downWind_pose;
     }
 
     geometry_msgs::msg::PoseStamped Algorithm::getRandomPoseInMap()

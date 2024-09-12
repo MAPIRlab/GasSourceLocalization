@@ -43,8 +43,41 @@ namespace GSL
             else
                 return node->declare_parameter<T>(name, defaultValue);
         }
-    protected:
+    protected:        
         virtual void declareParameters();
+        virtual GSLResult checkSourceFound();
+        virtual void saveResultsToFile(GSLResult result);
+
+        virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) = 0; //called from StopAndMeasure once we have enough data for this position
+
+        virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
+        virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
+
+        virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
+        virtual void OnCompleteNavigation(GSLResult result, State* previousState);
+        
+        
+        
+        void onGetCostMap(const OccupancyGrid::SharedPtr msg);
+        void localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg);
+
+
+        //Utils
+        //-------
+        float ppmFromGasMsg(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
+        geometry_msgs::msg::PoseStamped getRandomPoseInMap();
+        bool isPointInsideMapBounds(const Vector2& point) const;
+        bool isPointFree(const Vector2& point);
+        int8_t sampleCostmap(const Vector2& point);
+        void updateProximityResults(bool forceUpdate = false); //record how close we are to the source for later logging. By default it only adds a new point if the distance has changed a bit since the last write, but you can force it to always write the current
+
+
+        // Subscriptions
+        //-------
+        rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gasSub;
+        rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr windSub;
+        rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localizationSub;
+
 
         double thresholdGas, thresholdWind;
 
@@ -83,30 +116,5 @@ namespace GSL
         };
         ResultLogging resultLogging;
         GSLResult currentResult = GSLResult::Running;
-        virtual GSLResult checkSourceFound();
-        virtual void saveResultsToFile(GSLResult result);
-
-        virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) = 0;
-        virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
-        virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
-
-        virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
-        virtual void OnCompleteNavigation(GSLResult result, State* previousState);
-
-        float ppmFromGasMsg(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
-        geometry_msgs::msg::PoseStamped getRandomPoseInMap();
-        bool isPointInsideMapBounds(const Vector2& point) const;
-        bool isPointFree(const Vector2& point);
-        int8_t sampleCostmap(const Vector2& point);
-        void updateProximityResults(bool forceUpdate = false);
-
-
-        // Subscriptions
-        rclcpp::Subscription<olfaction_msgs::msg::GasSensor>::SharedPtr gasSub;
-        rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr windSub;
-        rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localizationSub;
-
-        void onGetCostMap(const OccupancyGrid::SharedPtr msg);
-        void localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg);
     };
 } // namespace GSL

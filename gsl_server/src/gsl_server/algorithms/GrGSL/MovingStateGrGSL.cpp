@@ -4,6 +4,7 @@
 
 namespace GSL
 {
+    using namespace GrGSL_internal;
     MovingStateGrGSL::MovingStateGrGSL(Algorithm* _algorithm) : MovingState(_algorithm)
     {
         grgsl = dynamic_cast<GrGSL*>(algorithm);
@@ -128,7 +129,7 @@ namespace GSL
 
         // Infotactic navigation
         std::optional<NavigateToPose::Goal> goal = std::nullopt;
-        std::vector<GrGSL::WindVector> wind = estimateWind();
+        std::vector<WindVector> wind = estimateWind();
         std::mutex mtx;
         double ent = -DBL_MAX;
         double maxDist = 0;
@@ -187,7 +188,7 @@ namespace GSL
         return goal;
     }
 
-    std::vector<GrGSL::WindVector> MovingStateGrGSL::estimateWind()
+    std::vector<WindVector> MovingStateGrGSL::estimateWind()
     {
         const auto& grid = grgsl->grid;
         const auto& gridMetadata = grgsl->gridMetadata;
@@ -207,7 +208,7 @@ namespace GSL
             }
         }
 
-        std::vector<GrGSL::WindVector> result(indices.size());
+        std::vector<WindVector> result(indices.size());
 
         auto future = clientWind->async_send_request(request);
         auto future_result = rclcpp::spin_until_future_complete(grgsl->node, future, std::chrono::seconds(1));

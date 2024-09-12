@@ -30,6 +30,6 @@ namespace GSL
         // Wind Estimation (for infotaxis)
         //-------------
         rclcpp::Client<GrGSL::WindEstimation>::SharedPtr clientWind;
-        std::vector<GrGSL::WindVector> estimateWind();
+        std::vector<GrGSL_internal::WindVector> estimateWind();
     };
 } // namespace GSL

@@ -18,18 +18,12 @@ namespace GSL
     {
         // receiving propagation this step. Can still be modified by better estimations.
         HashSet openPropagationSet;
-        // causing propagation this step. No longer modifyable
+        // causing propagation this step. No longer modifiable
         HashSet activePropagationSet;
         // old news
         HashSet closedPropagationSet;
 
         int i = robotPosition.x, j = robotPosition.y;
-
-        int oI = std::max(0, i - settings.localEstimationWindowSize);
-        int fI = std::min((int)hitProb.metadata.height - 1, i + settings.localEstimationWindowSize);
-        int oJ = std::max(0, j - settings.localEstimationWindowSize);
-        int fJ = std::min((int)hitProb.metadata.width - 1, j + settings.localEstimationWindowSize);
-
         Vector2Int ij(i, j);
 
         double kernel_rotation_wind = -angles::normalize_angle(
@@ -43,6 +37,10 @@ namespace GSL
             (hit ? 0.6f : 0.1f)
         };
 
+        int oI = std::max(0, i - settings.localEstimationWindowSize);
+        int fI = std::min((int)hitProb.metadata.height - 1, i + settings.localEstimationWindowSize);
+        int oJ = std::max(0, j - settings.localEstimationWindowSize);
+        int fJ = std::min((int)hitProb.metadata.width - 1, j + settings.localEstimationWindowSize);
         for (int r = oI; r <= fI; r++)
         {
             for (int c = oJ; c <= fJ; c++)
@@ -51,10 +49,10 @@ namespace GSL
                 if (visibilityMap.isVisible(ij, rc) != Visibility::Visible)
                     continue;
 
-                // the neighbours that are between 1 and 3 cells away
+                // the neighbours that are between 1 and "localEstimationWindowSize" cells away
                 if (std::abs(c - j) >= 1 || std::abs(r - i) >= 1)
                 {
-                    if (hitProb.occupancyAt(r, c) == Occupancy::Free)
+                    if (hitProb.freeAt(r, c))
                         activePropagationSet.insert(rc);
                     else
                         closedPropagationSet.insert(rc);

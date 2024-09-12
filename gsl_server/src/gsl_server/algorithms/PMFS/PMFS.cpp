@@ -106,10 +106,13 @@ namespace GSL
         if (!paused)
             Algorithm::OnUpdate();
 
+        // Run anything that was submitted to main thread from the UI or a callback
+        functionQueue.run();
+
+        // Update visualization
         dynamic_cast<MovingStatePMFS*>(movingState.get())->publishMarkers();
         PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
-        functionQueue.run();
     }
 
     void PMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -141,7 +144,6 @@ namespace GSL
                               node,
                               pubs.gmrfWind
                               IF_GADEN(, pubs.groundTruthWind));
-        PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
 
 
         // If we have already taken enough measurements in this position, process them and get ready to move to the next location
@@ -178,6 +180,7 @@ namespace GSL
         //Visualization
         PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
     float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg)
