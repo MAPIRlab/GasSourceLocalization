@@ -1,19 +1,9 @@
 
 file(GLOB_RECURSE SOURCES "./*.cpp") 
 
-
-### Packages
 find_package(gmrf_wind_mapping REQUIRED)
-if(USE_GADEN)
-    add_definitions(-DUSE_GADEN=1)
-    find_package(gaden_player REQUIRED)
-    set(CONDITIONAL_GADEN_PLAYER "gaden_player")  
-else()
-    set(CONDITIONAL_GADEN_PLAYER "")  
-endif(USE_GADEN)
 
-
-# Create target and add dependencies
+# Create the library
 add_library(PMFS ${SOURCES})
 
 # Link ament dependencies

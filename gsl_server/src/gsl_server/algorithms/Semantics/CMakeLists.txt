@@ -7,7 +7,7 @@ find_package(vision_msgs REQUIRED)
 find_package(yaml_cpp_vendor)
 find_package(voxeland)
 
-# Create target and add dependencies
+# Create the library
 add_library(Semantics ${SOURCES})
 
 # Link ament dependencies

@@ -3,7 +3,7 @@ project(Spiral)
 file(GLOB_RECURSE SOURCES "./*.cpp") 
 
 
-# Create target and add dependencies
+# Create the library
 add_library(Spiral ${SOURCES})
 
 # Link ament dependencies

@@ -2,7 +2,7 @@
 file(GLOB_RECURSE SOURCES "./*.cpp") 
 
 
-# Create target and add dependencies
+# Create the library
 add_library(ParticleFilter ${SOURCES})
 
 # Link ament dependencies
