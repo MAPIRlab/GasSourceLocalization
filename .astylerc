@@ -7,3 +7,4 @@ align-pointer=type
 align-reference=type
 squeeze-ws
 suffix=none
+indent-preproc-block

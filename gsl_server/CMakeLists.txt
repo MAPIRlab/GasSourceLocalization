@@ -47,37 +47,35 @@ endif(GSL_DEBUG)
 
 
 #ament packages
-find_package(rclcpp REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_ros REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
-find_package(angles REQUIRED)
-find_package(olfaction_msgs REQUIRED)
-find_package(visualization_msgs REQUIRED)
-find_package(gmrf_wind_mapping REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
-find_package(nav2_msgs REQUIRED)
-find_package(gsl_actions REQUIRED)
-    #Semantics
-find_package(magic_enum REQUIRED)
-find_package(vision_msgs REQUIRED)
-find_package(yaml_cpp_vendor)
-find_package(voxeland)
+set(COMMON_AMENT_DEPENDENCIES 
+    rclcpp
+    rclcpp_action
+    tf2
+    tf2_ros
+    tf2_geometry_msgs
+    angles
+    olfaction_msgs
+    visualization_msgs
+    geometry_msgs
+    std_msgs
+    nav2_msgs
+    gsl_actions
+)
+
+foreach(Dependency IN ITEMS ${COMMON_AMENT_DEPENDENCIES})
+  find_package(${Dependency} REQUIRED)
+endforeach()
+
+#other stuff
+find_package(OpenMP REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(fmt REQUIRED)
+
 
 
 if(GSL_TRACING)
     add_definitions(-DGSL_TRACING=1)
 endif(GSL_TRACING)
-
-if(USE_GADEN)
-    add_definitions(-DUSE_GADEN=1)
-    find_package(gaden_player REQUIRED)
-    set(CONDITIONAL_GADEN_PLAYER "gaden_player")  
-else()
-    set(CONDITIONAL_GADEN_PLAYER "")  
-endif(USE_GADEN)
 
 
 if(USE_NAV_ASSISTANT)
@@ -97,10 +95,6 @@ if(USE_TRACY)
 else()
 endif(USE_TRACY)
 
-#other stuff
-find_package(OpenMP REQUIRED)
-find_package(OpenCV REQUIRED)
-find_package(fmt REQUIRED)
 
 if(USE_GUI)
 	add_definitions(-DUSE_GUI=1)
@@ -115,7 +109,7 @@ endif(USE_GUI)
 ###########
 
 include_directories(
-  include
+  src
   third_party/xxHash/include
   third_party/DDA/include
   third_party/DDA/third_party/glm
@@ -123,54 +117,36 @@ include_directories(
 )
 
 ###########
-## SOURCES
-###########
-
-file(GLOB_RECURSE SOURCES_SERVER "src/server/*.cpp") 
-
-
-###########
 #EXECUTABLES
 ###########
 
 #### Server node
-add_executable(gsl_actionserver_node ${SOURCES_SERVER})
+##############
+add_executable(gsl_actionserver_node src/gsl_server/gsl_server.cpp)
 ament_target_dependencies( gsl_actionserver_node
     rclcpp
     rclcpp_action
-    
-    geometry_msgs
-    tf2
-    tf2_ros
-    tf2_geometry_msgs
-    angles
-    
-    olfaction_msgs
-    visualization_msgs
-    nav2_msgs
-    std_msgs
-    vision_msgs
-	
-    gmrf_wind_mapping
     gsl_actions
-
-    yaml_cpp_vendor
-
-    voxeland
-	
-    ${CONDITIONAL_NAV_ASSISTANT}
-    ${CONDITIONAL_GADEN_PLAYER}
-    ${CONDITIONAL_IMGUI}
-)
-target_link_libraries(gsl_actionserver_node  
-  ${OpenCV_LIBS}
-  OpenMP::OpenMP_CXX
-  fmt
-  ${CONDITIONAL_TRACY}
-  magic_enum::magic_enum
 )
 
-#### Call node
+add_subdirectory(src/gsl_server/algorithms/Common)
+add_subdirectory(src/gsl_server/algorithms/PlumeTracking)
+add_subdirectory(src/gsl_server/algorithms/Spiral)
+add_subdirectory(src/gsl_server/algorithms/ParticleFilter)
+add_subdirectory(src/gsl_server/algorithms/GrGSL)
+add_subdirectory(src/gsl_server/algorithms/PMFS)
+
+target_link_libraries(gsl_actionserver_node
+    PlumeTracking
+    Spiral
+    ParticleFilter
+    GrGSL
+    PMFS
+)
+
+
+
+##### Call node
 add_executable(gsl_actionserver_call src/aux_nodes/gsl_server_call.cpp)
 ament_target_dependencies( gsl_actionserver_call
     rclcpp

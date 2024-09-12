@@ -1,3 +1,8 @@
+/*
+    Send a call to the actionserver with the name of the GSL method you want to use
+    You can choose which one in the launchfile or commandline with the parameter "method" of this node
+*/
+
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <gsl_actions/action/do_gsl.hpp>

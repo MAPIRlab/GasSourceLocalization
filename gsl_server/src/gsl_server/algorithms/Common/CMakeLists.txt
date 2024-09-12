@@ -1,0 +1,19 @@
+
+file(GLOB_RECURSE SOURCES "./*.cpp") 
+
+ 
+# Create target and add dependencies
+add_library(GSL_common ${SOURCES})
+
+# Link ament dependencies
+ament_target_dependencies(GSL_common
+    ${COMMON_AMENT_DEPENDENCIES}
+)
+
+# Link other dependencies
+target_link_libraries(GSL_common  
+    ${OpenCV_LIBS}
+    OpenMP::OpenMP_CXX
+    fmt
+    ${CONDITIONAL_TRACY}
+)
