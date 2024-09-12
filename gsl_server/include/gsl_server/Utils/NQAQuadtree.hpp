@@ -24,7 +24,7 @@ namespace GSL::Utils::NQA
 
         bool isLeaf;
         uint8_t value; // all "cells" (or pixels, or whatever) in this node have the same value in the image
-        
+
         //children are arranged in this order: top-left, top-right, bottom-left, bottom-right
         std::array<std::shared_ptr<Node>, 4> children;
 
@@ -43,7 +43,7 @@ namespace GSL::Utils::NQA
     {
     public:
         Quadtree(const std::vector<std::vector<uint8_t>>& map);
-        
+
         std::shared_ptr<Node> root; //there is no global collection of nodes, each node owns its direct children
         std::vector<std::weak_ptr<Node>> leaves;
 

@@ -54,13 +54,13 @@ namespace GSL
 
     double StopAndMeasureState::average_concentration()
     {
-		float average = Utils::getAverageFloatCollection(gas_v.begin(), gas_v.end());
-        if(average == Utils::INVALID_AVERAGE)
-		{
-			GSL_WARN("No gas measurements were received during StopAndMeasure!");
-			return 0;
-		}
-		return average;
+        float average = Utils::getAverageFloatCollection(gas_v.begin(), gas_v.end());
+        if (average == Utils::INVALID_AVERAGE)
+        {
+            GSL_WARN("No gas measurements were received during StopAndMeasure!");
+            return 0;
+        }
+        return average;
     }
     double StopAndMeasureState::average_windDirection()
     {
@@ -68,12 +68,12 @@ namespace GSL
     }
     double StopAndMeasureState::average_windSpeed()
     {
-		float average = Utils::getAverageFloatCollection(windSpeed_v.begin(), windSpeed_v.end());
-        if(average == Utils::INVALID_AVERAGE)
-		{
-			GSL_WARN("No gas measurements were received during StopAndMeasure!");
-			return 0;
-		}
+        float average = Utils::getAverageFloatCollection(windSpeed_v.begin(), windSpeed_v.end());
+        if (average == Utils::INVALID_AVERAGE)
+        {
+            GSL_WARN("No gas measurements were received during StopAndMeasure!");
+            return 0;
+        }
         return average;
     }
 } // namespace GSL

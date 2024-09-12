@@ -76,7 +76,7 @@ namespace GSL
         if (future_result == rclcpp::FutureReturnCode::SUCCESS)
         {
             voxeland::srv::GetClassDistributions::Response::SharedPtr response = future.get();
-            for (size_t i = 0; i < classMap.classDistributions.size(); i++) 
+            for (size_t i = 0; i < classMap.classDistributions.size(); i++)
                 classMap.classDistributions[i].FromMsg(response->distributions[i].probabilities);
         }
         else

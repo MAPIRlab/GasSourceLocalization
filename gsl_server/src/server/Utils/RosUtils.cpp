@@ -126,9 +126,9 @@ namespace GSL::Utils
         cv::flip(mapImage, mapImage, 0);
         size_t width = mapImage.size().width;
         size_t height = mapImage.size().height;
-        std::vector<int8_t> imageAsVec(width*height);
-        for(int i = 0; i < width*height; i++)
-            imageAsVec[i] = (int8_t) std::clamp(100-(int)mapImage.data[i], 0, 100);
+        std::vector<int8_t> imageAsVec(width * height);
+        for (int i = 0; i < width * height; i++)
+            imageAsVec[i] = (int8_t) std::clamp(100 - (int)mapImage.data[i], 0, 100);
 
         std::vector<Occupancy> occupancyGrid(width * height / metadata.scale);
         GridUtils::reduceOccupancyMap(imageAsVec, width, occupancyGrid, metadata);

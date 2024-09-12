@@ -68,20 +68,20 @@ namespace GSL::Utils::NQA
         // that reaches the minimum size on one of the dimensions
 
         // if it's like this          we divide it like this and consider these the *bottom* children (for array-indexing purposes)
-        //   -------------              -------------
-        //   |           |              |     |     |
-        //   -------------              -------------
+        // -------------              -------------
+        // |           |              |     |     |
+        // -------------              -------------
 
         // if it's like this          we divide it like this and consider these the *left* children (for array-indexing purposes)
-        //  ----------                   ----------
-        //  |        |                   |        |
-        //  |        |                   |        |
-        //  |        |                   |        |
-        //  |        |                   |--------|
-        //  |        |                   |        |
-        //  |        |                   |        |
-        //  |        |                   |        |
-        //  ----------                   ----------
+        // ----------                   ----------
+        // |        |                   |        |
+        // |        |                   |        |
+        // |        |                   |        |
+        // |        |                   |--------|
+        // |        |                   |        |
+        // |        |                   |        |
+        // |        |                   |        |
+        // ----------                   ----------
 
         // top left
         {
@@ -199,7 +199,8 @@ namespace GSL::Utils::NQA
         std::unordered_map<Node*, std::unordered_set<Node*>> allNeighbours;
         allNeighbours.reserve(leaves.size());
         {
-            auto checkAndAdd = [](Node* current, Node* neighbour, std::unordered_set<Node*>& neighboursSet) {
+            auto checkAndAdd = [](Node * current, Node * neighbour, std::unordered_set<Node*>& neighboursSet)
+            {
                 if (current == nullptr || neighbour == nullptr)
                     return;
                 if (neighbour != current)
@@ -229,7 +230,8 @@ namespace GSL::Utils::NQA
             for (Node& node : free_leaves)
                 to_be_evaluated.insert(&node);
 
-            auto sizeFused = [](Node* a, Node* b, Vector2Int& outOrigin, Vector2Int& outSize) {
+            auto sizeFused = [](Node * a, Node * b, Vector2Int & outOrigin, Vector2Int & outSize)
+            {
                 int minX = std::min(a->origin.x, b->origin.x);
                 int minY = std::min(a->origin.y, b->origin.y);
 
@@ -239,7 +241,8 @@ namespace GSL::Utils::NQA
                 outSize = Vector2Int{maxX, maxY} - outOrigin;
             };
 
-            auto fuse = [&free_leaves, &allNeighbours, &deletedNodes, &to_be_evaluated, this, sizeFused](Node* a, Node* b) {
+            auto fuse = [&free_leaves, &allNeighbours, &deletedNodes, &to_be_evaluated, this, sizeFused](Node * a, Node * b)
+            {
                 Vector2Int origin;
                 Vector2Int size;
                 sizeFused(a, b, origin, size);
@@ -285,9 +288,9 @@ namespace GSL::Utils::NQA
                 {
                     // if(can be fused)
                     if ((current->origin.x == neighbour->origin.x && current->size.x == neighbour->size.x &&
-                         (current->size.y + neighbour->size.y) <= maxSize) ||
-                        (current->origin.y == neighbour->origin.y && current->size.y == neighbour->size.y &&
-                         (current->size.x + neighbour->size.x) <= maxSize))
+                            (current->size.y + neighbour->size.y) <= maxSize) ||
+                            (current->origin.y == neighbour->origin.y && current->size.y == neighbour->size.y &&
+                             (current->size.x + neighbour->size.x) <= maxSize))
                     {
                         Vector2Int origin;
                         Vector2Int size;

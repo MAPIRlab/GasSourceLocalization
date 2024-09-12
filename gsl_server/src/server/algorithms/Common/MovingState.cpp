@@ -4,14 +4,14 @@
 #include <gsl_server/algorithms/Algorithm.hpp>
 
 #define NAVIGATION_FIXES 0 // enables some navigation checks that should be handled by nav2 directly, but can cause problems if it is not correcly configured
-                           // honestly, don't use this, just configure nav2 properly
+// honestly, don't use this, just configure nav2 properly
 
 namespace GSL
 {
 #if NAVIGATION_FIXES
     static constexpr int max_navigation_time = 20;
     static constexpr int8_t lethal_cost = 70;
-#endif 
+#endif
 
     MovingState::MovingState(Algorithm* _algorithm) : State(_algorithm)
     {
@@ -46,12 +46,12 @@ namespace GSL
             currentGoal.has_value(),
             "Entering moving state without a goal set! You should never set this state directly, only through 'sendGoal' or 'chooseGoalAndMove'");
         startTime = algorithm->node->now();
-		previousState = previous;
+        previousState = previous;
     }
 
     void MovingState::OnUpdate()
-    {  
-#if NAVIGATION_FIXES   
+    {
+#if NAVIGATION_FIXES
         if ((algorithm->node->now() - startTime).seconds() > max_navigation_time)
         {
             GSL_ERROR("Timed out trying to reach target. Cancelling navigation");
@@ -136,7 +136,8 @@ namespace GSL
 
         // send the "make plan" goal to nav2 and wait until the response comes back
 
-        auto callback = [&currentPlan, this](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult& w_result) {
+        auto callback = [&currentPlan, this](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult & w_result)
+        {
             currentPlan = w_result.result->path;
         };
         auto goal_options = rclcpp_action::Client<MakePlan>::SendGoalOptions();
@@ -168,11 +169,11 @@ namespace GSL
     bool MovingState::checkGoal(const NavigateToPose::Goal& goal)
     {
         Vector2 goalPosition = {goal.pose.pose.position.x, goal.pose.pose.position.y};
-        if(!algorithm->isPointInsideMapBounds(goalPosition)       
+        if (!algorithm->isPointInsideMapBounds(goalPosition)
 #if NAVIGATION_FIXES
-            || !algorithm->sampleCostmap(goalPosition) > lethal_cost
+                || !algorithm->sampleCostmap(goalPosition) > lethal_cost
 #endif
-            )
+           )
             return false;
 
         PoseStamped start;

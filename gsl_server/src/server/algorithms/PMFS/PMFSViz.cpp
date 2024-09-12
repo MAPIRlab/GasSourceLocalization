@@ -16,7 +16,7 @@ namespace GSL
         {
             for (int b = 0; b < grid.metadata.width; b++)
             {
-                if (grid.freeAt(a,b))
+                if (grid.freeAt(a, b))
                 {
                     auto coords = grid.metadata.indexToCoordinates(a, b);
                     Point p;
@@ -26,7 +26,7 @@ namespace GSL
 
                     // HIT
                     std_msgs::msg::ColorRGBA col_hit =
-                        valueToColor(Utils::logOddsToProbability(grid.dataAt(a,b).logOdds), settings.hitLimits.x,
+                        valueToColor(Utils::logOddsToProbability(grid.dataAt(a, b).logOdds), settings.hitLimits.x,
                                      settings.hitLimits.y, settings.hitMode);
 
                     p.z = settings.markers_height - 0.1;
@@ -35,7 +35,7 @@ namespace GSL
 
                     // CONFIDENCE
                     std_msgs::msg::ColorRGBA colorConfidence =
-                        valueToColor(grid.dataAt(a,b).confidence, 0, 1, Utils::valueColorMode::Linear);
+                        valueToColor(grid.dataAt(a, b).confidence, 0, 1, Utils::valueColorMode::Linear);
 
                     p.z = settings.markers_height - 0.1;
                     confidenceMarker.points.push_back(p);
@@ -56,7 +56,7 @@ namespace GSL
         {
             for (int b = 0; b < grid.metadata.width; b++)
             {
-                if (grid.freeAt(a,b))
+                if (grid.freeAt(a, b))
                 {
                     auto coords = grid.metadata.indexToCoordinates(a, b);
                     Point p;
@@ -67,7 +67,7 @@ namespace GSL
                     // SOURCE PROB
                     double prob_s = grid.dataAt(a, b);
                     std_msgs::msg::ColorRGBA color_source = Utils::valueToColor(
-                        prob_s, settings.sourceLimits.x, settings.sourceLimits.y, settings.sourceMode);
+                            prob_s, settings.sourceLimits.x, settings.sourceLimits.y, settings.sourceMode);
                     sourceProbMarker.points.push_back(p);
                     sourceProbMarker.colors.push_back(color_source);
                 }
@@ -78,7 +78,7 @@ namespace GSL
     }
 
     void PMFSViz::DebugMapSegmentation(const std::vector<Utils::NQA::Node>& QTleaves,
-                                   const PMFS_internal::PublishersAndSubscribers& pubs, const GridMetadata& gridMetadata)
+                                       const PMFS_internal::PublishersAndSubscribers& pubs, const GridMetadata& gridMetadata)
     {
         MarkerArray segmentMarker;
         for (int i = 0; i < QTleaves.size(); i++)
@@ -152,8 +152,8 @@ namespace GSL
                     marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
                     // shape
                     marker.scale.x = estimatedWindVectors.metadata.cellSize * (module / max_module); // arrow length,
-                    marker.scale.y = 0.03;                                      // arrow width
-                    marker.scale.z = 0.05;                                      // arrow height
+                    marker.scale.y = 0.03; // arrow width
+                    marker.scale.z = 0.05; // arrow height
                     // color -> must normalize to [0-199]
                     size_t idx_color = 199 * (module / max_module);
                     marker.color.r = 1;

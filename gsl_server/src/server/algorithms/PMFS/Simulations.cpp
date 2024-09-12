@@ -1,26 +1,27 @@
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
-#include <gsl_server/algorithms/PMFS/PMFS.hpp>
-#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/Utils/Math.hpp>
 #include <gsl_server/Utils/Time.hpp>
+#include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
+#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/core/Logging.hpp>
 
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
-#include <gsl_server/Utils/Profiling.hpp>
 #include <DDA/DDA.h>
+#include <gsl_server/Utils/Profiling.hpp>
 
 namespace GSL::PMFS_internal
 {
     namespace NQA = Utils::NQA;
     using HashSet = std::unordered_set<Vector2Int>;
 
+    // We have a long list of pre-calculated random values for Speeeeeeeeeeeeeeeeed
     static thread_local Utils::PrecalculatedGaussian<2500> gaussian;
 
     static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
-                                              double& variance)
+            double& variance)
     {
         // Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
         weight_sum = weight_sum + weight;
@@ -30,7 +31,7 @@ namespace GSL::PMFS_internal
         variance = variance + weight * (value - mean_old) * (value - mean);
     }
 
-    // create the Quadtree
+    // create the occupancy Quadtree
     void Simulations::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
     {
         ZoneScoped;
@@ -66,15 +67,15 @@ namespace GSL::PMFS_internal
         std::vector<NQA::Node> localCopyLeaves = QTleaves;
 
         // first, coarse simulation based on the quadtree decomposition of the map
+        //------------------------------------------------------------------------
+        //------------------------------------------------------------------------
 
         // store the score of each region to figure out which ones are worth subdividing for finer simulation
-        struct SimulationResult
-        {
-            float score;
-            NQA::Node* leaf;
-        };
-        std::vector<SimulationResult> scores(localCopyLeaves.size());
+        std::vector<LeafScore> scores(localCopyLeaves.size());
+        for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
+            scores[leafIndex].leaf = &localCopyLeaves[leafIndex];
 
+        // this is used to calculate how much the state of this cell depends on where the source is. It is used for the movemente strategy
         struct VarianceCalculationData
         {
             double mean = 0;
@@ -85,60 +86,52 @@ namespace GSL::PMFS_internal
         std::vector<VarianceCalculationData> varianceCalculationData(measuredHitProb.data.size());
 
         int numberOfSimulations = 0;
+
+        // iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
         #pragma omp parallel for schedule(dynamic)
-        for (int leafIndex = 0; leafIndex < localCopyLeaves.size(); leafIndex++)
+        for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
         {
-            NQA::Node* node = &localCopyLeaves[leafIndex];
-            if (node->value != 1)
+            SimulationResult result = runSimulation(scores, leafIndex);
+            if (!result.valid)
                 continue;
-            SimulationSource source(node, measuredHitProb.metadata);
-
-            std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
-            simulateSourceInPosition(source, hitMap, true, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime, settings.noiseSTDev);
-
-            double diff = weightedDifference(measuredHitProb, hitMap);
-            scores[leafIndex].score = diff;
-            scores[leafIndex].leaf = node;
-
-            // assign this probability to all cells that fall inside this region
-            for (int cellI = node->origin.x; cellI < (node->origin.x + node->size.x); cellI++)
-            {
-                for (int cellJ = node->origin.y; cellJ < (node->origin.y + node->size.y); cellJ++)
-                {
-                    sourceProb.dataAt(cellI, cellJ) = diff;
-                }
-            }
 
             // update the information for the variance calulation
             #pragma omp critical
             {
                 numberOfSimulations++;
-                for (int cell = 0; cell < hitMap.size(); cell++)
+                for (int cell = 0; cell < result.hitMap.size(); cell++)
                 {
                     auto& var = varianceCalculationData[cell];
-                    weighted_incremental_variance(hitMap[cell], diff, var.mean, var.weight_sum, var.weight_squared_sum, var.variance);
+                    weighted_incremental_variance(result.hitMap[cell], result.sourceProb, var.mean, var.weight_sum, var.weight_squared_sum,
+                                                  var.variance);
                 }
             }
         }
 
-        // update the variance thing
+        // update the variance thing (for the movement strategy)
         #pragma omp parallel for
         for (int cellI = 0; cellI < measuredHitProb.data.size(); cellI++)
         {
             if (measuredHitProb.occupancy[cellI] == Occupancy::Free)
-                varianceOfHitProb[cellI] =
-                    varianceCalculationData[cellI].variance / varianceCalculationData[cellI].weight_sum;
+                varianceOfHitProb[cellI] = varianceCalculationData[cellI].variance / varianceCalculationData[cellI].weight_sum;
         }
 
         // now, finer simulation where it is deemed relevant
+        //------------------------------------------------------
+        //------------------------------------------------------
 
         int numberOfLevelsSimulated = 1;
+        // Choose the most interesting quadtree leaves (the ones with the best result in the previous iteration) and subdivide them to do more
+        // simulations. Keep going until none of the leaves can be subdivided any more
         while (scores.size() > 0)
         {
-            std::sort(scores.begin(), scores.end(), [](SimulationResult result1, SimulationResult result2) { return result1.score > result2.score; });
+            std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2)
+            {
+                return result1.score > result2.score;
+            });
 
             // subdivide the good cells and add the children to the list of cells to simulate
-            std::vector<SimulationResult> newLevel;
+            std::vector<LeafScore> newLevel;
             for (int leafIndex = 0; leafIndex < scores.size() * refineFraction; leafIndex++)
             {
                 NQA::Node* leaf = scores[leafIndex].leaf;
@@ -146,12 +139,8 @@ namespace GSL::PMFS_internal
                 if (hasChildren)
                 {
                     for (int childI = 0; childI < 4; childI++)
-                    {
                         if (leaf->children[childI])
-                        {
                             newLevel.push_back({0, (leaf->children[childI]).get()});
-                        }
-                    }
                 }
             }
             scores = newLevel;
@@ -160,30 +149,9 @@ namespace GSL::PMFS_internal
             numberOfSimulations += scores.size();
 
             // run the simulations of the new level and get scores for each node
-            #pragma omp parallel for  schedule(dynamic)
+            #pragma omp parallel for schedule(dynamic)
             for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
-            {
-                NQA::Node* node = scores[leafIndex].leaf;
-                if (node->value != 1)
-                    continue;
-                SimulationSource source(node, measuredHitProb.metadata);
-
-                std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
-                simulateSourceInPosition(source, hitMap, true, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
-                                         settings.noiseSTDev);
-
-                double diff = weightedDifference(measuredHitProb, hitMap);
-                scores[leafIndex].score = diff;
-
-                // assign this probability to all cells that fall inside this region
-                for (int cellI = node->origin.x; cellI < (node->origin.x + node->size.x); cellI++)
-                {
-                    for (int cellJ = node->origin.y; cellJ < (node->origin.y + node->size.y); cellJ++)
-                    {
-                        sourceProb.dataAt(cellI,cellJ) = diff;
-                    }
-                }
-            }
+                SimulationResult result = runSimulation(scores, leafIndex);
         }
 
         GSL_INFO("Number of levels in the simulation: {0}", numberOfLevelsSimulated);
@@ -193,7 +161,31 @@ namespace GSL::PMFS_internal
         GSL_INFO("Time ellapsed in simulation = {} s", stopwatch.ellapsed());
     }
 
-    double Simulations::weightedDifference(const Grid<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const
+    Simulations::SimulationResult Simulations::runSimulation(std::vector<LeafScore>& scores, size_t index)
+    {
+        SimulationResult result;
+        NQA::Node* node = scores[index].leaf;
+        if (node->value != 1)
+            return result;
+
+        result.hitMap.resize(measuredHitProb.data.size(), 0.0);
+
+        SimulationSource source(node, measuredHitProb.metadata);
+        simulateSourceInPosition(source, result.hitMap, true, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
+                                 settings.noiseSTDev);
+
+        result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
+
+        scores[index].score = result.sourceProb;
+
+        // assign this probability to all cells that fall inside this region
+        for (int cellI = node->origin.x; cellI < (node->origin.x + node->size.x); cellI++)
+            for (int cellJ = node->origin.y; cellJ < (node->origin.y + node->size.y); cellJ++)
+                sourceProb.dataAt(cellI, cellJ) = result.sourceProb;
+        return result;
+    }
+
+    double Simulations::sourceProbFromMaps(const Grid<HitProbability>& measuredHitProb, const std::vector<float>& hitMap) const
     {
         ZoneScoped;
         double total = 1;
@@ -203,8 +195,8 @@ namespace GSL::PMFS_internal
                 continue;
             double measured = Utils::logOddsToProbability(measuredHitProb.data[i].logOdds);
             const double& simulated = hitMap[i];
-            double val = Utils::lerp(1, (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower),
-                                        measuredHitProb.data[i].confidence);
+            double val =
+                Utils::lerp(1, (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower), measuredHitProb.data[i].confidence);
             total *= val;
             GSL_ASSERT(!std::isnan(total));
         }
@@ -213,65 +205,10 @@ namespace GSL::PMFS_internal
 
     void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
     {
-        Vector2 velocity = wind.dataAt(indices.x, indices.y) +
-                                Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
-        
+        Vector2 velocity = wind.dataAt(indices.x, indices.y) + Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
+
         Vector2 newPos = filament.position + deltaTime * velocity;
         moveAlongPath(filament.position, newPos);
-    }
-
-    //moves exactly one cell at a time, independently of the magnitude of the vector. For warmup.
-    void Simulations::moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev) const
-    {
-        Vector2 velocity = wind.dataAt(indices.x, indices.y) +
-                                             Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
-        
-        float angle = atan2(velocity.x, velocity.y);
-        Vector2Int next = indices;
-        if(angle >= 0)
-        {
-
-            if(angle < M_PI/8)
-                next.x += 1;
-            else if(angle < M_PI/4 + M_PI/8)
-            {
-                next.x += 1;
-                next.y += 1;
-            }
-            else if(angle < M_PI/2 + M_PI/8)
-                next.y += 1;
-            else if (angle < 3*M_PI/4 + M_PI/8)
-            {
-                next.x -= 1;
-                next.y += 1;
-            }
-            else
-                next.x -= 1;
-        }
-        else
-        {
-            angle = -angle;
-
-            if(angle < M_PI/8)
-                next.x += 1;
-            else if(angle < M_PI/4 + M_PI/8)
-            {
-                next.x += 1;
-                next.y -= 1;
-            }
-            else if(angle < M_PI/2 + M_PI/8)
-                next.y -= 1;
-            else if (angle < 3*M_PI/4 + M_PI/8)
-            {
-                next.x -= 1;
-                next.y -= 1;
-            }
-            else
-                next.x -= 1;
-        }
-        
-        if(measuredHitProb.metadata.indicesInBounds(next) || measuredHitProb.freeAt(next.x, next.y))
-            filament.position = measuredHitProb.metadata.indexToCoordinates(next.x, next.y);
     }
 
     bool Simulations::filamentIsOutside(const Filament& filament) const
@@ -281,13 +218,12 @@ namespace GSL::PMFS_internal
     }
 
     void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
-                                      int timesteps, float deltaTime, float noiseSTDev) const
+            int timesteps, float deltaTime, float noiseSTDev) const
     {
-
         constexpr int numFilamentsIteration = 5;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
 
-        std::vector<uint16_t> updated(hitMap.size(), 0); //index of the last iteration in which this cell was updated, to avoid double-counting
+        std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
         int lastActivated = 0;
 
@@ -314,15 +250,7 @@ namespace GSL::PMFS_internal
                     auto indices = measuredHitProb.metadata.coordinatesToIndex(filament.position.x, filament.position.y);
 
                     // move active filaments
-
-#define WARMUP_DISCRETE_MOVEMENT 0 
-#if WARMUP_DISCRETE_MOVEMENT
-                    //TODO this seems to work a fair bit better when the source is out of the main airflow current, but causes some problems in other places
-                    //TODO should run some testing with different weights for the noise and maybe selective application of the discrete movement based on wind speed
-                    //moveFilamentDiscretePosition(filament, indices, noiseSTDev * 0.2);
-#else
                     moveFilament(filament, indices, deltaTime * 2, noiseSTDev);
-#endif
 
                     // remove filaments
                     if (filamentIsOutside(filament))
@@ -338,7 +266,7 @@ namespace GSL::PMFS_internal
 
         ZoneScopedN("Recording");
         // now, we do the thing
-        for (int t = 1; t < timesteps+1; t++)
+        for (int t = 1; t < timesteps + 1; t++)
         {
             // spawn new ones
             for (int i = 0; i < numFilamentsIteration; i++)
@@ -405,11 +333,9 @@ namespace GSL::PMFS_internal
             return false;
         }
 
-
         // try to avoid doing the raycast by looking at the pre-computed visibilityMap
-        if (indexOrigin == indexEnd ||
-            (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) && 
-            visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible))
+        if (indexOrigin == indexEnd || (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) &&
+                                        visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible))
         {
             currentPosition = end;
             return true;
@@ -418,22 +344,18 @@ namespace GSL::PMFS_internal
 #define USE_DDA 0
 #if USE_DDA
         Vector2 movement = end - currentPosition;
-        DDA::_2D::RayCastInfo raycastInfo = 
-            DDA::_2D::castRay<GSL::Occupancy>({currentPosition.y, currentPosition.x}, {movement.y, movement.x}, vmath::length(movement), 
-                DDA::_2D::Map<GSL::Occupancy>(
-                    measuredHitProb.occupancy, 
-                    measuredHitProb.metadata.origin, 
-                    measuredHitProb.metadata.cellSize, 
-                    {measuredHitProb.metadata.width, measuredHitProb.metadata.height}),
-                [](const GSL::Occupancy& occ)
-                {
-                    return occ == GSL::Occupancy::Free;
-                }
-            );
-        //This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
-        //ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
+        DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
+        {currentPosition.y, currentPosition.x}, {movement.y, movement.x}, vmath::length(movement),
+        DDA::_2D::Map<GSL::Occupancy>(measuredHitProb.occupancy, measuredHitProb.metadata.origin, measuredHitProb.metadata.cellSize,
+        {measuredHitProb.metadata.width, measuredHitProb.metadata.height}),
+        [](const GSL::Occupancy & occ)
+        {
+            return occ == GSL::Occupancy::Free;
+        });
+        // This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
+        // ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
         constexpr float wallStoppingProportion = 0.7;
-        currentPosition += movement*raycastInfo.distance * wallStoppingProportion; 
+        currentPosition += movement * raycastInfo.distance * wallStoppingProportion;
 
         return true;
 #else
@@ -462,7 +384,8 @@ namespace GSL::PMFS_internal
     void Simulations::printImage(const SimulationSource& source)
     {
         std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
-        simulateSourceInPosition(source, hitMap, false, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime, settings.noiseSTDev);
+        simulateSourceInPosition(source, hitMap, false, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
+                                 settings.noiseSTDev);
 
         cv::Mat image(cv::Size(measuredHitProb.metadata.width, measuredHitProb.metadata.height), CV_32FC3, cv::Scalar(0, 0, 0));
 
@@ -470,9 +393,9 @@ namespace GSL::PMFS_internal
         {
             for (int j = 0; j < measuredHitProb.metadata.width; j++)
             {
-                if (measuredHitProb.freeAt(i,j))
+                if (measuredHitProb.freeAt(i, j))
                 {
-                    float v = hitMap[measuredHitProb.metadata.indexOf({i,j})] * 255;
+                    float v = hitMap[measuredHitProb.metadata.indexOf({i, j})] * 255;
                     image.at<cv::Vec3f>(measuredHitProb.metadata.height - 1 - i, j) = cv::Vec3f(v, v, v);
                 }
                 else

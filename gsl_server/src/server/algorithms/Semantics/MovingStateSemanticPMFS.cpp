@@ -33,7 +33,7 @@ namespace GSL
                 for (int c = oJ; c <= fJ; c++)
                 {
                     Vector2Int p(r, c);
-                    if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i,j}, p) == Visibility::Visible)
+                    if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i, j}, p) == Visibility::Visible)
                         openMoveSet.insert(p);
                 }
             }
@@ -54,12 +54,12 @@ namespace GSL
             NavigateToPose::Goal tempGoal = indexToGoal(r, c);
 
             double explorationTerm = explorationValue(r, c);
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({r,c})] * (1 - pmfs->hitProbability[gridMetadata.indexOf({r,c})].confidence);
+            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({r, c})] * (1 - pmfs->hitProbability[gridMetadata.indexOf({r, c})].confidence);
 
             double this_interest =
                 currentMovement == MovementType::Exploration || varianceTerm == 0 || explorationC < pmfs->settings.movement.explorationProbability
-                    ? explorationTerm
-                    : varianceTerm;
+                ? explorationTerm
+                : varianceTerm;
 
             if (this_interest > interest)
             {
@@ -68,7 +68,7 @@ namespace GSL
                     interest = this_interest;
                     goalI = r;
                     goalJ = c;
-                    maxDist = pmfs->hitProbability[gridMetadata.indexOf({r,c})].distanceFromRobot;
+                    maxDist = pmfs->hitProbability[gridMetadata.indexOf({r, c})].distanceFromRobot;
                     goal = tempGoal;
                 }
             }
@@ -92,7 +92,7 @@ namespace GSL
         {
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].confidence) * std::exp(-distance);
-            GSL_ASSERT(sum>0);
+            GSL_ASSERT(sum > 0);
         }
         return sum;
     }
@@ -160,13 +160,13 @@ namespace GSL
         {
             for (int b = 0; b < gridMetadata.width; b++)
             {
-                if (!grid.freeAt(a,b))
+                if (!grid.freeAt(a, b))
                     continue;
                 maxExpl = std::max(maxExpl, explorationValue(a, b));
-                maxVar = std::max(maxVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a,b})] * (1 - grid.dataAt(a,b).confidence));
+                maxVar = std::max(maxVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence));
 
                 minExpl = std::min(minExpl, explorationValue(a, b));
-                minVar = std::min(minVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a,b})] * (1 - grid.dataAt(a,b).confidence));
+                minVar = std::min(minVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence));
             }
         }
 
@@ -174,7 +174,7 @@ namespace GSL
         {
             for (int b = 0; b < gridMetadata.width; b++)
             {
-                if (!grid.freeAt(a,b))
+                if (!grid.freeAt(a, b))
                     continue;
                 auto coords = gridMetadata.indexToCoordinates(a, b);
                 Point p;
@@ -198,7 +198,7 @@ namespace GSL
                 {
                     explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::valueColorMode::Linear);
                 }
-                varianceColor = Utils::valueToColor(pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a,b})] * (1 - grid.dataAt(a,b).confidence), minVar,
+                varianceColor = Utils::valueToColor(pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence), minVar,
                                                     maxVar, Utils::valueColorMode::Linear);
 
                 explorationMarker.points.push_back(p);

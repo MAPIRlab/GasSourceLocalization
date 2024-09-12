@@ -45,13 +45,13 @@ namespace GSL
             goal = getInfotaxisGoal();
         else
             goal = getNormalGoal();
-		
-		if(!goal)
-		{
-			GSL_ERROR("Cannot move anywhere! Probably got stuck on an obstacle. Aborting movement.");
-			Fail();
-			return;
-		}
+
+        if (!goal)
+        {
+            GSL_ERROR("Cannot move anywhere! Probably got stuck on an obstacle. Aborting movement.");
+            Fail();
+            return;
+        }
 
         grgsl->exploredCells++;
 
@@ -116,7 +116,7 @@ namespace GSL
         }
         else
             GSL_ERROR("Set of open nodes is empty! Are you certain the source is reachable?");
-	
+
         return goal;
     }
 
@@ -135,7 +135,7 @@ namespace GSL
         rclcpp::Time tstart = grgsl->node->now();
         if (!wind.empty())
         {
-#pragma omp parallel for
+            #pragma omp parallel for
             for (int index = 0; index < wind.size(); index++)
             {
                 int r = wind[index].i;

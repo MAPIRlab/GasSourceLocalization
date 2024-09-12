@@ -3,6 +3,7 @@
 #include <iterator>
 #include <map>
 #include <string>
+#include <vision_msgs/msg/object_hypothesis.hpp>
 
 namespace GSL
 {
@@ -53,10 +54,10 @@ namespace GSL
 
         void FromMsg(const std::vector<vision_msgs::msg::ObjectHypothesis>& msg)
         {
-            for(const auto& hyp : msg)
+            for (const auto& hyp : msg)
                 probabilityDist[hyp.class_id] = hyp.score;
             GSL_ASSERT_MSG(totalProb() < 1, "Class distribution has a score above 1 after overwriting with message! This is probably because it "
-                                            "already contained different classes to the ones the message provided");
+                           "already contained different classes to the ones the message provided");
         }
 
         Iterator begin()

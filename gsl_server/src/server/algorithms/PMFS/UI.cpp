@@ -11,12 +11,12 @@ namespace GSL::PMFS_internal
 {
     UI::UI(PMFS* _pmfs) : pmfs(_pmfs)
     {
-        clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1, 
-            [this](const geometry_msgs::msg::PointStamped::SharedPtr point )
-            {
-                selectedCoordinates.x = point->point.x;
-                selectedCoordinates.y = point->point.y;
-            });
+        clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1,
+                          [this](const geometry_msgs::msg::PointStamped::SharedPtr point )
+        {
+            selectedCoordinates.x = point->point.x;
+            selectedCoordinates.y = point->point.y;
+        });
     }
 
     UI::~UI()
@@ -24,15 +24,15 @@ namespace GSL::PMFS_internal
         renderThread.join();
     }
 
-	void UI::run()
-	{
-		renderThread = std::jthread(std::bind(&UI::renderImgui, this));
-	}
-    
+    void UI::run()
+    {
+        renderThread = std::jthread(std::bind(&UI::renderImgui, this));
+    }
+
     void UI::renderImgui()
     {
         AmentImgui::Setup(fmt::format("{}/resources/imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(), "PMFS", 900,
-                           600);
+                          600);
         ImPlot::CreateContext();
 
         rclcpp::Rate rate(30);
@@ -80,7 +80,7 @@ namespace GSL::PMFS_internal
                 if (selectedVar == 0)
                     result = PMFS_internal::UI::printCell(Grid<HitProbability>(pmfs->hitProbability, pmfs->occupancy, pmfs->gridMetadata), x, y);
                 else if (selectedVar == 1)
-                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf({x,y})]);
+                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf({x, y})]);
             }
             if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
@@ -134,7 +134,8 @@ namespace GSL::PMFS_internal
         {
             if (ImGui::Button("Update Source Probability"))
             {
-                pmfs->functionQueue.submit([this]() {
+                pmfs->functionQueue.submit([this]()
+                {
                     pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
                     PMFSViz::ShowSourceProb(Grid<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs);
                 });
@@ -254,9 +255,9 @@ namespace GSL::PMFS_internal
         }
         else
         {
-            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x,y)) +
-                          fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x,y).auxWeight)) +
-                          fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x,y).logOdds));
+            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
+                          fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
+                          fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
         }
 
         return queryResult.c_str();

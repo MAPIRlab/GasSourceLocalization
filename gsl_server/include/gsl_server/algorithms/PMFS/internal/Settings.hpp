@@ -25,10 +25,10 @@ namespace GSL::PMFS_internal
         double kernelSigma;
         double kernelStretchConstant;
 
-        double confidenceSigmaSpatial;      // the sigma of the confidence normal associated with each measurement -- confidence as a function of
-                                              // physical proximity to the measurement location, this is not variance or anything like that
+        double confidenceSigmaSpatial; // the sigma of the confidence normal associated with each measurement -- confidence as a function of
+        // physical proximity to the measurement location, this is not variance or anything like that
         double confidenceMeasurementWeight; // sigma_omega in kernel DMV. Controls how much confidence you gain from one measurement (affects
-                                              // all distances)
+        // all distances)
     };
     struct SimulationSettings
     {
@@ -36,8 +36,8 @@ namespace GSL::PMFS_internal
         int maxRegionSize;
         int stepsBetweenSourceUpdates;
         double sourceDiscriminationPower; // higher values here will lead to a larger difference in the estimated source probability from one cell
-                                          // to another
-        double refineFraction;            // proportion of the cells that will be subdivided for the finer simulation
+        // to another
+        double refineFraction; // proportion of the cells that will be subdivided for the finer simulation
 
         int maxWarmupIterations;
         int iterationsToRecord;

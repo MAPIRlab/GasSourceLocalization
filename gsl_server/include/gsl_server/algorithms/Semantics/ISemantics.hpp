@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 #include <vector>
 #include <gsl_server/core/Vectors.hpp>
 

@@ -22,7 +22,7 @@ namespace GSL
         //------------
         using namespace std::placeholders;
         localizationSub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
-                                                                                std::bind(&Algorithm::localizationCallback, this, _1));
+                          std::bind(&Algorithm::localizationCallback, this, _1));
         rclcpp::Rate rate(1);
         while (resultLogging.robotPosesVector.size() == 0)
         {
@@ -32,21 +32,21 @@ namespace GSL
         }
 
         gasSub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
-                                                                            std::bind(&Algorithm::gasCallback, this, _1));
+                 std::bind(&Algorithm::gasCallback, this, _1));
 
         windSub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
-            getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
+                      getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
 
-		
 
-		//extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
-		static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), //extra time to make sure this only happens if the node is deadlocked 
-		[]()
-		{
-			rclcpp::shutdown();
-			GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
-			CLOSE_PROGRAM;
-		});
+
+        //extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
+        static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), //extra time to make sure this only happens if the node is deadlocked
+                                 []()
+        {
+            rclcpp::shutdown();
+            GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
+            CLOSE_PROGRAM;
+        });
 
         startTime = node->now();
         GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
@@ -73,7 +73,7 @@ namespace GSL
 
     bool Algorithm::HasEnded()
     {
-        if((node->now()-startTime).seconds() > resultLogging.maxSearchTime)
+        if ((node->now() - startTime).seconds() > resultLogging.maxSearchTime)
         {
             saveResultsToFile(GSLResult::Failure);
             return true;
@@ -117,10 +117,10 @@ namespace GSL
 
     void Algorithm::OnCompleteNavigation(GSLResult result, State* previousState)
     {
-		if(previousState == waitForGasState.get())
-        	stateMachine.forceResetState(waitForGasState.get());
+        if (previousState == waitForGasState.get())
+            stateMachine.forceResetState(waitForGasState.get());
         else
-			stateMachine.forceResetState(stopAndMeasureState.get());
+            stateMachine.forceResetState(stopAndMeasureState.get());
     }
 
     GSLResult Algorithm::checkSourceFound()
@@ -207,7 +207,7 @@ namespace GSL
             updateProximityResults(true);
             output_file << "---------------------------------------------------\n";
             for (const auto& prox : resultLogging.proximityResult)
-                output_file << prox.time <<" "<< prox.distance <<"\n";
+                output_file << prox.time << " " << prox.distance << "\n";
 
 #if 0
             for (PoseWithCovarianceStamped p : robotPosesVector)
@@ -287,14 +287,14 @@ namespace GSL
         p.header.frame_id = "map";
         p.header.stamp = node->now();
         double randomPoseDistance = 0.5;
-        
+
         constexpr int safetyLimit = 10;
-        for(int i = 0; i<safetyLimit;i++)
+        for (int i = 0; i < safetyLimit; i++)
         {
             p.pose.position.x = Utils::uniformRandom(currentRobotPose.pose.pose.position.x - randomPoseDistance,
-                                                     currentRobotPose.pose.pose.position.x + randomPoseDistance);
+                                currentRobotPose.pose.pose.position.x + randomPoseDistance);
             p.pose.position.y = Utils::uniformRandom(currentRobotPose.pose.pose.position.y - randomPoseDistance,
-                                                     currentRobotPose.pose.pose.position.y + randomPoseDistance);
+                                currentRobotPose.pose.pose.position.y + randomPoseDistance);
             p.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
             if (idx % 5 == 0)
             {
@@ -302,7 +302,7 @@ namespace GSL
             }
             idx++;
             goal.pose = p;
-            if(movingState->checkGoal(goal))
+            if (movingState->checkGoal(goal))
                 return p;
         }
 
@@ -336,10 +336,10 @@ namespace GSL
         double Ax = currentRobotPose.pose.pose.position.x - resultLogging.sourcePositionGT.x;
         double Ay = currentRobotPose.pose.pose.position.y - resultLogging.sourcePositionGT.y;
         double dist = sqrt(pow(Ax, 2) + pow(Ay, 2));
-        
+
         constexpr double rewrite_distance = 0.5;
-        if(forceUpdate || resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance-rewrite_distance))
-            resultLogging.proximityResult.push_back({(node->now()-startTime).seconds(), dist});
+        if (forceUpdate || resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance - rewrite_distance))
+            resultLogging.proximityResult.push_back({(node->now() - startTime).seconds(), dist});
     }
 
 } // namespace GSL

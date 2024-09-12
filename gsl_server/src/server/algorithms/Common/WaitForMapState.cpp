@@ -10,10 +10,10 @@ namespace GSL
         using namespace std::placeholders;
 
         mapSub = algorithm->node->create_subscription<nav_msgs::msg::OccupancyGrid>(algorithm->getParam<std::string>("map_topic", "map"),
-                                                                                     rclcpp::QoS(1).reliable().transient_local(),
-                                                                                     std::bind(&WaitForMapState::mapCallback, this, _1));
+                 rclcpp::QoS(1).reliable().transient_local(),
+                 std::bind(&WaitForMapState::mapCallback, this, _1));
         costmapSub = algorithm->node->create_subscription<nav_msgs::msg::OccupancyGrid>(
-            algorithm->getParam<std::string>("costmap_topic", "global_costmap/costmap"), 1, std::bind(&WaitForMapState::costmapCallback, this, _1));
+                         algorithm->getParam<std::string>("costmap_topic", "global_costmap/costmap"), 1, std::bind(&WaitForMapState::costmapCallback, this, _1));
     }
 
     void WaitForMapState::OnExitState(State* previous)

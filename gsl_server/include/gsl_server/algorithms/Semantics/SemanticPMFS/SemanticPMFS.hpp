@@ -31,10 +31,10 @@ namespace GSL
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
-    
+
     private:
         void updateSourceFromSemantics();
-    
+
     private:
         std::unique_ptr<ISemantics> semantics;
         std::vector<double> combinedSourceProbability;
@@ -52,7 +52,7 @@ namespace GSL
         //-------------Data-------------
         SemanticPMFS_internal::Settings settings;
         SemanticPMFS_internal::PublishersAndSubscribers pubs;
-    
+
 
         //-------------Utils-------------
         std::optional<VisibilityMap> visibilityMap;

@@ -34,7 +34,7 @@ namespace GSL
         {
             const auto& vector = interval.gasMeasurements;
             if (!vector.empty())
-                sum += (double)*std::max_element(std::begin(vector), std::end(vector));
+                sum += (double) * std::max_element(std::begin(vector), std::end(vector));
         }
         return sum;
     }

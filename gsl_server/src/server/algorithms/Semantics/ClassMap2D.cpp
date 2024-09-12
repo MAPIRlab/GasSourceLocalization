@@ -34,7 +34,7 @@ namespace GSL
         fov.minDist = Utils::getParam<double>(node, "fovMinDist", 0.0);
         fov.angleRads = Utils::getParam<double>(node, "fovAngleRads", 30 * Utils::Deg2Rad);
     }
-    
+
     void ClassMap2D::OnUpdate()
     {
         rclcpp::spin_some(node);
@@ -85,7 +85,10 @@ namespace GSL
             // fill in missing classes with a low score
             for (const auto& [_class, _] : classMap.sourceProbByClass)
             {
-                auto predicate = [&](const auto& t) { return _class == t.first; };
+                auto predicate = [&](const auto & t)
+                {
+                    return _class == t.first;
+                };
                 if (!Utils::containsPred(scores, predicate))
                     scores.emplace_back(_class, 0.1f); // TODO change the value to something meaningful
             }
@@ -197,7 +200,7 @@ namespace GSL
             double angleCameraSpace = std::atan2(std::sin(angleWorldSpace - cameraYaw), std::cos(angleWorldSpace - cameraYaw));
 
             if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads &&
-                PMFSLib::pathFree(gridMetadata, wallsOccupancy, robotCoords, point))
+                    PMFSLib::pathFree(gridMetadata, wallsOccupancy, robotCoords, point))
             {
                 cellsInFOV.insert(indices);
             }

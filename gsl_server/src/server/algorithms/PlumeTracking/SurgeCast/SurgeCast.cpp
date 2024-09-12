@@ -37,9 +37,9 @@ namespace GSL
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Cast");
 
         NavigateToPose::Goal goal;
-        
+
         constexpr int safetyLimit = 10;
-        for(int i = 0; i<safetyLimit;i++)
+        for (int i = 0; i < safetyLimit; i++)
         {
             goal.pose.header.frame_id = "map";
             goal.pose.header.stamp = node->now();
@@ -57,7 +57,7 @@ namespace GSL
                 return;
             }
             current_step = current_step - 0.3;
-            if(movingState->checkGoal(goal))
+            if (movingState->checkGoal(goal))
                 break;
         }
 

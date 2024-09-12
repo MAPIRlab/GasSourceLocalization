@@ -42,7 +42,7 @@ namespace GSL
         double Rconv;
 
         std::vector<Vector2> estimatedLocations; // record of estimated source positions over time
-        std::deque<Vector2> historicWind;        // record of measured wind
+        std::deque<Vector2> historicWind; // record of measured wind
 
         rclcpp::Publisher<Marker>::SharedPtr particle_markers;
         rclcpp::Publisher<Marker>::SharedPtr estimationMarkers;

@@ -14,11 +14,11 @@ namespace GSL
         virtual void OnExitState(State* nextState) override;
         virtual void OnUpdate() override;
 
-        double average_concentration();
-        double average_windDirection();
-        double average_windSpeed();
-        virtual void addGasReading(double concentration);
-        virtual void addWindReading(double speed, double direction);
+        double average_concentration(); //average of all the readings since we entered the state
+        double average_windDirection(); //average of all the readings since we entered the state
+        double average_windSpeed(); //average of all the readings since we entered the state
+        virtual void addGasReading(double concentration); //called from the sensor callback
+        virtual void addWindReading(double speed, double direction); //called from the sensor callback
 
     protected:
         double measure_time; // how long to measure for, in seconds

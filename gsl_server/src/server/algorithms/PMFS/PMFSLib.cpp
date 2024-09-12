@@ -8,9 +8,9 @@
 namespace GSL
 {
 
-    //---------------
-    // P(H)
-    //---------------
+//---------------
+// P(H)
+//---------------
 
     void PMFSLib::estimateHitProbabilities(Grid<HitProbability>& hitProb, const VisibilityMap& visibilityMap,
                                            PMFS_internal::HitProbabilitySettings& settings, bool hit, double downwindDirection, double windSpeed,
@@ -33,13 +33,15 @@ namespace GSL
         Vector2Int ij(i, j);
 
         double kernel_rotation_wind = -angles::normalize_angle(
-            downwindDirection + M_PI / 2); // the orientation of the anemometer's frame of reference and the way it uses angles is weird, man
-        HitProbKernel kernel = {
+                                          downwindDirection + M_PI / 2); // the orientation of the anemometer's frame of reference and the way it uses angles is weird, man
+        HitProbKernel kernel =
+        {
             kernel_rotation_wind,
-            Vector2(settings.kernelSigma + settings.kernelStretchConstant * windSpeed,                             // semi-major ellipse axis
-                    settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma) // semi-minor axis
-                    ),
-            (hit ? 0.6f : 0.1f)};
+            Vector2(settings.kernelSigma + settings.kernelStretchConstant * windSpeed, // semi-major ellipse axis
+            settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma) // semi-minor axis
+            ),
+            (hit ? 0.6f : 0.1f)
+        };
 
         for (int r = oI; r <= fI; r++)
         {
@@ -63,7 +65,7 @@ namespace GSL
 
                 hitProb.dataAt(r, c).distanceFromRobot = vmath::length(Vector2(rc - ij));
                 hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalized(Vector2(rc - ij)); // TODO check this. Should be coordinates,
-                                                                                                         // no?
+                // no?
                 hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(Vector2(rc - ij), kernel, settings);
             }
         }
@@ -97,7 +99,8 @@ namespace GSL
         double total = 0;
 
         auto calculateNewAuxWeight = [&openPropagationSet, &closedPropagationSet, &activePropagationSet, &kernel, &settings,
-                                      &hitProb](int i, int j, Vector2Int previousCellIndices) {
+                                      &hitProb](int i, int j, Vector2Int previousCellIndices)
+        {
             HitProbability& previousCell = hitProb.dataAt(previousCellIndices.x, previousCellIndices.y);
             HitProbability& currentCell = hitProb.dataAt(i, j);
             Vector2Int ij(i, j);
@@ -204,7 +207,7 @@ namespace GSL
         // create the PMFS cells
         {
             GridUtils::reduceOccupancyMap(algorithm.map.data, algorithm.map.info.width, grid.occupancy, grid.metadata);
-            for(HitProbability& hp : grid.data)
+            for (HitProbability& hp : grid.data)
                 hp.auxWeight = -1;
             GSL_TRACE("Created grid");
         }
@@ -219,7 +222,7 @@ namespace GSL
                 HashSet activePropagationSet;
                 HashSet closedPropagationSet;
                 Vector2Int currentIndices = grid.metadata.coordinatesToIndex(algorithm.currentRobotPose.pose.pose.position.x,
-                                                                             algorithm.currentRobotPose.pose.pose.position.y);
+                                            algorithm.currentRobotPose.pose.pose.position.y);
                 grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0; // the arbitrary value
                 activePropagationSet.insert(currentIndices);
                 PMFSLib::propagateProbabilities(grid, PMFS_internal::HitProbabilitySettings(), openPropagationSet, closedPropagationSet,
@@ -287,7 +290,7 @@ namespace GSL
 
     void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid<Vector2> grid,
                                             std::shared_ptr<WindEstimation::Request>& GMRFRequest
-                                                IF_GADEN(, std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest))
+                                            IF_GADEN(, std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest))
     {
         grid.data.resize(grid.metadata.height * grid.metadata.width);
         std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
@@ -306,7 +309,8 @@ namespace GSL
                 GSL_ERROR("TF error when looking up map -> anemometer:\n{}", e.what());
                 rclcpp::spin_some(algorithm.node);
             }
-        } while (!has_tf);
+        }
+        while (!has_tf);
 
         float anemometer_Z = tfm.transform.translation.z;
         GSL_INFO("anemometer z is {}", anemometer_Z);
@@ -391,9 +395,12 @@ namespace GSL
             return false;
         Vector2 direction = end - origin;
         DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
-            origin, direction, vmath::length(direction),
-            DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.width, metadata.height}),
-            [](const GSL::Occupancy& occ) { return occ == GSL::Occupancy::Free; });
+                                                origin, direction, vmath::length(direction),
+                                                DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.width, metadata.height}),
+                                                [](const GSL::Occupancy & occ)
+        {
+            return occ == GSL::Occupancy::Free;
+        });
 
         return !raycastInfo.hitSomething;
     }

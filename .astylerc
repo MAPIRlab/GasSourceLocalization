@@ -1,0 +1,9 @@
+style=allman
+indent=spaces=4
+indent-namespaces
+pad-oper
+pad-header
+align-pointer=type
+align-reference=type
+squeeze-ws
+suffix=none

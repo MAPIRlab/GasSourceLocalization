@@ -17,7 +17,7 @@ namespace GSL
         using Detection3DArray = vision_msgs::msg::Detection3DArray;
     public:
         ClassMap2D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
-                 const PoseWithCovarianceStamped& _currentRobotPose);
+                   const PoseWithCovarianceStamped& _currentRobotPose);
 
         std::vector<double> GetSourceProbability() override;
         void GetSourceProbabilityInPlace(std::vector<double>& sourceProb) override;

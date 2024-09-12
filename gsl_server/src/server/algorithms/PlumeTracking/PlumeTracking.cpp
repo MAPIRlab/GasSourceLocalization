@@ -25,7 +25,7 @@ namespace GSL
         Algorithm::declareParameters();
         surgeStepSize = getParam<double>("step", 1);
     }
-    
+
     void PlumeTracking::OnUpdate()
     {
         Algorithm::OnUpdate();
@@ -46,11 +46,11 @@ namespace GSL
 
         // When a cast phase begins, we try to lock in the current wind direction, which will be used to direct all succesive cast attempts
         // if there is no wind, however, we cant cast at all
-        if (currentMovement==PTMovement::FollowPlume)
+        if (currentMovement == PTMovement::FollowPlume)
         {
-            if(windSpeed > thresholdWind)
+            if (windSpeed > thresholdWind)
                 windDirection_cast = windDirection;
-            else 
+            else
                 windDirection_cast = DBL_MAX;
         }
 
@@ -69,7 +69,7 @@ namespace GSL
         double current_step = surgeStepSize;
 
         constexpr int safetyLimit = 10;
-        for(int i = 0; i<safetyLimit;i++)
+        for (int i = 0; i < safetyLimit; i++)
         {
             goal.pose.header.frame_id = "map";
             goal.pose.header.stamp = node->now();
@@ -85,7 +85,7 @@ namespace GSL
                 return;
             }
             current_step = current_step - 0.05;
-            if(movingState->checkGoal(goal))
+            if (movingState->checkGoal(goal))
                 break;
         }
 

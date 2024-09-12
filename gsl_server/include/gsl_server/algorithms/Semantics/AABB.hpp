@@ -22,8 +22,8 @@ namespace GSL
         Vector2Int min;
         Vector2Int max;
 
-        AABB2DInt(){}
-        AABB2DInt(const Vector2Int& _min, const Vector2Int& _max):min(_min), max(_max)
+        AABB2DInt() {}
+        AABB2DInt(const Vector2Int& _min, const Vector2Int& _max): min(_min), max(_max)
         {}
 
         bool operator==(const AABB2DInt& other)
@@ -35,16 +35,19 @@ namespace GSL
         class Iterator
         {
         public:
-            Iterator(AABB2DInt& _aabb, Vector2Int start): aabb(_aabb), current(start){}
-            Iterator(AABB2DInt& _aabb): aabb(_aabb), current(_aabb.min){}
-            
-            Vector2Int operator*() const { return current; }
+            Iterator(AABB2DInt& _aabb, Vector2Int start): aabb(_aabb), current(start) {}
+            Iterator(AABB2DInt& _aabb): aabb(_aabb), current(_aabb.min) {}
+
+            Vector2Int operator*() const
+            {
+                return current;
+            }
 
             // Prefix increment
             Iterator& operator++()
             {
                 current.x++;
-                if(current.x>aabb.max.x)
+                if (current.x > aabb.max.x)
                 {
                     current.x = aabb.min.x;
                     current.y++;
@@ -53,10 +56,21 @@ namespace GSL
             }
 
             // Postfix increment
-            Iterator operator++(int) { Iterator tmp = *this; ++(*this); return tmp; }
+            Iterator operator++(int)
+            {
+                Iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
 
-            friend bool operator== (const Iterator& a, const Iterator& b) { return a.aabb == b.aabb && a.current == b.current; };
-            friend bool operator!= (const Iterator& a, const Iterator& b) { return !(a==b); };
+            friend bool operator== (const Iterator& a, const Iterator& b)
+            {
+                return a.aabb == b.aabb && a.current == b.current;
+            };
+            friend bool operator!= (const Iterator& a, const Iterator& b)
+            {
+                return !(a == b);
+            };
         private:
             AABB2DInt& aabb;
             Vector2Int current;

@@ -14,10 +14,10 @@ namespace GSL
                     Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                     settings.simulation),
         pubs(node->get_clock())
-        IF_GUI(,ui(this))
+        IF_GUI(, ui(this))
     {}
 
-    // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
+// A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
     void PMFS::Initialize()
     {
         Algorithm::Initialize();
@@ -25,8 +25,8 @@ namespace GSL
 
         IF_GUI
         (
-            if(!settings.visualization.headless)
-                ui.run();
+            if (!settings.visualization.headless)
+            ui.run();
         );
 
         iterationsCounter = 0;
@@ -45,7 +45,7 @@ namespace GSL
         Algorithm::declareParameters();
         PMFSLib::GetHitProbabilitySettings(*this, settings.hitProbability);
         PMFSLib::GetSimulationSettings(*this, settings.simulation);
-        
+
         // number of cells in each direction that we add to the open move set in each step
         settings.movement.openMoveSetExpasion = getParam<int>("openMoveSetExpasion", 5);
         settings.movement.explorationProbability = getParam<double>("explorationProbability", 0.1);
@@ -71,13 +71,13 @@ namespace GSL
 
         visibilityMap.emplace(gridMetadata.width, gridMetadata.height, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
-        PMFSLib::initializeMap(*this, 
-            Grid<HitProbability>(hitProbability, occupancy, gridMetadata),
-            simulations, *visibilityMap);
+        PMFSLib::initializeMap(*this,
+                               Grid<HitProbability>(hitProbability, occupancy, gridMetadata),
+                               simulations, *visibilityMap);
 
 
         // set all variables to the prior probability
-        for(HitProbability& h : hitProbability)
+        for (HitProbability& h : hitProbability)
             h.setProbability(settings.hitProbability.prior);
 
         for (double& p : sourceProbability)
@@ -88,7 +88,7 @@ namespace GSL
         {
             Grid<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
             PMFSLib::initializeWindPredictions(*this, windGrid,
-                pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
+                                               pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
             PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
             stateMachine.forceSetState(stopAndMeasureState.get());
         });
@@ -103,7 +103,7 @@ namespace GSL
 
     void PMFS::OnUpdate()
     {
-        if(!paused)
+        if (!paused)
             Algorithm::OnUpdate();
 
         dynamic_cast<MovingStatePMFS*>(movingState.get())->publishMarkers();
@@ -136,11 +136,11 @@ namespace GSL
 
         //Update the wind estimations
         // ------------------------------
-        PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, 
-                            Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), 
-                            node,
-                            pubs.gmrfWind
-                            IF_GADEN(, pubs.groundTruthWind));
+        PMFSLib::estimateWind(settings.simulation.useWindGroundTruth,
+                              Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
+                              node,
+                              pubs.gmrfWind
+                              IF_GADEN(, pubs.groundTruthWind));
         PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
 
 
@@ -174,13 +174,13 @@ namespace GSL
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
-        
+
         //Visualization
         PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
-    float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) 
+    float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg)
     {
         float ppm = Algorithm::gasCallback(msg);
         IF_GUI(ui.addConcentrationReading(ppm));

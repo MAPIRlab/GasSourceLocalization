@@ -83,7 +83,8 @@ namespace GSL
         for (double& p : sourceProbabilityPMFS) p = 1.0 / gridMetadata.numFreeCells;
 
         // the wind estimation stuff requires spinning, so it must be done through the function queue
-        functionQueue.submit([this]() {
+        functionQueue.submit([this]()
+        {
             Grid<Vector2> windGrid(estimatedWindVectors, simulationOccupancy, gridMetadata);
             PMFSLib::initializeWindPredictions(*this, windGrid, pubs.pmfsPubs.gmrfWind.request IF_GADEN(, pubs.pmfsPubs.groundTruthWind.request));
             PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, windGrid, node,
@@ -108,7 +109,7 @@ namespace GSL
     void SemanticPMFS::updateSourceFromSemantics()
     {
         //wait until we have received the map and initialized everything
-        if(!semantics)
+        if (!semantics)
             return;
 
         static std::vector<double> sourceProbSemantics(combinedSourceProbability.size());
@@ -150,22 +151,22 @@ namespace GSL
         // TODO
         // if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
         //{
-        //     number_of_updates = 0;
-        //     bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
-        //                           iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
-        //     if (timeToSimulate)
-        //     {
-        //         // simulations.compareRefineFractions();
-        //         simulations.updateSourceProbability(settings.simulation.refineFraction);
-        //     }
+        // number_of_updates = 0;
+        // bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
+        // iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
+        // if (timeToSimulate)
+        // {
+        // // simulations.compareRefineFractions();
+        // simulations.updateSourceProbability(settings.simulation.refineFraction);
+        // }
         //
-        //     auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
-        //     if (iterationsCounter > settings.movement.initialExplorationMoves)
-        //         movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
-        //     else
-        //         movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
-        //     movingStatePMFS->chooseGoalAndMove();
-        //     movingStatePMFS->publishMarkers();
+        // auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
+        // if (iterationsCounter > settings.movement.initialExplorationMoves)
+        // movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
+        // else
+        // movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
+        // movingStatePMFS->chooseGoalAndMove();
+        // movingStatePMFS->publishMarkers();
         // }
         // else
         stateMachine.forceResetState(stopAndMeasureState.get());

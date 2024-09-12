@@ -71,7 +71,7 @@ namespace GSL
         {
             for (int j = 0; j < gridMetadata.width; j++)
             {
-                if (occupancy[gridMetadata.indexOf({i,j})] == Occupancy::Free)
+                if (occupancy[gridMetadata.indexOf({i, j})] == Occupancy::Free)
                 {
                     CellData cd(Vector2Int(i, j), sourceProbability[gridMetadata.indexOf({i, j})]);
                     data.push_back(cd);
@@ -79,7 +79,10 @@ namespace GSL
             }
         }
 
-        std::sort(data.begin(), data.end(), [](const CellData& a, const CellData& b) { return a.probability > b.probability; });
+        std::sort(data.begin(), data.end(), [](const CellData & a, const CellData & b)
+        {
+            return a.probability > b.probability;
+        });
 
         double averageX = 0, averageY = 0;
         double sum = 0;
@@ -103,7 +106,7 @@ namespace GSL
         {
             for (int j = 0; j < gridMetadata.width; j++)
             {
-                if (occupancy[gridMetadata.indexOf({i,j})] == Occupancy::Free)
+                if (occupancy[gridMetadata.indexOf({i, j})] == Occupancy::Free)
                 {
                     Vector2 coords = gridMetadata.indexToCoordinates(i, j);
                     double p = sourceProbability[gridMetadata.indexOf({i, j})];
@@ -126,8 +129,8 @@ namespace GSL
 
         double error = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocation.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocation.y, 2));
         double errorAll = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocationAll.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocationAll.y, 2));
-        
-		std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}", (int)result, search_t, error);
+
+        std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}", (int)result, search_t, error);
         GSL_INFO_COLOR(fmt::terminal_color::blue, "{}", resultString);
 
         // Save to file

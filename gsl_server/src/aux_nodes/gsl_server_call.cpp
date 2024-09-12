@@ -19,13 +19,13 @@ int main(int argc, char** argv)
 
 
     rclcpp::Node::SharedPtr call_node = std::make_shared<rclcpp::Node>("gsl_call");
-	auto resetSimulatorPub =  call_node->create_publisher<std_msgs::msg::String>("/basic_sim/reset", rclcpp::QoS(1).transient_local());
-	{
-		std_msgs::msg::String msg;
-		msg.data = "all";
-		resetSimulatorPub->publish(msg);
-	}
-	
+    auto resetSimulatorPub = call_node->create_publisher<std_msgs::msg::String>("/basic_sim/reset", rclcpp::QoS(1).transient_local());
+    {
+        std_msgs::msg::String msg;
+        msg.data = "all";
+        resetSimulatorPub->publish(msg);
+    }
+
     std::string method = getParam<std::string>(call_node, "method", "surge_cast");
 
     auto action_client = rclcpp_action::create_client<DoGSL>(call_node, "gsl_server");
@@ -42,7 +42,10 @@ int main(int argc, char** argv)
     rclcpp_action::Client<DoGSL>::SendGoalOptions options;
 
     bool done = false;
-    options.result_callback = [&done](const rclcpp_action::ClientGoalHandle<DoGSL>::WrappedResult& result) { done = true; };
+    options.result_callback = [&done](const rclcpp_action::ClientGoalHandle<DoGSL>::WrappedResult & result)
+    {
+        done = true;
+    };
     action_client->async_send_goal(goal);
 
     rclcpp::Rate rate(1);

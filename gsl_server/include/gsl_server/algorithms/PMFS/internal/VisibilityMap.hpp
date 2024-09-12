@@ -7,7 +7,7 @@
 namespace GSL
 {
 
-    template <class Iter> 
+    template <class Iter>
     class Range
     {
         Iter b;
@@ -38,7 +38,7 @@ namespace GSL
         NotVisible,
         OutOfRange
     };
-    
+
     class VisibilityMap
     {
         // for each key, we hold a "bucket" of maximum size 2range*2range of all the cells within range that are visible
@@ -50,10 +50,10 @@ namespace GSL
     public:
         VisibilityMap() = delete;
         VisibilityMap(size_t mapWidth, size_t height, size_t _range)
-            : range(_range), 
-              bucketSize(std::pow(2 * _range+1, 2) + 1), // the extra 1 position (before the data) holds the number of valid items in the bucket
-              m_width(mapWidth*bucketSize),
-              m_map(mapWidth * height * bucketSize, Vector2Int{-1,-1})
+            : range(_range),
+              bucketSize(std::pow(2 * _range + 1, 2) + 1), // the extra 1 position (before the data) holds the number of valid items in the bucket
+              m_width(mapWidth * bucketSize),
+              m_map(mapWidth * height * bucketSize, Vector2Int{-1, -1})
         {}
 
         const size_t range;
@@ -72,7 +72,7 @@ namespace GSL
 
         void emplace(const Vector2Int& key, const std::vector<Vector2Int>& value)
         {
-            if(value.size() > bucketSize)
+            if (value.size() > bucketSize)
                 GSL_ERROR("VisibilityMap of range {} cannot hold vector of size {}!", range, value.size());
 
             //store the actual size so we can quickly return the correct range later
@@ -80,7 +80,7 @@ namespace GSL
 
             for (size_t i = 0; i < value.size(); i++)
             {
-                size_t index = indexOf(key) + i +1;
+                size_t index = indexOf(key) + i + 1;
                 m_map[index] = value[i];
             }
         }
@@ -115,11 +115,11 @@ namespace GSL
         bool find(const Range<std::vector<Vector2Int>::const_iterator>& range, const Vector2Int& value) const
         {
             auto iter = range.begin();
-            while(iter != range.end())
+            while (iter != range.end())
             {
-                if(*iter == value)
+                if (*iter == value)
                     return true;
-                else if (*iter == Vector2Int{-1,-1})
+                else if (*iter == Vector2Int{-1, -1})
                     return false;
                 ++iter;
             }

@@ -50,7 +50,7 @@ namespace GSL::Utils
 
         if (stdev != previousStdev)
         {
-            dist = std::normal_distribution<>{0, stdev};
+            dist = std::normal_distribution<> {0, stdev};
             previousStdev = stdev;
         }
 
@@ -66,10 +66,10 @@ namespace GSL::Utils
         state = XXHash32::hash(&state, sizeof(state), seed);
 
         double rndVal01 = Utils::remapRange(*reinterpret_cast<double*>(&state) / std::numeric_limits<double>::max(), -1, 1, 0, 1);
-        return min + rndVal01*(max-min);
+        return min + rndVal01 * (max - min);
 #else
-        static thread_local std::uniform_real_distribution<double> distribution{0.0, 0.999};
-        return min + distribution(RNGengine) * (max - min);  
+        static thread_local std::uniform_real_distribution<double> distribution {0.0, 0.999};
+        return min + distribution(RNGengine) * (max - min);
 #endif
     }
 

@@ -14,9 +14,9 @@ namespace GSL::Utils
     template<typename C, typename Predicate>
     inline bool containsPred(const C& _collection, const Predicate& predicate)
     {
-        for(const auto& t : _collection)
+        for (const auto& t : _collection)
         {
-            if(predicate(t))
+            if (predicate(t))
                 return true;
         }
         return false;

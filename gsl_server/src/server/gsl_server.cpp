@@ -11,7 +11,7 @@ int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
 
-    // arbitrary wait to let the simulation start. Not strictly required, but avoids some annoying problems 
+    // arbitrary wait to let the simulation start. Not strictly required, but avoids some annoying problems
     rclcpp::sleep_for(std::chrono::seconds(5));
 
     auto gsl_node = std::make_shared<GSLServer>("gsl_server");
@@ -32,12 +32,12 @@ int main(int argc, char** argv)
             {
                 gsl_node->execute(gsl_node->m_activeGoal);
             }
-            catch(std::exception& e)
+            catch (std::exception& e)
             {
                 GSL_ERROR("Exception while running GSL: {}", e.what());
             }
 #endif
-            
+
             rclcpp::sleep_for(std::chrono::seconds(1));
             rclcpp::shutdown();
         }

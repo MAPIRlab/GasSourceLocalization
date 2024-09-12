@@ -8,7 +8,7 @@ namespace GSL::Utils::Colors
 
     struct ColorHSV
     {
-        float H; // [0, 360] 
+        float H; // [0, 360]
         float S; // [0, 1]
         float V; // [0, 1]
     };

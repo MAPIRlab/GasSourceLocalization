@@ -52,7 +52,7 @@ namespace GSL
     {
         return sourceProbByClass[_class];
     }
-    
+
     void ClassMap::updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores)
     {
         for (const auto& pair : scores)

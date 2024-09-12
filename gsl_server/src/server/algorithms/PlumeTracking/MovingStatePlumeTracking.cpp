@@ -8,7 +8,7 @@ namespace GSL
     {
         PlumeTracking* plumeTracking = dynamic_cast<PlumeTracking*>(algorithm);
         bool gasHit = Utils::getAverageFloatCollection(plumeTracking->lastConcentrationReadings.begin(),
-                                                       plumeTracking->lastConcentrationReadings.end()) > plumeTracking->thresholdGas;
+                      plumeTracking->lastConcentrationReadings.end()) > plumeTracking->thresholdGas;
 
         bool foundGas = gasHit && (currentMovement == PTMovement::Exploration || currentMovement == PTMovement::RecoverPlume);
         bool lostGas = !gasHit && (currentMovement == PTMovement::FollowPlume);

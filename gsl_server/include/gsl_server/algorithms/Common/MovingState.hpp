@@ -1,10 +1,10 @@
 #pragma once
 
 #include <gsl_server/algorithms/Common/GSLState.hpp>
-#include <rclcpp_action/rclcpp_action.hpp>
 #include <gsl_server/core/Navigation.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <optional>
+#include <rclcpp_action/rclcpp_action.hpp>
 
 namespace GSL
 {
@@ -13,8 +13,8 @@ namespace GSL
     {
     public:
         MovingState(Algorithm* _algorithm);
-        std::optional<nav_msgs::msg::Path> GetPlan(const PoseStamped& start, const PoseStamped& target);
-        bool checkGoal(const NavigateToPose::Goal& goal);
+        std::optional<nav_msgs::msg::Path> GetPlan(const PoseStamped& start, const PoseStamped& target); //get a valid path from start to target
+        bool checkGoal(const NavigateToPose::Goal& goal); //returns true if we can reach the goal
         void sendGoal(const NavigateToPose::Goal& goal);
         void OnEnterState(State* previous) override;
         void OnExitState(State* next) override;
@@ -22,12 +22,14 @@ namespace GSL
 
     protected:
         rclcpp::Time startTime;
-		State* previousState;
+        State* previousState;
         NavigationClient nav_client;
         std::optional<NavigateToPose::Goal> currentGoal = std::nullopt;
 
+        // called by the actionServer automatically
         void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result);
 
+        // Cancel the navigation and call OnCompleteNavigaton
         virtual void Fail();
 
 #ifdef USE_NAV_ASSISTANT

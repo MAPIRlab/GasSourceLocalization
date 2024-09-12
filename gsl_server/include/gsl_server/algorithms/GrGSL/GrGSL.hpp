@@ -46,7 +46,7 @@ namespace GSL
 
             bool infoTaxis;
             bool allowMovementRepetition;
-			bool useDiffusionTerm;
+            bool useDiffusionTerm;
         } settings;
 
         struct Markers
@@ -73,7 +73,7 @@ namespace GSL
         // core
         //-------------
         void estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell>>& map, bool hit, bool advection, double windDirection,
-                                                 Vector2Int robotPosition);
+                Vector2Int robotPosition);
         void propagateProbabilities(std::vector<std::vector<Cell>>& map, HashSet& openSet, HashSet& closedSet, HashSet& activeSet);
 
         void calculateWeight(std::vector<std::vector<Cell>>& map, int i, int j, Vector2Int p, HashSet& openPropagationSet,
@@ -85,7 +85,7 @@ namespace GSL
         double varianceSourcePosition();
         void showWeights();
 
-		enum MapFunctionMode {Sequential, Parallel};
-		void mapFunctionToCells(std::vector<std::vector<Cell>>& cells, std::function<void(Cell&, size_t, size_t)> function, MapFunctionMode mode = MapFunctionMode::Sequential);
+        enum MapFunctionMode {Sequential, Parallel};
+        void mapFunctionToCells(std::vector<std::vector<Cell>>& cells, std::function<void(Cell&, size_t, size_t)> function, MapFunctionMode mode = MapFunctionMode::Sequential);
     };
 } // namespace GSL

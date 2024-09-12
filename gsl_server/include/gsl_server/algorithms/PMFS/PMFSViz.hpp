@@ -7,6 +7,7 @@
 
 namespace GSL
 {
+    //Functions to publish markers for Rviz
     class PMFSViz
     {
     public:

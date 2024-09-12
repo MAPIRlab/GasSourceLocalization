@@ -131,7 +131,7 @@ namespace GSL
         positionOfLastHit = {currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y};
         normalizeWeights(grid);
     }
-	
+
     void GrGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
         bool gasHit = concentration > thresholdGas;
@@ -144,25 +144,25 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         else if (gasHit)
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS BUT NO WIND");
-        else if(significantWind)
+        else if (significantWind)
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "ONLY WIND");
-		else
+        else
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING");
-		
-		if(gasHit)
-        	estimateProbabilitiesfromGasAndWind(grid, gasHit, significantWind, windDirection, gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
-		else
-        	estimateProbabilitiesfromGasAndWind(grid, gasHit, true, windDirection, gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
+
+        if (gasHit)
+            estimateProbabilitiesfromGasAndWind(grid, gasHit, significantWind, windDirection, gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
+        else
+            estimateProbabilitiesfromGasAndWind(grid, gasHit, true, windDirection, gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
 
         dynamic_cast<MovingStateGrGSL*>(movingState.get())->chooseGoalAndMove();
         showWeights();
     }
 
     void GrGSL::estimateProbabilitiesfromGasAndWind(std::vector<std::vector<Cell>>& map, bool hit, bool advection, double windDirection,
-                                                    Vector2Int robotPosition)
+            Vector2Int robotPosition)
     {
-		if(!advection && !(settings.useDiffusionTerm && hit))
-			return;
+        if (!advection && !(settings.useDiffusionTerm && hit))
+            return;
 
         // ADVECTION
         // this part is always done, to calculate the distance field to the current robot position
@@ -228,47 +228,53 @@ namespace GSL
         if (advection)
         {
             double sum = 0;
-			mapFunctionToCells(map, [&sum](Cell& cell, size_t row, size_t column)
-				{sum += cell.auxWeight;}
-			);
-			mapFunctionToCells(map, [&sum](Cell& cell, size_t row, size_t column)
-				{cell.auxWeight /= sum;}
-			, MapFunctionMode::Parallel);
+            mapFunctionToCells(map, [&sum](Cell & cell, size_t row, size_t column)
+            {
+                sum += cell.auxWeight;
+            }
+                              );
+            mapFunctionToCells(map, [&sum](Cell & cell, size_t row, size_t column)
+            {
+                cell.auxWeight /= sum;
+            }
+            , MapFunctionMode::Parallel);
         }
         else
         {
-			mapFunctionToCells(map, [](Cell& cell, size_t row, size_t column)
-				{cell.auxWeight = 0;}, MapFunctionMode::Parallel);
+            mapFunctionToCells(map, [](Cell & cell, size_t row, size_t column)
+            {
+                cell.auxWeight = 0;
+            }, MapFunctionMode::Parallel);
         }
 
         // DIFFUSION
-        if(settings.useDiffusionTerm && hit)
-		{
-        	// calculate and normalize these probabilities before combining them with the advection ones
-        	std::vector<std::vector<double>> diffusionProb = std::vector<std::vector<double>>(map.size(), std::vector<double>(map[0].size(), 0));
-			double sum = 0;
-			mapFunctionToCells(map, [&sum, &diffusionProb](Cell& cell, size_t row, size_t column)
-			{
-				diffusionProb[row][column] = std::max(0.1, Utils::evaluate1DGaussian(cell.distance, 3));
-				sum += diffusionProb[row][column];
-			});
-			
-			if(sum>0)
+        if (settings.useDiffusionTerm && hit)
+        {
+            // calculate and normalize these probabilities before combining them with the advection ones
+            std::vector<std::vector<double>> diffusionProb = std::vector<std::vector<double>>(map.size(), std::vector<double>(map[0].size(), 0));
+            double sum = 0;
+            mapFunctionToCells(map, [&sum, &diffusionProb](Cell & cell, size_t row, size_t column)
             {
-				mapFunctionToCells(map, [&sum, &diffusionProb](Cell& cell, size_t row, size_t column)
-				{
-					diffusionProb[row][column] /= sum;
-					cell.auxWeight += diffusionProb[row][column];
-				}, MapFunctionMode::Parallel);
+                diffusionProb[row][column] = std::max(0.1, Utils::evaluate1DGaussian(cell.distance, 3));
+                sum += diffusionProb[row][column];
+            });
+
+            if (sum > 0)
+            {
+                mapFunctionToCells(map, [&sum, &diffusionProb](Cell & cell, size_t row, size_t column)
+                {
+                    diffusionProb[row][column] /= sum;
+                    cell.auxWeight += diffusionProb[row][column];
+                }, MapFunctionMode::Parallel);
             }
         }
 
-		// BAYESIAN FILTER
-		mapFunctionToCells(map, [](Cell& cell, size_t row, size_t column)
-		{
-			cell.weight *= cell.auxWeight;
-			cell.auxWeight = 0;
-		}, MapFunctionMode::Parallel);
+        // BAYESIAN FILTER
+        mapFunctionToCells(map, [](Cell & cell, size_t row, size_t column)
+        {
+            cell.weight *= cell.auxWeight;
+            cell.auxWeight = 0;
+        }, MapFunctionMode::Parallel);
 
         normalizeWeights(map);
     }
@@ -317,7 +323,7 @@ namespace GSL
                                 HashSet& closedPropagationSet, HashSet& activePropagationSet)
     {
         if (closedPropagationSet.find(Vector2Int(i, j)) == closedPropagationSet.end() &&
-            activePropagationSet.find(Vector2Int(i, j)) == activePropagationSet.end())
+                activePropagationSet.find(Vector2Int(i, j)) == activePropagationSet.end())
         {
 
             if (openPropagationSet.find(Vector2Int(i, j)) != openPropagationSet.end())
@@ -326,11 +332,13 @@ namespace GSL
                 double d = map[p.x][p.y].distance + ((i == p.x || j == p.y) ? 1 : sqrt(2)); // distance of this new path to the same cell
 
                 if (std::abs(d - map[i][j].distance) < 0.1)
-                { // if the distance is the same, keep the best probability!
+                {
+                    // if the distance is the same, keep the best probability!
                     map[i][j].auxWeight = std::max(map[p.x][p.y].auxWeight, map[i][j].auxWeight);
                 }
                 else if (d < map[i][j].distance)
-                { // keep the shortest path
+                {
+                    // keep the shortest path
                     map[i][j].auxWeight = map[p.x][p.y].auxWeight;
                     map[i][j].distance = d;
                 }
@@ -369,14 +377,15 @@ namespace GSL
     double GrGSL::informationGain(const WindVector& windVec)
     {
         // Kullback-Leibler Divergence
-        static auto KLD = [this](std::vector<std::vector<Cell>>& a, std::vector<std::vector<Cell>>& b) -> double {
+        static auto KLD = [this](std::vector<std::vector<Cell>>& a, std::vector<std::vector<Cell>>& b) -> double
+        {
             double total = 0;
             for (int r = 0; r < a.size(); r++)
             {
                 for (int c = 0; c < a[0].size(); c++)
                 {
                     double aux = a[r][c].weight * log(a[r][c].weight / b[r][c].weight) +
-                                 (1 - a[r][c].weight) * log((1 - a[r][c].weight) / (1 - b[r][c].weight));
+                    (1 - a[r][c].weight) * log((1 - a[r][c].weight) / (1 - b[r][c].weight));
                     total += std::isnan(aux) ? 0 : aux;
                 }
             }
@@ -466,7 +475,10 @@ namespace GSL
             }
         }
 
-        std::sort(data.begin(), data.end(), [](CellData a, CellData b) { return a.probability > b.probability; });
+        std::sort(data.begin(), data.end(), [](CellData a, CellData b)
+        {
+            return a.probability > b.probability;
+        });
 
         double averageX = 0, averageY = 0;
         double sum = 0;
@@ -508,16 +520,16 @@ namespace GSL
         rclcpp::Duration time_spent = node->now() - startTime;
         double search_t = time_spent.seconds();
 
-        
+
         Vector2 sourceLocationAll = expectedValueSource(1);
         Vector2 sourceLocation = expectedValueSource(0.05);
 
         double error = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocation.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocation.y, 2));
         double errorAll = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocationAll.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocationAll.y, 2));
-        
-		std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}", (int)result, search_t, error);
+
+        std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}", (int)result, search_t, error);
         GSL_INFO_COLOR(fmt::terminal_color::blue, "{}", resultString);
-		
+
         // Save to file
         if (resultLogging.resultsFile != "")
         {
@@ -548,7 +560,8 @@ namespace GSL
 
     void GrGSL::showWeights()
     {
-        constexpr auto emptyMarker = []() {
+        constexpr auto emptyMarker = []()
+        {
             Marker points;
             points.header.frame_id = "map";
             points.ns = "cells";
@@ -592,31 +605,31 @@ namespace GSL
     }
 
 
-	void GrGSL::mapFunctionToCells(std::vector<std::vector<Cell>>& cells, std::function<void(Cell&, size_t, size_t)> function, MapFunctionMode mode)
+    void GrGSL::mapFunctionToCells(std::vector<std::vector<Cell>>& cells, std::function<void(Cell&, size_t, size_t)> function, MapFunctionMode mode)
     {
         if (mode == MapFunctionMode::Parallel)
         {
-#pragma omp parallel for collapse(2)
+            #pragma omp parallel for collapse(2)
             for (int r = 0; r < cells.size(); r++)
             {
                 for (int c = 0; c < cells[0].size(); c++)
                 {
                     if (cells[r][c].free)
-                        function(cells[r][c], r,c);
+                        function(cells[r][c], r, c);
                 }
             }
         }
-		else
-		{
-			for (int r = 0; r < cells.size(); r++)
+        else
+        {
+            for (int r = 0; r < cells.size(); r++)
             {
                 for (int c = 0; c < cells[0].size(); c++)
                 {
                     if (cells[r][c].free)
-                        function(cells[r][c], r,c);
+                        function(cells[r][c], r, c);
                 }
             }
-		}
+        }
     }
 
 } // namespace GSL

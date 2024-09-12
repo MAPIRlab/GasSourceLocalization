@@ -14,7 +14,7 @@ namespace GSL
     {
     public:
         ClassMap3D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
-                 const PoseWithCovarianceStamped& _currentRobotPose);
+                   const PoseWithCovarianceStamped& _currentRobotPose);
 
         std::vector<double> GetSourceProbability() override;
         void GetSourceProbabilityInPlace(std::vector<double>& sourceProb) override;

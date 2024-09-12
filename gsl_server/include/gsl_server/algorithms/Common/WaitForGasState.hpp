@@ -4,6 +4,7 @@
 
 namespace GSL
 {
+    // Does nothing. As soon as a gas reading above the threshold arrives, moves to StopAndMeasure
     class WaitForGasState : public State
     {
     public:

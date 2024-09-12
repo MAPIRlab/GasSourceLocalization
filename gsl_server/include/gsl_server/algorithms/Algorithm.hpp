@@ -35,7 +35,7 @@ namespace GSL
 
         bool HasEnded();
         GSLResult GetResult();
-        
+
         template <typename T> T getParam(const std::string& name, T defaultValue)
         {
             if (node->has_parameter(name))
@@ -73,7 +73,7 @@ namespace GSL
             double navigationTime = -1;
             std::string resultsFile;
             std::string navigationPathFile;
-            
+
             struct ProximityResult
             {
                 double time = 0;
@@ -98,7 +98,7 @@ namespace GSL
         bool isPointInsideMapBounds(const Vector2& point) const;
         bool isPointFree(const Vector2& point);
         int8_t sampleCostmap(const Vector2& point);
-        void updateProximityResults(bool forceUpdate=false);
+        void updateProximityResults(bool forceUpdate = false);
 
 
         // Subscriptions

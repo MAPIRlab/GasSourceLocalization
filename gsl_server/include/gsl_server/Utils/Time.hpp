@@ -56,7 +56,7 @@ namespace GSL::Utils::Time
         bool isDone()
         {
             return toSeconds(clock.now() - start) >= length;
-        } 
+        }
 
         float proportionComplete()
         {

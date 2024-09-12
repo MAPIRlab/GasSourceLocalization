@@ -59,10 +59,12 @@ find_package(gmrf_wind_mapping REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
-find_package(vision_msgs REQUIRED)
-find_package(magic_enum REQUIRED)
 find_package(gsl_actions REQUIRED)
+    #Semantics
+find_package(magic_enum REQUIRED)
+find_package(vision_msgs REQUIRED)
 find_package(yaml_cpp_vendor)
+find_package(voxeland)
 
 
 if(GSL_TRACING)
@@ -124,7 +126,7 @@ include_directories(
 ## SOURCES
 ###########
 
-file(GLOB_RECURSE SOURCES_SERVER "src/server/*.cpp")
+file(GLOB_RECURSE SOURCES_SERVER "src/server/*.cpp") 
 
 
 ###########
@@ -153,6 +155,8 @@ ament_target_dependencies( gsl_actionserver_node
     gsl_actions
 
     yaml_cpp_vendor
+
+    voxeland
 	
     ${CONDITIONAL_NAV_ASSISTANT}
     ${CONDITIONAL_GADEN_PLAYER}

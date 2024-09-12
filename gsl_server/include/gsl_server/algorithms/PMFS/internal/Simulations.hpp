@@ -1,7 +1,7 @@
 #pragma once
-#include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
 #include <gsl_server/Utils/NQAQuadtree.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
 #include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
 
 namespace GSL
@@ -31,9 +31,11 @@ namespace GSL::PMFS_internal
         const Vector2 point;
         const GridMetadata& metadata;
 
-        SimulationSource(const Vector2& _point, const GridMetadata& _metadata) : nqaNode(nullptr), point(_point), mode(Mode::Point), metadata(_metadata)
+        SimulationSource(const Vector2& _point, const GridMetadata& _metadata)
+            : nqaNode(nullptr), point(_point), mode(Mode::Point), metadata(_metadata)
         {}
-        SimulationSource(const Utils::NQA::Node* _node, const GridMetadata& _metadata) : point(0, 0), nqaNode(_node), mode(Mode::Quadtree), metadata(_metadata)
+        SimulationSource(const Utils::NQA::Node* _node, const GridMetadata& _metadata)
+            : point(0, 0), nqaNode(_node), mode(Mode::Quadtree), metadata(_metadata)
         {}
 
         Vector2 getPoint() const;
@@ -42,8 +44,10 @@ namespace GSL::PMFS_internal
     class Simulations
     {
         using HashSet = std::unordered_set<Vector2Int>;
+
     public:
-        Simulations(Grid<HitProbability> _measuredHitProb, Grid<double> _sourceProb, Grid<Vector2> _wind, const PMFS_internal::SimulationSettings& _settings)
+        Simulations(Grid<HitProbability> _measuredHitProb, Grid<double> _sourceProb, Grid<Vector2> _wind,
+                    const PMFS_internal::SimulationSettings& _settings)
             : measuredHitProb(_measuredHitProb), sourceProb(_sourceProb), wind(_wind), settings(_settings)
         {}
 
@@ -56,17 +60,31 @@ namespace GSL::PMFS_internal
         std::vector<Utils::NQA::Node> QTleaves;
         std::vector<double> varianceOfHitProb; // calculated from the simulations, used for movement
         VisibilityMap* visibilityMap;
+
     protected:
+        struct SimulationResult
+        {
+            bool valid = false;
+            std::vector<float> hitMap;
+            double sourceProb;
+        };
+        struct LeafScore
+        {
+            float score;
+            Utils::NQA::Node* leaf;
+        };
+
         const PMFS_internal::SimulationSettings& settings;
         Grid<HitProbability> measuredHitProb;
         Grid<double> sourceProb;
         Grid<Vector2> wind;
+
+        SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
-        void moveFilamentDiscretePosition(Filament& filament, Vector2Int& indices, float noiseSTDev) const;
-        void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
-                                      int timesteps, float deltaTime, float noiseSTDev) const;
+        void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit, int timesteps,
+                                      float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament) const;
-        double weightedDifference(const Grid<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
+        double sourceProbFromMaps(const Grid<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
     };
 } // namespace GSL::PMFS_internal

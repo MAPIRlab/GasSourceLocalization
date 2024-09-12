@@ -47,7 +47,7 @@ namespace GSL
             };
             Markers markers;
 
-            PublishersAndSubscribers(std::shared_ptr<rclcpp::Clock> _clock) : clock(_clock){} 
+            PublishersAndSubscribers(std::shared_ptr<rclcpp::Clock> _clock) : clock(_clock) {}
         };
     } // namespace PMFS_internal
 } // namespace GSL

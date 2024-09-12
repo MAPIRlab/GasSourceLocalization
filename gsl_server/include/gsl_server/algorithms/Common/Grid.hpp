@@ -67,7 +67,7 @@ namespace GSL
         Obstacle
     };
 
-    //A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa 
+    //A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa
     template <typename T>
     struct Grid
     {
