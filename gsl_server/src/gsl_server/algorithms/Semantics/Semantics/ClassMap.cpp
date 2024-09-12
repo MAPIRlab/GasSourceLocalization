@@ -1,5 +1,5 @@
 #include <filesystem>
-#include <gsl_server/algorithms/Semantics/ClassMap.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/ClassMap.hpp>
 #include <gsl_server/core/Macros.hpp>
 #include <yaml-cpp/yaml.h>
 

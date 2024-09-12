@@ -1,9 +1,9 @@
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
-#include <gsl_server/algorithms/Semantics/ClassMap2D.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/ClassMap2D.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
-#include <gsl_server/algorithms/Semantics/SemanticsType.hpp>
 #include <magic_enum.hpp>
 
 namespace GSL

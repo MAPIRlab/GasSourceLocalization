@@ -7,7 +7,7 @@
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
-#include <gsl_server/algorithms/Semantics/ISemantics.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Common/ISemantics.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
 
 namespace GSL

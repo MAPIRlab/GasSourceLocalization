@@ -1,10 +1,10 @@
 #pragma once
-#include "ISemantics.hpp"
+#include "Common/ISemantics.hpp"
 #include "ClassMap.hpp"
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Utils/BufferWrapper.hpp>
 #include <gsl_server/algorithms/Common/Grid.hpp>
-#include <gsl_server/algorithms/Semantics/AABB.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/AABB.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 #include <vision_msgs/msg/detection3_d_array.hpp>

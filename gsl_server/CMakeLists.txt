@@ -66,7 +66,7 @@ foreach(Dependency IN ITEMS ${COMMON_AMENT_DEPENDENCIES})
   find_package(${Dependency} REQUIRED)
 endforeach()
 
-#other stuff
+#other common stuff
 find_package(OpenMP REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(fmt REQUIRED)
@@ -135,6 +135,7 @@ add_subdirectory(src/gsl_server/algorithms/Spiral)
 add_subdirectory(src/gsl_server/algorithms/ParticleFilter)
 add_subdirectory(src/gsl_server/algorithms/GrGSL)
 add_subdirectory(src/gsl_server/algorithms/PMFS)
+add_subdirectory(src/gsl_server/algorithms/Semantics)
 
 target_link_libraries(gsl_actionserver_node
     PlumeTracking
@@ -142,6 +143,7 @@ target_link_libraries(gsl_actionserver_node
     ParticleFilter
     GrGSL
     PMFS
+    Semantics
 )
 
 

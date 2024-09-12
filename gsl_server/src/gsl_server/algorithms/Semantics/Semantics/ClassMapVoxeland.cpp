@@ -1,6 +1,6 @@
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
-#include <gsl_server/algorithms/Semantics/ClassMapVoxeland.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/ClassMapVoxeland.hpp>
 #include <voxeland/srv/get_class_distributions.hpp>
 
 namespace GSL

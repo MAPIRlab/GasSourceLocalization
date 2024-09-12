@@ -1,6 +1,6 @@
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
-#include <gsl_server/algorithms/Semantics/ClassMap2D.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/ClassMap2D.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
 #include <geometry_msgs/msg/point_stamped.hpp>

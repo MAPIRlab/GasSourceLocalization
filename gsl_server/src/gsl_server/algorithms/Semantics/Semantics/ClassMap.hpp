@@ -1,8 +1,7 @@
 #pragma once
-#include <gsl_server/algorithms/Semantics/ClassDistribution.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Common/ClassDistribution.hpp>
 #include <map>
 #include <vector>
-#include "ClassDistribution.hpp"
 
 namespace GSL
 {
