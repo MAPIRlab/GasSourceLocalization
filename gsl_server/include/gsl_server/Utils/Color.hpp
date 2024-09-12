@@ -5,9 +5,16 @@
 namespace GSL::Utils::Colors
 {
     using ColorRGBA = std_msgs::msg::ColorRGBA;
+
+    struct ColorHSV
+    {
+        float H; // [0, 360] 
+        float S; // [0, 1]
+        float V; // [0, 1]
+    };
+
     static ColorRGBA HSVtoRGB(float H, float S, float V)
     {
-        H *= 360;
         float fC = V * S; // Chroma
         float fHPrime = fmod(H / 60.0, 6);
         float fX = fC * (1 - fabs(fmod(fHPrime, 2) - 1));
@@ -64,11 +71,6 @@ namespace GSL::Utils::Colors
 
         return rgb;
     }
-
-    struct ColorHSV
-    {
-        float H, S, V;
-    };
     static ColorHSV RGBtoHSV(const ColorRGBA& rgb)
     {
         float r = rgb.r * 255;

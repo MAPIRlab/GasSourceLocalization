@@ -3,14 +3,12 @@
 #include <gsl_server/algorithms/Semantics/ClassMap2D.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
-#include <filesystem>
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <gsl_server/Utils/Color.hpp>
 #include <gsl_server/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#include <yaml-cpp/yaml.h>
 
 const char* otherClassName = "other";
 namespace GSL
@@ -27,102 +25,47 @@ namespace GSL
 
         classMarkers = node->create_publisher<Marker>("class_markers", 1);
 
-        classDistributions.resize(gridMetadata.height * gridMetadata.width);
+        classMap.classDistributions.resize(gridMetadata.height * gridMetadata.width);
         std::string ontologyPath = Utils::getParam<std::string>(node, "ontologyPath", "?");
-        parseOntology(ontologyPath);
+        std::string targetGas = Utils::getParam<std::string>(node, "targetGas", "smoke");
+        classMap.parseOntology(ontologyPath, targetGas);
 
         fov.maxDist = Utils::getParam<double>(node, "fovMaxDist", 4.0);
         fov.minDist = Utils::getParam<double>(node, "fovMinDist", 0.0);
         fov.angleRads = Utils::getParam<double>(node, "fovAngleRads", 30 * Utils::Deg2Rad);
     }
-
-    std::vector<double> ClassMap2D::GetSourceProbability()
-    {
-        static std::vector<double> probs(classDistributions.size(), 0.0);
-        GetSourceProbabilityInPlace(probs);
-        return probs;
-    }
-
-    void ClassMap2D::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
-    {
-        for (int i = 0; i < classDistributions.size(); i++)
-        {
-            computeSourceProbability(classDistributions[i], sourceProb[i]);
-        }
-
-        Grid<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
-        Utils::NormalizeDistribution(probGrid);
-        hasBeenUpdated = false;
-    }
-
-    double ClassMap2D::GetSourceProbability(const Vector3& point)
-    {
-        Vector2Int indices = gridMetadata.coordinatesToIndex(point.x, point.y);
-        size_t index = gridMetadata.indexOf(indices);
-        double value;
-        computeSourceProbability(classDistributions[index], value);
-        return value;
-    }
-
-    void ClassMap2D::computeSourceProbability(ClassDistribution& distribution, double& retValue)
-    {
-        retValue = 0;
-        for (auto& [_class, classProb] : distribution)
-        {
-            retValue += classProb * getSourceProbByClass(_class);
-        }
-    }
-
-    bool ClassMap2D::HasNewObservations() const
-    {
-        return hasBeenUpdated;
-    }
-
+    
     void ClassMap2D::OnUpdate()
     {
         rclcpp::spin_some(node);
         visualize();
     }
 
-    double ClassMap2D::getSourceProbByClass(const std::string& _class)
+    std::vector<double> ClassMap2D::GetSourceProbability()
     {
-        return sourceProbByClass[_class];
+        std::vector<double> probs(gridMetadata.height * gridMetadata.width, 0.0);
+        GetSourceProbabilityInPlace(probs);
+        return probs;
     }
 
-    void ClassMap2D::parseOntology(const std::string& path)
+    void ClassMap2D::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
     {
-        if (!std::filesystem::exists(path))
+        for (int i = 0; i < classMap.classDistributions.size(); i++)
         {
-            GSL_ERROR("Could not open ontology file: {}", path);
-            CLOSE_PROGRAM;
+            classMap.computeSourceProbability(classMap.classDistributions[i], sourceProb[i]);
         }
 
-        std::string targetGas = Utils::getParam<std::string>(node, "targetGas", "smoke");
-        std::vector<std::string> class_list;
-        YAML::Node gases = YAML::LoadFile(path)["Gases"];
-        for (const YAML::Node& gas : gases)
-        {
-            if (gas["gas"].as<std::string>() == targetGas)
-            {
-                YAML::Node probs = gas["probs"];
-                for (YAML::const_iterator it = probs.begin(); it != probs.end(); ++it)
-                {
-                    sourceProbByClass.insert({it->first.as<std::string>(), it->second.as<float>()});
-                    class_list.push_back(it->first.as<std::string>());
-                }
-            }
-        }
+        Grid<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
+        Utils::NormalizeDistribution(probGrid);
+    }
 
-        GSL_INFO("Source probability by semantic class:");
-        for (auto& kv : sourceProbByClass)
-        {
-            GSL_INFO("{}: {}", kv.first, kv.second);
-        }
-
-        for (ClassDistribution& dist : classDistributions)
-        {
-            dist.Initialize(class_list);
-        }
+    double ClassMap2D::GetSourceProbabilityAt(const Vector3& point)
+    {
+        Vector2Int indices = gridMetadata.coordinatesToIndex(point.x, point.y);
+        size_t index = gridMetadata.indexOf(indices);
+        double value = 0;
+        classMap.computeSourceProbability(classMap.classDistributions[index], value);
+        return value;
     }
 
     void ClassMap2D::detectionCallback(Detection3DArray::ConstSharedPtr msg)
@@ -134,13 +77,13 @@ namespace GSL
             for (const auto& hyp : detection.results)
             {
                 std::string _class = hyp.hypothesis.class_id;
-                if (!sourceProbByClass.contains(_class))
+                if (!classMap.sourceProbByClass.contains(_class))
                     _class = otherClassName;
                 scores.emplace_back(_class, hyp.hypothesis.score);
             }
 
             // fill in missing classes with a low score
-            for (const auto& [_class, _] : sourceProbByClass)
+            for (const auto& [_class, _] : classMap.sourceProbByClass)
             {
                 auto predicate = [&](const auto& t) { return _class == t.first; };
                 if (!Utils::containsPred(scores, predicate))
@@ -156,20 +99,21 @@ namespace GSL
                     GSL_WARN("Indices {} out of bounds! Probably a bad mask causing a huge bounding box", indices);
                     break;
                 }
-                updateObjectProbabilities(indices, scores);
+                size_t index = gridMetadata.indexOf(indices);
+                classMap.updateObjectProbabilities(index, scores);
                 remainingCellsInFOV.erase(indices);
             }
         }
 
         // TODO make this a less arbitrary
-        const float true_negative_prob = 1.0 / sourceProbByClass.size() + 0.05f;
-        const float false_negative_prob = (1.0f - true_negative_prob) / (sourceProbByClass.size() - 1);
+        const float true_negative_prob = 1.0 / classMap.sourceProbByClass.size() + 0.05f;
+        const float false_negative_prob = (1.0f - true_negative_prob) / (classMap.sourceProbByClass.size() - 1);
         // cells where we didn't see anything
         {
             for (Vector2Int indices : remainingCellsInFOV)
             {
                 std::vector<std::pair<std::string, float>> scores;
-                for (const auto& kv : sourceProbByClass)
+                for (const auto& kv : classMap.sourceProbByClass)
                 {
                     float score;
                     if (kv.first == otherClassName)
@@ -178,10 +122,10 @@ namespace GSL
                         score = false_negative_prob;
                     scores.emplace_back(kv.first, score);
                 }
-                updateObjectProbabilities(indices, scores);
+                size_t index = gridMetadata.indexOf(indices);
+                classMap.updateObjectProbabilities(index, scores);
             }
         }
-        hasBeenUpdated = true;
     }
 
     AABB2DInt ClassMap2D::getAABB(const Detection3D& detection)
@@ -206,22 +150,6 @@ namespace GSL
         aabb.min = gridMetadata.coordinatesToIndex(minBBCoords.x, minBBCoords.y);
         aabb.max = gridMetadata.coordinatesToIndex(maxBBCoords.x, maxBBCoords.y);
         return aabb;
-    }
-
-    void ClassMap2D::updateObjectProbabilities(const Vector2Int& indices, const std::vector<std::pair<std::string, float>>& scores)
-    {
-        size_t index = gridMetadata.indexOf(indices);
-
-        for (const auto& pair : scores)
-        {
-            std::string _class = pair.first;
-            float score = pair.second;
-            float previous = classDistributions[index].ProbabilityOf(_class);
-            float prob = std::min(0.95f, score * previous); // clamp at arbitrary high value to avoid numerical issues as more observations pile up
-            classDistributions[index].UpdateProbOf(_class, prob);
-        }
-
-        classDistributions[index].Normalize();
     }
 
     std::unordered_set<Vector2Int> ClassMap2D::getCellsInFOV(Pose robotPose)
@@ -283,9 +211,9 @@ namespace GSL
         static std::map<std::string, ColorRGBA> colors;
         if (colors.empty())
         {
-            for (const auto& kv : sourceProbByClass)
+            for (const auto& kv : classMap.sourceProbByClass)
             {
-                float randomValue = Utils::EquallyDistributed01F();
+                float randomValue = Utils::EquallyDistributed01F() * 360;
                 ColorHSV hsv{.H = randomValue, .S = 1, .V = 1};
                 colors[kv.first] = HSVtoRGB(hsv.H, hsv.S, hsv.V);
             }
@@ -314,7 +242,7 @@ namespace GSL
                 marker.points.push_back(p);
 
                 ColorRGBA markerColor = colors[otherClassName];
-                for (const auto& [_class, prob] : classDistributions[cellIndex])
+                for (const auto& [_class, prob] : classMap.classDistributions[cellIndex])
                 {
                     markerColor = lerp(markerColor, colors[_class], prob);
                 }

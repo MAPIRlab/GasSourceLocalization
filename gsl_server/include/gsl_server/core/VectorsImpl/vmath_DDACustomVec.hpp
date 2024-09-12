@@ -8,6 +8,7 @@ namespace GSL
     using Vector2 = DDA::Vector2;
     using Vector3 = DDA::Vector3;
     using Vector2Int = DDA::Vector2Int;
+    using Vector3Int = DDA::Vector3Int;
 } // namespace GSL
 
 namespace GSL::vmath

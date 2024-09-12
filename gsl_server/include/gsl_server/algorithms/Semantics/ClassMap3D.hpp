@@ -7,16 +7,13 @@
 #include <gsl_server/algorithms/Semantics/AABB.hpp>
 
 #include <rclcpp/rclcpp.hpp>
-#include <vision_msgs/msg/detection3_d_array.hpp>
 
 namespace GSL
 {
-    class ClassMap2D : public ISemantics
+    class ClassMap3D : public ISemantics
     {
-        using Detection3D = vision_msgs::msg::Detection3D;
-        using Detection3DArray = vision_msgs::msg::Detection3DArray;
     public:
-        ClassMap2D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
+        ClassMap3D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
                  const PoseWithCovarianceStamped& _currentRobotPose);
 
         std::vector<double> GetSourceProbability() override;
@@ -25,7 +22,6 @@ namespace GSL
         void OnUpdate() override;
     private:
         rclcpp::Node::SharedPtr node;
-        rclcpp::Subscription<Detection3DArray>::SharedPtr cameraSub;
         rclcpp::Publisher<Marker>::SharedPtr classMarkers;
 
         ClassMap classMap;
@@ -33,17 +29,11 @@ namespace GSL
         GridMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
         const PoseWithCovarianceStamped& currentRobotPose;
+        Vector2 zLimits;
 
-        struct FOV
-        {
-            float angleRads;
-            float minDist;
-            float maxDist;
-        } fov;
-
-        void detectionCallback(Detection3DArray::ConstSharedPtr msg);
-        AABB2DInt getAABB(const Detection3D& detection);
-        std::unordered_set<Vector2Int> getCellsInFOV(Pose robotPose);
+        void getUpdatedMapFromService();
         void visualize();
+        size_t indexOf(const Vector3Int& v) const;
+        size_t numZLevels() const;
     };
 }

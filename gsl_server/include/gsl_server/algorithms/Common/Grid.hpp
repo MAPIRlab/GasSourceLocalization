@@ -5,6 +5,7 @@
 
 namespace GSL
 {
+    //See the grid class
     struct GridMetadata
     {
         Vector2 origin;
@@ -26,6 +27,11 @@ namespace GSL
         Vector2Int coordinatesToIndex(const geometry_msgs::msg::Pose& pose) const
         {
             return coordinatesToIndex(pose.position.x, pose.position.y);
+        }
+
+        Vector3Int coordinatesToIndex(double x, double y, double z) const
+        {
+            return Vector3Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize), (z - 0) / (cellSize)); //TODO assuming map is at z=0 for anything that requires height
         }
 
         Vector2 indexToCoordinates(int i, int j, bool centerOfCell = true) const
@@ -60,6 +66,8 @@ namespace GSL
         Free,
         Obstacle
     };
+
+    //A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa 
     template <typename T>
     struct Grid
     {
@@ -91,6 +99,8 @@ namespace GSL
     {
     public:
         GridUtils() = delete;
+
+        //reduce the resolution of an occupancy grid, considering that a cell in the smaller map is occupied as soon as a single smaller cell in it is
         static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy,
                                        const GridMetadata& metadata)
         {

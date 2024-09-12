@@ -40,7 +40,7 @@ def launch_setup(context, *args, **kwargs):
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="GSL",
-                #prefix="xterm -hold -e gdbgui --args",
+                #prefix="xterm -hold -e gdb --args",
                 parameters=[
                     # Common
                     {'use_sim_time': False},	

@@ -17,10 +17,10 @@ namespace GSL
         IF_GUI(,ui(this))
     {}
 
+    // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
     void PMFS::Initialize()
     {
         Algorithm::Initialize();
-        // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
         PMFSLib::InitializePublishers(pubs, node);
 
         IF_GUI
@@ -116,6 +116,8 @@ namespace GSL
     {
         static int number_of_updates = 0;
 
+        //Update the gas presence map
+        // ------------------------------
         Grid<HitProbability> grid(hitProbability, occupancy, gridMetadata);
         if (concentration > thresholdGas)
         {
@@ -132,6 +134,8 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
+        //Update the wind estimations
+        // ------------------------------
         PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, 
                             Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), 
                             node,
@@ -139,11 +143,16 @@ namespace GSL
                             IF_GADEN(, pubs.groundTruthWind));
         PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
 
-        number_of_updates++;
 
+        // If we have already taken enough measurements in this position, process them and get ready to move to the next location
+        // ------------------------------
+        number_of_updates++;
         if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
         {
             number_of_updates = 0;
+
+            //Simulations are slow, so we only run them every few positions, when the map has had time to meaningfully change
+            //----------------------------------------
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
             if (timeToSimulate)
@@ -152,6 +161,8 @@ namespace GSL
                 simulations.updateSourceProbability(settings.simulation.refineFraction);
             }
 
+
+            //Movement
             auto movingStatePMFS = dynamic_cast<MovingStatePMFS*>(movingState.get());
             if (iterationsCounter > settings.movement.initialExplorationMoves)
                 movingStatePMFS->currentMovement = MovingStatePMFS::MovementType::Search;
@@ -164,7 +175,7 @@ namespace GSL
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
         
-
+        //Visualization
         PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
     }

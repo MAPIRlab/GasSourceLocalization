@@ -25,8 +25,6 @@ namespace GSL
 #endif
         using HashSet = std::unordered_set<Vector2Int>;
 
-        template <typename T>
-        using Grid = Grid<T>;
         using HitProbability = PMFS_internal::HitProbability;
         using HitProbKernel = PMFS_internal::HitProbKernel;
 
