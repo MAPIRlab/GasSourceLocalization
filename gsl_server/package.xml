@@ -20,9 +20,13 @@
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>olfaction_msgs</build_depend>
   <build_depend>visualization_msgs</build_depend>
-  <build_depend>gmrf_wind_mapping</build_depend>
   <build_depend>nav_assistant_msgs</build_depend>
   <build_depend>gsl_actions</build_depend>
+  
+  <!-- Optionals -->
+  <build_depend>gaden_player</build_depend>
+  <build_depend>gmrf_wind_mapping</build_depend>
+  <build_depend>voxeland</build_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

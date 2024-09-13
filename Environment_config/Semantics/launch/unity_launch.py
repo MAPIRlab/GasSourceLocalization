@@ -33,19 +33,7 @@ def launch_setup(context, *args, **kwargs):
                 {"publish_topic": "/giraff/cmd_vel"}
                 ],
         )
-    
-    projectTo3D = Node(
-            package="instance_segmentation_utils",
-            executable="projectTo3D",
-            name="projectTo3D",
-            #prefix = "xterm -e",
-            parameters=[
-                {"color_topic": "/rgbd/color/raw"},
-                {"depth_topic": "/rgbd/depth/raw"},
-                {"info_topic": "/rgbd/info"},
-                {"depth_format": "mono16"}
-                ],
-        )
+
     
     detectron = Node(
             package="detectron_ros",
@@ -57,7 +45,6 @@ def launch_setup(context, *args, **kwargs):
     return [
         tcp_endpoint,
         keyboard_control,
-        projectTo3D,
         detectron
     ]
 

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(gsl_server) 
 set(CMAKE_CXX_FLAGS "-g -Wno-narrowing ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_STANDARD 20)
-
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 #########################
 #OPTIONS
