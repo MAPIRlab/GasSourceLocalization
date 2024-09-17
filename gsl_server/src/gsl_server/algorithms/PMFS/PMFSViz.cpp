@@ -5,7 +5,7 @@
 namespace GSL
 {
     namespace NQA = Utils::NQA;
-    void PMFSViz::ShowHitProb(Grid<PMFS_internal::HitProbability> grid, const PMFS_internal::VisualizationSettings& settings,
+    void PMFSViz::ShowHitProb(Grid2D<PMFS_internal::HitProbability> grid, const PMFS_internal::VisualizationSettings& settings,
                               const PMFS_internal::PublishersAndSubscribers& pubs)
     {
         Marker gasProbMarker = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
@@ -48,7 +48,7 @@ namespace GSL
         pubs.markers.confidenceMarkers->publish(confidenceMarker);
     }
 
-    void PMFSViz::ShowSourceProb(Grid<double> grid, const PMFS_internal::VisualizationSettings& settings,
+    void PMFSViz::ShowSourceProb(Grid2D<double> grid, const PMFS_internal::VisualizationSettings& settings,
                                  const PMFS_internal::PublishersAndSubscribers& pubs)
     {
         Marker sourceProbMarker = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
@@ -78,7 +78,7 @@ namespace GSL
     }
 
     void PMFSViz::DebugMapSegmentation(const std::vector<Utils::NQA::Node>& QTleaves,
-                                       const PMFS_internal::PublishersAndSubscribers& pubs, const GridMetadata& gridMetadata)
+                                       const PMFS_internal::PublishersAndSubscribers& pubs, const Grid2DMetadata& gridMetadata)
     {
         MarkerArray segmentMarker;
         for (int i = 0; i < QTleaves.size(); i++)
@@ -114,7 +114,7 @@ namespace GSL
         }
     }
 
-    void PMFSViz::PlotWindVectors(Grid<Vector2> estimatedWindVectors, const PMFS_internal::VisualizationSettings& settings,
+    void PMFSViz::PlotWindVectors(Grid2D<Vector2> estimatedWindVectors, const PMFS_internal::VisualizationSettings& settings,
                                   const PMFS_internal::PublishersAndSubscribers& pubs)
     {
         MarkerArray arrow_array;

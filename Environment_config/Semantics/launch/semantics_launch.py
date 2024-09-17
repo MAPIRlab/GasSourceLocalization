@@ -20,33 +20,34 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             get_share_file_path_from_package(package_name="voxeland", file_name="voxeland_server.launch.py")
         ),
-        launch_arguments=[
-            {"resolution" : 0.2}
-        ]
+        launch_arguments= {
+            "resolution" : "0.2"
+        }.items()
     )
 
     voxeland_robot = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_share_file_path_from_package(package_name="voxeland_robot_perception", file_name="semantic_mapping.launch.py")
         ),
-        launch_arguments=[
-            {"topic_camera_info" : "/rgbd/info"},
-            {"topic_rgb_image" : "/rgbd/color/raw"},
-            {"topic_depth_image" : "/rgbd/depth/raw"},
-            {"topic_localization" : "/giraff/ground_truth"},
+        launch_arguments={
+            "dataset" : "ROS-Unity",
+
+            "topic_camera_info" : "/rgbd/info",
+            "topic_rgb_image" : "/rgbd/color/raw",
+            "topic_depth_image" : "/rgbd/depth/raw",
+            "topic_localization" : "/giraff/ground_truth",
             
-            {"map_frame_id" : "map"},
-            {"robot_frame_id" : "giraff_base_link"},
-            {"camera_frame_id" : "RGBD"},
-        ]
+            "map_frame_id" : "map",
+            "robot_frame_id" : "giraff_base_link",
+            "camera_frame_id" : "RGBD",
+        }.items()
     )
 
     unity = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="unity_launch.py")
         ),
-        launch_arguments=[
-        ]
+        launch_arguments={}.items()
     )
 
     # For the 2D ClassMap

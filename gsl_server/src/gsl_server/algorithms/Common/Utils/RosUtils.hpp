@@ -2,7 +2,7 @@
 
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
-#include <gsl_server/algorithms/Common/Grid.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <rclcpp/clock.hpp>
 #include <rclcpp/node.hpp>
@@ -43,6 +43,6 @@ namespace GSL
         Vector3 fromMsg(const geometry_msgs::msg::Vector3& v);
         Vector3 fromMsg(const geometry_msgs::msg::Point& v);
 
-        std::vector<Occupancy> parseMapImage(const std::string& path, GridMetadata& metadata);
+        std::vector<Occupancy> parseMapImage(const std::string& path, Grid2DMetadata& metadata);
     }; // namespace Utils
 }; // namespace GSL

@@ -78,7 +78,7 @@ namespace GSL::PMFS_internal
             if (ImGui::Button("Print") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
                 if (selectedVar == 0)
-                    result = PMFS_internal::UI::printCell(Grid<HitProbability>(pmfs->hitProbability, pmfs->occupancy, pmfs->gridMetadata), x, y);
+                    result = PMFS_internal::UI::printCell(Grid2D<HitProbability>(pmfs->hitProbability, pmfs->occupancy, pmfs->gridMetadata), x, y);
                 else if (selectedVar == 1)
                     result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf({x, y})]);
             }
@@ -137,7 +137,7 @@ namespace GSL::PMFS_internal
                 pmfs->functionQueue.submit([this]()
                 {
                     pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
-                    PMFSViz::ShowSourceProb(Grid<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs);
+                    PMFSViz::ShowSourceProb(Grid2D<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs);
                 });
             }
         }
@@ -244,7 +244,7 @@ namespace GSL::PMFS_internal
         return selected;
     }
 
-    std::string UI::printCell(const Grid<HitProbability>& grid, const int& x, const int& y)
+    std::string UI::printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y)
     {
 
         static std::string queryResult;

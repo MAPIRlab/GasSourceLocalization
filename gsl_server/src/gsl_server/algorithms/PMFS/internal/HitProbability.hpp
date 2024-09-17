@@ -1,6 +1,6 @@
 #pragma once
 #include <gsl_server/core/Vectors.hpp>
-#include <gsl_server/algorithms/Common/Grid.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
 
 namespace GSL::PMFS_internal
 {

@@ -44,7 +44,7 @@ namespace GSL
 
 
         //-------------Core-------------
-        GridMetadata gridMetadata;
+        Grid2DMetadata gridMetadata;
         std::vector<double> sourceProbability;
         std::vector<HitProbability> hitProbability;
         std::vector<Occupancy> occupancy;

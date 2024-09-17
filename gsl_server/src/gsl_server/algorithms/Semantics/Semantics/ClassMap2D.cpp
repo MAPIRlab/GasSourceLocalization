@@ -13,7 +13,7 @@
 const char* otherClassName = "other";
 namespace GSL
 {
-    ClassMap2D::ClassMap2D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
+    ClassMap2D::ClassMap2D(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
                            const PoseWithCovarianceStamped& _currentRobotPose)
         : gridMetadata(_gridMetadata), wallsOccupancy(occupancy), bufferWrapper(_bufferWrapper), currentRobotPose(_currentRobotPose)
     {
@@ -55,7 +55,7 @@ namespace GSL
             classMap.computeSourceProbability(classMap.classDistributions[i], sourceProb[i]);
         }
 
-        Grid<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
+        Grid2D<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
         Utils::NormalizeDistribution(probGrid);
     }
 

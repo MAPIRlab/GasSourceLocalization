@@ -1,7 +1,7 @@
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
-#include <gsl_server/algorithms/Common/Grid.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <angles/angles.h>
 
@@ -142,8 +142,8 @@ namespace GSL
 
     void MovingStateSemanticPMFS::publishMarkers()
     {
-        GridMetadata& gridMetadata = pmfs->gridMetadata;
-        Grid<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->navigationOccupancy, gridMetadata);
+        Grid2DMetadata& gridMetadata = pmfs->gridMetadata;
+        Grid2D<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->navigationOccupancy, gridMetadata);
 
 
         Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());

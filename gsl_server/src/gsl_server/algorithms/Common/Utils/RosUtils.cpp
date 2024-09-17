@@ -114,7 +114,7 @@ namespace GSL::Utils
         return Vector3(v.x, v.y, v.z);
     }
 
-    std::vector<Occupancy> parseMapImage(const std::string& path, GridMetadata& metadata)
+    std::vector<Occupancy> parseMapImage(const std::string& path, Grid2DMetadata& metadata)
     {
         if (!std::filesystem::exists(path))
         {

@@ -3,7 +3,7 @@
 #include "ClassMap.hpp"
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Utils/BufferWrapper.hpp>
-#include <gsl_server/algorithms/Common/Grid.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/AABB.hpp>
 
 #include <rclcpp/rclcpp.hpp>
@@ -16,7 +16,7 @@ namespace GSL
         using Detection3D = vision_msgs::msg::Detection3D;
         using Detection3DArray = vision_msgs::msg::Detection3DArray;
     public:
-        ClassMap2D(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
+        ClassMap2D(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
                    const PoseWithCovarianceStamped& _currentRobotPose);
 
         std::vector<double> GetSourceProbability() override;
@@ -30,7 +30,7 @@ namespace GSL
 
         ClassMap classMap;
         std::vector<Occupancy> wallsOccupancy; //TODO this is a copy. Should it be?
-        GridMetadata gridMetadata;
+        Grid2DMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
         const PoseWithCovarianceStamped& currentRobotPose;
 

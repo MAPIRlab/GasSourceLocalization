@@ -87,7 +87,7 @@ namespace GSL::Utils
         return total;
     }
 
-    void NormalizeDistribution(Grid<double> variable)
+    void NormalizeDistribution(Grid2D<double> variable)
     {
         // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
         // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens

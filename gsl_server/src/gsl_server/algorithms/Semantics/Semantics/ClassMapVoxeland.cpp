@@ -5,15 +5,11 @@
 
 namespace GSL
 {
-    ClassMapVoxeland::ClassMapVoxeland(GridMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
+    ClassMapVoxeland::ClassMapVoxeland(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
                            const PoseWithCovarianceStamped& _currentRobotPose)
         : gridMetadata(_gridMetadata), wallsOccupancy(occupancy), bufferWrapper(_bufferWrapper), currentRobotPose(_currentRobotPose)
     {
         node = std::make_shared<rclcpp::Node>("class_map");
-
-        std::string detectionsTopic = Utils::getParam<std::string>(node, "detectionsTopic", "objectDetections");
-
-        classMarkers = node->create_publisher<Marker>("class_markers", 1);
 
         zLimits.x = Utils::getParam<float>(node, "zMin", 0.0f);
         zLimits.y = Utils::getParam<float>(node, "zMax", 2.0f);
@@ -49,7 +45,7 @@ namespace GSL
             }
         }
 
-        Grid<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
+        Grid2D<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
         Utils::NormalizeDistribution(probGrid);
     }
 

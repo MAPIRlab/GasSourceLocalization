@@ -51,23 +51,13 @@ ament_target_dependencies( gsl_actionserver_node
     gsl_actions
 )
 # You can disable the compilation of any of these algorithms by commenting them out here (useful if you don't want to install their dependencies)
-add_subdirectory(src/gsl_server/algorithms/Common)
-add_subdirectory(src/gsl_server/algorithms/PlumeTracking)
-add_subdirectory(src/gsl_server/algorithms/Spiral)
-add_subdirectory(src/gsl_server/algorithms/ParticleFilter)
-add_subdirectory(src/gsl_server/algorithms/GrGSL)
-add_subdirectory(src/gsl_server/algorithms/PMFS)
-add_subdirectory(src/gsl_server/algorithms/Semantics)
-
-target_link_libraries(gsl_actionserver_node
-    PlumeTracking
-    Spiral
-    ParticleFilter
-    GrGSL
-    PMFS
-    Semantics
-)
-
+include(src/gsl_server/algorithms/Common/CMakeLists.txt)
+include(src/gsl_server/algorithms/PlumeTracking/CMakeLists.txt)
+include(src/gsl_server/algorithms/Spiral/CMakeLists.txt)
+include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
+include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
+include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
+include(src/gsl_server/algorithms/Semantics/CMakeLists.txt)
 
 
 ##### Call node

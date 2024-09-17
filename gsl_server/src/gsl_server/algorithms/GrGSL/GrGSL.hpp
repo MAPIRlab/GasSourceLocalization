@@ -1,6 +1,6 @@
 #pragma once
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
-#include <gsl_server/algorithms/Common/Grid.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
 #include "GrGSL_internal.hpp"
@@ -23,7 +23,7 @@ namespace GSL
     protected:
         
         std::vector<std::vector<GrGSL_internal::Cell>> grid;
-        GridMetadata gridMetadata;
+        Grid2DMetadata gridMetadata;
 
         GrGSL_internal::Settings settings;
 

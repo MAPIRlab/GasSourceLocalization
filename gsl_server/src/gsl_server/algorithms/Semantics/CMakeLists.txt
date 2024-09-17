@@ -1,5 +1,5 @@
 
-file(GLOB_RECURSE SOURCES "./*.cpp") 
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp") 
 
 #Semantics
 find_package(magic_enum REQUIRED)
@@ -28,3 +28,8 @@ target_link_libraries(Semantics
     PMFS
     )
 add_compile_definitions(ENABLE_SEMANTICS=1)
+
+
+target_link_libraries(gsl_actionserver_node
+    Semantics
+)

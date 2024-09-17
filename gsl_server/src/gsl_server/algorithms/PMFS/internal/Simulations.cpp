@@ -185,7 +185,7 @@ namespace GSL::PMFS_internal
         return result;
     }
 
-    double Simulations::sourceProbFromMaps(const Grid<HitProbability>& measuredHitProb, const std::vector<float>& hitMap) const
+    double Simulations::sourceProbFromMaps(const Grid2D<HitProbability>& measuredHitProb, const std::vector<float>& hitMap) const
     {
         ZoneScoped;
         double total = 1;

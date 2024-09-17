@@ -9,9 +9,9 @@ namespace GSL
 {
     using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
     PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node),
-        simulations(Grid<HitProbability>(hitProbability, occupancy, gridMetadata),
-                    Grid<double>(sourceProbability, occupancy, gridMetadata),
-                    Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
+        simulations(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
+                    Grid2D<double>(sourceProbability, occupancy, gridMetadata),
+                    Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                     settings.simulation),
         pubs(node->get_clock())
         IF_GUI(, ui(this))
@@ -72,7 +72,7 @@ namespace GSL
         visibilityMap.emplace(gridMetadata.width, gridMetadata.height, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
         PMFSLib::initializeMap(*this,
-                               Grid<HitProbability>(hitProbability, occupancy, gridMetadata),
+                               Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
                                simulations, *visibilityMap);
 
 
@@ -86,7 +86,7 @@ namespace GSL
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         functionQueue.submit([this]()
         {
-            Grid<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
+            Grid2D<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
             PMFSLib::initializeWindPredictions(*this, windGrid,
                                                pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
             PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
@@ -111,8 +111,8 @@ namespace GSL
 
         // Update visualization
         dynamic_cast<MovingStatePMFS*>(movingState.get())->publishMarkers();
-        PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
-        PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
     void PMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -121,7 +121,7 @@ namespace GSL
 
         //Update the gas presence map
         // ------------------------------
-        Grid<HitProbability> grid(hitProbability, occupancy, gridMetadata);
+        Grid2D<HitProbability> grid(hitProbability, occupancy, gridMetadata);
         if (concentration > thresholdGas)
         {
             // Gas & wind
@@ -140,7 +140,7 @@ namespace GSL
         //Update the wind estimations
         // ------------------------------
         PMFSLib::estimateWind(settings.simulation.useWindGroundTruth,
-                              Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
+                              Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                               node,
                               pubs.gmrfWind
                               IF_GADEN(, pubs.groundTruthWind));
@@ -178,9 +178,9 @@ namespace GSL
             stateMachine.forceResetState(stopAndMeasureState.get());
 
         //Visualization
-        PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
-        PMFSViz::ShowSourceProb(Grid<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
-        PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
     float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg)

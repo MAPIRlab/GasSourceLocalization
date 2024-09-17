@@ -13,7 +13,7 @@ def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="B"),
         DeclareLaunchArgument("simulation", default_value="B1"),
-        DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
+        DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
     ]
 #==========================
@@ -94,7 +94,8 @@ def launch_setup(context, *args, **kwargs):
                     {"detectionsTopic": "/semantic_instances_3D"},
                     {"ontologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ontology.yaml")},
 
-                    
+                    {"zMin": -0.7},
+                    {"zMax": 1.0},                    
                 ],
                 on_exit=Shutdown()
             ),

@@ -1,5 +1,5 @@
 
-file(GLOB_RECURSE SOURCES "./*.cpp") 
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp") 
 
 
 # Create the library
@@ -18,3 +18,7 @@ target_link_libraries(ParticleFilter
     GSL_common
 )
 add_compile_definitions(ENABLE_PARTICLE_FILTER=1)
+
+target_link_libraries(gsl_actionserver_node
+    ParticleFilter
+)

@@ -2,11 +2,12 @@
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
+#include "Occupancy.hpp"
 
 namespace GSL
 {
     //See the grid class
-    struct GridMetadata
+    struct Grid2DMetadata
     {
         Vector2 origin;
         float cellSize; // in meters
@@ -61,21 +62,15 @@ namespace GSL
         }
     };
 
-    enum class Occupancy
-    {
-        Free,
-        Obstacle
-    };
-
     //A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa
     template <typename T>
-    struct Grid
+    struct Grid2D
     {
         std::vector<T>& data;
         std::vector<Occupancy>& occupancy;
-        GridMetadata& metadata;
+        Grid2DMetadata& metadata;
 
-        Grid(std::vector<T>& _data, std::vector<Occupancy>& _occupancy, GridMetadata& _metadata)
+        Grid2D(std::vector<T>& _data, std::vector<Occupancy>& _occupancy, Grid2DMetadata& _metadata)
             : data(_data), occupancy(_occupancy), metadata(_metadata)
         {}
 
@@ -102,7 +97,7 @@ namespace GSL
 
         //reduce the resolution of an occupancy grid, considering that a cell in the smaller map is occupied as soon as a single smaller cell in it is
         static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy,
-                                       const GridMetadata& metadata)
+                                       const Grid2DMetadata& metadata)
         {
             int scale = metadata.scale; // scale for dynamic map reduction
             for (int i = 0; i < metadata.height; i++)

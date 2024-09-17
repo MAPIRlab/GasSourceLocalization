@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/Common/Grid.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
@@ -28,28 +28,28 @@ namespace GSL
         using HitProbKernel = PMFS_internal::HitProbKernel;
 
     public:
-        static void initMetadata(GridMetadata& metadata, const OccupancyGrid& map, int scale);
-        static void initializeMap(Algorithm& algorithm, Grid<HitProbability> grid, PMFS_internal::Simulations& simulations,
+        static void initMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale);
+        static void initializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
                                   VisibilityMap& visibilityMap);
-        static void initializeWindPredictions(Algorithm& algorithm, Grid<Vector2> grid, std::shared_ptr<WindEstimation::Request>& GMRFRequest
+        static void initializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid, std::shared_ptr<WindEstimation::Request>& GMRFRequest
                                               IF_GADEN(, std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest)
                                              );
 
-        static void estimateHitProbabilities(Grid<HitProbability>& hitLocalVariable, const VisibilityMap& visibilityMap, PMFS_internal::HitProbabilitySettings& settings,
+        static void estimateHitProbabilities(Grid2D<HitProbability>& hitLocalVariable, const VisibilityMap& visibilityMap, PMFS_internal::HitProbabilitySettings& settings,
                                              bool hit, double windDirection, double windSpeed, Vector2Int robotPosition);
 
         // returns the sum of all auxWeights, for normalization purposes
-        static double propagateProbabilities(Grid<HitProbability>& var, const PMFS_internal::HitProbabilitySettings& settings,
+        static double propagateProbabilities(Grid2D<HitProbability>& var, const PMFS_internal::HitProbabilitySettings& settings,
                                              HashSet& openSet, HashSet& closedSet, HashSet& activeSet, const HitProbKernel& kernel);
 
         //Get the updated wind map from the service (Gaden, if using groundTruth, GMRF otherwise)
-        static void estimateWind(bool useGroundTruth, Grid<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
+        static void estimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
                                  PMFS_internal::GMRFWind& gmrf
                                  IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
                                 );
 
         //run the DDA algorithm to check if a straight line from origin to end intersects any obstacles
-        static bool pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end);
+        static bool pathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end);
 
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);

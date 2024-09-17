@@ -12,7 +12,7 @@ namespace GSL
 // P(H)
 //---------------
 
-    void PMFSLib::estimateHitProbabilities(Grid<HitProbability>& hitProb, const VisibilityMap& visibilityMap,
+    void PMFSLib::estimateHitProbabilities(Grid2D<HitProbability>& hitProb, const VisibilityMap& visibilityMap,
                                            PMFS_internal::HitProbabilitySettings& settings, bool hit, double downwindDirection, double windSpeed,
                                            Vector2Int robotPosition)
     {
@@ -90,7 +90,7 @@ namespace GSL
         }
     }
 
-    double PMFSLib::propagateProbabilities(Grid<HitProbability>& hitProb, const PMFS_internal::HitProbabilitySettings& settings,
+    double PMFSLib::propagateProbabilities(Grid2D<HitProbability>& hitProb, const PMFS_internal::HitProbabilitySettings& settings,
                                            HashSet& openPropagationSet, HashSet& closedPropagationSet, HashSet& activePropagationSet,
                                            const HitProbKernel& kernel)
     {
@@ -188,7 +188,7 @@ namespace GSL
         return std::log(prob / (1 - prob));
     }
 
-    void PMFSLib::initMetadata(GridMetadata& metadata, const OccupancyGrid& map, int scale)
+    void PMFSLib::initMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale)
     {
         metadata.cellSize = map.info.resolution * scale;
         metadata.origin.x = map.info.origin.position.x;
@@ -199,7 +199,7 @@ namespace GSL
         metadata.scale = scale;
     }
 
-    void PMFSLib::initializeMap(Algorithm& algorithm, Grid<HitProbability> grid, PMFS_internal::Simulations& simulations,
+    void PMFSLib::initializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
                                 VisibilityMap& visibilityMap)
     {
         // create the PMFS cells
@@ -286,7 +286,7 @@ namespace GSL
         simulations.varianceOfHitProb.resize(grid.metadata.height * grid.metadata.width, 0);
     }
 
-    void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid<Vector2> grid,
+    void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,
                                             std::shared_ptr<WindEstimation::Request>& GMRFRequest
                                             IF_GADEN(, std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest))
     {
@@ -335,7 +335,7 @@ namespace GSL
         }
     }
 
-    void PMFSLib::estimateWind(bool useGroundTruth, Grid<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
+    void PMFSLib::estimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
                                PMFS_internal::GMRFWind& gmrf IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth))
     {
         // if not compiled with gaden support, you have no choice but to use GMRF :)
@@ -381,7 +381,7 @@ namespace GSL
 #endif
     }
 
-    bool PMFSLib::pathFree(GridMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end)
+    bool PMFSLib::pathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end)
     {
         Vector2Int originInd = metadata.coordinatesToIndex(origin);
         Vector2Int endInd = metadata.coordinatesToIndex(end);

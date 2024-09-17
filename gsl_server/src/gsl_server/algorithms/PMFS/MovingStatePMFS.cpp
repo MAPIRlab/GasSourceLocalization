@@ -1,6 +1,6 @@
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
-#include <gsl_server/algorithms/Common/Grid.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
@@ -155,8 +155,8 @@ namespace GSL
 
     void MovingStatePMFS::publishMarkers()
     {
-        GridMetadata& gridMetadata = pmfs->gridMetadata;
-        Grid<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->occupancy, gridMetadata);
+        Grid2DMetadata& gridMetadata = pmfs->gridMetadata;
+        Grid2D<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->occupancy, gridMetadata);
 
         Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());
 

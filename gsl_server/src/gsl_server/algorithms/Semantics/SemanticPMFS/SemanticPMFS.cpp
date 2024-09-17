@@ -2,6 +2,7 @@
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/ClassMap2D.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/ClassMapVoxeland.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 #include <magic_enum.hpp>
@@ -10,9 +11,9 @@ namespace GSL
 {
 
     SemanticPMFS::SemanticPMFS(std::shared_ptr<rclcpp::Node> _node)
-        : Algorithm(_node), simulations(Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
-                                        Grid<double>(sourceProbabilityPMFS, simulationOccupancy, gridMetadata),
-                                        Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.simulation),
+        : Algorithm(_node), simulations(Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+                                        Grid2D<double>(sourceProbabilityPMFS, simulationOccupancy, gridMetadata),
+                                        Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.simulation),
           pubs(node->get_clock())
     {}
 
@@ -41,8 +42,8 @@ namespace GSL
             updateSourceFromSemantics();
         }
 
-        PMFSViz::ShowHitProb(Grid<HitProbability>(hitProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
-        PMFSViz::ShowSourceProb(Grid<double>(combinedSourceProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
+        PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
+        PMFSViz::ShowSourceProb(Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
         functionQueue.run();
     }
 
@@ -75,7 +76,7 @@ namespace GSL
                               std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
         // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
 
-        PMFSLib::initializeMap(*this, Grid<HitProbability>(hitProbability, navigationOccupancy, gridMetadata), simulations, *visibilityMap);
+        PMFSLib::initializeMap(*this, Grid2D<HitProbability>(hitProbability, navigationOccupancy, gridMetadata), simulations, *visibilityMap);
 
         // set all variables to the prior probability
         for (HitProbability& h : hitProbability) h.setProbability(settings.hitProbability.prior);
@@ -93,8 +94,9 @@ namespace GSL
         });
 
         // SEMANTICS
+        //----------------------
         std::string semanticsTypeParam = node->declare_parameter<std::string>("semanticsType", "ClassMap2D");
-        auto semanticsType = magic_enum::enum_cast<SemanticsType>(semanticsTypeParam, magic_enum::case_insensitive);
+        std::optional<SemanticsType> semanticsType = magic_enum::enum_cast<SemanticsType>(semanticsTypeParam, magic_enum::case_insensitive);
         if (!semanticsType.has_value())
         {
             constexpr auto names = magic_enum::enum_names<SemanticsType>();
@@ -104,6 +106,8 @@ namespace GSL
         }
         else if (semanticsType == SemanticsType::ClassMap2D)
             semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
+        else if (semanticsType == SemanticsType::ClassMapVoxeland)
+            semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
     }
 
     void SemanticPMFS::updateSourceFromSemantics()
@@ -119,7 +123,7 @@ namespace GSL
         {
             combinedSourceProbability[i] = sourceProbabilityPMFS[i] * sourceProbSemantics[i];
         }
-        Utils::NormalizeDistribution(Grid<double>(combinedSourceProbability, simulationOccupancy, gridMetadata));
+        Utils::NormalizeDistribution(Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata));
     }
 
     void SemanticPMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -142,9 +146,9 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-        PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), node,
+        PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), node,
                               pubs.pmfsPubs.gmrfWind IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-        PMFSViz::PlotWindVectors(Grid<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
+        PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
 
         number_of_updates++;
 

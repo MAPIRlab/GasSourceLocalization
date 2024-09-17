@@ -15,7 +15,7 @@ namespace GSL
     class SemanticPMFS : public Algorithm
     {
         template <typename T>
-        using Grid = Grid<T>;
+        using Grid = Grid2D<T>;
         using HitProbability = PMFS_internal::HitProbability;
         using HitProbKernel = PMFS_internal::HitProbKernel;
         using HashSet = std::unordered_set<Vector2Int>;
@@ -40,7 +40,7 @@ namespace GSL
         std::vector<double> combinedSourceProbability;
 
         //-------------PMFS-------------
-        GridMetadata gridMetadata;
+        Grid2DMetadata gridMetadata;
         std::vector<double> sourceProbabilityPMFS;
         std::vector<HitProbability> hitProbability;
         std::vector<Occupancy> navigationOccupancy;

@@ -1,5 +1,5 @@
 
-file(GLOB_RECURSE SOURCES "./*.cpp") 
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp") 
 
 find_package(gmrf_wind_mapping REQUIRED)
 
@@ -21,3 +21,8 @@ target_link_libraries(GrGSL
     GSL_common
 )
 add_compile_definitions(ENABLE_GrGSL=1)
+
+
+target_link_libraries(gsl_actionserver_node
+    GrGSL
+)
