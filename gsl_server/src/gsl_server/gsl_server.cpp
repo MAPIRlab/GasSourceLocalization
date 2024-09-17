@@ -4,26 +4,7 @@
 */
 
 #include <gsl_server/gsl_server.hpp>
-
-#if ENABLE_PLUME_TRACKING
-    #include <gsl_server/algorithms/PlumeTracking/SurgeCast/SurgeCast.hpp>
-    #include <gsl_server/algorithms/PlumeTracking/SurgeSpiral/SurgeSpiral.hpp>
-#endif
-#if ENABLE_SPIRAL
-    #include <gsl_server/algorithms/Spiral/Spiral.hpp>
-#endif
-#if ENABLE_PARTICLE_FILTER
-    #include <gsl_server/algorithms/ParticleFilter/ParticleFilter.hpp>
-#endif
-#if ENABLE_GrGSL
-    #include <gsl_server/algorithms/GrGSL/GrGSL.hpp>
-#endif
-#if ENABLE_PMFS
-    #include <gsl_server/algorithms/PMFS/PMFS.hpp>
-#endif
-#if ENABLE_SEMANTICS
-    #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
-#endif
+#include <gsl_server/algorithms/gsl_algorithms.hpp>
 
 int main(int argc, char** argv)
 {
@@ -112,7 +93,14 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
     std::shared_ptr<Algorithm> algorithm = createAlgorithm(goal_handle->get_goal()->gsl_method);
     if (!algorithm)
     {
-        GSL_ERROR("Invalid GSL method: \"{}\", candidates are:\n 'surge_cast', 'surge_spiral, 'spiral', 'particle_filter', 'GrGSL', 'PMFS'",
+        GSL_ERROR("Invalid GSL method: \"{}\", candidates are:\n"
+                  " '" SURGE_CAST_NAME "'\n"
+                  " '" SURGE_SPIRAL_NAME "'\n"
+                  " '" SPIRAL_NAME "'\n"
+                  " '" PARTICLE_FILTER_NAME "'\n"
+                  " '" GRGSL_NAME "'\n"
+                  " '" PMFS_NAME "'\n"
+                  " '" SEMANTIC_PMFS_NAME "'\n",
                   goal_handle->get_goal()->gsl_method.c_str());
         actionResult->success = false;
         goal_handle->abort(actionResult);
@@ -138,44 +126,35 @@ std::shared_ptr<GSL::Algorithm> GSLServer::createAlgorithm(const std::string nam
     if (false) // just so we can disable the first one with a preprocessor define without breaking the if
     {}
 #if ENABLE_PLUME_TRACKING
-    else if (name == "surge_cast")
-    {
+    else if (name == SURGE_CAST_NAME)
         return std::make_shared<GSL::SurgeCast>(shared_from_this());
-    }
-    else if (name == "surge_spiral")
-    {
+    else if (name == SURGE_SPIRAL_NAME)
         return std::make_shared<GSL::SurgeSpiral>(shared_from_this());
-    }
 #endif
+
 #if ENABLE_SPIRAL
-    else if (name == "spiral")
-    {
+    else if (name == SPIRAL_NAME)
         return std::make_shared<GSL::Spiral>(shared_from_this());
-    }
 #endif
+
 #if ENABLE_PARTICLE_FILTER
-    else if (name == "particle_filter")
-    {
+    else if (name == PARTICLE_FILTER_NAME)
         return std::make_shared<GSL::ParticleFilter>(shared_from_this());
-    }
 #endif
+
 #if ENABLE_GrGSL
-    else if (name == "GrGSL")
-    {
+    else if (name == GRGSL_NAME)
         return std::make_shared<GSL::GrGSL>(shared_from_this());
-    }
 #endif
+
 #if ENABLE_PMFS
-    else if (name == "PMFS")
-    {
+    else if (name == PMFS_NAME)
         return std::make_shared<GSL::PMFS>(shared_from_this());
-    }
 #endif
+
 #if ENABLE_SEMANTICS
-    else if (name == "SemanticPMFS")
-    {
+    else if (name == SEMANTIC_PMFS_NAME)
         return std::make_shared<GSL::SemanticPMFS>(shared_from_this());
-    }
 #endif
     return nullptr;
 }
