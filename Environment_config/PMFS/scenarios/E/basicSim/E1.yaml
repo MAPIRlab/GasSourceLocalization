@@ -8,6 +8,6 @@ robots:
         name: "laser_scan" 
         minAngleRad: -0.7
         maxAngleRad: 3.8
-        angleResolutionRad: 0.05 
+        angleResolutionRad: 0.1
         minDistance: 0.1
         maxDistance: 4.0
