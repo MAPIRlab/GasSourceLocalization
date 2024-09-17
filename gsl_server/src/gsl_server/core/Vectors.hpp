@@ -20,7 +20,6 @@
 #include "VectorsImpl/vmath_DDACustomVec.hpp"
 #endif
 
-#ifndef OMIT_FMT
 #include <fmt/ostream.h>
 inline std::ostream& operator<<(std::ostream& os, const GSL::Vector2Int& v)
 {
@@ -36,4 +35,3 @@ inline std::ostream& operator<<(std::ostream& os, const GSL::Vector3& v)
 {
     return os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
 }
-#endif

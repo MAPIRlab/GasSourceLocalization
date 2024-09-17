@@ -10,7 +10,8 @@
 
 using DoGSL = gsl_actions::action::DoGSL;
 
-template <typename T> static T getParam(rclcpp::Node::SharedPtr node, const std::string& name, T defaultValue)
+template <typename T> 
+static T getParam(rclcpp::Node::SharedPtr node, const std::string& name, T defaultValue)
 {
     if (node->has_parameter(name))
         return node->get_parameter_or<T>(name, defaultValue);

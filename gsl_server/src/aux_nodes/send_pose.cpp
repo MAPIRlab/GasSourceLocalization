@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     pose.pose.position.x = x;
     pose.pose.position.y = y;
     pose.pose.position.z = z;
-    //for some reason the message is lost unless we wait a bit before sending it... seems like a bug of some king on ROS's end
+    //for some reason the message is lost unless we wait a bit before sending it... seems like a bug on ROS's end
     rclcpp::sleep_for(std::chrono::seconds(1));
     pub->publish(pose);
 
