@@ -163,11 +163,11 @@ namespace GSL::PMFS_internal
 
     Simulations::SimulationResult Simulations::runSimulation(std::vector<LeafScore>& scores, size_t index)
     {
-        SimulationResult result;
+        SimulationResult result {.valid = false};
         NQA::Node* node = scores[index].leaf;
         if (node->value != 1)
             return result;
-        
+
         result.valid = true;
         result.hitMap.resize(measuredHitProb.data.size(), 0.0);
 
