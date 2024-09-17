@@ -167,7 +167,8 @@ namespace GSL::PMFS_internal
         NQA::Node* node = scores[index].leaf;
         if (node->value != 1)
             return result;
-
+        
+        result.valid = true;
         result.hitMap.resize(measuredHitProb.data.size(), 0.0);
 
         SimulationSource source(node, measuredHitProb.metadata);

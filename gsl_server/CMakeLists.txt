@@ -2,12 +2,12 @@ cmake_minimum_required(VERSION 3.11)
 project(gsl_server) 
 set(CMAKE_CXX_FLAGS "-g -Wno-narrowing ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log file
 
 #########################
 #OPTIONS
 #########################
-set(GSL_DEBUG ON) #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
+set(GSL_DEBUG OFF) #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
 set(GSL_TRACING ON) #extra logging to tell you what is being executed
 
 set(USE_GADEN ON) #if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. If you dont have gaden in this workspace, you need to set this to OFF or it wont compile (duh)
