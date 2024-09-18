@@ -348,7 +348,7 @@ namespace GSL::PMFS_internal
         DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
         {currentPosition.y, currentPosition.x}, {movement.y, movement.x}, vmath::length(movement),
         DDA::_2D::Map<GSL::Occupancy>(measuredHitProb.occupancy, measuredHitProb.metadata.origin, measuredHitProb.metadata.cellSize,
-        {measuredHitProb.metadata.width, measuredHitProb.metadata.height}),
+        {measuredHitProb.metadata.dimensions.y, measuredHitProb.metadata.dimensions.x}),
         [](const GSL::Occupancy & occ)
         {
             return occ == GSL::Occupancy::Free;
@@ -388,19 +388,19 @@ namespace GSL::PMFS_internal
         simulateSourceInPosition(source, hitMap, false, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
                                  settings.noiseSTDev);
 
-        cv::Mat image(cv::Size(measuredHitProb.metadata.width, measuredHitProb.metadata.height), CV_32FC3, cv::Scalar(0, 0, 0));
+        cv::Mat image(cv::Size(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y), CV_32FC3, cv::Scalar(0, 0, 0));
 
-        for (int i = 0; i < measuredHitProb.metadata.height; i++)
+        for (int j = 0; j < measuredHitProb.metadata.dimensions.y; j++)
         {
-            for (int j = 0; j < measuredHitProb.metadata.width; j++)
+            for (int i = 0; i < measuredHitProb.metadata.dimensions.x; i++)
             {
                 if (measuredHitProb.freeAt(i, j))
                 {
                     float v = hitMap[measuredHitProb.metadata.indexOf({i, j})] * 255;
-                    image.at<cv::Vec3f>(measuredHitProb.metadata.height - 1 - i, j) = cv::Vec3f(v, v, v);
+                    image.at<cv::Vec3f>(measuredHitProb.metadata.dimensions.x - 1 - i, j) = cv::Vec3f(v, v, v);
                 }
                 else
-                    image.at<cv::Vec3f>(measuredHitProb.metadata.height - 1 - i, j) = cv::Vec3f(0, 0, 255);
+                    image.at<cv::Vec3f>(measuredHitProb.metadata.dimensions.x - 1 - i, j) = cv::Vec3f(0, 0, 255);
             }
         }
 

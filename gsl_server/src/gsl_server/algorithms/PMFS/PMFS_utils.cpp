@@ -67,9 +67,9 @@ namespace GSL
             }
         };
         std::vector<CellData> data;
-        for (int i = 0; i < gridMetadata.height; i++)
+        for (int i = 0; i < gridMetadata.dimensions.x; i++)
         {
-            for (int j = 0; j < gridMetadata.width; j++)
+            for (int j = 0; j < gridMetadata.dimensions.x; j++)
             {
                 if (occupancy[gridMetadata.indexOf({i, j})] == Occupancy::Free)
                 {
@@ -102,9 +102,9 @@ namespace GSL
     {
         Vector2 expected = expectedValueSource(1);
         double x = 0, y = 0;
-        for (int i = 0; i < gridMetadata.height; i++)
+        for (int i = 0; i < gridMetadata.dimensions.x; i++)
         {
-            for (int j = 0; j < gridMetadata.width; j++)
+            for (int j = 0; j < gridMetadata.dimensions.x; j++)
             {
                 if (occupancy[gridMetadata.indexOf({i, j})] == Occupancy::Free)
                 {

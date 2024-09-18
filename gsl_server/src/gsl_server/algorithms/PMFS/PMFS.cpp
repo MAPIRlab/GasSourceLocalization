@@ -65,11 +65,11 @@ namespace GSL
         int scale = getParam<int>("scale", 65); // scale for dynamic map reduction
         PMFSLib::initMetadata(gridMetadata, map, scale);
 
-        hitProbability.resize(gridMetadata.height * gridMetadata.width);
-        sourceProbability.resize(gridMetadata.height * gridMetadata.width);
-        occupancy.resize(gridMetadata.height * gridMetadata.width);
+        hitProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
+        sourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
+        occupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
 
-        visibilityMap.emplace(gridMetadata.width, gridMetadata.height, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
+        visibilityMap.emplace(gridMetadata.dimensions.y, gridMetadata.dimensions.x, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
         PMFSLib::initializeMap(*this,
                                Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),

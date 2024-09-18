@@ -6,15 +6,21 @@
 namespace GSL
 {
     ClassMapVoxeland::ClassMapVoxeland(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
-                           const PoseWithCovarianceStamped& _currentRobotPose)
-        : gridMetadata(_gridMetadata), wallsOccupancy(occupancy), bufferWrapper(_bufferWrapper), currentRobotPose(_currentRobotPose)
+                                       const PoseWithCovarianceStamped& _currentRobotPose)
+        : wallsOccupancy(occupancy), bufferWrapper(_bufferWrapper), currentRobotPose(_currentRobotPose)
     {
         node = std::make_shared<rclcpp::Node>("class_map");
 
-        zLimits.x = Utils::getParam<float>(node, "zMin", 0.0f);
-        zLimits.y = Utils::getParam<float>(node, "zMax", 2.0f);
+        gridMetadata.cellSize = _gridMetadata.cellSize;
+        gridMetadata.origin.x = _gridMetadata.origin.x;
+        gridMetadata.origin.y = _gridMetadata.origin.y;
+        gridMetadata.origin.z = Utils::getParam<float>(node, "zMin", 0.0f);
+        gridMetadata.scale = _gridMetadata.scale;
+        gridMetadata.dimensions.x = _gridMetadata.dimensions.x;
+        gridMetadata.dimensions.y = _gridMetadata.dimensions.y;
+        gridMetadata.dimensions.z = (Utils::getParam<float>(node, "zMax", 2.0f) - gridMetadata.origin.z) / gridMetadata.cellSize;
 
-        classMap.classDistributions.resize(gridMetadata.height * gridMetadata.width * numZLevels());
+        classMap.classDistributions.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y *  gridMetadata.dimensions.z);
         std::string ontologyPath = Utils::getParam<std::string>(node, "ontologyPath", "?");
         std::string targetGas = Utils::getParam<std::string>(node, "targetGas", "smoke");
         classMap.parseOntology(ontologyPath, targetGas);
@@ -29,7 +35,7 @@ namespace GSL
 
     std::vector<double> ClassMapVoxeland::GetSourceProbability()
     {
-        std::vector<double> probs(gridMetadata.height * gridMetadata.width, 0.0);
+        std::vector<double> probs(gridMetadata.dimensions.x * gridMetadata.dimensions.y, 0.0);
         GetSourceProbabilityInPlace(probs);
         return probs;
     }
@@ -38,21 +44,21 @@ namespace GSL
     {
         for (size_t i = 0; i < sourceProb.size(); i++)
         {
-            for (size_t z = 0; z < numZLevels(); z++)
+            for (size_t z = 0; z < gridMetadata.dimensions.z; z++)
             {
-                size_t index = i + z * gridMetadata.width * gridMetadata.height;
+                size_t index = i + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
                 classMap.computeSourceProbability(classMap.classDistributions[index], sourceProb[i]);
             }
         }
 
-        Grid2D<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
-        Utils::NormalizeDistribution(probGrid);
+        Grid3D<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
+        // Utils::NormalizeDistribution(probGrid);
     }
 
     double ClassMapVoxeland::GetSourceProbabilityAt(const Vector3& point)
     {
         Vector3Int indices = gridMetadata.coordinatesToIndex(point.x, point.y, point.z);
-        size_t index = indexOf(indices);
+        size_t index = gridMetadata.indexOf(indices);
         double value = 0;
         classMap.computeSourceProbability(classMap.classDistributions[index], value);
         return value;
@@ -83,15 +89,5 @@ namespace GSL
 
     void ClassMapVoxeland::visualize()
     {}
-
-    size_t ClassMapVoxeland::indexOf(const Vector3Int& v) const
-    {
-        return v.y + v.x * gridMetadata.width + v.z * gridMetadata.width * gridMetadata.height;
-    }
-
-    size_t ClassMapVoxeland::numZLevels() const
-    {
-        return (zLimits.y - zLimits.x) / gridMetadata.cellSize;
-    }
 
 } // namespace GSL

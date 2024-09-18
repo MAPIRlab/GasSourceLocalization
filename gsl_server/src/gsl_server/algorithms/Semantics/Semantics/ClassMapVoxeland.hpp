@@ -5,6 +5,7 @@
 #include <gsl_server/algorithms/Common/Utils/BufferWrapper.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/AABB.hpp>
+#include <gsl_server/algorithms/Common/Grid3D.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -25,14 +26,11 @@ namespace GSL
 
         ClassMap classMap;
         std::vector<Occupancy> wallsOccupancy; //TODO this is a copy. Should it be?
-        Grid2DMetadata gridMetadata;
+        Grid3DMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
         const PoseWithCovarianceStamped& currentRobotPose;
-        Vector2 zLimits;
 
         void getUpdatedMapFromService();
         void visualize();
-        size_t indexOf(const Vector3Int& v) const;
-        size_t numZLevels() const;
     };
 }

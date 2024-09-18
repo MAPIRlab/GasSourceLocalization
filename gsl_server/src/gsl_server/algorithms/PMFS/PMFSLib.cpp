@@ -23,48 +23,41 @@ namespace GSL
         // old news
         HashSet closedPropagationSet;
 
-        int i = robotPosition.x, j = robotPosition.y;
-        Vector2Int ij(i, j);
-
-        double kernel_rotation_wind = -angles::normalize_angle(
-                                          downwindDirection + M_PI / 2); // the orientation of the anemometer's frame of reference and the way it uses angles is weird, man
+        double kernel_rotation_wind = -angles::normalize_angle( downwindDirection + M_PI / 2);
         HitProbKernel kernel =
         {
-            kernel_rotation_wind,
-            Vector2(settings.kernelSigma + settings.kernelStretchConstant * windSpeed, // semi-major ellipse axis
-            settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma) // semi-minor axis
+            .angle = kernel_rotation_wind,
+            .sigma = Vector2(
+                settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma), // semi-minor ellipse axis
+                settings.kernelSigma + settings.kernelStretchConstant * windSpeed // semi-major axis
             ),
-            (hit ? 0.6f : 0.1f)
+            .valueAt1 = (hit ? 0.6f : 0.1f)
         };
 
-        int oI = std::max(0, i - settings.localEstimationWindowSize);
-        int fI = std::min((int)hitProb.metadata.height - 1, i + settings.localEstimationWindowSize);
-        int oJ = std::max(0, j - settings.localEstimationWindowSize);
-        int fJ = std::min((int)hitProb.metadata.width - 1, j + settings.localEstimationWindowSize);
-        for (int r = oI; r <= fI; r++)
+        int oC = std::max(0, robotPosition.x - settings.localEstimationWindowSize);
+        int fC = std::min((int)hitProb.metadata.dimensions.x - 1, robotPosition.x + settings.localEstimationWindowSize);
+        int oR = std::max(0, robotPosition.y - settings.localEstimationWindowSize);
+        int fR = std::min((int)hitProb.metadata.dimensions.y - 1, robotPosition.y + settings.localEstimationWindowSize);
+        for (int row = oR; row <= fR; row++)
         {
-            for (int c = oJ; c <= fJ; c++)
+            for (int col = oC; col <= fC; col++)
             {
-                Vector2Int rc(r, c);
-                if (visibilityMap.isVisible(ij, rc) != Visibility::Visible)
+                Vector2Int rc(col, row);
+                if (visibilityMap.isVisible(robotPosition, rc) != Visibility::Visible)
                     continue;
 
-                // the neighbours that are between 1 and "localEstimationWindowSize" cells away
-                if (std::abs(c - j) >= 1 || std::abs(r - i) >= 1)
-                {
-                    if (hitProb.freeAt(r, c))
-                        activePropagationSet.insert(rc);
-                    else
-                        closedPropagationSet.insert(rc);
-                }
-                // the ones that are right next to the robot
-                else
+                if (rc == robotPosition)
                     closedPropagationSet.insert(rc);
+                else
+                    activePropagationSet.insert(rc);
 
-                hitProb.dataAt(r, c).distanceFromRobot = vmath::length(Vector2(rc - ij));
-                hitProb.dataAt(r, c).originalPropagationDirection = vmath::normalized(Vector2(rc - ij)); // TODO check this. Should be coordinates,
-                // no?
-                hitProb.dataAt(r, c).auxWeight = applyFalloffLogOdds(Vector2(rc - ij), kernel, settings);
+                //TODO should probably use the coordinates rather than the cell indices, but it would require adjusting all the parameters in the launch file, so...
+                //TODO good news is once we've done this the parameters become cell-size-independent
+                //Vector2 offset = hitProb.metadata.indexToCoordinates(rc) - hitProb.metadata.indexToCoordinates(robotPosition);
+                Vector2 offset = Vector2(rc - robotPosition);
+                hitProb.dataAt(col, row).distanceFromRobot = vmath::length(offset);
+                hitProb.dataAt(col, row).originalPropagationDirection = vmath::normalized(offset);
+                hitProb.dataAt(col, row).auxWeight = applyFalloffLogOdds(offset, kernel, settings);
             }
         }
 
@@ -151,9 +144,9 @@ namespace GSL
                 closedPropagationSet.insert(p);
 
                 int oR = std::max(0, p.x - 1);
-                int fR = std::min((int)hitProb.metadata.height - 1, p.x + 1);
+                int fR = std::min((int)hitProb.metadata.dimensions.x - 1, p.x + 1);
                 int oC = std::max(0, p.y - 1);
-                int fC = std::min((int)hitProb.metadata.width - 1, p.y + 1);
+                int fC = std::min((int)hitProb.metadata.dimensions.y - 1, p.y + 1);
 
                 // 8-neighbour propagation
                 for (int i = oR; i <= fR; i++)
@@ -194,8 +187,8 @@ namespace GSL
         metadata.origin.x = map.info.origin.position.x;
         metadata.origin.y = map.info.origin.position.y;
         metadata.numFreeCells = 0;
-        metadata.height = floor((float)map.info.height / scale);
-        metadata.width = floor((float)map.info.width / scale);
+        metadata.dimensions.x = floor((float)map.info.width / scale);
+        metadata.dimensions.y = floor((float)map.info.height / scale);
         metadata.scale = scale;
     }
 
@@ -210,7 +203,7 @@ namespace GSL
             GSL_TRACE("Created grid");
         }
 
-        std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.height, std::vector<uint8_t>(grid.metadata.width));
+        std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.dimensions.x, std::vector<uint8_t>(grid.metadata.dimensions.y));
         // prune unreachable free cells
         {
             // get an arbitrary seed value into the cell the robot is currently in and propagagate it. If a cell has not received that value by the
@@ -227,9 +220,9 @@ namespace GSL
                                                 activePropagationSet, {1, {1, 0}, 0});
             }
 
-            for (int i = 0; i < grid.metadata.height; i++)
+            for (int i = 0; i < grid.metadata.dimensions.x; i++)
             {
-                for (int j = 0; j < grid.metadata.width; j++)
+                for (int j = 0; j < grid.metadata.dimensions.y; j++)
                 {
                     if (!grid.freeAt(i, j) || grid.dataAt(i, j).auxWeight == -1)
                     {
@@ -246,9 +239,9 @@ namespace GSL
 
         // precomputed visibility map
         {
-            for (int i = 0; i < grid.metadata.height; i++)
+            for (int i = 0; i < grid.metadata.dimensions.x; i++)
             {
-                for (int j = 0; j < grid.metadata.width; j++)
+                for (int j = 0; j < grid.metadata.dimensions.y; j++)
                 {
                     Vector2Int ij(i, j);
                     if (!grid.freeAt(i, j))
@@ -257,9 +250,9 @@ namespace GSL
                         continue;
                     }
                     int oI = std::max(0, i - (int)visibilityMap.range) - i;
-                    int fI = std::min((int)grid.metadata.height - 1, i + (int)visibilityMap.range) - i;
+                    int fI = std::min((int)grid.metadata.dimensions.x - 1, i + (int)visibilityMap.range) - i;
                     int oJ = std::max(0, j - (int)visibilityMap.range) - j;
-                    int fJ = std::min((int)grid.metadata.width - 1, j + (int)visibilityMap.range) - j;
+                    int fJ = std::min((int)grid.metadata.dimensions.y - 1, j + (int)visibilityMap.range) - j;
 
                     std::vector<Vector2Int> visibleCells;
                     double totalX = 0;
@@ -283,14 +276,14 @@ namespace GSL
 
         simulations.initializeMap(occupancyMap);
         simulations.visibilityMap = &visibilityMap;
-        simulations.varianceOfHitProb.resize(grid.metadata.height * grid.metadata.width, 0);
+        simulations.varianceOfHitProb.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y, 0);
     }
 
     void PMFSLib::initializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,
                                             std::shared_ptr<WindEstimation::Request>& GMRFRequest
                                             IF_GADEN(, std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest))
     {
-        grid.data.resize(grid.metadata.height * grid.metadata.width);
+        grid.data.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y);
         std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
 
         geometry_msgs::msg::TransformStamped tfm;
@@ -316,9 +309,9 @@ namespace GSL
         GMRFRequest = std::make_shared<WindEstimation::Request>();
         IF_GADEN(groundTruthWindRequest = std::make_shared<gaden_player::srv::WindPosition::Request>());
 
-        for (int i = 0; i < grid.metadata.height; i++)
+        for (int i = 0; i < grid.metadata.dimensions.x; i++)
         {
-            for (int j = 0; j < grid.metadata.width; j++)
+            for (int j = 0; j < grid.metadata.dimensions.y; j++)
             {
                 if (grid.freeAt(i, j))
                 {
@@ -386,16 +379,16 @@ namespace GSL
         Vector2Int originInd = metadata.coordinatesToIndex(origin);
         Vector2Int endInd = metadata.coordinatesToIndex(end);
 
-        DDA::_2D::Map<GSL::Occupancy> map(occupancy, metadata.origin, metadata.cellSize, {metadata.width, metadata.height});
+        DDA::_2D::Map<GSL::Occupancy> map(occupancy, metadata.origin, metadata.cellSize, {metadata.dimensions.x, metadata.dimensions.y});
 
         // check there are no obstacles between origin and end
         if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))
             return false;
         Vector2 direction = end - origin;
         DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
-                                                origin, direction, vmath::length(direction),
-                                                DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.width, metadata.height}),
-                                                [](const GSL::Occupancy & occ)
+                origin, direction, vmath::length(direction),
+                DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.dimensions.x, metadata.dimensions.y}),
+                [](const GSL::Occupancy & occ)
         {
             return occ == GSL::Occupancy::Free;
         });

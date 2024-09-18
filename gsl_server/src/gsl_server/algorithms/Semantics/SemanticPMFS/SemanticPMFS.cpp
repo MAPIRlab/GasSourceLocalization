@@ -66,13 +66,13 @@ namespace GSL
         int scale = getParam<int>("scale", 65); // scale for dynamic map reduction
         PMFSLib::initMetadata(gridMetadata, map, scale);
 
-        hitProbability.resize(gridMetadata.height * gridMetadata.width);
-        sourceProbabilityPMFS.resize(gridMetadata.height * gridMetadata.width);
-        navigationOccupancy.resize(gridMetadata.height * gridMetadata.width);
-        combinedSourceProbability.resize(gridMetadata.height * gridMetadata.width);
+        hitProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
+        sourceProbabilityPMFS.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
+        navigationOccupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
+        combinedSourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         simulationOccupancy = Utils::parseMapImage(getParam<std::string>("wallsOccupancyFile", "?"), gridMetadata);
 
-        visibilityMap.emplace(gridMetadata.width, gridMetadata.height,
+        visibilityMap.emplace(gridMetadata.dimensions.x, gridMetadata.dimensions.y,
                               std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
         // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
 

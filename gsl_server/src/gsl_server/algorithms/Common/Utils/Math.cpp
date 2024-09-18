@@ -33,7 +33,7 @@ namespace GSL::Utils
     double evaluate2DGaussian(const Vector2& sampleOffset, const Vector2& sigma, float distributionRotation)
     {
         // we rotate the vector instead of the gaussian because keeping the distribution axis-aligned removes several terms from the PDF equation
-        Vector2 v = vmath::rotate(sampleOffset, -distributionRotation);
+        Vector2 v = vmath::rotate(sampleOffset, distributionRotation);
 
         return std::exp(-0.5 * (std::pow(v.x / sigma.x, 2) + std::pow(v.y / sigma.y, 2))) / (2 * M_PI * sigma.x * sigma.y);
     }
@@ -65,7 +65,8 @@ namespace GSL::Utils
         static thread_local uint32_t state = 0xFFFF;
         state = XXHash32::hash(&state, sizeof(state), seed);
 
-        double rndVal01 = Utils::remapRange(*reinterpret_cast<double*>(&state) / std::numeric_limits<double>::max(), -1, 1, 0, 1);
+        constexpr double reciprocalMax = 1 / (double)std::numeric_limits<uint32_t>::max();
+        double rndVal01 = state * reciprocalMax;
         return min + rndVal01 * (max - min);
 #else
         static thread_local std::uniform_real_distribution<double> distribution {0.0, 0.999};

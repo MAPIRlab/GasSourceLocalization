@@ -22,20 +22,20 @@ namespace GSL
 
         // Add nearby cells to the open set
         {
-            int i = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose).x,
-                j = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose).y;
+            int i = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose).x;
+            int j = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose).y;
 
             int openMoveSetExpasion = pmfs->settings.movement.openMoveSetExpasion;
-            int oI = std::max(0, i - openMoveSetExpasion);
-            int fI = std::min((int)gridMetadata.height - 1, i + openMoveSetExpasion);
-            int oJ = std::max(0, j - openMoveSetExpasion);
-            int fJ = std::min((int)gridMetadata.width - 1, j + openMoveSetExpasion);
+            int oC = std::max(0, i - openMoveSetExpasion);
+            int fC = std::min((int)gridMetadata.dimensions.x - 1, i + openMoveSetExpasion);
+            int oR = std::max(0, j - openMoveSetExpasion);
+            int fR = std::min((int)gridMetadata.dimensions.y - 1, j + openMoveSetExpasion);
 
-            for (int r = oI; r <= fI; r++)
+            for (int col = oC; col <= fC; col++)
             {
-                for (int c = oJ; c <= fJ; c++)
+                for (int row = oR; row <= fR; row++)
                 {
-                    Vector2Int p(r, c);
+                    Vector2Int p(col, row);
                     if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i, j}, p) == Visibility::Visible)
                         openMoveSet.insert(p);
                 }
@@ -49,7 +49,7 @@ namespace GSL
         //------------------------------------------------------
         NavigateToPose::Goal goal;
         int goalI = -1, goalJ = -1;
-        double interest = -DBL_MAX;
+        double bestInterest = -DBL_MAX;
         double maxDist = 0;
 
         // We have a small random chance of using the explorationValue instead of the proper information value even in the second phase
@@ -58,28 +58,28 @@ namespace GSL
 
         for (const auto& indices : openMoveSet)
         {
-            int r = indices.x;
-            int c = indices.y;
-            NavigateToPose::Goal tempGoal = indexToGoal(r, c);
+            int col = indices.x;
+            int row = indices.y;
+            NavigateToPose::Goal tempGoal = indexToGoal(col, row);
 
-            double explorationTerm = explorationValue(r, c);
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({r, c})] *
-                                  (1 - pmfs->hitProbability[gridMetadata.indexOf({r, c})].confidence);
+            double explorationTerm = explorationValue(col, row);
+            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({col, row})] *
+                                  (1 - pmfs->hitProbability[gridMetadata.indexOf({col, row})].confidence);
 
-            double this_interest =
-                currentMovement == MovementType::Exploration || varianceTerm == 0 || explorationC < pmfs->settings.movement.explorationProbability
+            double interest =
+                currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
                 ? explorationTerm
                 : varianceTerm;
 
             //keep the best so far as the goal
-            if (this_interest > interest)
+            if (interest > bestInterest)
             {
                 if (checkGoal(tempGoal))
                 {
-                    interest = this_interest;
-                    goalI = r;
-                    goalJ = c;
-                    maxDist = pmfs->hitProbability[gridMetadata.indexOf({r, c})].distanceFromRobot;
+                    bestInterest = interest;
+                    goalI = col;
+                    goalJ = row;
+                    maxDist = pmfs->hitProbability[gridMetadata.indexOf({col, row})].distanceFromRobot;
                     goal = tempGoal;
                 }
             }
@@ -168,9 +168,9 @@ namespace GSL
         double maxVar = -DBL_MAX;
         double minExpl = DBL_MAX;
         double minVar = DBL_MAX;
-        for (int a = 0; a < gridMetadata.height; a++)
+        for (int b = 0; b < gridMetadata.dimensions.y; b++)
         {
-            for (int b = 0; b < gridMetadata.width; b++)
+            for (int a = 0; a < gridMetadata.dimensions.x; a++)
             {
                 if (!grid.freeAt(a, b))
                     continue;
@@ -182,9 +182,9 @@ namespace GSL
             }
         }
 
-        for (int a = 0; a < gridMetadata.height; a++)
+        for (int b = 0; b < gridMetadata.dimensions.y; b++)
         {
-            for (int b = 0; b < gridMetadata.width; b++)
+            for (int a = 0; a < gridMetadata.dimensions.x; a++)
             {
                 if (!grid.freeAt(a, b))
                     continue;

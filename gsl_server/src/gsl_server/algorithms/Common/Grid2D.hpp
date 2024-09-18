@@ -11,13 +11,13 @@ namespace GSL
     {
         Vector2 origin;
         float cellSize; // in meters
-        size_t width, height;
+        Vector2Int dimensions;
         uint16_t scale; // with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
         size_t numFreeCells;
 
         Vector2Int coordinatesToIndex(double x, double y) const
         {
-            return Vector2Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize));
+            return Vector2Int((x - origin.x) / (cellSize), (y - origin.y) / (cellSize));
         }
 
         Vector2Int coordinatesToIndex(const Vector2& v) const
@@ -30,15 +30,10 @@ namespace GSL
             return coordinatesToIndex(pose.position.x, pose.position.y);
         }
 
-        Vector3Int coordinatesToIndex(double x, double y, double z) const
-        {
-            return Vector3Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize), (z - 0) / (cellSize)); //TODO assuming map is at z=0 for anything that requires height
-        }
-
         Vector2 indexToCoordinates(int i, int j, bool centerOfCell = true) const
         {
             float offset = centerOfCell ? 0.5 : 0;
-            return Vector2(origin.x + (j + offset) * cellSize, origin.y + (i + offset) * cellSize);
+            return Vector2(origin.x + (i + offset) * cellSize, origin.y + (j + offset) * cellSize);
         }
 
         Vector2 indexToCoordinates(const Vector2Int& indices, bool centerOfCell = true) const
@@ -48,17 +43,17 @@ namespace GSL
 
         size_t indexOf(const Vector2Int& v) const
         {
-            return v.y + v.x * width;
+            return v.x + v.y * dimensions.x;
         }
 
         Vector2Int indices2D(size_t index) const
         {
-            return Vector2Int(index / width, index % width);
+            return Vector2Int(index % dimensions.x, index / dimensions.x);
         }
 
         bool indicesInBounds(const Vector2Int& indices) const
         {
-            return indices.x >= 0 && indices.x < height && indices.y >= 0 && indices.y < width;
+            return indices.x >= 0 && indices.x < dimensions.x && indices.y >= 0 && indices.y < dimensions.y;
         }
     };
 
@@ -100,15 +95,15 @@ namespace GSL
                                        const Grid2DMetadata& metadata)
         {
             int scale = metadata.scale; // scale for dynamic map reduction
-            for (int i = 0; i < metadata.height; i++)
+            for (int j = 0; j < metadata.dimensions.y; j++)
             {
-                for (int j = 0; j < metadata.width; j++)
+                for (int i = 0; i < metadata.dimensions.x; i++)
                 {
                     bool squareIsFree = true;
 
-                    for (int row = i * scale; row < (i + 1) * scale; row++)
+                    for (int row = j * scale; row < (j + 1) * scale; row++)
                     {
-                        for (int col = j * scale; col < (j + 1) * scale; col++)
+                        for (int col = i * scale; col < (i + 1) * scale; col++)
                         {
                             if (map[col + row * mapWidth] != 0)
                                 squareIsFree = false;

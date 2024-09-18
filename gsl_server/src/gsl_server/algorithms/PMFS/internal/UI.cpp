@@ -249,7 +249,7 @@ namespace GSL::PMFS_internal
 
         static std::string queryResult;
 
-        if (x < 0 || x > grid.metadata.height || y < 0 || y > grid.metadata.width)
+        if (grid.metadata.indicesInBounds({x,y}))
         {
             GSL_ERROR("Querying cell outside the map!");
         }

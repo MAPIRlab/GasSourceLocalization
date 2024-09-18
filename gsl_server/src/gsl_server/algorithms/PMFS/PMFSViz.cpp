@@ -12,9 +12,9 @@ namespace GSL
 
         Marker confidenceMarker = gasProbMarker;
 
-        for (int a = 0; a < grid.metadata.height; a++)
+        for (int b = 0; b < grid.metadata.dimensions.y; b++)
         {
-            for (int b = 0; b < grid.metadata.width; b++)
+            for (int a = 0; a < grid.metadata.dimensions.x; a++)
             {
                 if (grid.freeAt(a, b))
                 {
@@ -52,9 +52,9 @@ namespace GSL
                                  const PMFS_internal::PublishersAndSubscribers& pubs)
     {
         Marker sourceProbMarker = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
-        for (int a = 0; a < grid.metadata.height; a++)
+        for (int b = 0; b < grid.metadata.dimensions.y; b++)
         {
-            for (int b = 0; b < grid.metadata.width; b++)
+            for (int a = 0; a < grid.metadata.dimensions.x; a++)
             {
                 if (grid.freeAt(a, b))
                 {

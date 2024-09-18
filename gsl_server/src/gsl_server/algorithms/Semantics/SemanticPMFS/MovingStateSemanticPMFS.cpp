@@ -24,9 +24,9 @@ namespace GSL
 
             int openMoveSetExpasion = pmfs->settings.movement.openMoveSetExpasion;
             int oI = std::max(0, i - openMoveSetExpasion);
-            int fI = std::min((int)gridMetadata.height - 1, i + openMoveSetExpasion);
+            int fI = std::min((int)gridMetadata.dimensions.x - 1, i + openMoveSetExpasion);
             int oJ = std::max(0, j - openMoveSetExpasion);
-            int fJ = std::min((int)gridMetadata.width - 1, j + openMoveSetExpasion);
+            int fJ = std::min((int)gridMetadata.dimensions.y - 1, j + openMoveSetExpasion);
 
             for (int r = oI; r <= fI; r++)
             {
@@ -156,9 +156,9 @@ namespace GSL
         double maxVar = -DBL_MAX;
         double minExpl = DBL_MAX;
         double minVar = DBL_MAX;
-        for (int a = 0; a < gridMetadata.height; a++)
+        for (int a = 0; a < gridMetadata.dimensions.x; a++)
         {
-            for (int b = 0; b < gridMetadata.width; b++)
+            for (int b = 0; b < gridMetadata.dimensions.y; b++)
             {
                 if (!grid.freeAt(a, b))
                     continue;
@@ -170,9 +170,9 @@ namespace GSL
             }
         }
 
-        for (int a = 0; a < gridMetadata.height; a++)
+        for (int a = 0; a < gridMetadata.dimensions.x; a++)
         {
-            for (int b = 0; b < gridMetadata.width; b++)
+            for (int b = 0; b < gridMetadata.dimensions.y; b++)
             {
                 if (!grid.freeAt(a, b))
                     continue;

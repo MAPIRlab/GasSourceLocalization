@@ -43,20 +43,20 @@ namespace GSL
 
         size_t indexOf(const Vector3Int& v) const
         {
-            return v.y + v.x * dimensions.x + v.z * dimensions.x * dimensions.y;
+            return v.x + v.y * dimensions.x + v.z * dimensions.x * dimensions.y;
         }
 
         Vector3Int indices3D(size_t index) const
         {
             size_t z = index / (dimensions.x * dimensions.y);
             size_t remainder = index % (dimensions.x * dimensions.y);
-            return Vector3Int(remainder / dimensions.x, remainder % dimensions.x, z);
+            return Vector3Int(remainder % dimensions.x, remainder / dimensions.x, z);
         }
 
         bool indicesInBounds(const Vector3Int& indices) const
         {
-            return indices.x >= 0 && indices.x < dimensions.y
-                   && indices.y >= 0 && indices.y < dimensions.x
+            return indices.x >= 0 && indices.x < dimensions.x
+                   && indices.y >= 0 && indices.y < dimensions.y
                    && indices.z >= 0 && indices.z < dimensions.z;
         }
     };

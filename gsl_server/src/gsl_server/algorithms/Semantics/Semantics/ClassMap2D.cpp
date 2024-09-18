@@ -25,7 +25,7 @@ namespace GSL
 
         classMarkers = node->create_publisher<Marker>("class_markers", 1);
 
-        classMap.classDistributions.resize(gridMetadata.height * gridMetadata.width);
+        classMap.classDistributions.resize(gridMetadata.dimensions.y * gridMetadata.dimensions.x);
         std::string ontologyPath = Utils::getParam<std::string>(node, "ontologyPath", "?");
         std::string targetGas = Utils::getParam<std::string>(node, "targetGas", "smoke");
         classMap.parseOntology(ontologyPath, targetGas);
@@ -43,7 +43,7 @@ namespace GSL
 
     std::vector<double> ClassMap2D::GetSourceProbability()
     {
-        std::vector<double> probs(gridMetadata.height * gridMetadata.width, 0.0);
+        std::vector<double> probs(gridMetadata.dimensions.y * gridMetadata.dimensions.x, 0.0);
         GetSourceProbabilityInPlace(probs);
         return probs;
     }
@@ -230,9 +230,9 @@ namespace GSL
         marker.scale.y = gridMetadata.cellSize;
         marker.scale.z = gridMetadata.cellSize;
 
-        for (int i = 0; i < gridMetadata.height; i++)
+        for (int i = 0; i < gridMetadata.dimensions.x; i++)
         {
-            for (int j = 0; j < gridMetadata.width; j++)
+            for (int j = 0; j < gridMetadata.dimensions.y; j++)
             {
                 int cellIndex = gridMetadata.indexOf({i, j});
                 if (wallsOccupancy[cellIndex] != Occupancy::Free)
