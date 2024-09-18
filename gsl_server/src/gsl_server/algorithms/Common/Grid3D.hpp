@@ -17,7 +17,7 @@ namespace GSL
 
         Vector3Int coordinatesToIndex(double x, double y, double z) const
         {
-            return Vector3Int((y - origin.y) / (cellSize), (x - origin.x) / (cellSize), (z - origin.z) / cellSize);
+            return Vector3Int((x - origin.x) / (cellSize), (y - origin.y) / (cellSize), (z - origin.z) / cellSize);
         }
 
         Vector3Int coordinatesToIndex(const Vector3& v) const
@@ -33,7 +33,7 @@ namespace GSL
         Vector3 indexToCoordinates(int i, int j, int h, bool centerOfCell = true) const
         {
             float offset = centerOfCell ? 0.5 : 0;
-            return Vector3(origin.x + (j + offset) * cellSize, origin.y + (i + offset) * cellSize, origin.z + (h + offset) * cellSize);
+            return Vector3(origin.x + (i + offset) * cellSize, origin.y + (j + offset) * cellSize, origin.z + (h + offset) * cellSize);
         }
 
         Vector3 indexToCoordinates(const Vector3Int& indices, bool centerOfCell = true) const

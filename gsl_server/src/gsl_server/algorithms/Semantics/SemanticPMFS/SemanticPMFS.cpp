@@ -123,7 +123,7 @@ namespace GSL
         {
             combinedSourceProbability[i] = sourceProbabilityPMFS[i] * sourceProbSemantics[i];
         }
-        Utils::NormalizeDistribution(Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata));
+        Utils::NormalizeDistribution(combinedSourceProbability, simulationOccupancy);
     }
 
     void SemanticPMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)

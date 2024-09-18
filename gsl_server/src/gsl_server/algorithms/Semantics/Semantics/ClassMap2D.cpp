@@ -55,8 +55,7 @@ namespace GSL
             classMap.computeSourceProbability(classMap.classDistributions[i], sourceProb[i]);
         }
 
-        Grid2D<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
-        Utils::NormalizeDistribution(probGrid);
+        Utils::NormalizeDistribution(sourceProb, wallsOccupancy);
     }
 
     double ClassMap2D::GetSourceProbabilityAt(const Vector3& point)

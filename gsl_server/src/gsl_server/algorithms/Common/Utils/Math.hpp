@@ -3,7 +3,7 @@
 #include <deque>
 #include <gsl_server/core/Vectors.hpp>
 #include <cfloat>
-#include <gsl_server/algorithms/Common/Grid2D.hpp>
+#include <gsl_server/algorithms/Common/Occupancy.hpp>
 
 namespace GSL::Utils
 {
@@ -56,7 +56,7 @@ namespace GSL::Utils
     double uniformRandom(double min, double max);
 
     double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b);
-    void NormalizeDistribution(Grid2D<double> variable);
+    void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy);
 
     float EquallyDistributed01F();
 

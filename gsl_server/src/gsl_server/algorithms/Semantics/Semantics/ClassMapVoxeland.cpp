@@ -51,8 +51,7 @@ namespace GSL
             }
         }
 
-        Grid3D<double> probGrid(sourceProb, wallsOccupancy, gridMetadata);
-        // Utils::NormalizeDistribution(probGrid);
+        Utils::NormalizeDistribution(sourceProb, wallsOccupancy);
     }
 
     double ClassMapVoxeland::GetSourceProbabilityAt(const Vector3& point)
