@@ -23,20 +23,8 @@ namespace GSL
         nav_client = rclcpp_action::create_client<NavigateToPose>(algorithm->node, "navigate_to_pose");
 #endif
 
-        GSL_INFO("Waiting for the move_base action server to come online...");
-
-        for (int i = 0; i < 100; i++)
-        {
-            if (nav_client->wait_for_action_server(std::chrono::seconds(1)))
-            {
-                GSL_INFO("Found MoveBase!");
-                return;
-            }
+        while (rclcpp::ok() && !nav_client->wait_for_action_server(std::chrono::seconds(1)))
             GSL_INFO("Unable to find the move_base action server, retrying...");
-        }
-
-        GSL_ERROR("Timed out waiting for navigation action_server to become available. Closing node.");
-        rclcpp::shutdown();
     }
 
     void MovingState::OnEnterState(State* previous)

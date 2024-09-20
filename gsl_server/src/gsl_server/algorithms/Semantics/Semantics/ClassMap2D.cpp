@@ -10,7 +10,6 @@
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-const char* otherClassName = "other";
 namespace GSL
 {
     ClassMap2D::ClassMap2D(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
@@ -75,9 +74,9 @@ namespace GSL
             std::vector<std::pair<std::string, float>> scores;
             for (const auto& hyp : detection.results)
             {
+                // if the class label was not in the ontology, substitute it for the "other" class
                 std::string _class = hyp.hypothesis.class_id;
-                if (!classMap.sourceProbByClass.contains(_class))
-                    _class = otherClassName;
+                classMap.filterClassID(_class);
                 scores.emplace_back(_class, hyp.hypothesis.score);
             }
 
@@ -118,7 +117,7 @@ namespace GSL
                 for (const auto& kv : classMap.sourceProbByClass)
                 {
                     float score;
-                    if (kv.first == otherClassName)
+                    if (kv.first == ClassMap::otherClassName)
                         score = true_negative_prob;
                     else
                         score = false_negative_prob;
@@ -243,7 +242,7 @@ namespace GSL
                 p.z = 0.0;
                 marker.points.push_back(p);
 
-                ColorRGBA markerColor = colors[otherClassName];
+                ColorRGBA markerColor = colors[ClassMap::otherClassName];
                 for (const auto& [_class, prob] : classMap.classDistributions[cellIndex])
                 {
                     markerColor = lerp(markerColor, colors[_class], prob);

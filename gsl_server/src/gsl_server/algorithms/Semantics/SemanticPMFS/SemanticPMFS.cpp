@@ -107,7 +107,7 @@ namespace GSL
         else if (semanticsType == SemanticsType::ClassMap2D)
             semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
         else if (semanticsType == SemanticsType::ClassMapVoxeland)
-            semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
+            semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose, node);
     }
 
     void SemanticPMFS::updateSourceFromSemantics()
@@ -116,9 +116,8 @@ namespace GSL
         if (!semantics)
             return;
 
-        static std::vector<double> sourceProbSemantics(combinedSourceProbability.size());
-        semantics->GetSourceProbabilityInPlace(sourceProbSemantics);
-        //#pragma omp parallel for
+        std::vector<double> sourceProbSemantics = semantics->GetSourceProbability();
+        #pragma omp parallel for
         for (size_t i = 0; i < sourceProbSemantics.size(); i++)
         {
             combinedSourceProbability[i] = sourceProbabilityPMFS[i] * sourceProbSemantics[i];

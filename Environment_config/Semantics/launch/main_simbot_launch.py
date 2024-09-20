@@ -7,14 +7,14 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node, PushRosNamespace
 from ament_index_python.packages import get_package_share_directory
 from launch.frontend.parse_substitution import parse_substitution
+from ros2launch.api import get_share_file_path_from_package
 
 #===========================
 def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="B"),
         DeclareLaunchArgument("simulation", default_value="B1"),
-        DeclareLaunchArgument("method",	default_value=["PMFS"]),
-        DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
+        DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
     ]
 #==========================
 
@@ -65,8 +65,7 @@ def launch_setup(context, *args, **kwargs):
                     {"useDiffusionTerm": True},
                     {"stdevHit": 1.0},
                     {"stdevMiss": 1.2},
-                    {"infoTaxis": parse_substitution("$(var use_infotaxis)")},
-                    {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
+                    {"infoTaxis": False},
 
                     #PMFS
                         # Hit probabilities
@@ -90,9 +89,13 @@ def launch_setup(context, *args, **kwargs):
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     #Semantics
-                    {"wallsOccupancyFile": os.path.join(get_package_share_directory("semantic_gsl_env"), "scenarios", LaunchConfiguration("scenario").perform(context), "_occupancy_walls.pgm" )},
+                    {"wallsOccupancyFile": os.path.join(
+                                                        get_package_share_directory("semantic_gsl_env"), 
+                                                        "scenarios", 
+                                                        LaunchConfiguration("scenario").perform(context), "_occupancy_walls.pgm" )},
                     {"detectionsTopic": "/semantic_instances_3D"},
                     {"ontologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ontology.yaml")},
+                    {"semanticsType" : "ClassMapVoxeland"},
 
                     {"zMin": -0.7},
                     {"zMax": 1.0},                    
@@ -140,17 +143,6 @@ def launch_setup(context, *args, **kwargs):
             launch_arguments={
                 "scenario": LaunchConfiguration("scenario"),
                 "namespace" : LaunchConfiguration("robot_name")
-            }.items(),
-    )
-
-    unity = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-                os.path.join(
-                    get_package_share_directory("semantic_gsl_env"),
-                    "launch/unity_launch.py",
-                )
-            ),
-            launch_arguments={
             }.items(),
     )
 
@@ -225,6 +217,10 @@ def launch_setup(context, *args, **kwargs):
         ]
     )
 
+    semantics = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="semantics_launch.py"))
+    )
+
     actions = []
     actions.append(gaden_player)
     actions.extend(anemometer)
@@ -235,6 +231,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_call)
     actions.append(rviz)
     actions.append(send_pose)
+    actions.append(semantics)
 
     return actions
 

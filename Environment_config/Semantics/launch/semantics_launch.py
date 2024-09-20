@@ -21,7 +21,7 @@ def launch_setup(context, *args, **kwargs):
             get_share_file_path_from_package(package_name="voxeland", file_name="voxeland_server.launch.py")
         ),
         launch_arguments= {
-            "resolution" : "0.2"
+            "resolution" : "0.25"
         }.items()
     )
 
@@ -65,7 +65,7 @@ def launch_setup(context, *args, **kwargs):
         )
         
     return [
-        unity, 
+        #unity, 
         voxeland_server,
         voxeland_robot
     ]

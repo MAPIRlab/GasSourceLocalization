@@ -3,7 +3,6 @@
 #include <iterator>
 #include <map>
 #include <string>
-#include <vision_msgs/msg/object_hypothesis.hpp>
 
 namespace GSL
 {
@@ -32,7 +31,7 @@ namespace GSL
             return 0;
         }
 
-        void UpdateProbOf(const std::string& _class, float prob)
+        void SetProbOf(const std::string& _class, float prob)
         {
             try
             {
@@ -44,20 +43,28 @@ namespace GSL
             }
         }
 
+        float TotalProb()
+        {
+            float p = 0;
+            for (const auto& [name, prob] : probabilityDist)
+                p += prob;
+            return p;
+        }
+
         void Normalize()
         {
             float sum = 0;
-            for (const auto& [_class, prob] : probabilityDist) sum += prob;
+            for (const auto& [_class, prob] : probabilityDist)
+                sum += prob;
 
-            for (auto& [_class, prob] : probabilityDist) prob /= sum;
+            for (auto& [_class, prob] : probabilityDist)
+                prob /= sum;
         }
 
-        void FromMsg(const std::vector<vision_msgs::msg::ObjectHypothesis>& msg)
+        void Clear()
         {
-            for (const auto& hyp : msg)
-                probabilityDist[hyp.class_id] = hyp.score;
-            GSL_ASSERT_MSG(totalProb() < 1, "Class distribution has a score above 1 after overwriting with message! This is probably because it "
-                           "already contained different classes to the ones the message provided");
+            for (auto& [_class, prob] : probabilityDist)
+                prob = 0;
         }
 
         Iterator begin()
@@ -71,12 +78,6 @@ namespace GSL
 
     private:
         std::map<std::string, float> probabilityDist;
-        float totalProb()
-        {
-            float p = 0;
-            for (const auto& [name, prob] : probabilityDist) p += prob;
-            return p;
-        }
 
         // Iterator definition
     public:

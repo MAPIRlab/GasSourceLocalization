@@ -42,7 +42,7 @@ namespace GSL
         openMoveSet.erase(pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose));
         NavigateToPose::Goal goal;
         int goalI = -1, goalJ = -1;
-        double interest = -DBL_MAX;
+        double bestInterest = -DBL_MAX;
         double maxDist = 0;
 
         float explorationC = Utils::uniformRandom(0, 1);
@@ -56,16 +56,16 @@ namespace GSL
             double explorationTerm = explorationValue(r, c);
             double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({r, c})] * (1 - pmfs->hitProbability[gridMetadata.indexOf({r, c})].confidence);
 
-            double this_interest =
-                currentMovement == MovementType::Exploration || varianceTerm == 0 || explorationC < pmfs->settings.movement.explorationProbability
+            double interest =
+                currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
                 ? explorationTerm
                 : varianceTerm;
 
-            if (this_interest > interest)
+            if (interest > bestInterest)
             {
                 if (checkGoal(tempGoal))
                 {
-                    interest = this_interest;
+                    bestInterest = interest;
                     goalI = r;
                     goalJ = c;
                     maxDist = pmfs->hitProbability[gridMetadata.indexOf({r, c})].distanceFromRobot;

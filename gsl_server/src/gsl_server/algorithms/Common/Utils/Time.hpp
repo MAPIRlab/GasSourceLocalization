@@ -9,7 +9,8 @@ namespace GSL::Utils::Time
     typedef std::chrono::_V2::system_clock::time_point TimePoint;
     inline double toSeconds(Duration duration)
     {
-        return duration.count() / std::pow(10, 9);
+        constexpr double nanoToSec = 1e-9;
+        return duration.count() * nanoToSec ;
     }
 
     struct Stopwatch

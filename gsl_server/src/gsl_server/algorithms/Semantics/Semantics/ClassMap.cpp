@@ -2,6 +2,7 @@
 #include <gsl_server/algorithms/Semantics/Semantics/ClassMap.hpp>
 #include <gsl_server/core/Macros.hpp>
 #include <yaml-cpp/yaml.h>
+#include <gsl_server/algorithms/Common/Utils/Math.hpp>
 
 namespace GSL
 {
@@ -61,9 +62,30 @@ namespace GSL
             float score = pair.second;
             float previous = classDistributions[index].ProbabilityOf(_class);
             float prob = std::min(0.95f, score * previous); // clamp at arbitrary high value to avoid numerical issues as more observations pile up
-            classDistributions[index].UpdateProbOf(_class, prob);
+            classDistributions[index].SetProbOf(_class, prob);
         }
 
         classDistributions[index].Normalize();
     }
+
+    void ClassMap::FromMsg(size_t index, const std::vector<vision_msgs::msg::ObjectHypothesis>& msg)
+    {
+        classDistributions[index].Clear();
+        for (const auto& hyp : msg)
+        {
+            std::string name = hyp.class_id;
+            filterClassID(name);
+            float previous = classDistributions[index].ProbabilityOf(name);
+            classDistributions[index].SetProbOf(name, hyp.score + previous);
+        }
+        GSL_ASSERT_MSG(Utils::approx(classDistributions[index].TotalProb(), 1), "Class distribution is not normalized after updating from msg");
+    }
+
+    void ClassMap::filterClassID(std::string& id)
+    {
+        if (!sourceProbByClass.contains(id))
+            id = ClassMap::otherClassName;
+    }
+
+
 } // namespace GSL

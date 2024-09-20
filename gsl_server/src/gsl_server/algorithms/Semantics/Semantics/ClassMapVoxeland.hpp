@@ -6,6 +6,7 @@
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/AABB.hpp>
 #include <gsl_server/algorithms/Common/Grid3D.hpp>
+#include <voxeland/srv/get_class_distributions.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -15,7 +16,7 @@ namespace GSL
     {
     public:
         ClassMapVoxeland(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
-                   const PoseWithCovarianceStamped& _currentRobotPose);
+                   const PoseWithCovarianceStamped& _currentRobotPose, rclcpp::Node::SharedPtr _node);
 
         std::vector<double> GetSourceProbability() override;
         void GetSourceProbabilityInPlace(std::vector<double>& sourceProb) override;
@@ -30,6 +31,11 @@ namespace GSL
         BufferWrapper& bufferWrapper;
         const PoseWithCovarianceStamped& currentRobotPose;
 
+        // Voxeland service
+        rclcpp::Client<voxeland::srv::GetClassDistributions>::SharedPtr client;
+        std::vector<Point> requestPoints;
+
+        void initializeRequestPoints();
         void getUpdatedMapFromService();
         void visualize();
     };

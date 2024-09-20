@@ -41,6 +41,11 @@ namespace GSL
             return indexToCoordinates(indices.x, indices.y, indices.z, centerOfCell);
         }
 
+        Vector3 indexToCoordinates(size_t index, bool centerOfCell = true) const
+        {
+            return indexToCoordinates(indices3D(index), centerOfCell);
+        }
+
         size_t indexOf(const Vector3Int& v) const
         {
             return v.x + v.y * dimensions.x + v.z * dimensions.x * dimensions.y;

@@ -11,6 +11,7 @@ namespace GSL::Utils
     static constexpr float Rad2Deg = 180.0f / M_PI;
 
     static constexpr float INVALID_AVERAGE = -FLT_MAX;
+    static constexpr double epsilon = 1e-5;
 
     template <typename CollectionIterator>
     float getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
@@ -43,6 +44,8 @@ namespace GSL::Utils
 
         return average_angle;
     }
+
+    inline bool approx(double v1, double v2) {return std::abs(v1-v2) < epsilon; }
 
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);
