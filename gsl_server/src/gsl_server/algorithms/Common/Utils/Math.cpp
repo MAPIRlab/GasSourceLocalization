@@ -74,42 +74,20 @@ namespace GSL::Utils
 #endif
     }
 
-    double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b)
-    {
-        double total = 0;
-        for (int r = 0; r < a.size(); r++)
-        {
-            for (int c = 0; c < a[0].size(); c++)
-            {
-                double aux = a[r][c] * std::log(a[r][c] / b[r][c]) + (1 - a[r][c]) * std::log((1 - a[r][c]) / (1 - b[r][c]));
-                total += std::isnan(aux) ? 0 : aux;
-            }
-        }
-        return total;
-    }
-
     void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy)
     {
-        // we account for the possibility of having positive and negative values by offsetting everything by the value of the minimum (capped at 0)
-        // so, [-1, -0.5, 1, 2] would become [0, 0.5, 2, 3] before the normalization happens
         double total = 0;
-        int count = 0;
         for (int i = 0; i < variable.size(); i++)
         {
             if (occupancy[i] == Occupancy::Free)
-            {
                 total += variable[i];
-                count++;
-            }
         }
 
         #pragma omp parallel for
         for (int i = 0; i < variable.size(); i++)
         {
             if (occupancy[i] == Occupancy::Free)
-            {
                 variable[i] = variable[i] / total;
-            }
         }
     }
 

@@ -34,13 +34,13 @@ namespace GSL
             .valueAt1 = (hit ? 0.6f : 0.1f)
         };
 
-        int oC = std::max(0, robotPosition.x - settings.localEstimationWindowSize);
-        int fC = std::min((int)hitProb.metadata.dimensions.x - 1, robotPosition.x + settings.localEstimationWindowSize);
-        int oR = std::max(0, robotPosition.y - settings.localEstimationWindowSize);
-        int fR = std::min((int)hitProb.metadata.dimensions.y - 1, robotPosition.y + settings.localEstimationWindowSize);
-        for (int row = oR; row <= fR; row++)
+        size_t oC = std::max(0, robotPosition.x - settings.localEstimationWindowSize);
+        size_t fC = std::min(hitProb.metadata.dimensions.x - 1, robotPosition.x + settings.localEstimationWindowSize);
+        size_t oR = std::max(0, robotPosition.y - settings.localEstimationWindowSize);
+        size_t fR = std::min(hitProb.metadata.dimensions.y - 1, robotPosition.y + settings.localEstimationWindowSize);
+        for (size_t row = oR; row <= fR; row++)
         {
-            for (int col = oC; col <= fC; col++)
+            for (size_t col = oC; col <= fC; col++)
             {
                 Vector2Int rc(col, row);
                 if (visibilityMap.isVisible(robotPosition, rc) != Visibility::Visible)

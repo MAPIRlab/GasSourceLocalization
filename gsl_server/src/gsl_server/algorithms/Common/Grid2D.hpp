@@ -83,6 +83,21 @@ namespace GSL
         {
             return occupancyAt(i, j) == Occupancy::Free;
         }
+
+        T& dataAt(const Vector2Int& indices) const
+        {
+            return data[metadata.indexOf(indices)];
+        }
+
+        Occupancy& occupancyAt(const Vector2Int& indices) const
+        {
+            return occupancy[metadata.indexOf(indices)];
+        }
+
+        bool freeAt(const Vector2Int& indices) const
+        {
+            return occupancyAt(indices) == Occupancy::Free;
+        }
     };
 
     class GridUtils

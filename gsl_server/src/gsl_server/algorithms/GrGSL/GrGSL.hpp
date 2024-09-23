@@ -21,8 +21,9 @@ namespace GSL
         void OnUpdate() override;
 
     protected:
-        
-        std::vector<std::vector<GrGSL_internal::Cell>> grid;
+
+        std::vector<GrGSL_internal::Cell> grid;
+        std::vector<Occupancy> occupancy;
         Grid2DMetadata gridMetadata;
 
         GrGSL_internal::Settings settings;
@@ -36,29 +37,15 @@ namespace GSL
         void Initialize() override;
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
-        void initializeMap();
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
         virtual double probability(const Vector2Int& indices) const;
 
         GSLResult checkSourceFound() override;
         void saveResultsToFile(GSLResult result) override;
 
-        // core
-        //-------------
-        void estimateProbabilitiesfromGasAndWind(std::vector<std::vector<GrGSL_internal::Cell>>& map, bool hit, bool advection, double windDirection,
-                Vector2Int robotPosition);
-        void propagateProbabilities(std::vector<std::vector<GrGSL_internal::Cell>>& map, HashSet& openSet, HashSet& closedSet, HashSet& activeSet);
-
-        void calculateWeight(std::vector<std::vector<GrGSL_internal::Cell>>& map, int i, int j, Vector2Int p, HashSet& openPropagationSet,
-                             HashSet& closedPropagationSet, HashSet& activePropagationSet);
-        void normalizeWeights(std::vector<std::vector<GrGSL_internal::Cell>>& map);
         double informationGain(const GrGSL_internal::WindVector& windVec);
 
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
-        void showWeights();
-
-        enum MapFunctionMode {Sequential, Parallel};
-        void mapFunctionToCells(std::vector<std::vector<GrGSL_internal::Cell>>& cells, std::function<void(GrGSL_internal::Cell&, size_t, size_t)> function, MapFunctionMode mode = MapFunctionMode::Sequential);
     };
 } // namespace GSL

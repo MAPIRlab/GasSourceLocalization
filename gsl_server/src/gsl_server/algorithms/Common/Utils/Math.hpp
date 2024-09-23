@@ -45,7 +45,10 @@ namespace GSL::Utils
         return average_angle;
     }
 
-    inline bool approx(double v1, double v2) {return std::abs(v1-v2) < epsilon; }
+    inline bool approx(double v1, double v2)
+    {
+        return std::abs(v1 - v2) < epsilon;
+    }
 
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);
@@ -58,8 +61,46 @@ namespace GSL::Utils
     double randomFromGaussian(double mean, double stdev);
     double uniformRandom(double min, double max);
 
-    double KLD(std::vector<std::vector<double>>& a, std::vector<std::vector<double>>& b);
+
+    // Kullback-Leibler Divergence
+    template<typename T>
+    double KLD(
+        const std::vector<T>& a,
+        const std::vector<T>& b,
+        const std::vector<Occupancy>& occupancy,
+        std::function<double(const T&)> accessor)
+    {
+        double total = 0;
+        for (int index = 0; index < a.size(); index++)
+            if (occupancy[index] == Occupancy::Free)
+            {
+                double aVal = accessor(a[index]);
+                double bVal = accessor(b[index]);
+                double aux = aVal * std::log(aVal / bVal)
+                             + (1 - aVal) * std::log((1 - aVal) / (1 - bVal));
+                total += std::isnan(aux) ? 0 : aux;
+            }
+        return total;
+    }
+
     void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy);
+    template<typename T>
+    void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy)
+    {
+        double total = 0;
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i] == Occupancy::Free)
+                total += accessor(variable[i]);
+        }
+
+        #pragma omp parallel for
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i] == Occupancy::Free)
+                accessor(variable[i]) = accessor(variable[i]) / total;
+        }
+    }
 
     float EquallyDistributed01F();
 

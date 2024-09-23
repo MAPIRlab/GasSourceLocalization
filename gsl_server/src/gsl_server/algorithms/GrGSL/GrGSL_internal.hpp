@@ -6,17 +6,16 @@ namespace GSL::GrGSL_internal
 {
     struct WindVector
     {
-        int i;
-        int j;
+        int col;
+        int row;
         double speed;
         double angle;
     };
     struct Cell
     {
-        Cell(bool _free, double _weight) : free(_free), weight(_weight), auxWeight(0), distance(0)
+        Cell() : sourceProb(0), auxWeight(0), distance(0)
         {}
-        bool free;
-        double weight;
+        double sourceProb;
         double auxWeight, originalPropagatedWeight;
         double distance;
     };

@@ -14,28 +14,29 @@ namespace GSL
     void MovingStateGrGSL::chooseGoalAndMove()
     {
         const auto& settings = grgsl->settings;
-        const auto& grid = grgsl->grid;
-        const auto& gridMetadata = grgsl->gridMetadata;
+        const Grid2D<Cell> grid(grgsl->grid, grgsl->occupancy, grgsl->gridMetadata);
 
         // update sets
         {
             Vector2Int currentPosition = grgsl->gridMetadata.coordinatesToIndex(grgsl->currentRobotPose.pose.pose);
-            int i = currentPosition.x, j = currentPosition.y;
             int expansionSize = 5;
 
-            int oI = std::max(0, i - expansionSize);
-            int fI = std::min((int)grid.size() - 1, i + expansionSize);
-            int oJ = std::max(0, j - expansionSize);
-            int fJ = std::min((int)grid[0].size() - 1, j + expansionSize);
+            //loop limits
+            size_t startC = std::max(0, currentPosition.x - expansionSize);
+            size_t endC = std::min(grgsl->gridMetadata.dimensions.x - 1, currentPosition.x + expansionSize);
+            size_t startR = std::max(0, currentPosition.y - expansionSize);
+            size_t endR = std::min(grgsl->gridMetadata.dimensions.y - 1, currentPosition.y + expansionSize);
 
-            for (int r = oI; r <= fI; r++)
+            for (int row = startR; row <= endR; row++)
             {
-                for (int c = oJ; c <= fJ; c++)
+                for (int col = startC; col <= endC; col++)
                 {
-                    Vector2Int p(r, c);
-                    if (closedMoveSet.find(p) == closedMoveSet.end() && grid[r][c].free && grid[r][c].distance < 5)
+                    Vector2Int colRow(col, row);
+                    if (closedMoveSet.find(colRow) == closedMoveSet.end()
+                            && grid.freeAt(colRow)
+                            && grid.dataAt(colRow).distance < 5)
                     {
-                        openMoveSet.insert(p);
+                        openMoveSet.insert(colRow);
                     }
                 }
             }
@@ -56,7 +57,7 @@ namespace GSL
 
         grgsl->exploredCells++;
 
-        Vector2Int indices = gridMetadata.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
+        Vector2Int indices = grid.metadata.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
         closedMoveSet.insert(indices);
         openMoveSet.erase(indices);
 
@@ -66,22 +67,23 @@ namespace GSL
         // close nearby cells to avoid repeating the same pose with only minor variations
         if (!settings.allowMovementRepetition)
         {
-            Vector2Int goalIndices = gridMetadata.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
-            int i = goalIndices.x, j = goalIndices.y;
-            int oI = std::max(0, i - 1);
-            int fI = std::min((int)grid.size() - 1, i + 1);
-            int oJ = std::max(0, j - 1);
-            int fJ = std::min((int)grid[0].size() - 1, j + 1);
+            Vector2Int goalIndices = grid.metadata.coordinatesToIndex(goal->pose.pose.position.x, goal->pose.pose.position.y);
 
-            for (int r = oI; r <= fI; r++)
+            //loop limits
+            size_t startC = std::max(0, goalIndices.x - 1);
+            size_t endC = std::min(grgsl->gridMetadata.dimensions.x - 1, goalIndices.x + 1);
+            size_t startR = std::max(0, goalIndices.y - 1);
+            size_t endR = std::min(grgsl->gridMetadata.dimensions.y - 1, goalIndices.y + 1);
+
+            for (int row = startR; row <= endR; row++)
             {
-                for (int c = oJ; c <= fJ; c++)
+                for (int col = startC; col <= endC; col++)
                 {
-                    Vector2Int p(r, c);
-                    if (grid[r][c].free)
+                    Vector2Int colRow(col, row);
+                    if (grid.freeAt(colRow))
                     {
-                        openMoveSet.erase(p);
-                        closedMoveSet.insert(p);
+                        openMoveSet.erase(colRow);
+                        closedMoveSet.insert(colRow);
                     }
                 }
             }
@@ -91,8 +93,8 @@ namespace GSL
     std::optional<NavigateToPose::Goal> MovingStateGrGSL::getNormalGoal()
     {
         const auto& settings = grgsl->settings;
-        const auto& grid = grgsl->grid;
-        const auto& gridMetadata = grgsl->gridMetadata;
+        const Grid2D<Cell> grid(grgsl->grid, grgsl->occupancy, grgsl->gridMetadata);
+
         // Graph exploration
         std::optional<NavigateToPose::Goal> goal = std::nullopt;
 
@@ -102,14 +104,14 @@ namespace GSL
             double maxDist = 0;
             for (auto& p : openMoveSet)
             {
-                if (grgsl->probability(p) > max || (grgsl->probability(p) == max && grid[p.x][p.y].distance > maxDist))
+                if (grgsl->probability(p) > max || (grgsl->probability(p) == max && grid.dataAt(p).distance > maxDist))
                 {
 
                     NavigateToPose::Goal tempGoal = indexToGoal(p.x, p.y);
                     if (checkGoal(tempGoal))
                     {
                         max = grgsl->probability(p);
-                        maxDist = grid[p.x][p.y].distance;
+                        maxDist = grid.dataAt(p).distance;
                         goal = tempGoal;
                     }
                 }
@@ -124,8 +126,7 @@ namespace GSL
     std::optional<NavigateToPose::Goal> MovingStateGrGSL::getInfotaxisGoal()
     {
         const auto& settings = grgsl->settings;
-        const auto& grid = grgsl->grid;
-        const auto& gridMetadata = grgsl->gridMetadata;
+        const Grid2D<Cell> grid(grgsl->grid, grgsl->occupancy, grgsl->gridMetadata);
 
         // Infotactic navigation
         std::optional<NavigateToPose::Goal> goal = std::nullopt;
@@ -139,19 +140,19 @@ namespace GSL
             #pragma omp parallel for
             for (int index = 0; index < wind.size(); index++)
             {
-                int r = wind[index].i;
-                int c = wind[index].j;
+                int col = wind[index].col;
+                int row = wind[index].row;
 
                 double entAux = grgsl->informationGain(wind[index]);
                 mtx.lock();
-                if (entAux > ent || (ent == entAux && grid[r][c].distance > maxDist))
+                if (entAux > ent || (ent == entAux && grid.dataAt(col, row).distance > maxDist))
                 {
-                    NavigateToPose::Goal tempGoal = indexToGoal(r, c);
+                    NavigateToPose::Goal tempGoal = indexToGoal(col, row);
                     bool pathExists = checkGoal(tempGoal);
                     if (pathExists)
                     {
                         ent = entAux;
-                        maxDist = grid[r][c].distance;
+                        maxDist = grid.dataAt(col, row).distance;
                         goal = tempGoal;
                     }
                 }
@@ -190,8 +191,7 @@ namespace GSL
 
     std::vector<WindVector> MovingStateGrGSL::estimateWind()
     {
-        const auto& grid = grgsl->grid;
-        const auto& gridMetadata = grgsl->gridMetadata;
+        const Grid2D<Cell> grid(grgsl->grid, grgsl->occupancy, grgsl->gridMetadata);
 
         // ask the gmrf_wind service for the estimated wind vector in cell i,j
         auto request = std::make_shared<GrGSL::WindEstimation::Request>();
@@ -199,9 +199,9 @@ namespace GSL
         std::vector<Vector2Int> indices;
         for (auto& p : openMoveSet)
         {
-            if (grid[p.x][p.y].distance < 5)
+            if (grid.dataAt(p).distance < 5)
             {
-                Vector2 coords = gridMetadata.indexToCoordinates(p.x, p.y);
+                Vector2 coords = grid.metadata.indexToCoordinates(p.x, p.y);
                 request->x.push_back(coords.x);
                 request->y.push_back(coords.y);
                 indices.push_back(p);
@@ -217,8 +217,8 @@ namespace GSL
             auto response = future.get();
             for (int ind = 0; ind < indices.size(); ind++)
             {
-                result[ind].i = indices[ind].x;
-                result[ind].j = indices[ind].y;
+                result[ind].col = indices[ind].x;
+                result[ind].row = indices[ind].y;
                 result[ind].speed = response->u[ind];
                 result[ind].angle = angles::normalize_angle(response->v[ind] + M_PI);
             }

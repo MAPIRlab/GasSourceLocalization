@@ -25,6 +25,7 @@ namespace GSL
         friend class StopAndMeasureState;
         friend class MovingState;
         friend class PMFSLib;
+        friend class GrGSLLib;
 
     public:
         Algorithm() = delete;

@@ -1,6 +1,7 @@
 style=allman
 indent=spaces=4
 indent-namespaces
+indent-lambda
 pad-oper
 pad-header
 align-pointer=type
