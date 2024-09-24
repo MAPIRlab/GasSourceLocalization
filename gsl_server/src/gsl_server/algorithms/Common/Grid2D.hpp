@@ -30,10 +30,10 @@ namespace GSL
             return coordinatesToIndex(pose.position.x, pose.position.y);
         }
 
-        Vector2 indexToCoordinates(int i, int j, bool centerOfCell = true) const
+        Vector2 indexToCoordinates(int col, int row, bool centerOfCell = true) const
         {
             float offset = centerOfCell ? 0.5 : 0;
-            return Vector2(origin.x + (i + offset) * cellSize, origin.y + (j + offset) * cellSize);
+            return Vector2(origin.x + (col + offset) * cellSize, origin.y + (row + offset) * cellSize);
         }
 
         Vector2 indexToCoordinates(const Vector2Int& indices, bool centerOfCell = true) const
@@ -69,19 +69,19 @@ namespace GSL
             : data(_data), occupancy(_occupancy), metadata(_metadata)
         {}
 
-        T& dataAt(size_t i, size_t j) const
+        T& dataAt(size_t col, size_t row) const
         {
-            return data[metadata.indexOf({i, j})];
+            return data[metadata.indexOf({col, row})];
         }
 
-        Occupancy& occupancyAt(size_t i, size_t j) const
+        Occupancy& occupancyAt(size_t col, size_t row) const
         {
-            return occupancy[metadata.indexOf({i, j})];
+            return occupancy[metadata.indexOf({col, row})];
         }
 
-        bool freeAt(size_t i, size_t j) const
+        bool freeAt(size_t col, size_t row) const
         {
-            return occupancyAt(i, j) == Occupancy::Free;
+            return occupancyAt(col, row) == Occupancy::Free;
         }
 
         T& dataAt(const Vector2Int& indices) const

@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/core/Macros.hpp>
@@ -136,4 +137,52 @@ namespace GSL::Utils
         return occupancyGrid;
     }
 
-} // namespace GSL::Utils
+    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid)
+    {
+        static auto debugNode = std::make_shared<rclcpp::Node>("debugNode");
+        static auto pub = debugNode->create_publisher<Marker>("/debugMarkers", 1);
+
+
+        constexpr auto emptyMarker = []()
+                                     {
+                                         Marker points;
+                                         points.header.frame_id = "map";
+                                         points.ns = "cells";
+                                         points.id = 0;
+                                         points.type = Marker::POINTS;
+                                         points.action = Marker::ADD;
+
+                                         points.color.r = 1.0;
+                                         points.color.g = 0.0;
+                                         points.color.b = 1.0;
+                                         points.color.a = 1.0;
+                                         points.scale.x = 0.15;
+                                         points.scale.y = 0.15;
+                                         return points;
+                                     };
+
+        Marker points = emptyMarker();
+        points.header.stamp = debugNode->now();
+
+        for (int row = 0; row < grid.metadata.dimensions.y; row++)
+        {
+            for (int col = 0; col < grid.metadata.dimensions.x; col++)
+            {
+                if (grid.freeAt(col, row))
+                {
+                    auto coords = grid.metadata.indexToCoordinates(col, row);
+                    Point p;
+                    p.x = coords.x;
+                    p.y = coords.y;
+                    p.z = 0;
+
+                    points.points.push_back(p);
+                    points.colors.push_back(grid.dataAt(col,row));
+                }
+            }
+        }
+        GSL_INFO("Publishing debug markers at {}", pub->get_topic_name());
+        pub->publish(points);
+
+    } // namespace GSL::Utils
+}

@@ -44,5 +44,7 @@ namespace GSL
         Vector3 fromMsg(const geometry_msgs::msg::Point& v);
 
         std::vector<Occupancy> parseMapImage(const std::string& path, Grid2DMetadata& metadata);
+
+        void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid);
     }; // namespace Utils
 }; // namespace GSL

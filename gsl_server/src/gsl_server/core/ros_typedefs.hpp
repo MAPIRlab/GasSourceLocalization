@@ -11,4 +11,5 @@ using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
 using Point = geometry_msgs::msg::Point;
 using MarkerArray = visualization_msgs::msg::MarkerArray;
 using Marker = visualization_msgs::msg::Marker;
+using ColorRGBA = std_msgs::msg::ColorRGBA;
 using OccupancyGrid = nav_msgs::msg::OccupancyGrid;

@@ -1,6 +1,7 @@
 #include "GrGSLLib.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <angles/angles.h>
 
 namespace GSL
@@ -82,8 +83,8 @@ namespace GSL
                     if (!grid.freeAt(colRow))
                         continue;
 
-                    //the cells that are immediately around the robot (within 1 space) always get the same probability as the best direction
-                    if (std::abs(row - robotPosition.y) <= 1 && std::abs(col - robotPosition.x) <= 1)
+                    //the cells that the robot is in always gets the same probability as the best direction
+                    if (colRow == robotPosition)
                     {
                         grid.dataAt(colRow).auxWeight = Utils::evaluate1DGaussian(
                                                             (hit ? 0 : M_PI),
@@ -173,7 +174,11 @@ namespace GSL
     void GrGSLLib::propagateProbabilities(Grid2D<Cell> grid, HashSet& openPropagationSet, HashSet& closedPropagationSet,
                                           HashSet& activePropagationSet)
     {
+#define DebugPropagation 0 // Run the propagation step by step to see how the sets change
+#if DebugPropagation
 
+        std::vector<ColorRGBA> colors (grid.data.size());
+#endif
         while (!activePropagationSet.empty())
         {
             while (!activePropagationSet.empty())
@@ -182,25 +187,35 @@ namespace GSL
                 activePropagationSet.erase(activePropagationSet.begin());
                 closedPropagationSet.insert(activeCell);
 
-                int startR = std::max(0, activeCell.x - 1);
-                int endR = std::min((int) grid.metadata.dimensions.y - 1, activeCell.x + 1);
-                int startC = std::max(0, activeCell.y - 1);
-                int endC = std::min((int) grid.metadata.dimensions.x - 1, activeCell.y + 1);
+                int startR = std::max(0, activeCell.y - 1);
+                int endR = std::min((int) grid.metadata.dimensions.y - 1, activeCell.y + 1);
+                int startC = std::max(0, activeCell.x - 1);
+                int endC = std::min((int) grid.metadata.dimensions.x - 1, activeCell.x + 1);
 
                 // 8-neighbour propagation
                 for (int col = startC; col <= endC; col++)
                     for (int row = startR; row <= endR; row++)
-                        calculateWeight(grid, {col, row}, activeCell, openPropagationSet, closedPropagationSet, activePropagationSet);
+                        if (grid.freeAt(col, row))
+                            calculateWeight(grid, {col, row}, activeCell, openPropagationSet, closedPropagationSet, activePropagationSet);
             }
+#if DebugPropagation
+            mapFunctionToCells(grid, [&](Cell & cell, size_t index)
+                            {
+                                if(Utils::contains(openPropagationSet, grid.metadata.indices2D(index)))
+                                    colors[index] = Utils::create_color(0, 1, 0, 1);
+                                else if(Utils::contains(closedPropagationSet, grid.metadata.indices2D(index)))
+                                    colors[index] = Utils::create_color(1, 0, 0, 1);
+                                else
+                                    colors[index] = Utils::create_color(0, 0, 1, 1);
+
+                            }, MapFunctionMode::Parallel);
+            Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, grid.occupancy, grid.metadata));
+            std::cin.get(); // IMPORTANT!! you need to run the node in a xterm window! otherwise cin is blocked by ros and we cannot pause and step
+#endif
 
             activePropagationSet.clear();
             for (auto& par : openPropagationSet)
-            {
-                if (grid.freeAt(par))
-                    activePropagationSet.insert(par);
-                else
-                    closedPropagationSet.insert(par);
-            }
+                activePropagationSet.insert(par);
 
             openPropagationSet.clear();
         }
@@ -209,42 +224,41 @@ namespace GSL
     void GrGSLLib::calculateWeight(Grid2D<Cell> grid, Vector2Int newCell, Vector2Int activeCell, HashSet& openPropagationSet,
                                    HashSet& closedPropagationSet, HashSet& activePropagationSet)
     {
-        if (closedPropagationSet.find(newCell) == closedPropagationSet.end() &&
-                activePropagationSet.find(newCell) == activePropagationSet.end())
+        if (closedPropagationSet.find(newCell) != closedPropagationSet.end() ||
+                activePropagationSet.find(newCell) != activePropagationSet.end())
+            return;
+
+        // if there already was a path to this cell
+        if (openPropagationSet.find(newCell) != openPropagationSet.end())
         {
+            double d = grid.dataAt(activeCell).distance +
+                       ((newCell.x == activeCell.x || newCell.y == activeCell.y) ?
+                        1 : sqrt(2)); // distance of this new path to the same cell
 
-            // if there already was a path to this cell
-            if (openPropagationSet.find(newCell) != openPropagationSet.end())
+            // if the distance is the same, keep the best probability!
+            if (Utils::approx(d, grid.dataAt(newCell).distance))
+                grid.dataAt(newCell).auxWeight = std::max(grid.dataAt(activeCell).auxWeight, grid.dataAt(newCell).auxWeight);
+            else if (d < grid.dataAt(newCell).distance)
             {
-                double d = grid.dataAt(activeCell).distance +
-                           ((newCell.x == activeCell.x || newCell.y == activeCell.y) ?
-                            1 : sqrt(2)); // distance of this new path to the same cell
-
-                // if the distance is the same, keep the best probability!
-                if (Utils::approx(d, grid.dataAt(newCell).distance))
-                    grid.dataAt(newCell).auxWeight = std::max(grid.dataAt(activeCell).auxWeight, grid.dataAt(newCell).auxWeight);
-                else if (d < grid.dataAt(newCell).distance)
-                {
-                    // keep the shortest path
-                    grid.dataAt(newCell).auxWeight = grid.dataAt(activeCell).auxWeight;
-                    grid.dataAt(newCell).distance = d;
-                }
-            }
-            else
-            {
+                // keep the shortest path
                 grid.dataAt(newCell).auxWeight = grid.dataAt(activeCell).auxWeight;
-                grid.dataAt(newCell).distance = grid.dataAt(activeCell).distance +
-                                                ((newCell.x == activeCell.x || newCell.y == activeCell.y) ?
-                                                 1 : sqrt(2));
-                openPropagationSet.insert(newCell);
+                grid.dataAt(newCell).distance = d;
             }
+        }
+        else
+        {
+            grid.dataAt(newCell).auxWeight = grid.dataAt(activeCell).auxWeight;
+            grid.dataAt(newCell).distance = grid.dataAt(activeCell).distance +
+                                            ((newCell.x == activeCell.x || newCell.y == activeCell.y) ?
+                                             1 : sqrt(2));
+            openPropagationSet.insert(newCell);
         }
     }
 
     void GrGSLLib::Normalize(Grid2D<GrGSL_internal::Cell> grid)
     {
         Utils::NormalizeDistribution<Cell>(grid.data,
-                                           [](Cell& cell) -> double&
+                                           [](Cell & cell) -> double&
                                            {
                                                return cell.sourceProb;
                                            }
@@ -297,7 +311,7 @@ namespace GSL
         {
             for (int col = 0; col < grid.metadata.dimensions.x; col++)
             {
-                if (grid.freeAt(col,row))
+                if (grid.freeAt(col, row))
                 {
                     auto coords = grid.metadata.indexToCoordinates(col, row);
                     Point p;

@@ -8,6 +8,7 @@ Panels:
         - /RobotModel1/Description Topic1
         - /ExplorationValue1
         - /HitVariance1
+        - /Marker1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 620
   - Class: rviz_common/Selection
@@ -322,7 +323,7 @@ Visualization Manager:
         Value: /PioneerP3DX/arrowMarkers
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Source
       Namespaces:
         {}
@@ -333,7 +334,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/probabilityMarkers
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Hit
@@ -389,14 +390,14 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
-        cells: true
+        Gas_Dispersion: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/probabilityMarkers
+        Value: /debugMarkers
       Value: true
   Enabled: true
   Global Options:
