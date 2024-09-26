@@ -28,7 +28,7 @@ namespace GSL
             HashSet activePropagationSet;
             HashSet closedPropagationSet;
 
-            Vector2Int currentIndices = grid.metadata.coordinatesToIndex(algorithm.currentRobotPose.pose.pose);
+            Vector2Int currentIndices = grid.metadata.coordinatesToIndices(algorithm.currentRobotPose.pose.pose);
             grid.dataAt(currentIndices).auxWeight = 1;
             activePropagationSet.insert(currentIndices);
             propagateProbabilities(grid, openPropagationSet, closedPropagationSet, activePropagationSet);
@@ -47,6 +47,16 @@ namespace GSL
         Normalize(grid);
     }
 
+    void GrGSLLib::GetSettings(rclcpp::Node::SharedPtr node, GrGSL_internal::Settings& settings, GrGSL_internal::Markers& markers)
+    {
+        settings.useDiffusionTerm = Utils::getParam<bool>(node, "useDiffusionTerm", false); //experimental way to extract useful info from low-wind measurements, not very reliable
+        settings.stdevHit = Utils::getParam<double>(node, "stdevHit", 1.0);
+        settings.stdevMiss = Utils::getParam<double>(node, "stdevMiss", 2.0);
+        settings.infoTaxis = Utils::getParam<bool>(node, "infoTaxis", false);
+        settings.allowMovementRepetition = Utils::getParam<bool>(node, "allowMovementRepetition", true);
+        settings.convergence_thr = Utils::getParam<double>(node, "convergence_thr", 0.5); // threshold for source declaration
+        markers.markersHeight = Utils::getParam<float>(node, "markers_height", 0);
+    }
 
     void GrGSLLib::estimateProbabilitiesfromGasAndWind(Grid2D<Cell> grid, const GrGSL_internal::Settings& settings,
             bool hit, bool advection, double windDirection, Vector2 positionOfLastHit, Vector2Int robotPosition)
@@ -64,7 +74,7 @@ namespace GSL
         // estimate the probabilities for the neighbour cells
         //-------------------------------
         {
-            Vector2 coordR = grid.metadata.indexToCoordinates(robotPosition);
+            Vector2 coordR = grid.metadata.indicesToCoordinates(robotPosition);
             double idealPropagationDirection = hit ?
                                                angles::normalize_angle(windDirection + M_PI) //upwind direction
                                                : std::atan2((positionOfLastHit.y - coordR.y), (positionOfLastHit.x - coordR.x)) + M_PI; //direction that we have moved since the last hit
@@ -95,7 +105,7 @@ namespace GSL
                     //for the rest of the cells, we compare the direction of the connecting vector with the ideal direction
                     else
                     {
-                        Vector2 coordC = grid.metadata.indexToCoordinates(colRow);
+                        Vector2 coordC = grid.metadata.indicesToCoordinates(colRow);
 
                         double angleCellToRobot = atan2((coordR.y - coordC.y), (coordR.x - coordC.x));
                         double angleDifference = atan2(sin(idealPropagationDirection - angleCellToRobot), cos(idealPropagationDirection - angleCellToRobot));
@@ -266,6 +276,42 @@ namespace GSL
     }
 
 
+    double GrGSLLib::informationGain(const WindVector& windVec, Grid2D<Cell> grid, const Settings& settings, Vector2 positionOfLastHit)
+    {
+        auto predictionCells = grid.data; // temp copy of the matrix of cells that we can modify to simulate the effect of a measurement
+        auto accessProb = [](const Cell & cell)
+                          {
+                              return cell.sourceProb;
+                          };
+
+        //simulate a hit in the considered position and see how much info that gives us
+        GrGSLLib::estimateProbabilitiesfromGasAndWind(
+            Grid2D<Cell>(predictionCells, grid.occupancy, grid.metadata),
+            settings,
+            true,
+            true,
+            windVec.angle,
+            positionOfLastHit,
+            Vector2Int(windVec.col, windVec.row));
+        double infoHit = Utils::KLD<Cell>(predictionCells, grid.data, grid.occupancy, accessProb);
+
+        //simulate a miss and repeat
+        predictionCells = grid.data;
+        GrGSLLib::estimateProbabilitiesfromGasAndWind(
+            Grid2D<Cell>(predictionCells, grid.occupancy, grid.metadata),
+            settings,
+            false,
+            true,
+            windVec.angle,
+            positionOfLastHit,
+            Vector2Int(windVec.col, windVec.row));
+        double infoMiss = Utils::KLD<Cell>(predictionCells, grid.data, grid.occupancy, accessProb);
+
+        //expected value of info, considering that the probability of a hit can be equated to the currently estimated source prob... which is a hack
+        size_t index = grid.metadata.indexOf({windVec.col, windVec.row});
+        return grid.data[index].sourceProb * infoHit + (1 - grid.data[index].sourceProb) * infoMiss;
+    }
+
     void GrGSLLib::mapFunctionToCells(Grid2D<Cell> grid, std::function<void(Cell&, size_t)> function, MapFunctionMode mode)
     {
         if (mode == MapFunctionMode::Parallel)
@@ -313,7 +359,7 @@ namespace GSL
             {
                 if (grid.freeAt(col, row))
                 {
-                    auto coords = grid.metadata.indexToCoordinates(col, row);
+                    auto coords = grid.metadata.indicesToCoordinates(col, row);
                     Point p;
                     p.x = coords.x;
                     p.y = coords.y;
@@ -328,6 +374,66 @@ namespace GSL
             }
         }
         markers.probabilityMarkers->publish(points);
+    }
+
+
+    Vector2 GrGSLLib::expectedValueSource(Grid2D<Cell> grid, double proportionBest)
+    {
+        struct CellData
+        {
+            Vector2Int indices;
+            double probability;
+            CellData(Vector2Int ind, double prob)
+            {
+                indices = ind;
+                probability = prob;
+            }
+        };
+        std::vector<CellData> data;
+        for (int i = 0; i < grid.data.size(); i++)
+        {
+            if (grid.occupancy[i] == Occupancy::Free)
+            {
+                CellData cd(grid.metadata.indices2D(i), grid.data[i].sourceProb);
+                data.push_back(cd);
+            }
+        }
+
+        std::sort(data.begin(), data.end(), [](const CellData & a, const CellData & b)
+                  {
+                      return a.probability > b.probability;
+                  });
+
+        double averageX = 0, averageY = 0;
+        double sum = 0;
+
+        for (int i = 0; i < data.size() * proportionBest; i++)
+        {
+            CellData& cd = data[i];
+            Vector2 coord = grid.metadata.indicesToCoordinates(cd.indices.x, cd.indices.y);
+            averageX += cd.probability * coord.x;
+            averageY += cd.probability * coord.y;
+            sum += cd.probability;
+        }
+        return Vector2(averageX / sum, averageY / sum);
+    }
+
+    double GrGSLLib::varianceSourcePosition(Grid2D<Cell> grid)
+    {
+        Vector2 expected = expectedValueSource(grid, 1.);
+        double x = 0, y = 0;
+        for (int i = 0; i < grid.data.size(); i++)
+        {
+            if (grid.occupancy[i] == Occupancy::Free)
+            {
+                Vector2Int indices = grid.metadata.indices2D(i);
+                Vector2 coords = grid.metadata.indicesToCoordinates(indices);
+                double p = grid.dataAt(indices).sourceProb;
+                x += std::pow(coords.x - expected.x, 2) * p;
+                y += std::pow(coords.y - expected.y, 2) * p;
+            }
+        }
+        return x + y;
     }
 
 }

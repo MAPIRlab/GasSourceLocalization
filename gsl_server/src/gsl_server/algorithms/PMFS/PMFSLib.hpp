@@ -18,7 +18,9 @@
 
 namespace GSL
 {
-
+    // The core of the PMFS algorithm, implemented in stateless functions.
+    // This is useful because it means that to make a variant of PMFS (for example, the semantics version) you do not need to inherit from the PMFS class
+    // Your variant will need to have much of the same stuff as PMFS, though (Settings, HitProbability Grid, etc)
     class PMFSLib
     {
         using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
@@ -28,32 +30,32 @@ namespace GSL
         using HitProbKernel = PMFS_internal::HitProbKernel;
 
     public:
-        static void initMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale);
-        static void initializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
+        static void InitMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale);
+        static void InitializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
                                   VisibilityMap& visibilityMap);
-        static void initializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid, std::shared_ptr<WindEstimation::Request>& GMRFRequest
-                                              IF_GADEN(, std::shared_ptr<gaden_player::srv::WindPosition::Request>& groundTruthWindRequest)
+        static void InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid, WindEstimation::Request::SharedPtr& GMRFRequest
+                                              IF_GADEN(, gaden_player::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest)
                                              );
+        static void InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node);
 
-        static void estimateHitProbabilities(Grid2D<HitProbability>& hitLocalVariable, const VisibilityMap& visibilityMap, PMFS_internal::HitProbabilitySettings& settings,
+        static void EstimateHitProbabilities(Grid2D<HitProbability>& hitLocalVariable, const VisibilityMap& visibilityMap, PMFS_internal::HitProbabilitySettings& settings,
                                              bool hit, double windDirection, double windSpeed, Vector2Int robotPosition);
 
         // returns the sum of all auxWeights, for normalization purposes
-        static double propagateProbabilities(Grid2D<HitProbability>& var, const PMFS_internal::HitProbabilitySettings& settings,
+        static double PropagateProbabilities(Grid2D<HitProbability>& var, const PMFS_internal::HitProbabilitySettings& settings,
                                              HashSet& openSet, HashSet& closedSet, HashSet& activeSet, const HitProbKernel& kernel);
 
         //Get the updated wind map from the service (Gaden, if using groundTruth, GMRF otherwise)
-        static void estimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind, std::shared_ptr<rclcpp::Node> node,
+        static void EstimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind, rclcpp::Node::SharedPtr node,
                                  PMFS_internal::GMRFWind& gmrf
                                  IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
                                 );
 
         //run the DDA algorithm to check if a straight line from origin to end intersects any obstacles
-        static bool pathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end);
+        static bool PathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end);
 
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
-        static void InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node);
 
     private:
 

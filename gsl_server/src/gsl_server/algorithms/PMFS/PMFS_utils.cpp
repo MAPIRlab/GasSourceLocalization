@@ -90,7 +90,7 @@ namespace GSL
         for (int i = 0; i < data.size() * proportionBest; i++)
         {
             CellData& cd = data[i];
-            Vector2 coord = gridMetadata.indexToCoordinates(cd.indices.x, cd.indices.y);
+            Vector2 coord = gridMetadata.indicesToCoordinates(cd.indices.x, cd.indices.y);
             averageX += cd.probability * coord.x;
             averageY += cd.probability * coord.y;
             sum += cd.probability;
@@ -108,7 +108,7 @@ namespace GSL
             {
                 if (occupancy[gridMetadata.indexOf({i, j})] == Occupancy::Free)
                 {
-                    Vector2 coords = gridMetadata.indexToCoordinates(i, j);
+                    Vector2 coords = gridMetadata.indicesToCoordinates(i, j);
                     double p = sourceProbability[gridMetadata.indexOf({i, j})];
                     x += pow(coords.x - expected.x, 2) * p;
                     y += pow(coords.y - expected.y, 2) * p;

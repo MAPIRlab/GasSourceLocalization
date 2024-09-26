@@ -126,9 +126,9 @@ namespace GSL::PMFS_internal
         while (scores.size() > 0)
         {
             std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2)
-            {
-                return result1.score > result2.score;
-            });
+                      {
+                          return result1.score > result2.score;
+                      });
 
             // subdivide the good cells and add the children to the list of cells to simulate
             std::vector<LeafScore> newLevel;
@@ -214,7 +214,7 @@ namespace GSL::PMFS_internal
 
     bool Simulations::filamentIsOutside(const Filament& filament) const
     {
-        Vector2Int newIndices = measuredHitProb.metadata.coordinatesToIndex(filament.position.x, filament.position.y);
+        Vector2Int newIndices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
         return !measuredHitProb.metadata.indicesInBounds(newIndices);
     }
 
@@ -248,7 +248,7 @@ namespace GSL::PMFS_internal
                 {
                     if (!filament.active)
                         continue;
-                    auto indices = measuredHitProb.metadata.coordinatesToIndex(filament.position.x, filament.position.y);
+                    auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
                     // move active filaments
                     moveFilament(filament, indices, deltaTime * 2, noiseSTDev);
@@ -283,7 +283,7 @@ namespace GSL::PMFS_internal
                     continue;
 
                 // update map
-                auto indices = measuredHitProb.metadata.coordinatesToIndex(filament.position.x, filament.position.y);
+                auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
                 size_t index = measuredHitProb.metadata.indexOf(indices);
                 // mark as updated so it doesn't count multiple filaments in the same timestep
                 if (updated[index] < t)
@@ -316,8 +316,8 @@ namespace GSL::PMFS_internal
         if (mode == Mode::Point)
             return point;
 
-        Vector2 start = metadata.indexToCoordinates(nqaNode->origin.x, nqaNode->origin.y, false);
-        Vector2 end = metadata.indexToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
+        Vector2 start = metadata.indicesToCoordinates(nqaNode->origin.x, nqaNode->origin.y, false);
+        Vector2 end = metadata.indicesToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
 
         Vector2 randP(Utils::uniformRandom(start.x, end.x), Utils::uniformRandom(start.y, end.y));
 
@@ -326,8 +326,8 @@ namespace GSL::PMFS_internal
 
     bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
     {
-        Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndex(end.x, end.y);
-        Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
+        Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndices(end.x, end.y);
+        Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
 
         if (!measuredHitProb.freeAt(indexOrigin.x, indexOrigin.y))
         {
@@ -342,17 +342,23 @@ namespace GSL::PMFS_internal
             return true;
         }
 
-#define USE_DDA 0
+#define USE_DDA 1
 #if USE_DDA
         Vector2 movement = end - currentPosition;
         DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
-        {currentPosition.y, currentPosition.x}, {movement.y, movement.x}, vmath::length(movement),
-        DDA::_2D::Map<GSL::Occupancy>(measuredHitProb.occupancy, measuredHitProb.metadata.origin, measuredHitProb.metadata.cellSize,
-        {measuredHitProb.metadata.dimensions.y, measuredHitProb.metadata.dimensions.x}),
-        [](const GSL::Occupancy & occ)
-        {
-            return occ == GSL::Occupancy::Free;
-        });
+                                                currentPosition,
+                                                movement,
+                                                vmath::length(movement),
+                                                DDA::_2D::Map<GSL::Occupancy>(
+                                                        measuredHitProb.occupancy,
+                                                        measuredHitProb.metadata.origin,
+                                                        measuredHitProb.metadata.cellSize,
+                                                        measuredHitProb.metadata.dimensions),
+                                                [](const GSL::Occupancy & occ)
+                                                {
+                                                    return occ == GSL::Occupancy::Free;
+                                                }
+                                            );
         // This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
         // ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
         constexpr float wallStoppingProportion = 0.7;
@@ -373,7 +379,7 @@ namespace GSL::PMFS_internal
         {
             currentPosition += increment;
             index++;
-            Vector2Int pair = metadata.coordinatesToIndex(currentPosition.x, currentPosition.y);
+            Vector2Int pair = metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
             pathIsFree = !metadata.indicesInBounds(pair) || measuredHitProb.freeAt(pair.x, pair.y);
             if (!pathIsFree)
                 currentPosition -= increment;

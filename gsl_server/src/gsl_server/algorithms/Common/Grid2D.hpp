@@ -15,30 +15,30 @@ namespace GSL
         uint16_t scale; // with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
         size_t numFreeCells;
 
-        Vector2Int coordinatesToIndex(double x, double y) const
+        Vector2Int coordinatesToIndices(double x, double y) const
         {
             return Vector2Int((x - origin.x) / (cellSize), (y - origin.y) / (cellSize));
         }
 
-        Vector2Int coordinatesToIndex(const Vector2& v) const
+        Vector2Int coordinatesToIndices(const Vector2& v) const
         {
-            return coordinatesToIndex(v.x, v.y);
+            return coordinatesToIndices(v.x, v.y);
         }
 
-        Vector2Int coordinatesToIndex(const geometry_msgs::msg::Pose& pose) const
+        Vector2Int coordinatesToIndices(const geometry_msgs::msg::Pose& pose) const
         {
-            return coordinatesToIndex(pose.position.x, pose.position.y);
+            return coordinatesToIndices(pose.position.x, pose.position.y);
         }
 
-        Vector2 indexToCoordinates(int col, int row, bool centerOfCell = true) const
+        Vector2 indicesToCoordinates(int col, int row, bool centerOfCell = true) const
         {
             float offset = centerOfCell ? 0.5 : 0;
             return Vector2(origin.x + (col + offset) * cellSize, origin.y + (row + offset) * cellSize);
         }
 
-        Vector2 indexToCoordinates(const Vector2Int& indices, bool centerOfCell = true) const
+        Vector2 indicesToCoordinates(const Vector2Int& indices, bool centerOfCell = true) const
         {
-            return indexToCoordinates(indices.x, indices.y, centerOfCell);
+            return indicesToCoordinates(indices.x, indices.y, centerOfCell);
         }
 
         size_t indexOf(const Vector2Int& v) const

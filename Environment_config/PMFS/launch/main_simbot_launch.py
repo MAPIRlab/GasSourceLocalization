@@ -13,7 +13,7 @@ def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="A"),
         DeclareLaunchArgument("simulation", default_value="A1"),
-        DeclareLaunchArgument("method",	default_value=["GrGSL"]),
+        DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
     ]
 #==========================

@@ -63,7 +63,7 @@ namespace GSL
         Algorithm::onGetMap(msg);
 
         int scale = getParam<int>("scale", 65); // scale for dynamic map reduction
-        PMFSLib::initMetadata(gridMetadata, map, scale);
+        PMFSLib::InitMetadata(gridMetadata, map, scale);
 
         hitProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         sourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
@@ -71,7 +71,7 @@ namespace GSL
 
         visibilityMap.emplace(gridMetadata.dimensions.y, gridMetadata.dimensions.x, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
-        PMFSLib::initializeMap(*this,
+        PMFSLib::InitializeMap(*this,
                                Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
                                simulations, *visibilityMap);
 
@@ -87,9 +87,9 @@ namespace GSL
         functionQueue.submit([this]()
         {
             Grid2D<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
-            PMFSLib::initializeWindPredictions(*this, windGrid,
+            PMFSLib::InitializeWindPredictions(*this, windGrid,
                                                pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
-            PMFSLib::estimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
+            PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
             stateMachine.forceSetState(stopAndMeasureState.get());
         });
     }
@@ -125,21 +125,21 @@ namespace GSL
         if (concentration > thresholdGas)
         {
             // Gas & wind
-            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
+            PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
+                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
-            PMFSLib::estimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndex(currentRobotPose.pose.pose));
+            PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
+                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
         //Update the wind estimations
         // ------------------------------
-        PMFSLib::estimateWind(settings.simulation.useWindGroundTruth,
+        PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
                               Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                               node,
                               pubs.gmrfWind

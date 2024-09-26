@@ -1,0 +1,15 @@
+categories:
+  - name: Kitchen
+    mask: Kitchen.png
+
+  - name: Bathroom
+    mask: Bathroom.png
+
+  - name: Bedroom
+    mask: Bedroom.png
+
+  - name: Hallway
+    mask: Hallway.png
+    
+  - name: LivingRoom
+    mask: LivingRoom.png

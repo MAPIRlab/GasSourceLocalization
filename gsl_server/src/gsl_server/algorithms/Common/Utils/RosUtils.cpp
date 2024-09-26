@@ -170,7 +170,7 @@ namespace GSL::Utils
             {
                 if (grid.freeAt(col, row))
                 {
-                    auto coords = grid.metadata.indexToCoordinates(col, row);
+                    auto coords = grid.metadata.indicesToCoordinates(col, row);
                     Point p;
                     p.x = coords.x;
                     p.y = coords.y;

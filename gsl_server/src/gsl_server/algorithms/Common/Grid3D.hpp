@@ -15,35 +15,35 @@ namespace GSL
         uint16_t scale; // with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
         size_t numFreeCells;
 
-        Vector3Int coordinatesToIndex(double x, double y, double z) const
+        Vector3Int coordinatesToIndices(double x, double y, double z) const
         {
             return Vector3Int((x - origin.x) / (cellSize), (y - origin.y) / (cellSize), (z - origin.z) / cellSize);
         }
 
-        Vector3Int coordinatesToIndex(const Vector3& v) const
+        Vector3Int coordinatesToIndices(const Vector3& v) const
         {
-            return coordinatesToIndex(v.x, v.y, v.z);
+            return coordinatesToIndices(v.x, v.y, v.z);
         }
 
-        Vector3Int coordinatesToIndex(const geometry_msgs::msg::Pose& pose) const
+        Vector3Int coordinatesToIndices(const geometry_msgs::msg::Pose& pose) const
         {
-            return coordinatesToIndex(pose.position.x, pose.position.y, pose.position.z);
+            return coordinatesToIndices(pose.position.x, pose.position.y, pose.position.z);
         }
 
-        Vector3 indexToCoordinates(int i, int j, int h, bool centerOfCell = true) const
+        Vector3 indicesToCoordinates(int i, int j, int h, bool centerOfCell = true) const
         {
             float offset = centerOfCell ? 0.5 : 0;
             return Vector3(origin.x + (i + offset) * cellSize, origin.y + (j + offset) * cellSize, origin.z + (h + offset) * cellSize);
         }
 
-        Vector3 indexToCoordinates(const Vector3Int& indices, bool centerOfCell = true) const
+        Vector3 indicesToCoordinates(const Vector3Int& indices, bool centerOfCell = true) const
         {
-            return indexToCoordinates(indices.x, indices.y, indices.z, centerOfCell);
+            return indicesToCoordinates(indices.x, indices.y, indices.z, centerOfCell);
         }
 
-        Vector3 indexToCoordinates(size_t index, bool centerOfCell = true) const
+        Vector3 indicesToCoordinates(size_t index, bool centerOfCell = true) const
         {
-            return indexToCoordinates(indices3D(index), centerOfCell);
+            return indicesToCoordinates(indices3D(index), centerOfCell);
         }
 
         size_t indexOf(const Vector3Int& v) const

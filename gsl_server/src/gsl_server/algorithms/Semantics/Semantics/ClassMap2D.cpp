@@ -59,7 +59,7 @@ namespace GSL
 
     double ClassMap2D::GetSourceProbabilityAt(const Vector3& point)
     {
-        Vector2Int indices = gridMetadata.coordinatesToIndex(point.x, point.y);
+        Vector2Int indices = gridMetadata.coordinatesToIndices(point.x, point.y);
         size_t index = gridMetadata.indexOf(indices);
         double value = 0;
         classMap.computeSourceProbability(classMap.classDistributions[index], value);
@@ -148,8 +148,8 @@ namespace GSL
         Vector3 maxBBCoords = bbCenter + bbExtents * 0.5f;
 
         AABB2DInt aabb;
-        aabb.min = gridMetadata.coordinatesToIndex(minBBCoords.x, minBBCoords.y);
-        aabb.max = gridMetadata.coordinatesToIndex(maxBBCoords.x, maxBBCoords.y);
+        aabb.min = gridMetadata.coordinatesToIndices(minBBCoords.x, minBBCoords.y);
+        aabb.max = gridMetadata.coordinatesToIndices(maxBBCoords.x, maxBBCoords.y);
         return aabb;
     }
 
@@ -157,7 +157,7 @@ namespace GSL
     {
         std::unordered_set<Vector2Int> cellsInFOV;
 
-        Vector2Int idxRobot = gridMetadata.coordinatesToIndex(robotPose);
+        Vector2Int idxRobot = gridMetadata.coordinatesToIndices(robotPose);
         Vector2Int idxLeftCorner, idxRightCorner;
         {
             Pose leftCornerLocal;
@@ -165,14 +165,14 @@ namespace GSL
             leftCornerLocal.position.y = fov.maxDist * sin(fov.angleRads);
             leftCornerLocal.orientation = Utils::createQuaternionMsgFromYaw(0);
             Pose leftCornerWorld = Utils::compose(robotPose, leftCornerLocal);
-            idxLeftCorner = gridMetadata.coordinatesToIndex(leftCornerWorld);
+            idxLeftCorner = gridMetadata.coordinatesToIndices(leftCornerWorld);
 
             Pose rightCornerLocal;
             rightCornerLocal.position.x = fov.maxDist * cos(fov.angleRads);
             rightCornerLocal.position.y = -fov.maxDist * sin(fov.angleRads);
             rightCornerLocal.orientation = Utils::createQuaternionMsgFromYaw(0);
             Pose rightCornerWorld = Utils::compose(robotPose, rightCornerLocal);
-            idxRightCorner = gridMetadata.coordinatesToIndex(rightCornerWorld);
+            idxRightCorner = gridMetadata.coordinatesToIndices(rightCornerWorld);
         }
 
         AABB2DInt aabb(
@@ -189,7 +189,7 @@ namespace GSL
             if (!gridMetadata.indicesInBounds(indices) || wallsOccupancy[gridMetadata.indexOf(indices)] != Occupancy::Free)
                 continue;
 
-            Vector2 point = gridMetadata.indexToCoordinates(indices);
+            Vector2 point = gridMetadata.indicesToCoordinates(indices);
             Vector2 camToPoint = point - robotCoords;
             float distance = vmath::length(camToPoint);
 
@@ -198,7 +198,7 @@ namespace GSL
             double angleCameraSpace = std::atan2(std::sin(angleWorldSpace - cameraYaw), std::cos(angleWorldSpace - cameraYaw));
 
             if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads &&
-                    PMFSLib::pathFree(gridMetadata, wallsOccupancy, robotCoords, point))
+                    PMFSLib::PathFree(gridMetadata, wallsOccupancy, robotCoords, point))
             {
                 cellsInFOV.insert(indices);
             }
@@ -235,7 +235,7 @@ namespace GSL
                 int cellIndex = gridMetadata.indexOf({i, j});
                 if (wallsOccupancy[cellIndex] != Occupancy::Free)
                     continue;
-                Vector2 coords = gridMetadata.indexToCoordinates(i, j);
+                Vector2 coords = gridMetadata.indicesToCoordinates(i, j);
                 Point p;
                 p.x = coords.x;
                 p.y = coords.y;

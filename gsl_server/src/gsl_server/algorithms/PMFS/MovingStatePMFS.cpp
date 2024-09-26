@@ -22,8 +22,8 @@ namespace GSL
 
         // Add nearby cells to the open set
         {
-            int i = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose).x;
-            int j = pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose).y;
+            int i = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).x;
+            int j = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).y;
 
             int openMoveSetExpasion = pmfs->settings.movement.openMoveSetExpasion;
             int oC = std::max(0, i - openMoveSetExpasion);
@@ -43,7 +43,7 @@ namespace GSL
         }
 
         // remove this cell from the open set
-        openMoveSet.erase(pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose));
+        openMoveSet.erase(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
 
         // Find the cell with the highest estimated information value
         //------------------------------------------------------
@@ -85,8 +85,8 @@ namespace GSL
             }
         }
 
-        if (closedMoveSet.find(pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose)) == closedMoveSet.end())
-            openMoveSet.insert(pmfs->gridMetadata.coordinatesToIndex(pmfs->currentRobotPose.pose.pose));
+        if (closedMoveSet.find(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose)) == closedMoveSet.end())
+            openMoveSet.insert(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
         GSL_ASSERT_MSG(closedMoveSet.find({goalI, goalJ}) == closedMoveSet.end(), "Goal is in closed set, what the hell");
 
         pmfs->iterationsCounter++;
@@ -116,7 +116,7 @@ namespace GSL
         goal.pose.header.frame_id = "map";
         goal.pose.header.stamp = pmfs->node->now();
 
-        Vector2 pos = pmfs->gridMetadata.indexToCoordinates(i, j);
+        Vector2 pos = pmfs->gridMetadata.indicesToCoordinates(i, j);
         Vector2 coordR = {pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y};
 
         double move_angle = (std::atan2(pos.y - coordR.y, pos.x - coordR.x));
@@ -147,7 +147,7 @@ namespace GSL
             return;
 
         Vector2Int indicesGoal =
-            pmfs->gridMetadata.coordinatesToIndex(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
+            pmfs->gridMetadata.coordinatesToIndices(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
         openMoveSet.erase(indicesGoal);
         closedMoveSet.insert(indicesGoal);
         MovingState::Fail();
@@ -188,7 +188,7 @@ namespace GSL
             {
                 if (!grid.freeAt(a, b))
                     continue;
-                auto coords = gridMetadata.indexToCoordinates(a, b);
+                auto coords = gridMetadata.indicesToCoordinates(a, b);
                 Point p;
                 p.x = coords.x;
                 p.y = coords.y;

@@ -18,7 +18,7 @@ namespace GSL
             {
                 if (grid.freeAt(a, b))
                 {
-                    auto coords = grid.metadata.indexToCoordinates(a, b);
+                    auto coords = grid.metadata.indicesToCoordinates(a, b);
                     Point p;
                     p.x = coords.x;
                     p.y = coords.y;
@@ -58,7 +58,7 @@ namespace GSL
             {
                 if (grid.freeAt(a, b))
                 {
-                    auto coords = grid.metadata.indexToCoordinates(a, b);
+                    auto coords = grid.metadata.indicesToCoordinates(a, b);
                     Point p;
                     p.x = coords.x;
                     p.y = coords.y;
@@ -88,7 +88,7 @@ namespace GSL
             mark.type = Marker::CUBE;
             Vector2 worldSpaceScale = (Vector2(leaf->size.y, leaf->size.x)) * gridMetadata.cellSize;
 
-            auto coords = gridMetadata.indexToCoordinates(leaf->origin.x, leaf->origin.y, false) + (worldSpaceScale * 0.5f);
+            auto coords = gridMetadata.indicesToCoordinates(leaf->origin.x, leaf->origin.y, false) + (worldSpaceScale * 0.5f);
 
             Point p;
             p.x = coords.x;
@@ -145,7 +145,7 @@ namespace GSL
                     marker.id = i;
                     // Set the pose of the marker.
                     Vector2Int indices2D = estimatedWindVectors.metadata.indices2D(i);
-                    Vector2 coords = estimatedWindVectors.metadata.indexToCoordinates(indices2D.x, indices2D.y);
+                    Vector2 coords = estimatedWindVectors.metadata.indicesToCoordinates(indices2D.x, indices2D.y);
                     marker.pose.position.x = coords.x;
                     marker.pose.position.y = coords.y;
                     marker.pose.position.z = settings.markers_height;

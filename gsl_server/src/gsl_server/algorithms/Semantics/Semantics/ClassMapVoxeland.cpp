@@ -40,7 +40,7 @@ namespace GSL
     {
         for (size_t i = 0; i < classMap.classDistributions.size(); i++)
         {
-            Vector3 pos = gridMetadata.indexToCoordinates(i);
+            Vector3 pos = gridMetadata.indicesToCoordinates(i);
             Point point;
             point.x = pos.x;
             point.y = pos.y;
@@ -80,7 +80,7 @@ namespace GSL
 
     double ClassMapVoxeland::GetSourceProbabilityAt(const Vector3& point)
     {
-        Vector3Int indices = gridMetadata.coordinatesToIndex(point.x, point.y, point.z);
+        Vector3Int indices = gridMetadata.coordinatesToIndices(point.x, point.y, point.z);
         size_t index = gridMetadata.indexOf(indices);
         double value = 0;
         classMap.computeSourceProbability(classMap.classDistributions[index], value);
