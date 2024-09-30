@@ -1,0 +1,15 @@
+Gases:
+  - gas: smoke
+    probs:
+      oven: 0.4
+      burner: 0.3
+      toaster: 0.2
+      refrigerator: 0.1
+      other: 0.01
+
+  - gas: sewage
+    probs:
+      toilet: 0.3
+      sink: 0.3
+      potted plant: 0.05
+      other: 0.01 

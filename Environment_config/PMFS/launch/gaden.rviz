@@ -7,6 +7,8 @@ Panels:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
         - /ExplorationValue1
+        - /HitVariance1
+        - /Marker1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 620
   - Class: rviz_common/Selection
@@ -81,6 +83,7 @@ Visualization Manager:
       Name: Environment_CAD
       Namespaces:
         part_0: true
+        part_1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -311,7 +314,7 @@ Visualization Manager:
       Enabled: true
       Name: GMRF
       Namespaces:
-        WindVector: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -323,20 +326,20 @@ Visualization Manager:
       Enabled: true
       Name: Source
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/probability_markers
+        Value: /PioneerP3DX/probabilityMarkers
       Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Hit
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -358,10 +361,10 @@ Visualization Manager:
         Value: /PioneerP3DX/quadtree
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: ExplorationValue
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -369,6 +372,32 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/explorationValue
+      Value: false
+    - Class: rviz_default_plugins/Marker
+      Enabled: false
+      Name: HitVariance
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/varianceHit
+      Value: false
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        Gas_Dispersion: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /debugMarkers
       Value: true
   Enabled: true
   Global Options:
@@ -411,6 +440,7 @@ Visualization Manager:
         Value: /clicked_point
     - Class: nav_assistant_tools/SetNavGoal
       Topic: /PioneerP3DX/nav_assistant
+      Turn before nav: true
   Transformation:
     Current:
       Class: rviz_default_plugins/TF
@@ -425,9 +455,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.3130111694335938
-        Y: 2.5706911087036133
-        Z: 2.4206247329711914
+        X: 5.254612445831299
+        Y: 4.607738018035889
+        Z: 2.504652976989746
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

@@ -1,0 +1,19 @@
+categories:
+  - Kitchen:
+    - oven: 0.1
+    - refrigerator: 0.1
+    - burner: 0.05
+    - sink: 0.05
+  
+  - Bathroom:
+    - toilet: 0.2
+    - sink: 0.2
+
+  -Bedroom:
+    - bed: 0.3
+
+  -Hallway:
+    - other: 0.9
+
+  -LivingRoom :
+    - other: 0.8
