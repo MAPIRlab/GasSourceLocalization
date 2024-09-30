@@ -1,5 +1,6 @@
 # Gas Source Localization
-Implementations of several GSL methods for ROS.
+Implementations of several GSL methods for ROS2.
+This branch ofcusses on the IEEE ICASSP Challenge "Gas source localization from real-world spatial in-situ concentration and wind measurements"
 
 To use one of the implemented algorithms, simply launch the `gsl_actionserver_node` node and create an ActionClient to send a goal with the name of the chosen algorithm (see [gsl_server_call.cpp](gsl_server/src/gsl_server_call.cpp) for an example).
 Currently available algorithms include:
