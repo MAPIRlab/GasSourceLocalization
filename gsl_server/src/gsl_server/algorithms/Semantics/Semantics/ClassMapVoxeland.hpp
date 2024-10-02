@@ -1,12 +1,12 @@
 #pragma once
 #include "Common/ISemantics.hpp"
-#include "ClassMap.hpp"
+#include "Common/ClassMap.hpp"
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Utils/BufferWrapper.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/AABB.hpp>
 #include <gsl_server/algorithms/Common/Grid3D.hpp>
-#include <voxeland/srv/get_class_distributions.hpp>
+#include <voxeland_msgs/srv/get_class_distributions.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -32,7 +32,7 @@ namespace GSL
         const PoseWithCovarianceStamped& currentRobotPose;
 
         // Voxeland service
-        rclcpp::Client<voxeland::srv::GetClassDistributions>::SharedPtr client;
+        rclcpp::Client<voxeland_msgs::srv::GetClassDistributions>::SharedPtr client;
         std::vector<Point> requestPoints;
 
         void initializeRequestPoints();

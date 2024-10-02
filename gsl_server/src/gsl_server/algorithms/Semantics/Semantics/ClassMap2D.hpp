@@ -1,6 +1,6 @@
 #pragma once
 #include "Common/ISemantics.hpp"
-#include "ClassMap.hpp"
+#include "Common/ClassMap.hpp"
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Utils/BufferWrapper.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>

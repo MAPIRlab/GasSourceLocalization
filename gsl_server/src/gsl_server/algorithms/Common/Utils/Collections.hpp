@@ -1,6 +1,6 @@
 #pragma once
+#include <algorithm>
 #include <iterator>
-#include <functional>
 
 namespace GSL::Utils
 {
@@ -25,7 +25,7 @@ namespace GSL::Utils
     template<typename C, typename T>
     inline bool contains(const C& _collection, const T& element)
     {
-        return std::find(_collection.begin(), _collection.end(), element) != _collection.end();
+        return _collection.find(element) != _collection.end();
     }
 
 }

@@ -14,7 +14,7 @@ namespace GSL
 {
     ClassMap2D::ClassMap2D(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
                            const PoseWithCovarianceStamped& _currentRobotPose)
-        : gridMetadata(_gridMetadata), wallsOccupancy(occupancy), bufferWrapper(_bufferWrapper), currentRobotPose(_currentRobotPose)
+        : wallsOccupancy(occupancy), gridMetadata(_gridMetadata), bufferWrapper(_bufferWrapper), currentRobotPose(_currentRobotPose)
     {
         node = std::make_shared<rclcpp::Node>("class_map");
 
@@ -24,10 +24,13 @@ namespace GSL
 
         classMarkers = node->create_publisher<Marker>("class_markers", 1);
 
-        classMap.classDistributions.resize(gridMetadata.dimensions.y * gridMetadata.dimensions.x);
-        std::string ontologyPath = Utils::getParam<std::string>(node, "ontologyPath", "?");
-        std::string targetGas = Utils::getParam<std::string>(node, "targetGas", "smoke");
-        classMap.parseOntology(ontologyPath, targetGas);
+        classMap.Initialize(
+            node,
+            gridMetadata.dimensions.x * gridMetadata.dimensions.y,
+            [&](size_t index)
+            {
+                return gridMetadata.indices2D(index) * gridMetadata.scale;
+            });
 
         fov.maxDist = Utils::getParam<double>(node, "fovMaxDist", 4.0);
         fov.minDist = Utils::getParam<double>(node, "fovMinDist", 0.0);
@@ -49,9 +52,9 @@ namespace GSL
 
     void ClassMap2D::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
     {
-        for (int i = 0; i < classMap.classDistributions.size(); i++)
+        for (int i = 0; i < sourceProb.size(); i++)
         {
-            classMap.computeSourceProbability(classMap.classDistributions[i], sourceProb[i]);
+            sourceProb[i] = classMap.computeSourceProbability(i);
         }
 
         Utils::NormalizeDistribution(sourceProb, wallsOccupancy);
@@ -61,9 +64,7 @@ namespace GSL
     {
         Vector2Int indices = gridMetadata.coordinatesToIndices(point.x, point.y);
         size_t index = gridMetadata.indexOf(indices);
-        double value = 0;
-        classMap.computeSourceProbability(classMap.classDistributions[index], value);
-        return value;
+        return classMap.computeSourceProbability(index);
     }
 
     void ClassMap2D::detectionCallback(Detection3DArray::ConstSharedPtr msg)
@@ -75,15 +76,15 @@ namespace GSL
             for (const auto& hyp : detection.results)
             {
                 // if the class label was not in the ontology, substitute it for the "other" class
-                std::string _class = hyp.hypothesis.class_id;
-                classMap.filterClassID(_class);
+                std::string _class = classMap.filterClassID(hyp.hypothesis.class_id);
                 scores.emplace_back(_class, hyp.hypothesis.score);
             }
 
             // fill in missing classes with a low score
-            for (const auto& [_class, _] : classMap.sourceProbByClass)
+            for (const auto& pair : classMap.sourceProbByClass)
             {
-                auto predicate = [&](const auto & t)
+                const std::string& _class = pair.first;
+                auto predicate = [&](const auto& t)
                 {
                     return _class == t.first;
                 };
@@ -198,7 +199,7 @@ namespace GSL
             double angleCameraSpace = std::atan2(std::sin(angleWorldSpace - cameraYaw), std::cos(angleWorldSpace - cameraYaw));
 
             if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads &&
-                    PMFSLib::PathFree(gridMetadata, wallsOccupancy, robotCoords, point))
+                PMFSLib::PathFree(gridMetadata, wallsOccupancy, robotCoords, point))
             {
                 cellsInFOV.insert(indices);
             }
@@ -243,7 +244,7 @@ namespace GSL
                 marker.points.push_back(p);
 
                 ColorRGBA markerColor = colors[ClassMap::otherClassName];
-                for (const auto& [_class, prob] : classMap.classDistributions[cellIndex])
+                for (const auto& [_class, prob] : classMap.classProbabilityZ[cellIndex])
                 {
                     markerColor = lerp(markerColor, colors[_class], prob);
                 }

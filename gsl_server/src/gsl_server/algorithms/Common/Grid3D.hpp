@@ -58,6 +58,12 @@ namespace GSL
             return Vector3Int(remainder % dimensions.x, remainder / dimensions.x, z);
         }
 
+        Vector2Int indices2D(size_t index) const
+        {
+            size_t remainder = index % (dimensions.x * dimensions.y);
+            return Vector2Int(remainder % dimensions.x, remainder / dimensions.x);
+        }
+
         bool indicesInBounds(const Vector3Int& indices) const
         {
             return indices.x >= 0 && indices.x < dimensions.x

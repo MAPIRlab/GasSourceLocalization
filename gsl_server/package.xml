@@ -26,7 +26,8 @@
   <!-- Optionals -->
   <build_depend>gaden_player</build_depend>
   <build_depend>gmrf_wind_mapping</build_depend>
-  <build_depend>voxeland</build_depend>
+  <build_depend>voxeland_msgs</build_depend>
+  <build_depend>aaa</build_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
