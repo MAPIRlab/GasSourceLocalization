@@ -38,6 +38,7 @@ namespace GSL
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<MovingStatePMFS>(this);
         stateMachine.forceSetState(waitForMapState.get());
+        // lanzar map server con el mapa que corresponda
     }
 
     void PMFS::declareParameters()
@@ -137,6 +138,7 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
+    // SEPARAR EN OTRA FUNCION (GENERAR PROBABILIDADES)
         //Update the wind estimations
         // ------------------------------
         PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
@@ -145,43 +147,53 @@ namespace GSL
                               pubs.gmrfWind
                               IF_GADEN(, pubs.groundTruthWind));
 
-
-        // If we have already taken enough measurements in this position, process them and get ready to move to the next location
-        // ------------------------------
-        number_of_updates++;
-        if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
-        {
-            number_of_updates = 0;
-
-            //Simulations are slow, so we only run them every few positions, when the map has had time to meaningfully change
-            //----------------------------------------
-            bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
-                                  iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
-            if (timeToSimulate)
-            {
-                // simulations.compareRefineFractions();
                 simulations.updateSourceProbability(settings.simulation.refineFraction);
-            }
-
-
-            //Movement
-            auto movingStatePMFS = dynamic_cast<MovingStatePMFS*>(movingState.get());
-            if (iterationsCounter > settings.movement.initialExplorationMoves)
-                movingStatePMFS->currentMovement = MovingStatePMFS::MovementType::Search;
-            else
-                movingStatePMFS->currentMovement = MovingStatePMFS::MovementType::Exploration;
-
-            movingStatePMFS->chooseGoalAndMove();
-            movingStatePMFS->publishMarkers();
-        }
-        else
-            stateMachine.forceResetState(stopAndMeasureState.get());
 
         //Visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
     }
+
+    void PMFS::processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection)
+    {
+        // Update the gas presence map
+        // ------------------------------
+        Grid2D<HitProbability> grid(hitProbability, occupancy, gridMetadata);
+        if (concentration > thresholdGas)
+        {
+            // Gas & wind
+            PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
+                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
+        }
+        else
+        {
+            // Nothing
+            PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
+                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
+        }
+    }
+
+    void PMFS::updateSourceProbability()
+    {
+        //Update the wind estimations (request data to GMRF)
+        // ------------------------------
+        PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
+                              Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
+                              node,
+                              pubs.gmrfWind
+                              IF_GADEN(, pubs.groundTruthWind));
+
+        simulations.updateSourceProbability(settings.simulation.refineFraction);
+
+        //Visualization
+        PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
+        PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
+    }
+
 
     float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg)
     {

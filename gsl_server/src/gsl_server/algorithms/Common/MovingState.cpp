@@ -22,9 +22,9 @@ namespace GSL
         make_plan_client = rclcpp_action::create_client<MakePlan>(algorithm->node, "compute_path_to_pose");
         nav_client = rclcpp_action::create_client<NavigateToPose>(algorithm->node, "navigate_to_pose");
 #endif
-
-        while (rclcpp::ok() && !nav_client->wait_for_action_server(std::chrono::seconds(1)))
-            GSL_INFO("Unable to find the move_base action server, retrying...");
+        
+        //while (rclcpp::ok() && !nav_client->wait_for_action_server(std::chrono::seconds(1)))
+        //    GSL_INFO("Unable to find the move_base action server, retrying...");
     }
 
     void MovingState::OnEnterState(State* previous)

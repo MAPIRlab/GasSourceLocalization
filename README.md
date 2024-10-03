@@ -1,10 +1,11 @@
 # Gas Source Localization
 Implementations of several GSL methods for ROS2.
-This branch focusses on the IEEE ICASSP Challenge "Gas source localization from real-world spatial in-situ concentration and wind measurements"
+This branch "ros2-ICASSP-Challenge" focusses on the IEEE ICASSP Challenge "Gas source localization from real-world spatial in-situ concentration and wind measurements".
+Therefore, the code in this branch is not for general purpose, including several particularizations in how data is accessed and processed.
 
-To use one of the implemented algorithms, simply launch the `gsl_actionserver_node` node and create an ActionClient to send a goal with the name of the chosen algorithm (see [gsl_server_call.cpp](gsl_server/src/gsl_server_call.cpp) for an example).
+To run our PMFS-GSL on the challenge data edit and run the "icassp_gsl_launch.py" from a terminal.
+
 Currently available algorithms include:
-
 
 - "PMFS" (See paper [here](https://ieeexplore.ieee.org/document/10592836))
 - "GrGSL" (See paper: [here](https://ieeexplore.ieee.org/document/9347683))

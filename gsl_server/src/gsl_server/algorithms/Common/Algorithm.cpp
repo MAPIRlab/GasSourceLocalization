@@ -23,13 +23,13 @@ namespace GSL
         using namespace std::placeholders;
         localizationSub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
                           std::bind(&Algorithm::localizationCallback, this, _1));
-        rclcpp::Rate rate(1);
-        while (resultLogging.robotPosesVector.size() == 0)
-        {
-            rate.sleep();
-            rclcpp::spin_some(node);
-            GSL_INFO("Waiting to hear from localization topic: {}", localizationSub->get_topic_name());
-        }
+        // rclcpp::Rate rate(1);
+        // while (resultLogging.robotPosesVector.size() == 0)
+        // {
+        //     rate.sleep();
+        //     rclcpp::spin_some(node);
+        //     GSL_INFO("Waiting to hear from localization topic: {}", localizationSub->get_topic_name());
+        // }
 
         gasSub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
                  std::bind(&Algorithm::gasCallback, this, _1));

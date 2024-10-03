@@ -50,6 +50,8 @@ namespace GSL
         virtual void saveResultsToFile(GSLResult result);
 
         virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) = 0; //called from StopAndMeasure once we have enough data for this position
+        virtual void processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection) = 0; //called from StopAndMeasure once we have enough data for this position
+        virtual void updateSourceProbability() = 0; //called from StopAndMeasure
 
         virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
         virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);

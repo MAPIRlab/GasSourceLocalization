@@ -286,25 +286,25 @@ namespace GSL
         grid.data.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y);
         std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
 
-        geometry_msgs::msg::TransformStamped tfm;
-        bool has_tf = false;
-        do
-        {
-            try
-            {
-                tfm = algorithm.tfBuffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
-                has_tf = true;
-            }
-            catch (std::exception& e)
-            {
-                GSL_ERROR("TF error when looking up map -> anemometer:\n{}", e.what());
-                rclcpp::spin_some(algorithm.node);
-            }
-        }
-        while (!has_tf);
+        // geometry_msgs::msg::TransformStamped tfm;
+        // bool has_tf = false;
+        // do
+        // {
+        //     try
+        //     {
+        //         tfm = algorithm.tfBuffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+        //         has_tf = true;
+        //     }
+        //     catch (std::exception& e)
+        //     {
+        //         GSL_ERROR("TF error when looking up map -> anemometer:\n{}", e.what());
+        //         rclcpp::spin_some(algorithm.node);
+        //     }
+        // }
+        // while (!has_tf);
 
-        float anemometer_Z = tfm.transform.translation.z;
-        GSL_INFO("anemometer z is {}", anemometer_Z);
+        // float anemometer_Z = tfm.transform.translation.z;
+        // GSL_INFO("anemometer z is {}", anemometer_Z);
 
         GMRFRequest = std::make_shared<WindEstimation::Request>();
         IF_GADEN(groundTruthWindRequest = std::make_shared<gaden_player::srv::WindPosition::Request>());
