@@ -255,8 +255,6 @@ namespace GSL
                     int fJ = std::min((int)grid.metadata.dimensions.y - 1, j + (int)visibilityMap.range) - j;
 
                     std::vector<Vector2Int> visibleCells;
-                    double totalX = 0;
-                    double totalY = 0;
                     for (int r = oI; r <= fI; r++)
                     {
                         for (int c = oJ; c <= fJ; c++)
@@ -284,8 +282,9 @@ namespace GSL
                                             IF_GADEN(, gaden_player::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest))
     {
         grid.data.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y);
+  
+  #ifdef USE_GADEN
         std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
-
         geometry_msgs::msg::TransformStamped tfm;
         bool has_tf = false;
         do
@@ -301,13 +300,14 @@ namespace GSL
                 rclcpp::spin_some(algorithm.node);
             }
         }
-        while (!has_tf);
+        while (!has_tf && rclcpp::ok());
 
         float anemometer_Z = tfm.transform.translation.z;
         GSL_INFO("anemometer z is {}", anemometer_Z);
+        groundTruthWindRequest = std::make_shared<gaden_player::srv::WindPosition::Request>();
+#endif
 
         GMRFRequest = std::make_shared<WindEstimation::Request>();
-        IF_GADEN(groundTruthWindRequest = std::make_shared<gaden_player::srv::WindPosition::Request>());
 
         for (int i = 0; i < grid.metadata.dimensions.x; i++)
         {

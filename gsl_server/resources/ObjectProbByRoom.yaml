@@ -1,10 +1,10 @@
-number_classes: 80
+number_classes: 81 #including background class
 room_categories:
   Kitchen:
-    oven: 0.9
-    refrigerator: 0.01
-    burner: 0.01
-    sink: 0.01
+    oven: 0.2
+    refrigerator: 0.1
+    microwave: 0.05
+    sink: 0.05
   
   Bathroom:
     toilet: 0.2

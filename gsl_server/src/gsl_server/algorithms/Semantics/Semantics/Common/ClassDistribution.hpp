@@ -15,7 +15,8 @@ namespace GSL
         void Initialize(const std::vector<std::string>& classes)
         {
             float p = 1.0 / classes.size();
-            for (const std::string& _class : classes) probabilityDist[_class] = p;
+            for (const std::string& _class : classes)
+                probabilityDist[_class] = p;
         }
 
         float ProbabilityOf(const std::string& _class) const
@@ -90,7 +91,8 @@ namespace GSL
             using reference = value_type&;
             using underlying_it = std::map<std::string, float>::iterator;
 
-            Iterator(underlying_it it) : m_iter(it)
+            Iterator(underlying_it it)
+                : m_iter(it)
             {}
 
             reference operator*() const

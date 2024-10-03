@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <deque>
 #include <gsl_server/core/Vectors.hpp>
 #include <cfloat>
 #include <gsl_server/algorithms/Common/Occupancy.hpp>

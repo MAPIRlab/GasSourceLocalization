@@ -2,6 +2,7 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -41,6 +42,7 @@ namespace GSL
             CLOSE_PROGRAM;
         }
 
+        // read p(o|s) from the ontology file
         std::vector<std::string> class_list;
         YAML::Node gases = YAML::LoadFile(path)["Gases"];
         for (const YAML::Node& gas : gases)
@@ -56,7 +58,16 @@ namespace GSL
             }
         }
 
-        GSL_INFO("Source probability by semantic class:");
+        // Normalize p(o|s)
+        float sum = 0;
+        for (const auto& [_class, prob] : sourceProbByClass)
+            sum += prob;
+        for (auto& [_class, prob] : sourceProbByClass)
+            prob /= sum;
+
+
+        //We're done!
+        GSL_INFO("Source probability by semantic class (normalized):");
         for (auto& kv : sourceProbByClass)
             GSL_INFO("{}: {}", kv.first, kv.second);
 
@@ -148,7 +159,7 @@ namespace GSL
             // p(o|room) )
             std::string className = filterClassID(_class);
             float totalClassProb = prob * room->GetClassProb(className) / room->GetPrior(className);
-            retValue += totalClassProb * getSourceProbByClass(_class);
+            retValue += totalClassProb * getSourceProbByClass(_class) / room->GetPrior(className); //TODO this prior here seems weird, but it appears in the formulation. Check it.
         }
         return retValue;
     }
@@ -264,20 +275,29 @@ namespace GSL
             classProb[ClassMap::otherClassName] += 1 - sum;
         }
 
-        // store the prior (which is just 1/numClasses for normal classes and n/numClasses for "other", where n is however many classes got lumped into it)
+        // store the prior, which is needed later to combine p(o|z) with P(o|r)
+        constexpr float occupancyPrior = 0.5;
+        const float priorNormalClass = std::lerp(0, 1. / totalNumberOfClasses, occupancyPrior);
         for (const auto& [_class, _] : classProb)
             if (_class != ClassMap::otherClassName)
-                classPrior[_class] = 1. / totalNumberOfClasses;
+                classPrior[_class] = priorNormalClass;
 
-        int numClassesInOther = totalNumberOfClasses - (classProb.size() - 1.);
-        classPrior[ClassMap::otherClassName] = double(numClassesInOther) / totalNumberOfClasses;
+        int numClassesInOther = totalNumberOfClasses - (classProb.size() - 1);                  // -1 because we dont want to count the "other class itself
+        classPrior[ClassMap::otherClassName] = (numClassesInOther -1) * priorNormalClass        // the normal classes that went into "other"
+                                               + std::lerp(1, 1. / totalNumberOfClasses, occupancyPrior); // the "background" class, which has a higher prior than any of the others due to the occupancy uncertainty
 
 #if GSL_DEBUG
         {
-            float sumAtEnd = 0;
+            float sumProb = 0;
             for (auto& [name, prob] : classProb)
-                sumAtEnd += prob;
-            GSL_ASSERT(Utils::approx(sumAtEnd, 1));
+                sumProb += prob;
+            GSL_ASSERT(Utils::approx(sumProb, 1));
+
+
+            float sumPrior = 0;
+            for (auto& [name, prob] : classPrior)
+                sumPrior += prob;
+            GSL_ASSERT(Utils::approx(sumPrior, 1));
         }
 #endif
     }

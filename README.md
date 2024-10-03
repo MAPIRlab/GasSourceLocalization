@@ -20,7 +20,7 @@ Currently available algorithms include:
 # Installing and building
 You can download this package by navigating to your ROS workspace and running:
 
-`git clone --recursive git@github.com:MAPIRlab/Gas-Source-Localization.git GSL`
+`git clone --recurse-submodules git@github.com:MAPIRlab/Gas-Source-Localization.git GSL`
 
 Due to the nature of how ROS code is organized in semi-independent packages, it does not quite make sense for this repository to include other ament packages (which you might already have in the same workspace for something else) as submodules. You will need to install those separately:
 
