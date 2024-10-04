@@ -1,25 +1,20 @@
 #include "ClassMap.hpp"
-#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
-#include "gsl_server/core/Logging.hpp"
-#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
 #include <filesystem>
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <gsl_server/core/Logging.hpp>
 #include <gsl_server/core/Macros.hpp>
+#include <gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
-#include <string>
-#include <vector>
 #include <yaml-cpp/node/node.h>
 #include <yaml-cpp/node/parse.h>
 #include <yaml-cpp/yaml.h>
 
 namespace GSL
 {
-    const char* UnknownRoomName = "unknown";
+    static constexpr const char* UnknownRoomName = "unknown";
 
     void ClassMap::Initialize(rclcpp::Node::SharedPtr node, size_t size, MapToPixel indexToPixel)
     {
@@ -32,6 +27,26 @@ namespace GSL
         std::string masksYAMLPath = Utils::getParam<std::string>(node, "masksYAMLPath", "?");
         std::string roomOntologyPath = Utils::getParam<std::string>(node, "roomOntologyPath", "?");
         parseRoomCategorization(masksYAMLPath, roomOntologyPath, indexToPixel);
+
+        // store the prior of p(class), which is needed later to combine p(class | z) with p(class | room)
+        // this needs to account for the occupancy prior
+        {
+            const float priorNormalClass = std::lerp(0, 1. / numberOfClasses, occupancyPrior);
+            for (const auto& [_class, _] : sourceProbByClass)
+                if (_class != ClassMap::otherClassName)
+                    classPrior[_class] = priorNormalClass;
+
+            int numClassesInOther = numberOfClasses - (sourceProbByClass.size() - 1);                    // -1 because we dont want to count the "other class itself
+            classPrior[ClassMap::otherClassName] = (numClassesInOther - 1) * priorNormalClass            // the normal classes that went into "other"
+                                                   + std::lerp(1, 1. / numberOfClasses, occupancyPrior); // the "background" class, which has a higher prior than any of the others due to the occupancy uncertainty
+
+#if GSL_DEBUG
+            float sumPrior = 0;
+            for (auto& [name, prob] : classPrior)
+                sumPrior += prob;
+            GSL_ASSERT(Utils::approx(sumPrior, 1));
+#endif
+        }
     }
 
     void ClassMap::parseOntology(const std::string& path, const std::string& targetGas)
@@ -71,7 +86,7 @@ namespace GSL
             GSL_INFO("{}: {}", kv.first, kv.second);
 
         for (ClassDistribution& dist : classProbabilityZ)
-            dist.Initialize(class_list);
+            dist.Initialize(class_list); //TODO use the prior
     }
 
     void ClassMap::parseRoomCategorization(const std::string& masksYAMLPath, const std::string& ontologyPath,
@@ -94,7 +109,7 @@ namespace GSL
         // Create the rooms and store in them the probability of object classes for cells in the room -- p(o_i | room)
         {
             YAML::Node ontology = YAML::LoadFile(ontologyPath);
-            size_t numClasses = ontology["number_classes"].as<size_t>();
+            numberOfClasses = ontology["number_classes"].as<size_t>();
             YAML::Node roomCategories = ontology["room_categories"];
 
             for (YAML::const_iterator roomIter = roomCategories.begin(); roomIter != roomCategories.end(); ++roomIter)
@@ -108,11 +123,11 @@ namespace GSL
                     std::string className = classIter->first.as<std::string>();
                     room.SetProbOf(className, classIter->second.as<float>());
                 }
-                room.finalize(numClasses, *this);
+                room.finalize(numberOfClasses, *this);
             }
 
             // initialize all cells to the unknown room
-            Room& unknown = createUnknownRoom(numClasses);
+            Room& unknown = createUnknownRoom();
             for (size_t i = 0; i < roomOfObjects.size(); i++)
                 roomOfObjects[i] = &unknown;
         }
@@ -157,25 +172,22 @@ namespace GSL
             // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification (
             // p(o|room) )
             std::string className = filterClassID(_class);
-            float totalClassProb = prob * room->GetClassProb(className) / room->GetPrior(className);
-            retValue += totalClassProb * getSourceProbByClass(_class) / room->GetPrior(className); // TODO this prior here seems weird, but it appears in the formulation. Check it.
+            float totalClassProb = prob * room->GetClassProb(className) / classPrior.at(className);
+            retValue += totalClassProb * sourceProbByClass.at(_class) / classPrior.at(className); // TODO this prior here seems weird, but it appears in the formulation. Check it.
         }
         return retValue;
-    }
-
-    double ClassMap::getSourceProbByClass(const std::string& _class)
-    {
-        return sourceProbByClass[_class];
     }
 
     void ClassMap::updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores)
     {
         for (const auto& pair : scores)
         {
-            std::string _class = pair.first;
+            const std::string& _class = pair.first;
             float score = pair.second;
             float previous = classProbabilityZ[index].ProbabilityOf(_class);
-            float prob = std::min(0.95f, score * previous); // clamp at arbitrary high value to avoid numerical issues as more observations pile up
+
+            // clamp at arbitrary high value to avoid numerical issues as more observations pile up
+            float prob = std::min(0.95f, score * previous / classPrior.at(_class));
             classProbabilityZ[index].SetProbOf(_class, prob);
         }
 
@@ -203,7 +215,7 @@ namespace GSL
         return id;
     }
 
-    ClassMap::Room& ClassMap::createUnknownRoom(size_t numberOfClasses)
+    ClassMap::Room& ClassMap::createUnknownRoom()
     {
         // if we dont know the type of room that a certain cell is in, we use this equal-prob value
         Room& unknown = rooms[UnknownRoomName];
@@ -214,31 +226,21 @@ namespace GSL
 
     void ClassMap::setUpNoRooms()
     {
-        Room& unknown = createUnknownRoom(sourceProbByClass.size());
+        numberOfClasses = sourceProbByClass.size();
+        Room& unknown = createUnknownRoom();
         for (size_t i = 0; i < roomOfObjects.size(); i++)
             roomOfObjects[i] = &unknown;
     }
 
     float ClassMap::Room::GetClassProb(const std::string& className) const
     {
-        if (ready)
+        if (!ready)
         {
             GSL_ERROR("Cannot read conditional probabilities from room {}, it has not been finalized yet", name);
             return 0;
         }
         GSL_ASSERT_MSG(classProb.contains(className), "Missing class {} in room {}", className, name);
         return classProb.at(className);
-    }
-
-    float ClassMap::Room::GetPrior(const std::string& className) const
-    {
-        if (ready)
-        {
-            GSL_ERROR("Cannot read conditional probabilities from room {}, it has not been finalized yet", name);
-            return 0;
-        }
-        GSL_ASSERT_MSG(classPrior.contains(className), "Missing class {} in room {}", className, name);
-        return classPrior.at(className);
     }
 
     void ClassMap::Room::SetProbOf(const std::string& className, float prob)
@@ -250,7 +252,6 @@ namespace GSL
         }
         classProb[className] = prob;
     }
-
     void ClassMap::Room::finalize(uint totalNumberOfClasses, const ClassMap& map)
     {
         if (ready)
@@ -261,28 +262,23 @@ namespace GSL
 
         // TODO we are assuming here that the background class never appears in the room ontology. Do we want to modify this to allow it to appear?
 
-        // We need this concept of an occupancy probability to match how Voxeland does it.
-        // It also has the very reasonable side effect of making the background class more likely than any of the others a priori
-        // Good, because most cells in any environment will actually be empty
-        constexpr float occupancyPrior = 0.5;
-
-        // Now, calculate the conditional -- p(class | room). Since we are not conditioning to the occupancy, we need to do:
+        // calculate the conditional -- p(class | room). Since we are not conditioning to the occupancy, we need to do:
         // p(class | room) = p(class | room, occupied) * p(occupied | room) + p(class | room, !occupied) * p(!occupied | room)
         // and we just assume that p(occupied | room) == p(occupied), because what else are you going to do
         // so that's why we lerp based on the occupancyPrior
 
-        // create entries for the classes of interest that were not mentioned in the room ontology
         float sum = 0; // the amount of probability (p(class | occupied)) that has already been assigned. Whatever's left will be distributed among the remaining classes
         for (auto& [name, prob] : classProb)
             sum += prob;
-
-        const float probClassConditional = (1 - sum) / (totalNumberOfClasses - classProb.size()); // p(class | occupied, room)
-        const float probClassNotMentioned = std::lerp(0., probClassConditional, occupancyPrior);  // p(class | room)
 
         //[!] It's important to note that the probabilities specified in the room ontology are actually p(class | room, occupied),
         // so "other" will be somewhat more likely in classProbs than it appears in the ontology
         for (const auto& [_class, _] : classProb)
             classProb[_class] = std::lerp(0, classProb[_class], occupancyPrior);
+
+        // create entries for the classes of interest that were not mentioned in the room ontology
+        const float probClassConditional = (1 - sum) / (totalNumberOfClasses - classProb.size()); // p(class | occupied, room)
+        const float probClassNotMentioned = std::lerp(0., probClassConditional, occupancyPrior);  // p(class | room)
 
         for (const auto& [_class, _] : map.sourceProbByClass)
             if (!classProb.contains(_class) && _class != ClassMap::otherClassName)
@@ -313,18 +309,6 @@ namespace GSL
                                                    + std::lerp(1, probClassConditional, occupancyPrior); // the background class
         }
 
-        // store the prior of p(class), which is needed later to combine p(class | z) with p(class | room)
-        {
-            const float priorNormalClass = std::lerp(0, 1. / totalNumberOfClasses, occupancyPrior);
-            for (const auto& [_class, _] : classProb)
-                if (_class != ClassMap::otherClassName)
-                    classPrior[_class] = priorNormalClass;
-
-            int numClassesInOther = totalNumberOfClasses - (classProb.size() - 1);                            // -1 because we dont want to count the "other class itself
-            classPrior[ClassMap::otherClassName] = (numClassesInOther - 1) * priorNormalClass                 // the normal classes that went into "other"
-                                                   + std::lerp(1, 1. / totalNumberOfClasses, occupancyPrior); // the "background" class, which has a higher prior than any of the others due to the occupancy uncertainty
-        }
-
         ready = true;
 #if GSL_DEBUG
         {
@@ -332,11 +316,6 @@ namespace GSL
             for (auto& [name, prob] : classProb)
                 sumProb += prob;
             GSL_ASSERT(Utils::approx(sumProb, 1));
-
-            float sumPrior = 0;
-            for (auto& [name, prob] : classPrior)
-                sumPrior += prob;
-            GSL_ASSERT(Utils::approx(sumPrior, 1));
         }
 #endif
     }
