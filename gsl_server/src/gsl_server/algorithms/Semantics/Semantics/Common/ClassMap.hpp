@@ -42,6 +42,7 @@ namespace GSL
             void finalize(uint totalNumberOfClasses, const ClassMap& map);
 
         private:
+            bool ready = false;
             std::unordered_map<std::string, float> classProb;
             std::unordered_map<std::string, float> classPrior;
         };
