@@ -13,6 +13,8 @@
 #include <gsl_server/core/FunctionQueue.hpp>
 #include <gsl_server/core/ConditionalMacros.hpp>
 
+#include <tf2_ros/transform_broadcaster.h>
+
 namespace GSL
 {
     class PMFS : public Algorithm
@@ -39,6 +41,7 @@ namespace GSL
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
         void processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection);
         void updateSourceProbability();
+        void publishAnemometer(double x, double y, double windSpeed, double windDirection);
         GSLResult checkSourceFound() override;
         void saveResultsToFile(GSLResult result) override;
         void OnCompleteNavigation(GSLResult result, State* previousState) override;
@@ -57,6 +60,8 @@ namespace GSL
         //-------------Data-------------
         PMFS_internal::Settings settings;
         PMFS_internal::PublishersAndSubscribers pubs;
+        rclcpp::Publisher<olfaction_msgs::msg::Anemometer>::SharedPtr anemometer_pub_;
+        std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 
         //-------------Utils-------------
         bool paused = false;

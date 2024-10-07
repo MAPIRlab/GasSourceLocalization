@@ -22,6 +22,8 @@ namespace GSL
     {
         Algorithm::Initialize();
         PMFSLib::InitializePublishers(pubs, node);
+        anemometer_pub_ = node->create_publisher<olfaction_msgs::msg::Anemometer>("/PioneerP3DX/Anemometer/WindSensor_reading", 1);
+        tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
 
         IF_GUI
         (
@@ -194,6 +196,31 @@ namespace GSL
         PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
+    void PMFS::publishAnemometer(double x, double y, double windSpeed, double windDirection)
+    {
+        // 1. Set TF map->anemometer to current sampling location        
+        geometry_msgs::msg::TransformStamped transform_stamped;
+
+        // Set the frame IDs
+        transform_stamped.header.stamp = node->now();
+        transform_stamped.header.frame_id = "map";
+        transform_stamped.child_frame_id = "anemometer";
+
+        // Set the translation
+        transform_stamped.transform.translation.x = x;
+        transform_stamped.transform.translation.y = y;
+        transform_stamped.transform.translation.z = 0.0;
+
+        // Broadcast the transform
+        tf_broadcaster_->sendTransform(transform_stamped);
+
+        // 2. Publish anemometer data over topic
+        olfaction_msgs::msg::Anemometer msg;
+        msg.header.frame_id = "anemometer";
+        msg.wind_speed = windSpeed;
+        msg.wind_direction = windDirection;
+        anemometer_pub_->publish(msg);
+    }
 
     float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg)
     {
