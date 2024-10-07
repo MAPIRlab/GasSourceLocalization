@@ -51,6 +51,7 @@ namespace GSL
 
         virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) = 0; //called from StopAndMeasure once we have enough data for this position
         virtual void processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection) = 0; //called from StopAndMeasure once we have enough data for this position
+        virtual void publishAnemometer(double x, double y, double windSpeed, double windDirection) = 0;
         virtual void updateSourceProbability() = 0; //called from StopAndMeasure
 
         virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
