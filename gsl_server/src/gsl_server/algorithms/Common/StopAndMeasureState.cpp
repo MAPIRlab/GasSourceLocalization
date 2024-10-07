@@ -54,7 +54,7 @@ namespace GSL
         //          3. Load all data points (usually from 4 to 6), and update maps
         //          4. If rem(j,10)==0, estimar posición de fuente
         GSL_TRACE("Entering StopAndMeasure::OnUpdate");
-        int total_batches = 1;    // Total number of batches
+        int total_batches = 1;     // Total number of batches
         int samples_per_batch = 500; // Total number of samples per batch
         std::string test_folder_path = "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test";
 
@@ -83,20 +83,24 @@ namespace GSL
                 // Read each line of the CSV (usually from 4 to 6 preprocessed data points)
                 while (std::getline(file, line)) 
                 {
+                    //GSL_INFO("New Line is {:}", line.c_str());
+
                     std::vector<double> row;
                     std::stringstream lineStream(line);
                     // Columns are:  x	y	z	index	time	MiCS5524	PID-sensor	wind-u	wind-v	wind-w
                     
                     while (std::getline(lineStream, cell, ',')) 
                     {
-                        try {
-                            // Trim the cell content (remove any surrounding whitespace)
-                            cell.erase(cell.find_last_not_of(" \t\n\r") + 1);
-                            cell.erase(0, cell.find_first_not_of(" \t\n\r"));
+                        try
+                        {
+                            //GSL_INFO("New Data is {:}", cell.c_str());
+                            // Trim the cell content (remove any surrounding whitespaces)
+                            //cell.erase(cell.find_last_not_of(" \t\n\r") + 1);
+                            //cell.erase(0, cell.find_first_not_of(" \t\n\r"));
 
                             if (!cell.empty()) {
                                 // Try to convert the cell to a double
-                                row.push_back(std::stod(cell));
+                                row.push_back(std::stod(cell));  // Convert the string to double and add to the row
                             } else {
                                 std::cerr << "Warning: Empty cell encountered, skipping." << std::endl;
                             }
@@ -105,20 +109,21 @@ namespace GSL
                         } catch (const std::out_of_range &e) {
                             std::cerr << "Error: Numeric value out of range for cell: '" << cell << "', skipping." << std::endl;
                         }
-                        //row.push_back(std::stod(cell)); // Convert the string to double and add to the row
                     }
                     
                     // For each row, update maps
-                    double x = cell[0];
-                    double y = cell[1];
-                    double z = cell[2];
-                    double concentration = cell[6];     // PID
-                    double windSpeed = std::sqrt(cell[7]*cell[7] + cell[8]*cell[8]);
-                    double windDirection = calculateWindDirection(cell[7], cell[8]);
+                    double x = row[0];
+                    double y = row[1];
+                    double z = row[2];
+                    double concentration = row[6];     // PID
+                    double windSpeed = std::sqrt(row[7]*row[7] + row[8]*row[8]);
+                    double windDirection = calculateWindDirection(row[7], row[8]);
 
-                    // TODO: Publish data on ROS2 Topics for GMRF update
+                    // Publish Anemometer to GMRF (topic based)
+                    algorithm->publishAnemometer(x, y, windSpeed, windDirection);
+
                     // Update Gas-Hit maps
-                    GSL_INFO("UPDATING GAS-HIT: avg_gas={:.2};  avg_windSpeed={:.2};  avg_wind_dir={:.2}", concentration, windSpeed, windDirection);
+                    GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({:},{:},{:}) avg_gas={:}; avg_windSpeed={:}; avg_wind_dir={:}", x, y, z, concentration, windSpeed, windDirection);
                     algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
                 }                
 
@@ -133,7 +138,7 @@ namespace GSL
             GSL_TRACE("Batch-{:} completed", batch_i);
         }
 
-        GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");
+        GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");        
 
         // // ORIGINAL
         // if ((algorithm->node->now() - time_stopped).seconds() >= measure_time)
