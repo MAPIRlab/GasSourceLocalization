@@ -1,0 +1,6 @@
+image: occupancy.pgm
+resolution: 0.00199999986
+origin: [-1.24969506, -1.33622682, 0.75]
+occupied_thresh: 0.9
+free_thresh: 0.1
+negate: 0

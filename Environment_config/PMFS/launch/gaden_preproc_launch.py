@@ -33,7 +33,7 @@ def launch_arguments():
         ),
         DeclareLaunchArgument(
             "floor_height",
-            default_value=["0.0"]
+            default_value=["0.5"]
         )
     ]
 #==========================
@@ -46,8 +46,8 @@ def launch_setup(context, *args, **kwargs):
     params_yaml_file = os.path.join(
         pkg_dir, "scenarios", scenario, "params", "preproc_params.yaml"
     )
-    
-    read_sim_yaml(context)
+
+    # read_sim_yaml(context)
     
 
     ## NODES
