@@ -15,17 +15,18 @@ def launch_arguments():
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
-        DeclareLaunchArgument("map_height", default_value="0.025"),
+        DeclareLaunchArgument("map_height", default_value="0.08"),
     ]
 #==========================
 
 def launch_setup(context, *args, **kwargs):
     method = LaunchConfiguration("method").perform(context)
     map_file = os.path.join(
-		"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/occupancy_maps/",
-        "icassp_occupancy_z_"+
-		LaunchConfiguration("map_height").perform(context)+
-		".yaml",
+		get_package_share_directory("pmfs_env"),
+        "scenarios",
+        "ICASSP",
+		LaunchConfiguration("map_height").perform(context),
+		"occupancy.yaml",
 	)
     map_server = [
         GroupAction(actions=[
