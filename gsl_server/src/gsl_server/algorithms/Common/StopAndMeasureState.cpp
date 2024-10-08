@@ -138,7 +138,8 @@ namespace GSL
             GSL_TRACE("Batch-{:} completed", batch_i);
         }
 
-        GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");        
+        GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");
+        CLOSE_PROGRAM;
 
         // // ORIGINAL
         // if ((algorithm->node->now() - time_stopped).seconds() >= measure_time)

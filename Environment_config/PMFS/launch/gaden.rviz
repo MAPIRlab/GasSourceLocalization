@@ -6,11 +6,13 @@ Panels:
       Expanded:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
+        - /GMRF1
         - /ExplorationValue1
         - /HitVariance1
         - /Marker1
+        - /Map1/Topic1
       Splitter Ratio: 0.5199999809265137
-    Tree Height: 620
+    Tree Height: 558
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -31,7 +33,7 @@ Visualization Manager:
       Enabled: true
       Name: Source
       Namespaces:
-        gas_source_visualization: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -56,7 +58,7 @@ Visualization Manager:
       Enabled: true
       Name: GasDistribution
       Namespaces:
-        Gas_Dispersion: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -69,7 +71,7 @@ Visualization Manager:
       Enabled: true
       Name: Wind_arrow
       Namespaces:
-        measured_wind_inverted: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -82,8 +84,7 @@ Visualization Manager:
       Enabled: true
       Name: Environment_CAD
       Namespaces:
-        part_0: true
-        part_1: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -245,88 +246,38 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/robot_description
-      Enabled: true
+      Enabled: false
       Links:
         All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        PioneerP3DX_base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_body:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_green_button:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_head:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_hokuyo_front:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_left_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_neck:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_red_button:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_right_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        PioneerP3DX_screen:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
       Name: RobotModel
       TF Prefix: ""
       Update Interval: 0
-      Value: true
+      Value: false
       Visual Enabled: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: GMRF
       Namespaces:
-        {}
+        WindVector: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/arrowMarkers
+        Value: /wind_array_pub
       Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: true
       Name: Source
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -339,7 +290,7 @@ Visualization Manager:
       Enabled: true
       Name: Hit
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -361,10 +312,10 @@ Visualization Manager:
         Value: /PioneerP3DX/quadtree
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: ExplorationValue
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -372,7 +323,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/explorationValue
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: false
       Name: HitVariance
@@ -387,10 +338,10 @@ Visualization Manager:
         Value: /PioneerP3DX/varianceHit
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Marker
       Namespaces:
-        Gas_Dispersion: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -398,6 +349,47 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /debugMarkers
+      Value: false
+    - Alpha: 0.699999988079071
+      Class: rviz_default_plugins/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: System Default
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/map
+      Update Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/map_updates
+      Use Timestamp: false
+      Value: true
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        anemometer:
+          Value: true
+        map:
+          Value: true
+      Marker Scale: 5
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Tree:
+        map:
+          anemometer:
+            {}
+      Update Interval: 0
       Value: true
   Enabled: true
   Global Options:
@@ -455,9 +447,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.254612445831299
-        Y: 4.607738018035889
-        Z: 2.504652976989746
+        X: -1.5308330059051514
+        Y: 2.1438257694244385
+        Z: 2.4025156497955322
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -471,18 +463,18 @@ Visualization Manager:
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 1013
+  Height: 929
   Hide Left Dock: false
   Hide Right Dock: false
   Navigation 2:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000001920000039ffc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000100044006900730070006c006100790073010000003b000002a7000000c700fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007301000002e8000000f20000005c00fffffffb00000018004e0061007600690067006100740069006f006e002000320000000277000001340000012300ffffff000000010000010f0000039ffc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003b0000039f000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d00650100000000000004500000000000000000000004d30000039f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000002180000034bfc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000100044006900730070006c006100790073010000003b00000269000000c700fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007301000002aa000000dc0000005c00fffffffb00000018004e0061007600690067006100740069006f006e002000320000000277000001340000012300ffffff000000010000010f0000034bfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003b0000034b000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d00650100000000000004500000000000000000000003c00000034b00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Tool Properties:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1920
-  X: 0
-  Y: 0
+  Width: 1779
+  X: 5
+  Y: -27
