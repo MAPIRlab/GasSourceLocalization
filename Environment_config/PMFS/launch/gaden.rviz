@@ -6,10 +6,6 @@ Panels:
       Expanded:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
-        - /GMRF1
-        - /ExplorationValue1
-        - /HitVariance1
-        - /Marker1
         - /Map1/Topic1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 558
@@ -30,7 +26,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: Source
       Namespaces:
         {}
@@ -40,9 +36,9 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /source_visualization
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Filaments
       Namespaces:
         {}
@@ -53,9 +49,9 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /filament_visualization
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: GasDistribution
       Namespaces:
         {}
@@ -66,9 +62,9 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /Gas_Distribution
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Wind_arrow
       Namespaces:
         {}
@@ -79,9 +75,9 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/Anemometer/WindSensor_display
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: Environment_CAD
       Namespaces:
         {}
@@ -91,7 +87,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /environment_cad_visualization
-      Value: true
+      Value: false
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
       Covariance:
@@ -143,7 +139,7 @@ Visualization Manager:
       Color: 255; 255; 255
       Color Transformer: Intensity
       Decay Time: 0
-      Enabled: true
+      Enabled: false
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 4096
@@ -164,7 +160,7 @@ Visualization Manager:
         Value: /PioneerP3DX/laser_scan
       Use Fixed Frame: true
       Use rainbow: true
-      Value: true
+      Value: false
     - Alpha: 0.699999988079071
       Class: rviz_default_plugins/Map
       Color Scheme: costmap
@@ -211,7 +207,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz_default_plugins/Path
       Color: 255; 75; 0
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -234,7 +230,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/plan
-      Value: true
+      Value: false
     - Alpha: 1
       Class: rviz_default_plugins/RobotModel
       Collision Enabled: false
@@ -274,10 +270,10 @@ Visualization Manager:
         Value: /wind_array_pub
       Value: true
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Source
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -285,12 +281,12 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/probabilityMarkers
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Hit
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -298,9 +294,9 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/hitProbabilityMarkers
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: Quadtree
       Namespaces:
         {}
@@ -310,12 +306,12 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/quadtree
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: ExplorationValue
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -323,7 +319,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/explorationValue
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: false
       Name: HitVariance
@@ -380,7 +376,7 @@ Visualization Manager:
           Value: true
         map:
           Value: true
-      Marker Scale: 5
+      Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
@@ -440,25 +436,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 13.469244003295898
+      Distance: 1.352791428565979
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.5308330059051514
-        Y: 2.1438257694244385
-        Z: 2.4025156497955322
+        X: -0.16334383189678192
+        Y: -0.22094114124774933
+        Z: 2.387655019760132
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5297963619232178
+      Pitch: 1.544796347618103
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.708570957183838
+      Yaw: 4.708567142486572
     Saved: ~
 Window Geometry:
   Displays:
@@ -476,5 +472,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1779
-  X: 5
-  Y: -27
+  X: -23
+  Y: -32
