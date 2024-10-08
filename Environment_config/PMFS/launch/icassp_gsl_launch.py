@@ -11,7 +11,7 @@ from launch.frontend.parse_substitution import parse_substitution
 #===========================
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="A"),
+        DeclareLaunchArgument("scenario", default_value="ICASSP"),
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
@@ -150,96 +150,6 @@ def launch_setup(context, *args, **kwargs):
         ]
     )
 
-    basic_sim = Node(
-        package="basic_sim",
-        executable="basic_sim",
-        parameters=[
-            {"deltaTime": 0.1},
-            {"speed": 5.0},
-            {"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/scenarios/$(var scenario)/basicSim/$(var simulation).yaml")}
-            ],
-    )
-
-    gaden_player = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [
-                os.path.join(
-                    get_package_share_directory("pmfs_env"),
-                    "launch",
-                    "gaden_player_launch.py",
-                )
-            ]
-        ),
-        launch_arguments={
-            "use_rviz": "False",
-            "scenario": LaunchConfiguration("scenario").perform(context),
-            "simulation": LaunchConfiguration("simulation").perform(context)
-        }.items(),
-    )
-
-    nav2 = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-                os.path.join(
-                    get_package_share_directory("pmfs_env"),
-                    "navigation_config/nav2_launch.py",
-                )
-            ),
-            launch_arguments={
-                "scenario": LaunchConfiguration("scenario"),
-                "namespace" : LaunchConfiguration("robot_name")
-            }.items(),
-    )
-
-    anemometer = [
-        GroupAction(actions=[
-            PushRosNamespace(LaunchConfiguration("robot_name")),
-            Node(
-                package="simulated_anemometer",
-                executable="simulated_anemometer",
-                name="Anemometer",
-                parameters=[
-                    {"sensor_frame" : parse_substitution("$(var robot_name)_anemometer_frame") },
-                    {"fixed_frame" : "map"},
-                    {"noise_std" : 0.3},
-                    {"use_map_ref_system" : False},
-                    {'use_sim_time': True},
-                ]
-            ),
-            Node(
-                package='tf2_ros',
-                executable='static_transform_publisher',
-                name='anemometer_tf_pub',
-                arguments = ['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
-                parameters=[{'use_sim_time': True}]
-            ),
-        ])
-    ]
-
-    PID = [
-        GroupAction(actions=[
-            PushRosNamespace(LaunchConfiguration("robot_name")),
-            Node(
-                package="simulated_gas_sensor",
-                executable="simulated_gas_sensor",
-                name="PID",
-                parameters=[
-                    {"sensor_model" : 30 },
-                    {"sensor_frame" : parse_substitution("$(var robot_name)_pid_frame") },
-                    {"fixed_frame" : "map"},
-                    {"noise_std" : 20.1},
-                    {'use_sim_time': True},
-                ]
-            ),
-            Node(
-                package='tf2_ros',
-                executable='static_transform_publisher',
-                name='pid_tf_pub',
-                arguments = ['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
-                parameters=[{'use_sim_time': True}]
-            ),
-        ])
-    ]
-
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -251,13 +161,8 @@ def launch_setup(context, *args, **kwargs):
     )
 
     actions = []
-    #actions.append(gaden_player)
-    #actions.extend(anemometer)
-    #actions.extend(PID)
-    #actions.append(nav2)
     actions.extend(map_server)
     actions.append(gmrf_wind)
-    #actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
     actions.append(rviz)

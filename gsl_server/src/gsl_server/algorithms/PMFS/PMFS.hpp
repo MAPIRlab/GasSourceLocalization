@@ -34,6 +34,8 @@ namespace GSL
         PMFS(std::shared_ptr<rclcpp::Node> _node);
         void Initialize() override;
         void OnUpdate() override;
+        Vector2 expectedValueSource(double proportionBest);
+        double varianceSourcePosition();
 
     protected:
         void declareParameters() override;
@@ -69,8 +71,6 @@ namespace GSL
         FunctionQueue functionQueue;
         uint iterationsCounter;
 
-        Vector2 expectedValueSource(double proportionBest);
-        double varianceSourcePosition();
 
         IF_GUI(PMFS_internal::UI ui);
     };
