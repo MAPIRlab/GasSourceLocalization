@@ -279,7 +279,7 @@ namespace GSL
 
     void PMFSLib::InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,
                                             WindEstimation::Request::SharedPtr& GMRFRequest
-                                            IF_GADEN(, gaden_player::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest))
+                                            IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest))
     {
         grid.data.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y);
   
@@ -304,7 +304,7 @@ namespace GSL
 
         float anemometer_Z = tfm.transform.translation.z;
         GSL_INFO("anemometer z is {}", anemometer_Z);
-        groundTruthWindRequest = std::make_shared<gaden_player::srv::WindPosition::Request>();
+        groundTruthWindRequest = std::make_shared<gaden_msgs::srv::WindPosition::Request>();
 #endif
 
         GMRFRequest = std::make_shared<WindEstimation::Request>();
@@ -430,7 +430,7 @@ namespace GSL
         pubs.markers.quadtreePublisher = node->create_publisher<MarkerArray>("quadtree", 1);
 
         pubs.gmrfWind.client = node->create_client<gmrf_wind_mapping::srv::WindEstimation>("/WindEstimation");
-        IF_GADEN(pubs.groundTruthWind.client = node->create_client<gaden_player::srv::WindPosition>("/wind_value"));
+        IF_GADEN(pubs.groundTruthWind.client = node->create_client<gaden_msgs::srv::WindPosition>("/wind_value"));
     }
 
 } // namespace GSL

@@ -10,7 +10,7 @@ add_library(PMFS ${SOURCES})
 ament_target_dependencies(PMFS
     ${COMMON_AMENT_DEPENDENCIES}
     gmrf_wind_mapping
-    ${CONDITIONAL_GADEN_PLAYER}
+    ${CONDITIONAL_GADEN_MSGS}
     ${CONDITIONAL_IMGUI}
 )
 

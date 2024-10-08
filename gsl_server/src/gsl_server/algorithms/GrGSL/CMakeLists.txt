@@ -10,7 +10,7 @@ add_library(GrGSL ${SOURCES})
 ament_target_dependencies(GrGSL
     ${COMMON_AMENT_DEPENDENCIES}
     gmrf_wind_mapping
-    ${CONDITIONAL_GADEN_PLAYER}
+    ${CONDITIONAL_GADEN_MSGS}
 )
 
 # Link other dependencies

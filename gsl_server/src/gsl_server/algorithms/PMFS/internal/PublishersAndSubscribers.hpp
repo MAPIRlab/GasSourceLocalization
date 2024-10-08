@@ -6,7 +6,7 @@
 #include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 
 #ifdef USE_GADEN
-#include <gaden_player/srv/wind_position.hpp>
+#include <gaden_msgs/srv/wind_position.hpp>
 #endif
 
 namespace GSL
@@ -24,8 +24,8 @@ namespace GSL
 #ifdef USE_GADEN
         struct GroundTruthWind
         {
-            gaden_player::srv::WindPosition::Request::SharedPtr request;
-            rclcpp::Client<gaden_player::srv::WindPosition>::SharedPtr client;
+            gaden_msgs::srv::WindPosition::Request::SharedPtr request;
+            rclcpp::Client<gaden_msgs::srv::WindPosition>::SharedPtr client;
         };
 #endif
 

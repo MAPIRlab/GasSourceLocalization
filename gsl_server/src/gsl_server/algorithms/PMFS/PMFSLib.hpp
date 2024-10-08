@@ -13,7 +13,7 @@
 #include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 
 #ifdef USE_GADEN
-#include <gaden_player/srv/wind_position.hpp>
+#include <gaden_msgs/srv/wind_position.hpp>
 #endif
 
 namespace GSL
@@ -34,7 +34,7 @@ namespace GSL
         static void InitializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
                                   VisibilityMap& visibilityMap);
         static void InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid, WindEstimation::Request::SharedPtr& GMRFRequest
-                                              IF_GADEN(, gaden_player::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest)
+                                              IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest)
                                              );
         static void InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node);
 
