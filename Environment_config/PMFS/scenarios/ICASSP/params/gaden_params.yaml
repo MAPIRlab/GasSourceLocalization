@@ -1,0 +1,26 @@
+# PARAMETERS FOR GADEN #
+# ===================== #
+
+# ================
+gaden_environment:
+  ros__parameters:
+    verbose: true
+    wait_preprocessing: false   # wait for the ok from gaden_preprocessing before running
+    fixed_frame: "map"
+
+    # Plot CAD models (Collada format .dae)
+    CAD_models: 
+      - "!color [0.92, 0.96, 0.96]"
+      - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/CAD-walls.dae"
+
+                     
+    # Plot 3D OccupancyGridmap
+    occupancy3D_data: "$(var pkg_dir)/scenarios/$(var scenario)/OccupancyGrid3D.csv"
+
+    # Plot gas sources
+    number_of_sources: 0
+    source_0_position_x: $(var source_x)
+    source_0_position_y: $(var source_y)
+    source_0_position_z: $(var source_z)
+    source_0_scale: 0.2
+    source_0_color: [0.0, 1.0, 0.0] 

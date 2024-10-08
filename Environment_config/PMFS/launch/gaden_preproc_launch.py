@@ -28,13 +28,12 @@ def launch_arguments():
     return [
         DeclareLaunchArgument(
             "scenario",
-            default_value=["A"],
+            default_value=["ICASSP"],
             description="scenario to preprocess",
         ),
         DeclareLaunchArgument(
-            "simulation",
-            default_value=["A1"],
-            description="name of the simulation yaml file",
+            "floor_height",
+            default_value=["0.0"]
         )
     ]
 #==========================

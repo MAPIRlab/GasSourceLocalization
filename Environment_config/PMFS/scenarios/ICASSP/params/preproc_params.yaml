@@ -1,0 +1,19 @@
+# PARAMETERS FOR GADEN PREPROCESSING NODE #
+# ======================================== #
+gaden_preprocessing:
+  ros__parameters:
+    # Cell size
+    cell_size: 0.1
+
+    # CAD models of the enviroment (.stl)
+    models: 
+      - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/CAD_Environment.stl
+    
+    # 3D Location of a point in free-space
+    empty_point_x: 0.0
+    empty_point_y: 0.0
+    empty_point_z: 0.2
+    floor_height: $(var floor_height)
+    
+    # Where to write the output files
+    output_path: "$(var pkg_dir)/scenarios/$(var scenario)"

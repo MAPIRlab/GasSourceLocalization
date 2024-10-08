@@ -4,5 +4,6 @@
 *_W
 **__pycache__**
 .vscode
+.cache
 build
 *~
