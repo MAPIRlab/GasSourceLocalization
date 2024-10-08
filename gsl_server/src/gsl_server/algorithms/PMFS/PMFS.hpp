@@ -44,6 +44,9 @@ namespace GSL
         void processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection);
         void updateSourceProbability();
         void publishAnemometer(double x, double y, double windSpeed, double windDirection);
+        Vector2 getExpectedValueSourcePosition();
+        Vector2 getVarianceSourcePosition();
+
         GSLResult checkSourceFound() override;
         void saveResultsToFile(GSLResult result) override;
         void OnCompleteNavigation(GSLResult result, State* previousState) override;

@@ -1,4 +1,3 @@
-#include "gsl_server/algorithms/PMFS/PMFS.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include <cmath> // For atan2 and M_PI
 #include <fmt/color.h>
@@ -33,19 +32,9 @@ namespace GSL
     // Function to calculate wind direction
     double calculateWindDirection(double wind_u, double wind_v)
     {
-        // atan2 returns the angle in radians, we convert it to degrees
-        double angle = atan2(wind_v, wind_u) * 180.0 / M_PI;
-
-        // Convert mathematical angle (from -180° to 180°) to meteorological convention
-        double wind_direction = 270.0 - angle;
-
-        // Ensure the result is between 0° and 360°
-        if (wind_direction < 0)
-        {
-            wind_direction += 360.0;
-        }
-
-        return wind_direction;
+        // Down-Wind angle
+        double angle = atan2(wind_v, wind_u);
+        return angle;
     }
 
     void StopAndMeasureState::OnUpdate()
@@ -128,13 +117,18 @@ namespace GSL
                     double windSpeed = std::sqrt(row[7] * row[7] + row[8] * row[8]);
                     double windDirection = calculateWindDirection(row[7], row[8]);
 
-                    // Publish Anemometer to GMRF (topic based)
-                    algorithm->publishAnemometer(x, y, windSpeed, windDirection);
+                    // FILTER BY HEIGHT
+                    if (z>0.0 && z<0.03)
+                    {
+                        // Publish Anemometer to GMRF (topic based)
+                        algorithm->publishAnemometer(x, y, windSpeed, windDirection);
 
-                    // Update Gas-Hit maps
-                    GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed,
-                             windDirection);
-                    algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
+                        // Update Gas-Hit maps
+                        GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed,
+                                windDirection);
+                        algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
+                    }
+                    
                 }
 
                 // Check if the sample is a multiple of 10
@@ -142,11 +136,12 @@ namespace GSL
                 {
                     GSL_TRACE("Toca estimar GSL: sample {} in batch-{}", sample_j, batch_i);
                     algorithm->updateSourceProbability();
+                    
+                    // Get Source Location estimation
+                    Vector2 expectedValue = algorithm->getExpectedValueSourcePosition();
+                    Vector2 variance = algorithm->getVarianceSourcePosition();
 
-                    // TODO: Show results and save to file
-                    // Pepe: la varianza la necesitamos como escalar o con matriz de covarianza?
-                    Vector2 expectedValue = dynamic_cast<PMFS*>(algorithm)->expectedValueSource(1.);
-                    double variance = dynamic_cast<PMFS*>(algorithm)->varianceSourcePosition();
+                    
                     GSL_INFO_COLOR(fmt::terminal_color::blue, "Expected value:{}  --  Variance: {}", expectedValue, variance);
                 }
             }
@@ -154,7 +149,7 @@ namespace GSL
         }
 
         GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");
-        CLOSE_PROGRAM;
+        //CLOSE_PROGRAM;
 
         // // ORIGINAL
         // if ((algorithm->node->now() - time_stopped).seconds() >= measure_time)

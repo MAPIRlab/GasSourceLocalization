@@ -140,7 +140,7 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-    // SEPARAR EN OTRA FUNCION (GENERAR PROBABILIDADES)
+        // SEPARAR EN OTRA FUNCION (GENERAR PROBABILIDADES)
         //Update the wind estimations
         // ------------------------------
         PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
@@ -194,6 +194,17 @@ namespace GSL
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
+    }
+
+    Vector2 PMFS::getExpectedValueSourcePosition()
+    {
+        return expectedValueSource(1.);
+    }
+
+    Vector2 PMFS::getVarianceSourcePosition()
+    {
+        // TODO: Calculate  Var_x and Var_y
+        return expectedValueSource(1.); //varianceSourcePosition();
     }
 
     void PMFS::publishAnemometer(double x, double y, double windSpeed, double windDirection)
