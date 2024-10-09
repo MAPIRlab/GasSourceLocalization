@@ -15,7 +15,7 @@ def launch_arguments():
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
-        DeclareLaunchArgument("map_height", default_value="0.08"),
+        DeclareLaunchArgument("map_height", default_value="0.16"),
     ]
 #==========================
 
@@ -81,6 +81,7 @@ def launch_setup(context, *args, **kwargs):
             Node(
                 package="gsl_server",
                 executable="gsl_actionserver_node",
+                prefix="xterm -e",
                 name="GSL",
                 parameters=[
                     # Common
@@ -198,7 +199,7 @@ def generate_launch_description():
         ##############################################
         SetLaunchConfiguration(
             name="th_gas_present", 
-            value="0.1"
+            value="0.12"
         ),
         SetLaunchConfiguration(
             name="th_wind_present", 
