@@ -198,7 +198,6 @@ namespace GSL
     {
         // create the PMFS cells
         {
-            GridUtils::reduceOccupancyMap(algorithm.map.data, algorithm.map.info.width, grid.occupancy, grid.metadata);
             for (HitProbability& hp : grid.data)
                 hp.auxWeight = -1;
             GSL_TRACE("Created grid");

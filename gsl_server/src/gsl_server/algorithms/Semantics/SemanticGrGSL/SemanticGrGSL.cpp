@@ -21,7 +21,7 @@ namespace GSL
         }
 
         GrGSLLib::VisualizeMarkers(
-            Grid2D<Cell>(cells, simulationOccupancy, gridMetadata),
+            Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             markers,
             node);
     }
@@ -54,10 +54,12 @@ namespace GSL
         GrGSLLib::initMetadata(gridMetadata, map, Utils::getParam(node, "scale", 20));
         cells.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         navigationOccupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
+        combinedSourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         simulationOccupancy = Utils::parseMapImage(getParam<std::string>("wallsOccupancyFile", "?"), gridMetadata);
 
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
         GrGSLLib::initializeMap(*this,
-                                Grid2D<Cell>(cells, navigationOccupancy, gridMetadata));
+                                Grid2D<Cell>(cells, simulationOccupancy, gridMetadata));
         positionOfLastHit = {currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y};
 
         // SEMANTICS
@@ -88,14 +90,14 @@ namespace GSL
         else
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING");
 
-        GrGSLLib::estimateProbabilitiesfromGasAndWind(
-            Grid2D<Cell>(cells, simulationOccupancy, gridMetadata),
-            settings,
-            gasHit,
-            gasHit ? significantWind : true,
-            windDirection,
-            positionOfLastHit,
-            gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+        // GrGSLLib::estimateProbabilitiesfromGasAndWind(
+        //     Grid2D<Cell>(cells, simulationOccupancy, gridMetadata),
+        //     settings,
+        //     gasHit,
+        //     gasHit ? significantWind : true,
+        //     windDirection,
+        //     positionOfLastHit,
+        //     gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
 
         // dynamic_cast<MovingStateGrGSL*>(movingState.get())->chooseGoalAndMove();
     }

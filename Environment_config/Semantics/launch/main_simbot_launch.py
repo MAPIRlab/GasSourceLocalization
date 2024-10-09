@@ -14,7 +14,7 @@ def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="B"),
         DeclareLaunchArgument("simulation", default_value="B1"),
-        DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
+        DeclareLaunchArgument("method",	default_value=["SemanticGrGSL"]),
     ]
 #==========================
 

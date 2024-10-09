@@ -19,10 +19,7 @@ namespace GSL
     }
 
     void GrGSLLib::initializeMap(Algorithm& algorithm, Grid2D<Cell> grid)
-    {
-        GridUtils::reduceOccupancyMap(algorithm.map.data, algorithm.map.info.width, grid.occupancy, grid.metadata);
-        
-        //TODO simulationOccupancy?
+    {        
         // remove "free" cells that are actually unreachable
         {
             HashSet openPropagationSet;
@@ -368,6 +365,52 @@ namespace GSL
 
                     std_msgs::msg::ColorRGBA color =
                         Utils::valueToColor(grid.dataAt(col, row).sourceProb, 0.00001, 0.1, Utils::valueColorMode::Logarithmic);
+
+                    points.points.push_back(p);
+                    points.colors.push_back(color);
+                }
+            }
+        }
+        markers.probabilityMarkers->publish(points);
+    }
+
+    void GrGSLLib::VisualizeMarkers(Grid2D<double> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node)
+    {
+        constexpr auto emptyMarker = []()
+                                     {
+                                         Marker points;
+                                         points.header.frame_id = "map";
+                                         points.ns = "cells";
+                                         points.id = 0;
+                                         points.type = Marker::POINTS;
+                                         points.action = Marker::ADD;
+
+                                         points.color.r = 1.0;
+                                         points.color.g = 0.0;
+                                         points.color.b = 1.0;
+                                         points.color.a = 1.0;
+                                         points.scale.x = 0.15;
+                                         points.scale.y = 0.15;
+                                         return points;
+                                     };
+
+        Marker points = emptyMarker();
+        points.header.stamp = node->now();
+
+        for (int row = 0; row < grid.metadata.dimensions.y; row++)
+        {
+            for (int col = 0; col < grid.metadata.dimensions.x; col++)
+            {
+                if (grid.freeAt(col, row))
+                {
+                    auto coords = grid.metadata.indicesToCoordinates(col, row);
+                    Point p;
+                    p.x = coords.x;
+                    p.y = coords.y;
+                    p.z = 0;
+
+                    std_msgs::msg::ColorRGBA color =
+                        Utils::valueToColor(grid.dataAt(col, row), 0.00001, 0.1, Utils::valueColorMode::Logarithmic);
 
                     points.points.push_back(p);
                     points.colors.push_back(color);

@@ -3,8 +3,8 @@
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/2D/ClassMap2D.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/Voxeland/ClassMapVoxeland.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Voxeland/ClassMapVoxeland.hpp>
 #include <magic_enum.hpp>
 
 namespace GSL
@@ -82,8 +82,13 @@ namespace GSL
         visibilityMap.emplace(gridMetadata.dimensions.x, gridMetadata.dimensions.y,
                               std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
         // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
-
-        PMFSLib::InitializeMap(*this, Grid2D<HitProbability>(hitProbability, navigationOccupancy, gridMetadata), simulations, *visibilityMap);
+        
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
+        PMFSLib::InitializeMap(
+            *this,
+            Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+            simulations,
+            *visibilityMap);
 
         // set all variables to the prior probability
         for (HitProbability& h : hitProbability)

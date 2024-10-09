@@ -93,7 +93,7 @@ namespace GSL
         if (!serviceCD.isDone())
             return;
 
-        serviceCD.Restart(3);
+        serviceCD.Restart(0.5);
 
         auto request = std::make_shared<voxeland_msgs::srv::GetClassDistributions::Request>();
         request->query_points = requestPoints; // TODO probably better to avoid copying this

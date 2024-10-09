@@ -35,6 +35,7 @@ namespace GSL
         static void mapFunctionToCells(Grid2D<GrGSL_internal::Cell> grid, std::function<void(GrGSL_internal::Cell&, size_t)> function,
                                        MapFunctionMode mode = MapFunctionMode::Sequential);
         static void VisualizeMarkers(Grid2D<GrGSL_internal::Cell> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node);
+        static void VisualizeMarkers(Grid2D<double> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node);
         static Vector2 expectedValueSource(Grid2D<GrGSL_internal::Cell> grid, double proportionBest);
         static double varianceSourcePosition(Grid2D<GrGSL_internal::Cell> grid);
     };
