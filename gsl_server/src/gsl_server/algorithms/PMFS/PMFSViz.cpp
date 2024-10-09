@@ -8,7 +8,8 @@ namespace GSL
     void PMFSViz::ShowHitProb(Grid2D<PMFS_internal::HitProbability> grid, const PMFS_internal::VisualizationSettings& settings,
                               const PMFS_internal::PublishersAndSubscribers& pubs)
     {
-        Marker gasProbMarker = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
+        float markerSize = grid.metadata.cellSize * 0.95;
+        Marker gasProbMarker = Utils::emptyMarker({markerSize, markerSize}, pubs.clock);
 
         Marker confidenceMarker = gasProbMarker;
 
@@ -51,7 +52,8 @@ namespace GSL
     void PMFSViz::ShowSourceProb(Grid2D<double> grid, const PMFS_internal::VisualizationSettings& settings,
                                  const PMFS_internal::PublishersAndSubscribers& pubs)
     {
-        Marker sourceProbMarker = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
+        float markerSize = grid.metadata.cellSize * 0.95;
+        Marker sourceProbMarker = Utils::emptyMarker({markerSize, markerSize}, pubs.clock);
         for (int b = 0; b < grid.metadata.dimensions.y; b++)
         {
             for (int a = 0; a < grid.metadata.dimensions.x; a++)
@@ -84,7 +86,7 @@ namespace GSL
         for (int i = 0; i < QTleaves.size(); i++)
         {
             const NQA::Node* leaf = &QTleaves[i];
-            Marker mark = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
+            Marker mark = Utils::emptyMarker({0.1, 0.1}, pubs.clock);
             mark.type = Marker::CUBE;
             Vector2 worldSpaceScale = (Vector2(leaf->size.y, leaf->size.x)) * gridMetadata.cellSize;
 
@@ -152,7 +154,7 @@ namespace GSL
                     marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
                     // shape
                     marker.scale.x = estimatedWindVectors.metadata.cellSize * (module / max_module); // arrow length,
-                    marker.scale.y = 0.03; // arrow width
+                    marker.scale.y = 0.01; // arrow width
                     marker.scale.z = 0.05; // arrow height
                     // color -> must normalize to [0-199]
                     size_t idx_color = 199 * (module / max_module);

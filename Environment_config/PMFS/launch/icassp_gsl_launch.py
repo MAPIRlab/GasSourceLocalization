@@ -15,7 +15,7 @@ def launch_arguments():
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
-        DeclareLaunchArgument("map_height", default_value="0.16"),
+        DeclareLaunchArgument("map_height", default_value="0.24"),
     ]
 #==========================
 
@@ -28,6 +28,9 @@ def launch_setup(context, *args, **kwargs):
 		LaunchConfiguration("map_height").perform(context),
 		"occupancy.yaml",
 	)
+    map_height = float(LaunchConfiguration("map_height").perform(context))
+
+
     map_server = [
         GroupAction(actions=[
             PushRosNamespace(LaunchConfiguration("robot_name")),            
@@ -95,7 +98,7 @@ def launch_setup(context, *args, **kwargs):
                     #{"ground_truth_y": parse_substitution("$(var source_y)")},
                     {"resultsFile": parse_substitution("Results/$(var simulation)/$(var method).csv")},
                     
-                    {"scale": 25},
+                    {"scale": 35},
                     {"markers_height": 0.2},
 
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
@@ -114,11 +117,11 @@ def launch_setup(context, *args, **kwargs):
                         # Hit probabilities
                     {"headless": False},
                     {"maxUpdatesPerStop": 5},
-                    {"kernelSigma": 1.5},
-                    {"kernelStretchConstant": 1.5},
+                    {"kernelSigma": 2.0},
+                    {"kernelStretchConstant": 1.2},
                     {"hitPriorProbability": 0.3},
                     {"confidenceSigmaSpatial": 1.0},
-                    {"confidenceMeasurementWeight": 1.0},
+                    {"confidenceMeasurementWeight": 0.1},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
                     {"useWindGroundTruth": True},
@@ -131,8 +134,11 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
-                    #Surge-Cast
-                    {"step": 0.5},
+                    # ICASSP
+                    {"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    {"zMin": map_height-0.08},
+                    {"zMax": map_height+0.08},
+
 
                     
                 ],
@@ -148,17 +154,27 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {"sensor_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
             {"map_topic": parse_substitution("$(var robot_name)/map")},
-            {"cell_size": 0.25},
+            {"cell_size": 0.1},
         ]
     )
 
-    rviz = Node(
+    rvizHit = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz",
         #prefix="xterm -e",
         arguments=[
-            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "gaden.rviz")
+            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "hit.rviz")
+        ],
+    )
+
+    rvizSource = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        #prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "source.rviz")
         ],
     )
 
@@ -167,7 +183,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(gmrf_wind)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.append(rviz)
+    actions.append(rvizHit)
+    actions.append(rvizSource)
 
     return actions
 
@@ -199,7 +216,7 @@ def generate_launch_description():
         ##############################################
         SetLaunchConfiguration(
             name="th_gas_present", 
-            value="0.12"
+            value="0.105"
         ),
         SetLaunchConfiguration(
             name="th_wind_present", 
@@ -208,7 +225,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.5"
+            value="0.2"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 

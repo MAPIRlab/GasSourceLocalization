@@ -1,5 +1,8 @@
+#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
+#include "gsl_server/core/Macros.hpp"
 #include <cmath> // For atan2 and M_PI
+#include <filesystem>
 #include <fmt/color.h>
 #include <fstream>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
@@ -46,7 +49,19 @@ namespace GSL
         GSL_TRACE("Entering StopAndMeasure::OnUpdate");
         int total_batches = 1;       // Total number of batches
         int samples_per_batch = 500; // Total number of samples per batch
-        std::string test_folder_path = "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test";
+
+        // Launch params
+        std::string test_folder_path = Utils::getParam<std::string>(algorithm->node, "test_folder", "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test");
+        float zMin = Utils::getParam<float>(algorithm->node, "zMin", 0.0);
+        float zMax = Utils::getParam<float>(algorithm->node, "zMax", 0.1);
+
+        if(!std::filesystem::exists(test_folder_path))
+        {
+            GSL_ERROR("Test data folder '{}' does not exist! Set the path using the 'test_folder' param", test_folder_path);
+            CLOSE_PROGRAM;
+        }
+
+        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Filtering measurements between z={} and z={}", zMin, zMax);
 
         // 1. Loop over each batch
         for (int batch_i = 1; batch_i <= total_batches; batch_i++)
@@ -118,7 +133,7 @@ namespace GSL
                     double windDirection = calculateWindDirection(row[7], row[8]);
 
                     // FILTER BY HEIGHT
-                    if (z>0.10 && z<0.20)
+                    if (z>zMin && z<zMax)
                     {
                         // Publish Anemometer to GMRF (topic based)
                         algorithm->publishAnemometer(x, y, windSpeed, windDirection);
