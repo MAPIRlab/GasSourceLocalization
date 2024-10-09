@@ -1,13 +1,12 @@
+#include "ClassMap2D.hpp"
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/ClassMap2D.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <geometry_msgs/msg/vector3_stamped.hpp>
 #include <gsl_server/algorithms/Common/Utils/Color.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
-#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace GSL
@@ -199,7 +198,7 @@ namespace GSL
             double angleCameraSpace = std::atan2(std::sin(angleWorldSpace - cameraYaw), std::cos(angleWorldSpace - cameraYaw));
 
             if (distance < fov.maxDist && distance > fov.minDist && std::abs(angleCameraSpace) < fov.angleRads &&
-                PMFSLib::PathFree(gridMetadata, wallsOccupancy, robotCoords, point))
+                GridUtils::PathFree(gridMetadata, wallsOccupancy, robotCoords, point))
             {
                 cellsInFOV.insert(indices);
             }

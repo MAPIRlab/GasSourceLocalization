@@ -7,7 +7,6 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <rclcpp/subscription.hpp>
 
-#include <vector>
 #include <string>
 #include <thread>
 

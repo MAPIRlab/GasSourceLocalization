@@ -43,9 +43,17 @@
 #endif
 
 
-#if ENABLE_SEMANTICS
+#if ENABLE_SEMANTIC_PMFS
     #define SEMANTIC_PMFS_NAME "SemanticPMFS"
     #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 #else
     #define SEMANTIC_PMFS_NAME "(NOT COMPILED) SemanticPMFS"
+#endif
+
+
+#if ENABLE_SEMANTIC_GrGSL
+    #define SEMANTIC_GrGSL_NAME "SemanticGrGSL"
+    #include <gsl_server/algorithms/Semantics/SemanticGrGSL/SemanticGrGSL.hpp>
+#else
+    #define SEMANTIC_GrGSL_NAME "(NOT COMPILED) SemanticGrGSL"
 #endif

@@ -51,9 +51,6 @@ namespace GSL
                                  IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
                                 );
 
-        //run the DDA algorithm to check if a straight line from origin to end intersects any obstacles
-        static bool PathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end);
-
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
 

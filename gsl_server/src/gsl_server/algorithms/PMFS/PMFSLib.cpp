@@ -192,6 +192,7 @@ namespace GSL
         metadata.scale = scale;
     }
 
+    //TODO shouldn't some of this be done with the simulationOccupancy rather than the navigationOccupancy?
     void PMFSLib::InitializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
                                 VisibilityMap& visibilityMap)
     {
@@ -262,7 +263,7 @@ namespace GSL
                             Vector2Int thisCell(i + r, j + c);
                             Vector2 start = grid.metadata.indicesToCoordinates(ij);
                             Vector2 end = grid.metadata.indicesToCoordinates(thisCell);
-                            if (thisCell == ij || PathFree(grid.metadata, grid.occupancy, start, end))
+                            if (thisCell == ij || GridUtils::PathFree(grid.metadata, grid.occupancy, start, end))
                                 visibleCells.push_back(thisCell);
                         }
                     }
@@ -372,28 +373,6 @@ namespace GSL
                 GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
         }
 #endif
-    }
-
-    bool PMFSLib::PathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end)
-    {
-        Vector2Int originInd = metadata.coordinatesToIndices(origin);
-        Vector2Int endInd = metadata.coordinatesToIndices(end);
-
-        DDA::_2D::Map<GSL::Occupancy> map(occupancy, metadata.origin, metadata.cellSize, {metadata.dimensions.x, metadata.dimensions.y});
-
-        // check there are no obstacles between origin and end
-        if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))
-            return false;
-        Vector2 direction = end - origin;
-        DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
-                origin, direction, vmath::length(direction),
-                DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.dimensions.x, metadata.dimensions.y}),
-                [](const GSL::Occupancy & occ)
-        {
-            return occ == GSL::Occupancy::Free;
-        });
-
-        return !raycastInfo.hitSomething;
     }
 
     void PMFSLib::GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings)

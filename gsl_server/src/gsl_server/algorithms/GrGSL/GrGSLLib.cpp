@@ -21,7 +21,8 @@ namespace GSL
     void GrGSLLib::initializeMap(Algorithm& algorithm, Grid2D<Cell> grid)
     {
         GridUtils::reduceOccupancyMap(algorithm.map.data, algorithm.map.info.width, grid.occupancy, grid.metadata);
-
+        
+        //TODO simulationOccupancy?
         // remove "free" cells that are actually unreachable
         {
             HashSet openPropagationSet;

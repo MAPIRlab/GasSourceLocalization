@@ -99,8 +99,6 @@ namespace GSL
         rclcpp::Duration time_spent = node->now() - startTime;
         if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
-            Vector2 locationAll = GrGSLLib::expectedValueSource(grid, 1);
-            Vector2 location = GrGSLLib::expectedValueSource(grid, 0.05);
             saveResultsToFile(GSLResult::Failure);
             return GSLResult::Failure;
         }
@@ -116,10 +114,6 @@ namespace GSL
 
         double variance = GrGSLLib::varianceSourcePosition(grid);
         GSL_INFO("Variance: {}", variance);
-
-        Vector2 locationAll = GrGSLLib::expectedValueSource(grid, 1);
-
-        Vector2 location = GrGSLLib::expectedValueSource(grid, 0.05);
 
         if (variance < settings.convergence_thr)
         {

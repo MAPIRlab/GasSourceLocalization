@@ -26,7 +26,7 @@ namespace GSL
         AABB2DInt(const Vector2Int& _min, const Vector2Int& _max): min(_min), max(_max)
         {}
 
-        bool operator==(const AABB2DInt& other)
+        bool operator==(const AABB2DInt& other) const
         {
             return min == other.min && max == other.max;
         }

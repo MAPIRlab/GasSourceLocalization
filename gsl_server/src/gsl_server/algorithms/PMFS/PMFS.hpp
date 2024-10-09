@@ -19,7 +19,7 @@ namespace GSL
     {
         friend class MovingStatePMFS;
         friend class PMFS_internal::Simulations;
-        friend class PMFS_internal::SimulationSource;
+        friend struct PMFS_internal::SimulationSource;
 #ifdef USE_GUI
         friend class PMFS_internal::UI;
 #endif

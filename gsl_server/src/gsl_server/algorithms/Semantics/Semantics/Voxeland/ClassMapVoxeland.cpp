@@ -1,7 +1,7 @@
+#include "ClassMapVoxeland.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/algorithms/Common/Utils/Time.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/ClassMapVoxeland.hpp>
 
 namespace GSL
 {
@@ -66,7 +66,7 @@ namespace GSL
 
     void ClassMapVoxeland::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
     {
-        //#pragma omp parallel for collapse(2)
+        // #pragma omp parallel for collapse(2)
         for (size_t i = 0; i < sourceProb.size(); i++)
         {
             for (size_t z = 0; z < gridMetadata.dimensions.z; z++)

@@ -1,10 +1,10 @@
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/ClassMap2D.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/ClassMapVoxeland.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/2D/ClassMap2D.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Voxeland/ClassMapVoxeland.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
 #include <magic_enum.hpp>
 
 namespace GSL
@@ -36,15 +36,22 @@ namespace GSL
     void SemanticPMFS::OnUpdate()
     {
         Algorithm::OnUpdate();
-        if (semantics) //TODO allow this to run slower that the update loop? kinda messes up the callback-based one
+        functionQueue.run();
+
+        if (semantics) // TODO allow this to run slower that the update loop? kinda messes up the callback-based one
         {
             semantics->OnUpdate();
             updateSourceFromSemantics();
         }
 
-        PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
-        PMFSViz::ShowSourceProb(Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
-        functionQueue.run();
+        PMFSViz::ShowHitProb(
+            Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
+        PMFSViz::ShowSourceProb(
+            Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
     }
 
     void SemanticPMFS::declareParameters()
@@ -79,32 +86,35 @@ namespace GSL
         PMFSLib::InitializeMap(*this, Grid2D<HitProbability>(hitProbability, navigationOccupancy, gridMetadata), simulations, *visibilityMap);
 
         // set all variables to the prior probability
-        for (HitProbability& h : hitProbability) h.setProbability(settings.hitProbability.prior);
+        for (HitProbability& h : hitProbability)
+            h.setProbability(settings.hitProbability.prior);
 
-        for (double& p : sourceProbabilityPMFS) p = 1.0 / gridMetadata.numFreeCells;
+        for (double& p : sourceProbabilityPMFS)
+            p = 1.0 / gridMetadata.numFreeCells;
 
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         functionQueue.submit([this]()
-        {
+                             {
             Grid<Vector2> windGrid(estimatedWindVectors, simulationOccupancy, gridMetadata);
-            PMFSLib::InitializeWindPredictions(*this, windGrid, pubs.pmfsPubs.gmrfWind.request IF_GADEN(, pubs.pmfsPubs.groundTruthWind.request));
-            PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node,
-                                  pubs.pmfsPubs.gmrfWind IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-            stateMachine.forceSetState(stopAndMeasureState.get());
-        });
+            PMFSLib::InitializeWindPredictions(
+                *this, 
+                windGrid, 
+                pubs.pmfsPubs.gmrfWind.request 
+                IF_GADEN(, pubs.pmfsPubs.groundTruthWind.request));
+            PMFSLib::EstimateWind(
+                settings.simulation.useWindGroundTruth,
+                windGrid,
+                node,
+                pubs.pmfsPubs.gmrfWind
+                    IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+            stateMachine.forceSetState(stopAndMeasureState.get()); });
 
         // SEMANTICS
         //----------------------
         std::string semanticsTypeParam = node->declare_parameter<std::string>("semanticsType", "ClassMap2D");
-        std::optional<SemanticsType> semanticsType = magic_enum::enum_cast<SemanticsType>(semanticsTypeParam, magic_enum::case_insensitive);
-        if (!semanticsType.has_value())
-        {
-            constexpr auto names = magic_enum::enum_names<SemanticsType>();
-            GSL_ERROR("{} is not a valid semantics type. Valid types are {}", semanticsTypeParam, fmt::join(names, ", "));
-            GSL_ERROR("Closing");
-            CLOSE_PROGRAM;
-        }
-        else if (semanticsType == SemanticsType::ClassMap2D)
+        SemanticsType semanticsType = ParseSemanticsType(semanticsTypeParam);
+
+        if (semanticsType == SemanticsType::ClassMap2D)
             semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
         else if (semanticsType == SemanticsType::ClassMapVoxeland)
             semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose, node);
@@ -112,12 +122,12 @@ namespace GSL
 
     void SemanticPMFS::updateSourceFromSemantics()
     {
-        //wait until we have received the map and initialized everything
+        // wait until we have received the map and initialized everything
         if (!semantics)
             return;
 
         std::vector<double> sourceProbSemantics = semantics->GetSourceProbability();
-        #pragma omp parallel for
+#pragma omp parallel for
         for (size_t i = 0; i < sourceProbSemantics.size(); i++)
         {
             combinedSourceProbability[i] = sourceProbabilityPMFS[i] * sourceProbSemantics[i];

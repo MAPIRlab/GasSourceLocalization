@@ -1,12 +1,13 @@
 #pragma once
+#include "DDA/2D/RayCast.h"
+#include "Occupancy.hpp"
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
-#include "Occupancy.hpp"
 
 namespace GSL
 {
-    //See the grid class
+    // See the grid class
     struct Grid2DMetadata
     {
         Vector2 origin;
@@ -57,7 +58,7 @@ namespace GSL
         }
     };
 
-    //A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa
+    // A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa
     template <typename T>
     struct Grid2D
     {
@@ -105,7 +106,7 @@ namespace GSL
     public:
         GridUtils() = delete;
 
-        //reduce the resolution of an occupancy grid, considering that a cell in the smaller map is occupied as soon as a single smaller cell in it is
+        // reduce the resolution of an occupancy grid, considering that a cell in the smaller map is occupied as soon as a single smaller cell in it is
         static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy,
                                        const Grid2DMetadata& metadata)
         {
@@ -129,6 +130,30 @@ namespace GSL
                     occupancy[metadata.indexOf({i, j})] = squareIsFree ? Occupancy::Free : Occupancy::Obstacle;
                 }
             }
+        }
+
+
+        // run the DDA algorithm to check if a straight line from origin to end intersects any obstacles
+        static bool PathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end)
+        {
+            Vector2Int originInd = metadata.coordinatesToIndices(origin);
+            Vector2Int endInd = metadata.coordinatesToIndices(end);
+
+            DDA::_2D::Map<GSL::Occupancy> map(occupancy, metadata.origin, metadata.cellSize, {metadata.dimensions.x, metadata.dimensions.y});
+
+            // check there are no obstacles between origin and end
+            if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))
+                return false;
+            Vector2 direction = end - origin;
+            DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
+                origin, direction, vmath::length(direction),
+                DDA::_2D::Map<GSL::Occupancy>(occupancy, metadata.origin, metadata.cellSize, {metadata.dimensions.x, metadata.dimensions.y}),
+                [](const GSL::Occupancy& occ)
+                {
+                    return occ == GSL::Occupancy::Free;
+                });
+
+            return !raycastInfo.hitSomething;
         }
     };
 

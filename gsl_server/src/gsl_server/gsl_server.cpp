@@ -152,9 +152,15 @@ std::shared_ptr<GSL::Algorithm> GSLServer::createAlgorithm(const std::string nam
         return std::make_shared<GSL::PMFS>(shared_from_this());
 #endif
 
-#if ENABLE_SEMANTICS
+#if ENABLE_SEMANTIC_PMFS
     else if (name == SEMANTIC_PMFS_NAME)
         return std::make_shared<GSL::SemanticPMFS>(shared_from_this());
+#endif
+
+
+#if ENABLE_SEMANTIC_GrGSL
+    else if (name == SEMANTIC_PMFS_NAME)
+        return std::make_shared<GSL::SemanticGrGSL>(shared_from_this());
 #endif
     return nullptr;
 }
