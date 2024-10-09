@@ -33,7 +33,7 @@ namespace GSL
     double calculateWindDirection(double wind_u, double wind_v)
     {
         // Down-Wind angle
-        double angle = atan2(wind_v, wind_u);
+        double angle = atan2(wind_v, wind_u) + M_PI;
         return angle;
     }
 
@@ -118,7 +118,7 @@ namespace GSL
                     double windDirection = calculateWindDirection(row[7], row[8]);
 
                     // FILTER BY HEIGHT
-                    if (z>0.0 && z<0.03)
+                    if (z>0.10 && z<0.20)
                     {
                         // Publish Anemometer to GMRF (topic based)
                         algorithm->publishAnemometer(x, y, windSpeed, windDirection);
@@ -127,6 +127,7 @@ namespace GSL
                         GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed,
                                 windDirection);
                         algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
+                        std::cin.get();
                     }
                     
                 }
