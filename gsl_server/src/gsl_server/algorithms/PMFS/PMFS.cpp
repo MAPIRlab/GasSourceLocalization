@@ -166,16 +166,18 @@ namespace GSL
         {
             // Gas & wind
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+                                              gridMetadata.coordinatesToIndices(x,y));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+                                              gridMetadata.coordinatesToIndices(x,y));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
+
+        PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
     void PMFS::updateSourceProbability()
