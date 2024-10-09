@@ -8,15 +8,15 @@
 #include <fmt/color.h>
 
 
-#define GSL_INFO(...) RCLCPP_INFO(rclcpp::get_logger("GSL"), fmt::format(__VA_ARGS__).c_str())
-#define GSL_INFO_COLOR(color,...) RCLCPP_INFO(rclcpp::get_logger("GSL"), fmt::format(fmt::fg(color),__VA_ARGS__).c_str())
+#define GSL_INFO(...) RCLCPP_INFO(rclcpp::get_logger("GSL"), "%s", fmt::format(__VA_ARGS__).c_str())
+#define GSL_INFO_COLOR(color,...) RCLCPP_INFO(rclcpp::get_logger("GSL"), "%s", fmt::format(fmt::fg(color),__VA_ARGS__).c_str())
 
-#define GSL_WARN(...) RCLCPP_WARN(rclcpp::get_logger("GSL"), fmt::format(fmt::fg(fmt::terminal_color::yellow), __VA_ARGS__).c_str())
+#define GSL_WARN(...) RCLCPP_WARN(rclcpp::get_logger("GSL"), "%s", fmt::format(fmt::fg(fmt::terminal_color::yellow), __VA_ARGS__).c_str())
 
-#define GSL_ERROR(...) RCLCPP_ERROR(rclcpp::get_logger("GSL"), fmt::format(fmt::fg(fmt::terminal_color::red), __VA_ARGS__).c_str())
+#define GSL_ERROR(...) RCLCPP_ERROR(rclcpp::get_logger("GSL"), "%s", fmt::format(fmt::fg(fmt::terminal_color::red), __VA_ARGS__).c_str())
 
 #if GSL_TRACING
-#define GSL_TRACE(...) RCLCPP_INFO(rclcpp::get_logger("GSL - Trace"), fmt::format(fmt::fg(fmt::terminal_color::green), __VA_ARGS__).c_str())
+#define GSL_TRACE(...) RCLCPP_INFO(rclcpp::get_logger("GSL - Trace"), "%s", fmt::format(fmt::fg(fmt::terminal_color::green), __VA_ARGS__).c_str())
 #else
 #define GSL_TRACE(...)
 #endif

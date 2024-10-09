@@ -6,7 +6,7 @@
 #include <gmrf_wind_mapping/srv/wind_estimation.hpp>
 
 #ifdef USE_GADEN
-#include <gaden_player/srv/wind_position.hpp>
+#include <gaden_msgs/srv/wind_position.hpp>
 #endif
 
 namespace GSL

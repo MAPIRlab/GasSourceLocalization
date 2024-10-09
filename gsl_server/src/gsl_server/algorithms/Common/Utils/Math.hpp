@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <deque>
 #include <gsl_server/core/Vectors.hpp>
 #include <cfloat>
 #include <gsl_server/algorithms/Common/Occupancy.hpp>
@@ -60,6 +59,7 @@ namespace GSL::Utils
 
     double randomFromGaussian(double mean, double stdev);
     double uniformRandom(double min, double max);
+    float uniformRandomF(float min, float max);
 
 
     // Kullback-Leibler Divergence

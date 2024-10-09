@@ -261,7 +261,7 @@ Visualization Manager:
       Enabled: true
       Name: GMRF
       Namespaces:
-        WindVector: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -283,10 +283,10 @@ Visualization Manager:
         Value: /PioneerP3DX/probabilityMarkers
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Hit
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -294,7 +294,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/hitProbabilityMarkers
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: Quadtree
@@ -372,19 +372,13 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        anemometer:
-          Value: true
-        map:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          anemometer:
-            {}
+        {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -472,5 +466,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1779
-  X: -23
-  Y: -32
+  X: 0
+  Y: 0

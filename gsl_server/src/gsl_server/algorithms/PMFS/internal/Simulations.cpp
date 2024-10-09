@@ -21,7 +21,7 @@ namespace GSL::PMFS_internal
     static thread_local Utils::PrecalculatedGaussian<2500> gaussian;
 
     static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
-            double& variance)
+                                              double& variance)
     {
         // Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
         weight_sum = weight_sum + weight;
@@ -87,16 +87,16 @@ namespace GSL::PMFS_internal
 
         int numberOfSimulations = 0;
 
-        // iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
-        #pragma omp parallel for schedule(dynamic)
+// iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
+#pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
         {
             SimulationResult result = runSimulation(scores, leafIndex);
             if (!result.valid)
                 continue;
 
-            // update the information for the variance calulation
-            #pragma omp critical
+// update the information for the variance calulation
+#pragma omp critical
             {
                 numberOfSimulations++;
                 for (int cell = 0; cell < result.hitMap.size(); cell++)
@@ -108,8 +108,8 @@ namespace GSL::PMFS_internal
             }
         }
 
-        // update the variance thing (for the movement strategy)
-        #pragma omp parallel for
+// update the variance thing (for the movement strategy)
+#pragma omp parallel for
         for (int cellI = 0; cellI < measuredHitProb.data.size(); cellI++)
         {
             if (measuredHitProb.occupancy[cellI] == Occupancy::Free)
@@ -125,10 +125,7 @@ namespace GSL::PMFS_internal
         // simulations. Keep going until none of the leaves can be subdivided any more
         while (scores.size() > 0)
         {
-            std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2)
-                      {
-                          return result1.score > result2.score;
-                      });
+            std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2) { return result1.score > result2.score; });
 
             // subdivide the good cells and add the children to the list of cells to simulate
             std::vector<LeafScore> newLevel;
@@ -148,8 +145,8 @@ namespace GSL::PMFS_internal
             numberOfLevelsSimulated++;
             numberOfSimulations += scores.size();
 
-            // run the simulations of the new level and get scores for each node
-            #pragma omp parallel for schedule(dynamic)
+// run the simulations of the new level and get scores for each node
+#pragma omp parallel for schedule(dynamic)
             for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
                 SimulationResult result = runSimulation(scores, leafIndex);
         }
@@ -163,7 +160,7 @@ namespace GSL::PMFS_internal
 
     Simulations::SimulationResult Simulations::runSimulation(std::vector<LeafScore>& scores, size_t index)
     {
-        SimulationResult result {.valid = false};
+        SimulationResult result{.valid = false};
         NQA::Node* node = scores[index].leaf;
         if (node->value != 1)
             return result;
@@ -219,14 +216,14 @@ namespace GSL::PMFS_internal
     }
 
     void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
-            int timesteps, float deltaTime, float noiseSTDev) const
+                                               int timesteps, float deltaTime, float noiseSTDev) const
     {
         constexpr int numFilamentsIteration = 5;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
-        int lastActivated = 0;
+        size_t lastActivated = 0;
 
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
@@ -241,11 +238,12 @@ namespace GSL::PMFS_internal
                 {
                     filaments[lastActivated].position = source.getPoint();
                     filaments[lastActivated].active = true;
-                    lastActivated = (lastActivated + 1) % filaments.size();
+                    lastActivated++;
                 }
 
-                for (Filament& filament : filaments)
+                for (size_t filamentInd = 0; filamentInd < lastActivated; filamentInd++) // (Filament& filament : filaments)
                 {
+                    Filament& filament = filaments[filamentInd];
                     if (!filament.active)
                         continue;
                     auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
@@ -274,17 +272,19 @@ namespace GSL::PMFS_internal
             {
                 filaments[lastActivated].position = source.getPoint();
                 filaments[lastActivated].active = true;
-                lastActivated = (lastActivated + 1) % filaments.size();
+                lastActivated++;
             }
 
-            for (Filament& filament : filaments)
+            for (size_t filamentInd = 0; filamentInd < lastActivated; filamentInd++) // (Filament& filament : filaments)
             {
+                Filament& filament = filaments[filamentInd];
                 if (!filament.active)
                     continue;
 
                 // update map
                 auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
                 size_t index = measuredHitProb.metadata.indexOf(indices);
+                GSL_ASSERT(measuredHitProb.metadata.indicesInBounds(indices));
                 // mark as updated so it doesn't count multiple filaments in the same timestep
                 if (updated[index] < t)
                 {
@@ -297,9 +297,7 @@ namespace GSL::PMFS_internal
 
                 // remove filaments
                 if (filamentIsOutside(filament))
-                {
                     filament.active = false;
-                }
             }
         }
 
@@ -319,8 +317,8 @@ namespace GSL::PMFS_internal
         Vector2 start = metadata.indicesToCoordinates(nqaNode->origin.x, nqaNode->origin.y, false);
         Vector2 end = metadata.indicesToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
 
-        Vector2 randP(Utils::uniformRandom(start.x, end.x), Utils::uniformRandom(start.y, end.y));
-
+        Vector2 randP(Utils::uniformRandomF(start.x, end.x), Utils::uniformRandomF(start.y, end.y));
+        GSL_ASSERT(randP.x >=start.x && randP.x < end.x && randP.y >=start.y && randP.y < end.y);
         return randP;
     }
 
@@ -342,23 +340,14 @@ namespace GSL::PMFS_internal
             return true;
         }
 
-#define USE_DDA 1
+#define USE_DDA 0
 #if USE_DDA
         Vector2 movement = end - currentPosition;
-        DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(
-                                                currentPosition,
-                                                movement,
-                                                vmath::length(movement),
-                                                DDA::_2D::Map<GSL::Occupancy>(
-                                                        measuredHitProb.occupancy,
-                                                        measuredHitProb.metadata.origin,
-                                                        measuredHitProb.metadata.cellSize,
-                                                        measuredHitProb.metadata.dimensions),
-                                                [](const GSL::Occupancy & occ)
-                                                {
-                                                    return occ == GSL::Occupancy::Free;
-                                                }
-                                            );
+        DDA::_2D::RayCastInfo raycastInfo =
+            DDA::_2D::castRay<GSL::Occupancy>(currentPosition, movement, vmath::length(movement),
+                                              DDA::_2D::Map<GSL::Occupancy>(measuredHitProb.occupancy, measuredHitProb.metadata.origin,
+                                                                            measuredHitProb.metadata.cellSize, measuredHitProb.metadata.dimensions),
+                                              [](const GSL::Occupancy& occ) { return occ == GSL::Occupancy::Free; });
         // This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
         // ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
         constexpr float wallStoppingProportion = 0.7;
