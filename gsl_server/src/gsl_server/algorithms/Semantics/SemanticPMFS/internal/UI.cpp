@@ -1,15 +1,21 @@
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #ifdef USE_GUI
 
+// TODO This is currently just a straight-up copy of the PMFS UI. We could definitely do better, but I don't believe it is a good idea to set up an inheritance tree for UIs
+// TODO it ends up limiting the design of the actual algorithm classes, and keeping that well organized is higher priority than making the debug UI easy to maintain
+
+#include "UI.hpp"
+#include "gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
-#include <gsl_server/algorithms/PMFS/PMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
-#include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 
-namespace GSL::PMFS_internal
+using namespace GSL::PMFS_internal;
+
+namespace GSL::SemanticPMFS_internal
 {
-    UI::UI(PMFS* _pmfs)
+    UI::UI(SemanticPMFS* _pmfs)
         : pmfs(_pmfs)
     {
         clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>(
@@ -34,8 +40,8 @@ namespace GSL::PMFS_internal
     void UI::renderImgui()
     {
         AmentImgui::Setup(
-            fmt::format("{}/resources/PMFS_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
-            "PMFS",
+            fmt::format("{}/resources/SemanticPMFS_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
+            "SemanticPMFS",
             900,
             600);
         ImPlot::CreateContext();
@@ -62,9 +68,9 @@ namespace GSL::PMFS_internal
         {
             static int x = 0;
             static int y = 0;
-            int selectedVar = PMFS_internal::UI::selectVariable();
+            int selectedVar = selectVariable();
 
-            if (PMFS_internal::UI::useCoordinates())
+            if (useCoordinates())
             {
                 ImGui::InputFloat("X", &selectedCoordinates.x);
                 ImGui::InputFloat("Y", &selectedCoordinates.y);
@@ -81,10 +87,16 @@ namespace GSL::PMFS_internal
             static std::string result;
             if (ImGui::Button("Print") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
-                if (selectedVar == 0)
-                    result = PMFS_internal::UI::printCell(Grid2D<HitProbability>(pmfs->hitProbability, pmfs->occupancy, pmfs->gridMetadata), x, y);
+                //TODO fix this in pmfs
+                if (!pmfs->gridMetadata.indicesInBounds({x, y}))
+                {
+                    GSL_ERROR("Querying cell {}, which is outside the map!", Vector2Int{x, y});
+                    result = "Error! :(";
+                }
+                else if (selectedVar == 0)
+                    result = printCell(Grid2D<HitProbability>(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata), x, y);
                 else if (selectedVar == 1)
-                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf({x, y})]);
+                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->combinedSourceProbability[pmfs->gridMetadata.indexOf({x, y})]);
             }
             if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
@@ -103,29 +115,30 @@ namespace GSL::PMFS_internal
         }
         ImGui::End();
 
-        ImGui::Begin("Goal");
-        {
-            static int x, y;
-            ImGui::TextWrapped("Set a goal manually to be visited during the next movement phase.");
-            if (PMFS_internal::UI::useCoordinates())
-            {
-                ImGui::InputFloat("X", &goalCoordinates.x);
-                ImGui::InputFloat("Y", &goalCoordinates.y);
-                auto indices = pmfs->gridMetadata.coordinatesToIndices(goalCoordinates.x, goalCoordinates.y);
-                x = indices.x;
-                y = indices.y;
-            }
-            else
-            {
-                ImGui::InputInt("X", &x);
-                ImGui::InputInt("Y", &y);
-            }
-            if (ImGui::Button("Go"))
-            {
-                pmfs->functionQueue.submit(std::bind(&MovingStatePMFS::debugMoveTo, dynamic_cast<MovingStatePMFS*>(pmfs->movingState.get()), x, y));
-            }
-        }
-        ImGui::End();
+        // TODO navigation debug
+        //  ImGui::Begin("Goal");
+        //  {
+        //      static int x, y;
+        //      ImGui::TextWrapped("Set a goal manually to be visited during the next movement phase.");
+        //      if (useCoordinates())
+        //      {
+        //          ImGui::InputFloat("X", &goalCoordinates.x);
+        //          ImGui::InputFloat("Y", &goalCoordinates.y);
+        //          auto indices = pmfs->gridMetadata.coordinatesToIndices(goalCoordinates.x, goalCoordinates.y);
+        //          x = indices.x;
+        //          y = indices.y;
+        //      }
+        //      else
+        //      {
+        //          ImGui::InputInt("X", &x);
+        //          ImGui::InputInt("Y", &y);
+        //      }
+        //      if (ImGui::Button("Go"))
+        //      {
+        //          pmfs->functionQueue.submit(std::bind(&MovingStatePMFS::debugMoveTo, dynamic_cast<MovingStatePMFS*>(pmfs->movingState.get()), x, y));
+        //      }
+        //  }
+        //  ImGui::End();
 
         ImGui::Begin("Source Estimation Power");
         {
@@ -140,7 +153,10 @@ namespace GSL::PMFS_internal
                 pmfs->functionQueue.submit([this]()
                                            {
                     pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
-                    PMFSViz::ShowSourceProb(Grid2D<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs); });
+                    PMFSViz::ShowSourceProb(
+                        Grid2D<double>(pmfs->combinedSourceProbability, pmfs->simulationOccupancy, pmfs->gridMetadata), 
+                        pmfs->settings.visualization, 
+                        pmfs->pubs.pmfsPubs); });
             }
         }
         ImGui::End();
@@ -148,7 +164,7 @@ namespace GSL::PMFS_internal
         {
             if (ImGui::Button("Show Quadtree"))
             {
-                PMFSViz::DebugMapSegmentation(pmfs->simulations.QTleaves, pmfs->pubs, pmfs->gridMetadata);
+                PMFSViz::DebugMapSegmentation(pmfs->simulations.QTleaves, pmfs->pubs.pmfsPubs, pmfs->gridMetadata);
             }
         }
         ImGui::End();
@@ -201,7 +217,7 @@ namespace GSL::PMFS_internal
                 paused = !paused;
 
             ImGui::BulletText("Gas concentration measured over time");
-            static PMFS_internal::ScrollingBuffer sdata1;
+            static ScrollingBuffer sdata1;
             static float t = 0;
             t += ImGui::GetIO().DeltaTime;
             if (last_concentration_reading != -1)
@@ -248,16 +264,9 @@ namespace GSL::PMFS_internal
     {
         static std::string queryResult;
 
-        if (grid.metadata.indicesInBounds({x, y}))
-        {
-            GSL_ERROR("Querying cell outside the map!");
-        }
-        else
-        {
-            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
-                          fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
-                          fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
-        }
+        queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
+                      fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
+                      fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
 
         return queryResult.c_str();
     }
@@ -267,6 +276,6 @@ namespace GSL::PMFS_internal
         last_concentration_reading = ppm;
     }
 
-} // namespace GSL::PMFS_internal
+} // namespace GSL::SemanticPMFS_internal
 
 #endif

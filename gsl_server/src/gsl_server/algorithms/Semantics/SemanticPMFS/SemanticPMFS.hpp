@@ -1,5 +1,6 @@
 #pragma once
 
+#include "internal/UI.hpp"
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
@@ -7,14 +8,13 @@
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
-#include <gsl_server/core/FunctionQueue.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/ISemantics.hpp>
+#include <gsl_server/core/FunctionQueue.hpp>
 
 namespace GSL
 {
     class SemanticPMFS : public Algorithm
     {
-
         template <typename T>
         using Grid = Grid2D<T>;
         using HitProbability = PMFS_internal::HitProbability;
@@ -22,6 +22,7 @@ namespace GSL
         using HashSet = std::unordered_set<Vector2Int>;
 
         friend class MovingStateSemanticPMFS;
+        IF_GUI(friend class SemanticPMFS_internal::UI;)
 
     public:
         SemanticPMFS(std::shared_ptr<rclcpp::Node> _node);
@@ -57,6 +58,7 @@ namespace GSL
         FunctionQueue functionQueue;
         uint iterationsCounter = 0;
         bool paused = false;
+        IF_GUI(SemanticPMFS_internal::UI ui);
 
         void createClassMap2D();
         void createClassMapVoxeland();

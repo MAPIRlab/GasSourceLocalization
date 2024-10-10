@@ -24,9 +24,10 @@ namespace GSL
         Algorithm::Initialize();
         PMFSLib::InitializePublishers(pubs, node);
 
-        IF_GUI(
-            if (!settings.visualization.headless)
-                ui.run(););
+#if USE_GUI
+        if (!settings.visualization.headless)
+            ui.run();
+#endif
 
         iterationsCounter = 0;
 

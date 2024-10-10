@@ -13,6 +13,7 @@ namespace GSL
                       Grid2D<double>(sourceProbabilityPMFS, simulationOccupancy, gridMetadata),
                       Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.simulation),
           pubs(node->get_clock())
+              IF_GUI(, ui(this))
     {}
 
     void SemanticPMFS::Initialize()
@@ -29,6 +30,11 @@ namespace GSL
         // TODO
         movingState = std::make_unique<MovingStateSemanticPMFS>(this);
         stateMachine.forceSetState(waitForMapState.get());
+
+#if USE_GUI
+        if (!settings.visualization.headless)
+            ui.run();
+#endif
     }
 
     void SemanticPMFS::OnUpdate()
