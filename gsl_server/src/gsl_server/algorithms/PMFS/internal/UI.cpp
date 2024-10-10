@@ -1,23 +1,61 @@
 #ifdef USE_GUI
 
-#include <gsl_server/algorithms/PMFS/PMFS.hpp>
-#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
-#include <gsl_server/algorithms/PMFS/internal/UI.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
+#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
+#include <gsl_server/algorithms/PMFS/internal/UI.hpp>
+
+#if ENABLE_SEMANTIC_PMFS
+#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
+#endif
 
 namespace GSL::PMFS_internal
 {
-    UI::UI(PMFS* _pmfs) : pmfs(_pmfs)
+    UI::UI(PMFS* _pmfs)
+        : algorithm(_pmfs),
+          hitProb(_pmfs->hitProbability, _pmfs->occupancy, _pmfs->gridMetadata),
+          sourceProb(_pmfs->sourceProbability, _pmfs->occupancy, _pmfs->gridMetadata),
+          simulations(_pmfs->simulations),
+          visualizationSettings(_pmfs->settings.visualization),          
+          simulationSettings(_pmfs->settings.simulation),
+          pubs(_pmfs->pubs),
+          paused(_pmfs->paused),
+          functionQueue(_pmfs->functionQueue)
     {
-        clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1,
-                          [this](const geometry_msgs::msg::PointStamped::SharedPtr point )
-        {
-            selectedCoordinates.x = point->point.x;
-            selectedCoordinates.y = point->point.y;
-        });
+        clickedPointSub = _pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>(
+            "/clicked_point",
+            1,
+            [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
+            {
+                selectedCoordinates.x = point->point.x;
+                selectedCoordinates.y = point->point.y;
+            });
     }
+
+#if ENABLE_SEMANTIC_PMFS
+    UI::UI(SemanticPMFS* _pmfs)
+        : algorithm(_pmfs),
+          hitProb(_pmfs->hitProbability, _pmfs->simulationOccupancy, _pmfs->gridMetadata),
+          sourceProb(_pmfs->combinedSourceProbability, _pmfs->simulationOccupancy, _pmfs->gridMetadata),
+          simulations(_pmfs->simulations),
+          visualizationSettings(_pmfs->settings.visualization),          
+          simulationSettings(_pmfs->settings.simulation),
+          pubs(_pmfs->pubs.pmfsPubs),
+          paused(_pmfs->paused),
+          functionQueue(_pmfs->functionQueue)
+    {
+        clickedPointSub = _pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>(
+            "/clicked_point",
+            1,
+            [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
+            {
+                selectedCoordinates.x = point->point.x;
+                selectedCoordinates.y = point->point.y;
+            });
+    }
+#endif
 
     UI::~UI()
     {
@@ -31,13 +69,18 @@ namespace GSL::PMFS_internal
 
     void UI::renderImgui()
     {
-        AmentImgui::Setup(fmt::format("{}/resources/imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(), "PMFS", 900,
-                          600);
+        AmentImgui::Setup(
+            fmt::format("{}/resources/imgui.ini",
+                        ament_index_cpp::get_package_share_directory("gsl_server"))
+                .c_str(),
+            "PMFS",
+            900,
+            600);
         ImPlot::CreateContext();
 
         rclcpp::Rate rate(30);
 
-        while (rclcpp::ok() && !pmfs->HasEnded())
+        while (rclcpp::ok() && !algorithm->HasEnded())
         {
             AmentImgui::StartFrame();
             createUI();
@@ -53,7 +96,6 @@ namespace GSL::PMFS_internal
 
     void UI::createUI()
     {
-
         ImGui::Begin("Queries");
         {
             static int x = 0;
@@ -64,7 +106,7 @@ namespace GSL::PMFS_internal
             {
                 ImGui::InputFloat("X", &selectedCoordinates.x);
                 ImGui::InputFloat("Y", &selectedCoordinates.y);
-                auto indices = pmfs->gridMetadata.coordinatesToIndices(selectedCoordinates.x, selectedCoordinates.y);
+                auto indices = hitProb.metadata.coordinatesToIndices(selectedCoordinates.x, selectedCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }
@@ -75,25 +117,24 @@ namespace GSL::PMFS_internal
             }
 
             static std::string result;
-            if (ImGui::Button("Print") && pmfs->gridMetadata.indicesInBounds({x, y}))
+            if (ImGui::Button("Print") && hitProb.metadata.indicesInBounds({x, y}))
             {
                 if (selectedVar == 0)
-                    result = PMFS_internal::UI::printCell(Grid2D<HitProbability>(pmfs->hitProbability, pmfs->occupancy, pmfs->gridMetadata), x, y);
+                    result = PMFS_internal::UI::printCell(hitProb, x, y);
                 else if (selectedVar == 1)
-                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf({x, y})]);
+                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, sourceProb.dataAt(x, y));
             }
-            if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({x, y}))
+            if (ImGui::Button("Simulate leaf") && hitProb.metadata.indicesInBounds({x, y}))
             {
-
-                Utils::NQA::Node* leaf = pmfs->simulations.mapSegmentation[x][y];
+                Utils::NQA::Node* leaf = simulations.mapSegmentation[x][y];
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else
-                    pmfs->simulations.printImage(SimulationSource(leaf, pmfs->gridMetadata));
+                    simulations.printImage(SimulationSource(leaf, hitProb.metadata));
             }
-            else if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({x, y}))
+            else if (ImGui::Button("Simulate cell") && hitProb.metadata.indicesInBounds({x, y}))
             {
-                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(x, y), pmfs->gridMetadata));
+                simulations.printImage(SimulationSource(hitProb.metadata.indicesToCoordinates(x, y), hitProb.metadata));
             }
 
             ImGui::Text("%s", result.c_str());
@@ -108,7 +149,7 @@ namespace GSL::PMFS_internal
             {
                 ImGui::InputFloat("X", &goalCoordinates.x);
                 ImGui::InputFloat("Y", &goalCoordinates.y);
-                auto indices = pmfs->gridMetadata.coordinatesToIndices(goalCoordinates.x, goalCoordinates.y);
+                auto indices = hitProb.metadata.coordinatesToIndices(goalCoordinates.x, goalCoordinates.y);
                 x = indices.x;
                 y = indices.y;
             }
@@ -117,16 +158,12 @@ namespace GSL::PMFS_internal
                 ImGui::InputInt("X", &x);
                 ImGui::InputInt("Y", &y);
             }
-            if (ImGui::Button("Go"))
-            {
-                pmfs->functionQueue.submit(std::bind(&MovingStatePMFS::debugMoveTo, dynamic_cast<MovingStatePMFS*>(pmfs->movingState.get()), x, y));
-            }
         }
         ImGui::End();
 
         ImGui::Begin("Source Estimation Power");
         {
-            ImGui::InputDouble("Source Power", &pmfs->settings.simulation.sourceDiscriminationPower);
+            ImGui::InputDouble("Source Power", &simulationSettings.sourceDiscriminationPower);
         }
         ImGui::End();
 
@@ -134,11 +171,8 @@ namespace GSL::PMFS_internal
         {
             if (ImGui::Button("Update Source Probability"))
             {
-                pmfs->functionQueue.submit([this]()
-                {
-                    pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
-                    PMFSViz::ShowSourceProb(Grid2D<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs);
-                });
+                functionQueue.submit([this]()
+                                     { simulations.updateSourceProbability(simulationSettings.refineFraction); });
             }
         }
         ImGui::End();
@@ -146,7 +180,7 @@ namespace GSL::PMFS_internal
         {
             if (ImGui::Button("Show Quadtree"))
             {
-                PMFSViz::DebugMapSegmentation(pmfs->simulations.QTleaves, pmfs->pubs, pmfs->gridMetadata);
+                PMFSViz::DebugMapSegmentation(simulations.QTleaves, pubs, hitProb.metadata);
             }
         }
         ImGui::End();
@@ -154,44 +188,41 @@ namespace GSL::PMFS_internal
         ImGui::Begin("Pause/Play");
         {
             static std::string buttonText;
-            if (pmfs->paused)
+            if (paused)
                 buttonText = "Play";
             else
                 buttonText = "Pause";
+
             if (ImGui::Button(buttonText.c_str()))
-            {
-                pmfs->paused = !pmfs->paused;
-            }
+                paused = !paused;
         }
         ImGui::End();
 
         ImGui::Begin("Markers");
         {
-            auto& settings = pmfs->settings;
-            static int modeHit = settings.visualization.hitMode;
-            static int modeSource = settings.visualization.sourceMode;
-            static float hitLimits[2] = {settings.visualization.hitLimits.x, settings.visualization.hitLimits.y};
-            static float sourceLimits[2] = {settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y};
+            static int modeHit = visualizationSettings.hitMode;
+            static int modeSource = visualizationSettings.sourceMode;
+            static float hitLimits[2] = {visualizationSettings.hitLimits.x, visualizationSettings.hitLimits.y};
+            static float sourceLimits[2] = {visualizationSettings.sourceLimits.x, visualizationSettings.sourceLimits.y};
 
             ImGui::Combo("Hit display mode", &modeHit, "Linear\0Logarithmic\0");
-            settings.visualization.hitMode = modeHit == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
+            visualizationSettings.hitMode = modeHit == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
             ImGui::InputFloat2("Hit limits", hitLimits, "%.5f");
 
             ImGui::Combo("Source display mode", &modeSource, "Linear\0Logarithmic\0");
-            settings.visualization.sourceMode = modeSource == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
+            visualizationSettings.sourceMode = modeSource == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
             ImGui::InputFloat2("Source limits", sourceLimits, "%.5f");
 
-            settings.visualization.hitLimits.x = hitLimits[0];
-            settings.visualization.hitLimits.y = hitLimits[1];
-            settings.visualization.sourceLimits.x = sourceLimits[0];
-            settings.visualization.sourceLimits.y = sourceLimits[1];
+            visualizationSettings.hitLimits.x = hitLimits[0];
+            visualizationSettings.hitLimits.y = hitLimits[1];
+            visualizationSettings.sourceLimits.x = sourceLimits[0];
+            visualizationSettings.sourceLimits.y = sourceLimits[1];
         }
         ImGui::End();
     }
 
     void UI::createPlots()
     {
-
         ImGui::Begin("Plots");
         {
             static bool paused = false;
@@ -201,8 +232,9 @@ namespace GSL::PMFS_internal
 
             ImGui::BulletText("Gas concentration measured over time");
             static PMFS_internal::ScrollingBuffer sdata1;
-            ImVec2 mouse = ImGui::GetMousePos();
             static float t = 0;
+
+            // add data point
             t += ImGui::GetIO().DeltaTime;
             if (last_concentration_reading != -1)
                 sdata1.AddPoint(t, last_concentration_reading);
@@ -246,10 +278,9 @@ namespace GSL::PMFS_internal
 
     std::string UI::printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y)
     {
-
         static std::string queryResult;
 
-        if (grid.metadata.indicesInBounds({x,y}))
+        if (grid.metadata.indicesInBounds({x, y}))
         {
             GSL_ERROR("Querying cell outside the map!");
         }
