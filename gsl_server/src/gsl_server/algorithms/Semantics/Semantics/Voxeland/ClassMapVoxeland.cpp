@@ -6,8 +6,8 @@
 namespace GSL
 {
     ClassMapVoxeland::ClassMapVoxeland(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
-                                       const PoseWithCovarianceStamped& _currentRobotPose, rclcpp::Node::SharedPtr _node)
-        : node(_node), wallsOccupancy(occupancy), bufferWrapper(_bufferWrapper), currentRobotPose(_currentRobotPose)
+                                       rclcpp::Node::SharedPtr _node)
+        : node(_node), wallsOccupancy(occupancy), bufferWrapper(_bufferWrapper)
     {
         // Map and metadata
         gridMetadata.cellSize = _gridMetadata.cellSize;

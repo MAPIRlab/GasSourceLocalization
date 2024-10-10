@@ -4,9 +4,10 @@
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
-#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
-#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
+#include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
+#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
+#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/ISemantics.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
 
@@ -14,6 +15,10 @@ namespace GSL
 {
     class SemanticPMFS : public Algorithm
     {
+#ifdef USE_GUI
+        friend class PMFS_internal::UI;
+#endif
+
         template <typename T>
         using Grid = Grid2D<T>;
         using HitProbability = PMFS_internal::HitProbability;
@@ -27,12 +32,10 @@ namespace GSL
         void Initialize() override;
         void OnUpdate() override;
 
-    protected:
+    private:
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
-
-    private:
         void updateSourceFromSemantics();
 
     private:
@@ -53,10 +56,14 @@ namespace GSL
         SemanticPMFS_internal::Settings settings;
         SemanticPMFS_internal::PublishersAndSubscribers pubs;
 
-
         //-------------Utils-------------
         std::optional<VisibilityMap> visibilityMap;
         FunctionQueue functionQueue;
         uint iterationsCounter = 0;
+        bool paused = false;
+        IF_GUI(PMFS_internal::UI ui);
+
+        void createClassMap2D();
+        void createClassMapVoxeland();
     };
-}
+} // namespace GSL

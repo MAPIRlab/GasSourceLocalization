@@ -1,3 +1,4 @@
+#include "gsl_server/algorithms/PMFS/internal/UI.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
@@ -5,16 +6,17 @@
 #include <gsl_server/algorithms/Semantics/Semantics/2D/ClassMap2D.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Voxeland/ClassMapVoxeland.hpp>
-#include <magic_enum.hpp>
 
 namespace GSL
 {
 
     SemanticPMFS::SemanticPMFS(std::shared_ptr<rclcpp::Node> _node)
-        : Algorithm(_node), simulations(Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
-                                        Grid2D<double>(sourceProbabilityPMFS, simulationOccupancy, gridMetadata),
-                                        Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.simulation),
+        : Algorithm(_node),
+          simulations(Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+                      Grid2D<double>(sourceProbabilityPMFS, simulationOccupancy, gridMetadata),
+                      Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.simulation),
           pubs(node->get_clock())
+              IF_GUI(, ui(this))
     {}
 
     void SemanticPMFS::Initialize()
@@ -22,6 +24,10 @@ namespace GSL
         Algorithm::Initialize();
 
         PMFSLib::InitializePublishers(pubs.pmfsPubs, node);
+
+        IF_GUI(
+            if (!settings.visualization.headless)
+                ui.run(););
 
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
@@ -36,6 +42,9 @@ namespace GSL
     void SemanticPMFS::OnUpdate()
     {
         Algorithm::OnUpdate();
+        if (paused)
+            return;
+
         functionQueue.run();
 
         if (semantics) // TODO allow this to run slower that the update loop? kinda messes up the callback-based one
@@ -82,7 +91,7 @@ namespace GSL
         visibilityMap.emplace(gridMetadata.dimensions.x, gridMetadata.dimensions.y,
                               std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
         // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
-        
+
         GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
         PMFSLib::InitializeMap(
             *this,
@@ -120,9 +129,11 @@ namespace GSL
         SemanticsType semanticsType = ParseSemanticsType(semanticsTypeParam);
 
         if (semanticsType == SemanticsType::ClassMap2D)
+        {
             semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
+        }
         else if (semanticsType == SemanticsType::ClassMapVoxeland)
-            semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose, node);
+            semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, node);
     }
 
     void SemanticPMFS::updateSourceFromSemantics()

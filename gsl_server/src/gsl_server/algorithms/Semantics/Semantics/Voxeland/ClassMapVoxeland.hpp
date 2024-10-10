@@ -15,7 +15,7 @@ namespace GSL
     {
     public:
         ClassMapVoxeland(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
-                   const PoseWithCovarianceStamped& _currentRobotPose, rclcpp::Node::SharedPtr _node);
+                         rclcpp::Node::SharedPtr _node);
 
         std::vector<double> GetSourceProbability() override;
         void GetSourceProbabilityInPlace(std::vector<double>& sourceProb) override;
@@ -28,7 +28,6 @@ namespace GSL
         std::vector<Occupancy> wallsOccupancy; //TODO this is a copy. Should it be?
         Grid3DMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
-        const PoseWithCovarianceStamped& currentRobotPose;
 
         // Voxeland service
         rclcpp::Client<voxeland_msgs::srv::GetClassDistributions>::SharedPtr client;

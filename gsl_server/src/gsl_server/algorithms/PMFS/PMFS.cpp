@@ -1,33 +1,32 @@
-#include <gsl_server/algorithms/PMFS/PMFS.hpp>
-#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
-#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
-#include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <angles/angles.h>
+#include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 
-//Initialization
+// Initialization
 namespace GSL
 {
     using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
-    PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node),
-        simulations(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
-                    Grid2D<double>(sourceProbability, occupancy, gridMetadata),
-                    Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
-                    settings.simulation),
-        pubs(node->get_clock())
-        IF_GUI(, ui(this))
+    PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node)
+        : Algorithm(_node),
+          simulations(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
+                      Grid2D<double>(sourceProbability, occupancy, gridMetadata),
+                      Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
+                      settings.simulation),
+          pubs(node->get_clock())
+              IF_GUI(, ui(this))
     {}
 
-// A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
+    // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
     void PMFS::Initialize()
     {
         Algorithm::Initialize();
         PMFSLib::InitializePublishers(pubs, node);
 
-        IF_GUI
-        (
+        IF_GUI(
             if (!settings.visualization.headless)
-            ui.run();
-        );
+                ui.run(););
 
         iterationsCounter = 0;
 
@@ -75,7 +74,6 @@ namespace GSL
                                Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
                                simulations, *visibilityMap);
 
-
         // set all variables to the prior probability
         for (HitProbability& h : hitProbability)
             h.setProbability(settings.hitProbability.prior);
@@ -85,13 +83,12 @@ namespace GSL
 
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         functionQueue.submit([this]()
-        {
+                             {
             Grid2D<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
             PMFSLib::InitializeWindPredictions(*this, windGrid,
                                                pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
             PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
-            stateMachine.forceSetState(stopAndMeasureState.get());
-        });
+            stateMachine.forceSetState(stopAndMeasureState.get()); });
     }
 
 } // namespace GSL
@@ -119,8 +116,8 @@ namespace GSL
     {
         static int number_of_updates = 0;
 
-        //Update the gas presence map
-        // ------------------------------
+        // Update the gas presence map
+        //  ------------------------------
         Grid2D<HitProbability> grid(hitProbability, occupancy, gridMetadata);
         if (concentration > thresholdGas)
         {
@@ -137,14 +134,13 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-        //Update the wind estimations
-        // ------------------------------
+        // Update the wind estimations
+        //  ------------------------------
         PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
                               Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                               node,
                               pubs.gmrfWind
-                              IF_GADEN(, pubs.groundTruthWind));
-
+                                  IF_GADEN(, pubs.groundTruthWind));
 
         // If we have already taken enough measurements in this position, process them and get ready to move to the next location
         // ------------------------------
@@ -153,7 +149,7 @@ namespace GSL
         {
             number_of_updates = 0;
 
-            //Simulations are slow, so we only run them every few positions, when the map has had time to meaningfully change
+            // Simulations are slow, so we only run them every few positions, when the map has had time to meaningfully change
             //----------------------------------------
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
@@ -163,8 +159,7 @@ namespace GSL
                 simulations.updateSourceProbability(settings.simulation.refineFraction);
             }
 
-
-            //Movement
+            // Movement
             auto movingStatePMFS = dynamic_cast<MovingStatePMFS*>(movingState.get());
             if (iterationsCounter > settings.movement.initialExplorationMoves)
                 movingStatePMFS->currentMovement = MovingStatePMFS::MovementType::Search;
@@ -177,7 +172,7 @@ namespace GSL
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
 
-        //Visualization
+        // Visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
@@ -189,6 +184,5 @@ namespace GSL
         IF_GUI(ui.addConcentrationReading(ppm));
         return ppm;
     }
-
 
 } // namespace GSL

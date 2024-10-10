@@ -48,7 +48,7 @@ include_directories(
 )
 
 ##########################
-#EXECUTABLES
+# EXECUTABLES
 ##########################
 
 #### Server node
@@ -59,15 +59,6 @@ ament_target_dependencies( gsl_actionserver_node
     rclcpp_action
     gsl_actions
 )
-# You can disable the compilation of any of these algorithms by commenting them out here (useful if you don't want to install their dependencies)
-include(src/gsl_server/algorithms/Common/CMakeLists.txt)
-include(src/gsl_server/algorithms/PlumeTracking/CMakeLists.txt)
-include(src/gsl_server/algorithms/Spiral/CMakeLists.txt)
-include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
-include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
-include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
-include(src/gsl_server/algorithms/Semantics/CMakeLists.txt)
-
 
 ##### Call node
 add_executable(gsl_actionserver_call src/aux_nodes/gsl_server_call.cpp)
@@ -83,6 +74,22 @@ ament_target_dependencies( send_pose
     rclcpp
     geometry_msgs
 )
+
+##########################
+# ALGORITHMS
+##########################
+
+include(src/gsl_server/algorithms/Common/CMakeLists.txt) # Required
+
+# You can disable the compilation of any of these algorithms by commenting them out here (useful if you don't want to install their dependencies)
+###############################################################################################################################################
+include(src/gsl_server/algorithms/PlumeTracking/CMakeLists.txt)
+include(src/gsl_server/algorithms/Spiral/CMakeLists.txt)
+include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
+include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
+include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
+include(src/gsl_server/algorithms/Semantics/CMakeLists.txt) # There is further modularity inside of this file!
+
 
 
 ##########################

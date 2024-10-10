@@ -9,7 +9,7 @@ BraceWrapping:
   SplitEmptyFunction: false
   BeforeLambdaBody: true
 AccessModifierOffset: -4
-IndentPPDirectives: BeforeHash
+#IndentPPDirectives: BeforeHash
 ColumnLimit: 0
 NamespaceIndentation: All
 KeepEmptyLinesAtTheStartOfBlocks: false
