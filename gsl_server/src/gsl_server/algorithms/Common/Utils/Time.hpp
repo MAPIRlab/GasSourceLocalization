@@ -7,6 +7,7 @@ namespace GSL::Utils::Time
     typedef std::chrono::high_resolution_clock Clock;
     typedef std::chrono::_V2::system_clock::duration Duration;
     typedef std::chrono::_V2::system_clock::time_point TimePoint;
+    
     inline double toSeconds(Duration duration)
     {
         constexpr double nanoToSec = 1e-9;

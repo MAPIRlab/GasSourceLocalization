@@ -32,10 +32,10 @@ namespace GSL::PMFS_internal
         const Grid2DMetadata& metadata;
 
         SimulationSource(const Vector2& _point, const Grid2DMetadata& _metadata)
-            : nqaNode(nullptr), point(_point), mode(Mode::Point), metadata(_metadata)
+            : mode(Mode::Point), nqaNode(nullptr), point(_point), metadata(_metadata)
         {}
         SimulationSource(const Utils::NQA::Node* _node, const Grid2DMetadata& _metadata)
-            : point(0, 0), nqaNode(_node), mode(Mode::Quadtree), metadata(_metadata)
+            : mode(Mode::Quadtree), nqaNode(_node), point(0, 0), metadata(_metadata)
         {}
 
         Vector2 getPoint() const;
@@ -48,7 +48,7 @@ namespace GSL::PMFS_internal
     public:
         Simulations(Grid2D<HitProbability> _measuredHitProb, Grid2D<double> _sourceProb, Grid2D<Vector2> _wind,
                     const PMFS_internal::SimulationSettings& _settings)
-            : measuredHitProb(_measuredHitProb), sourceProb(_sourceProb), wind(_wind), settings(_settings)
+            : settings(_settings), measuredHitProb(_measuredHitProb), sourceProb(_sourceProb), wind(_wind)
         {}
 
         void initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap);
