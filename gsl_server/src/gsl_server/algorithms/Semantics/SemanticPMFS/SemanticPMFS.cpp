@@ -2,9 +2,7 @@
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/2D/ClassMap2D.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
-#include <gsl_server/algorithms/Semantics/Semantics/Voxeland/ClassMapVoxeland.hpp>
 
 namespace GSL
 {
@@ -123,11 +121,9 @@ namespace GSL
         SemanticsType semanticsType = ParseSemanticsType(semanticsTypeParam);
 
         if (semanticsType == SemanticsType::ClassMap2D)
-        {
-            semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
-        }
+            createClassMap2D();
         else if (semanticsType == SemanticsType::ClassMapVoxeland)
-            semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, node);
+            createClassMapVoxeland();
     }
 
     void SemanticPMFS::updateSourceFromSemantics()

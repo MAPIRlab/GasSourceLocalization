@@ -13,41 +13,12 @@ namespace GSL::Utils
     static constexpr double epsilon = 1e-5;
 
     template <typename CollectionIterator>
-    float getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
-    {
-        int length = std::distance(startIt, endIt);
-        if (length == 0)
-            return Utils::INVALID_AVERAGE;
-        float sum = 0.0;
-        for (CollectionIterator i = startIt; i != endIt; ++i)
-            sum += *i;
-
-        return sum / length;
-    }
+    float getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt);
 
     template <typename CollectionIterator>
-    float getAverageDirection(const CollectionIterator startIt, const CollectionIterator endIt)
-    {
-        // Average of wind direction, avoiding the problems of +/- pi angles.
-        int length = std::distance(startIt, endIt);
-        if (length == 0)
-            return Utils::INVALID_AVERAGE;
+    float getAverageDirection(const CollectionIterator startIt, const CollectionIterator endIt);
 
-        float x = 0.0, y = 0.0;
-        for (CollectionIterator i = startIt; i != endIt; ++i)
-        {
-            x += cos(*i);
-            y += sin(*i);
-        }
-        float average_angle = atan2(y, x);
-
-        return average_angle;
-    }
-
-    inline bool approx(double v1, double v2)
-    {
-        return std::abs(v1 - v2) < epsilon;
-    }
+    bool approx(double v1, double v2);
 
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);
@@ -58,48 +29,20 @@ namespace GSL::Utils
     double logOddsToProbability(double l);
 
     double randomFromGaussian(double mean, double stdev);
-    double uniformRandom(double min, double max);
+    double uniformRandom(double min, double max);    
+    float uniformRandomF(float min, float max);
 
 
-    // Kullback-Leibler Divergence
     template<typename T>
     double KLD(
         const std::vector<T>& a,
         const std::vector<T>& b,
         const std::vector<Occupancy>& occupancy,
-        std::function<double(const T&)> accessor)
-    {
-        double total = 0;
-        for (int index = 0; index < a.size(); index++)
-            if (occupancy[index] == Occupancy::Free)
-            {
-                double aVal = accessor(a[index]);
-                double bVal = accessor(b[index]);
-                double aux = aVal * std::log(aVal / bVal)
-                             + (1 - aVal) * std::log((1 - aVal) / (1 - bVal));
-                total += std::isnan(aux) ? 0 : aux;
-            }
-        return total;
-    }
+        std::function<double(const T&)> accessor);
 
-    void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy);
     template<typename T>
-    void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy)
-    {
-        double total = 0;
-        for (int i = 0; i < variable.size(); i++)
-        {
-            if (occupancy[i] == Occupancy::Free)
-                total += accessor(variable[i]);
-        }
-
-        #pragma omp parallel for
-        for (int i = 0; i < variable.size(); i++)
-        {
-            if (occupancy[i] == Occupancy::Free)
-                accessor(variable[i]) = accessor(variable[i]) / total;
-        }
-    }
+    void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy);
+    void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy);
 
     float EquallyDistributed01F();
 
@@ -127,3 +70,77 @@ namespace GSL::Utils
     };
 
 } // namespace GSL::Utils
+
+
+//Definitions
+//--------------
+template <typename CollectionIterator>
+inline float GSL::Utils::getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
+{
+    int length = std::distance(startIt, endIt);
+    if (length == 0)
+        return Utils::INVALID_AVERAGE;
+    float sum = 0.0;
+    for (CollectionIterator i = startIt; i != endIt; ++i)
+        sum += *i;
+
+    return sum / length;
+}
+
+template <typename CollectionIterator>
+inline float GSL::Utils::getAverageDirection(const CollectionIterator startIt, const CollectionIterator endIt)
+{
+    // Average of wind direction, avoiding the problems of +/- pi angles.
+    int length = std::distance(startIt, endIt);
+    if (length == 0)
+        return Utils::INVALID_AVERAGE;
+
+    float x = 0.0, y = 0.0;
+    for (CollectionIterator i = startIt; i != endIt; ++i)
+    {
+        x += cos(*i);
+        y += sin(*i);
+    }
+    float average_angle = atan2(y, x);
+
+    return average_angle;
+}
+
+// Kullback-Leibler Divergence
+template<typename T>
+inline double GSL::Utils::KLD(
+        const std::vector<T>& a,
+        const std::vector<T>& b,
+        const std::vector<Occupancy>& occupancy,
+        std::function<double(const T&)> accessor)
+{
+    double total = 0;
+    for (int index = 0; index < a.size(); index++)
+        if (occupancy[index] == Occupancy::Free)
+        {
+            double aVal = accessor(a[index]);
+            double bVal = accessor(b[index]);
+            double aux = aVal * std::log(aVal / bVal)
+                         + (1 - aVal) * std::log((1 - aVal) / (1 - bVal));
+            total += std::isnan(aux) ? 0 : aux;
+        }
+    return total;
+}
+
+template<typename T>
+inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy)
+{
+    double total = 0;
+    for (int i = 0; i < variable.size(); i++)
+    {
+        if (occupancy[i] == Occupancy::Free)
+            total += accessor(variable[i]);
+    }
+
+    #pragma omp parallel for
+    for (int i = 0; i < variable.size(); i++)
+    {
+        if (occupancy[i] == Occupancy::Free)
+            accessor(variable[i]) = accessor(variable[i]) / total;
+    }
+}

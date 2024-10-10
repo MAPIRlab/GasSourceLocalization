@@ -1,4 +1,5 @@
 #pragma once
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <gsl_server/core/Vectors.hpp>
 #include <gsl_server/core/Logging.hpp>
 #include <vector>
@@ -76,7 +77,7 @@ namespace GSL
                 GSL_ERROR("VisibilityMap of range {} cannot hold vector of size {}!", range, value.size());
 
             //store the actual size so we can quickly return the correct range later
-            m_map[indexOf(key)] = {value.size(), value.size()};
+            m_map[indexOf(key)] = Vector2Int(value.size(), value.size());
 
             for (size_t i = 0; i < value.size(); i++)
             {

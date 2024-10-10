@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
@@ -46,9 +47,14 @@ namespace GSL
             return indicesToCoordinates(indices3D(index), centerOfCell);
         }
 
+        size_t indexOf(size_t x, size_t y, size_t z) const
+        {
+            return x + y * dimensions.x + z * dimensions.x * dimensions.y;
+        }
+
         size_t indexOf(const Vector3Int& v) const
         {
-            return v.x + v.y * dimensions.x + v.z * dimensions.x * dimensions.y;
+            return indexOf(v.x, v.y, v.z);
         }
 
         Vector3Int indices3D(size_t index) const
@@ -86,12 +92,12 @@ namespace GSL
 
         T& dataAt(size_t i, size_t j, size_t h) const
         {
-            return data[metadata.indexOf({i, j, h})];
+            return data[metadata.indexOf(i, j, h)];
         }
 
         Occupancy& occupancyAt(size_t i, size_t j, size_t h) const
         {
-            return occupancy[metadata.indexOf({i, j, h})];
+            return occupancy[metadata.indexOf(i, j, h)];
         }
 
         bool freeAt(size_t i, size_t j, size_t h) const

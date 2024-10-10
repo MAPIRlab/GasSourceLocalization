@@ -336,7 +336,7 @@ namespace GSL
     int8_t Algorithm::sampleCostmap(const Vector2& point)
     {
         if (!isPointInsideMapBounds(point))
-            return 255;
+            return 127;
 
         int h = (point.x - map.info.origin.position.x) / map.info.resolution;
         int v = (point.y - map.info.origin.position.y) / map.info.resolution;

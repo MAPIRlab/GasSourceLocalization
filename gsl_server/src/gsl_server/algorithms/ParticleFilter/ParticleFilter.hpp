@@ -18,7 +18,7 @@ namespace GSL
         void declareParameters() override;
 
     protected:
-        PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
+        PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
 
     private:
         struct Particle
@@ -48,7 +48,7 @@ namespace GSL
         rclcpp::Publisher<Marker>::SharedPtr estimationMarkers;
         rclcpp::Publisher<Marker>::SharedPtr average_estimation_marker;
 
-        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection);
+        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
         void generateParticles();
 
         void estimateSourceLocation();

@@ -1,11 +1,16 @@
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
-#include <xxHash/xxhash32.h>
 #include <random>
 #include <chrono>
+#include <xxHash/xxhash32.h>
 
 namespace GSL::Utils
 {
     static thread_local std::minstd_rand0 RNGengine;
+
+    bool approx(double v1, double v2)
+    {
+        return std::abs(v1 - v2) < epsilon;
+    }
 
     double lerp(double start, double end, double proportion)
     {
@@ -50,28 +55,39 @@ namespace GSL::Utils
 
         if (stdev != previousStdev)
         {
-            dist = std::normal_distribution<> {0, stdev};
+            dist = std::normal_distribution<>{0, stdev};
             previousStdev = stdev;
         }
 
         return mean + dist(RNGengine);
     }
 
-    double uniformRandom(double min, double max)
+    template <typename T> T uniformRandomT(T min, T max)
     {
 #if 1
-        // xxHash-based RNG. It's supposed to be faster
+        // xxHash-based RNG. It's supposed to be faster 
+        // !!!! the range is [0,1] inclusive!
         static thread_local uint32_t seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         static thread_local uint32_t state = 0xFFFF;
         state = XXHash32::hash(&state, sizeof(state), seed);
 
-        constexpr double reciprocalMax = 1 / (double)std::numeric_limits<uint32_t>::max();
-        double rndVal01 = state * reciprocalMax;
+        constexpr T reciprocalMax = 1. / (T)std::numeric_limits<uint32_t>::max();
+        T rndVal01 = state * reciprocalMax;
         return min + rndVal01 * (max - min);
 #else
-        static thread_local std::uniform_real_distribution<double> distribution {0.0, 0.999};
+        static thread_local std::uniform_real_distribution<T> distribution{0.0, 0.999};
         return min + distribution(RNGengine) * (max - min);
 #endif
+    }
+
+    float uniformRandomF(float min, float max)
+    {
+        return uniformRandomT(min, max);
+    }
+
+    double uniformRandom(double min, double max)
+    {
+        return uniformRandomT(min, max);
     }
 
     void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy)
@@ -83,7 +99,7 @@ namespace GSL::Utils
                 total += variable[i];
         }
 
-        #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < variable.size(); i++)
         {
             if (occupancy[i] == Occupancy::Free)

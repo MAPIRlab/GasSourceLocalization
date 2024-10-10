@@ -42,9 +42,14 @@ namespace GSL
             return indicesToCoordinates(indices.x, indices.y, centerOfCell);
         }
 
+        size_t indexOf(size_t x, size_t y) const
+        {
+            return x +  y * dimensions.x;
+        }
+
         size_t indexOf(const Vector2Int& v) const
         {
-            return v.x + v.y * dimensions.x;
+            return indexOf(v.x, v.y);
         }
 
         Vector2Int indices2D(size_t index) const
@@ -72,12 +77,12 @@ namespace GSL
 
         T& dataAt(size_t col, size_t row) const
         {
-            return data[metadata.indexOf({col, row})];
+            return data[metadata.indexOf(col, row)];
         }
 
         Occupancy& occupancyAt(size_t col, size_t row) const
         {
-            return occupancy[metadata.indexOf({col, row})];
+            return occupancy[metadata.indexOf(col, row)];
         }
 
         bool freeAt(size_t col, size_t row) const

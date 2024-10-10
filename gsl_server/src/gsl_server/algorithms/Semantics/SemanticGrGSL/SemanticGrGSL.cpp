@@ -1,8 +1,6 @@
 #include "SemanticGrGSL.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
-#include "gsl_server/algorithms/Semantics/Semantics/2D/ClassMap2D.hpp"
-#include "gsl_server/algorithms/Semantics/Semantics/Voxeland/ClassMapVoxeland.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp"
 #include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>
 
@@ -68,9 +66,9 @@ namespace GSL
         SemanticsType semanticsType = ParseSemanticsType(semanticsTypeParam);
 
         if (semanticsType == SemanticsType::ClassMap2D)
-            semantics = std::make_unique<ClassMap2D>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose);
+            createClassMap2D();
         else if (semanticsType == SemanticsType::ClassMapVoxeland)
-            semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, currentRobotPose, node);
+            createClassMapVoxeland();
     }
 
     void SemanticGrGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)

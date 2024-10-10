@@ -319,7 +319,7 @@ namespace GSL::PMFS_internal
         Vector2 start = metadata.indicesToCoordinates(nqaNode->origin.x, nqaNode->origin.y, false);
         Vector2 end = metadata.indicesToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
 
-        Vector2 randP(Utils::uniformRandom(start.x, end.x), Utils::uniformRandom(start.y, end.y));
+        Vector2 randP(Utils::uniformRandomF(start.x, end.x), Utils::uniformRandomF(start.y, end.y));
 
         return randP;
     }
