@@ -62,7 +62,8 @@ namespace GSL
         }
 
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Filtering measurements between z={} and z={}", zMin, zMax);
-
+        
+        int num_samples = 0;
         // 1. Loop over each batch
         for (int batch_i = 1; batch_i <= total_batches; batch_i++)
         {
@@ -124,7 +125,7 @@ namespace GSL
                         }
                     }
 
-                    // For each row, update maps
+                    // For each row, update hit and wind maps
                     double x = row[0];
                     double y = row[1];
                     double z = row[2];
@@ -135,6 +136,7 @@ namespace GSL
                     // FILTER BY HEIGHT
                     if (z>zMin && z<zMax)
                     {
+                        num_samples++;
                         // Publish Anemometer to GMRF (topic based)
                         algorithm->publishAnemometer(x, y, windSpeed, windDirection);
 
@@ -142,30 +144,31 @@ namespace GSL
                         GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed,
                                 windDirection);
                         algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
-                        std::cin.get();
-                    }
-                    
+                        //std::cin.get();
+                    }                    
                 }
 
                 // Check if the sample is a multiple of 10
                 if (sample_j % 10 == 0)
                 {
-                    GSL_TRACE("Toca estimar GSL: sample {} in batch-{}", sample_j, batch_i);
+                    GSL_TRACE("Toca estimar GSL: sample {} in batch-{} with {} new samples", sample_j, batch_i, num_samples);
                     algorithm->updateSourceProbability();
                     
                     // Get Source Location estimation
                     Vector2 expectedValue = algorithm->getExpectedValueSourcePosition();
                     Vector2 variance = algorithm->getVarianceSourcePosition();
-
                     
                     GSL_INFO_COLOR(fmt::terminal_color::blue, "Expected value:{}  --  Variance: {}", expectedValue, variance);
+                    num_samples = 0;
+                    std::cin.get();
                 }
             }
             GSL_TRACE("Batch-{} completed", batch_i);
         }
 
         GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");
-        //CLOSE_PROGRAM;
+        std::cin.get();
+        CLOSE_PROGRAM;
 
         // // ORIGINAL
         // if ((algorithm->node->now() - time_stopped).seconds() >= measure_time)
