@@ -4,7 +4,6 @@
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
-#include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
@@ -15,9 +14,6 @@ namespace GSL
 {
     class SemanticPMFS : public Algorithm
     {
-#ifdef USE_GUI
-        friend class PMFS_internal::UI;
-#endif
 
         template <typename T>
         using Grid = Grid2D<T>;
@@ -61,7 +57,6 @@ namespace GSL
         FunctionQueue functionQueue;
         uint iterationsCounter = 0;
         bool paused = false;
-        IF_GUI(PMFS_internal::UI ui);
 
         void createClassMap2D();
         void createClassMapVoxeland();

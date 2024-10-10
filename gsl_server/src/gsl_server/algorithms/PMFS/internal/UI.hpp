@@ -1,67 +1,44 @@
 #pragma once
 #ifdef USE_GUI
-    #include "gsl_server/algorithms/Common/Grid2D.hpp"
-    #include "gsl_server/algorithms/PMFS/internal/PublishersAndSubscribers.hpp"
-    #include "gsl_server/algorithms/PMFS/internal/Settings.hpp"
-    #include "gsl_server/algorithms/PMFS/internal/Simulations.hpp"
-    #include "gsl_server/core/FunctionQueue.hpp"
-    #include <ament_imgui/ament_imgui.h>
-    #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
-    #include <implot/implot.h>
+#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include <ament_imgui/ament_imgui.h>
+#include <implot/implot.h>
 
-    #include <geometry_msgs/msg/point_stamped.hpp>
-    #include <rclcpp/subscription.hpp>
+#include <geometry_msgs/msg/point_stamped.hpp>
+#include <rclcpp/subscription.hpp>
 
-    #include <string>
-    #include <thread>
+#include <string>
+#include <thread>
 
 namespace GSL
 {
     class PMFS;
-
-    #if ENABLE_SEMANTIC_PMFS
-    class SemanticPMFS;
-    #endif
-} // namespace GSL
+}
 
 namespace GSL::PMFS_internal
 {
+
     class UI
     {
+
     public:
-        UI(PMFS* _algo);
-    #if ENABLE_SEMANTIC_PMFS
-        UI(SemanticPMFS* _algo);
-    #endif
+        UI(PMFS* _pmfs);
         ~UI();
         void run();
         void addConcentrationReading(double ppm);
-
     protected:
-        // PMFS things
-        class Algorithm* algorithm;
-        Grid2D<HitProbability> hitProb;
-        Grid2D<double> sourceProb;
-        Simulations& simulations;
-        VisualizationSettings& visualizationSettings;
-        SimulationSettings& simulationSettings;
-        PublishersAndSubscribers& pubs;
-        bool& paused;
-        FunctionQueue& functionQueue;
-
-        // internal UI state
-        std::jthread renderThread;
-        double last_concentration_reading = 0;
-        Vector2 selectedCoordinates;
-        Vector2 goalCoordinates;
-
         void renderImgui();
+        std::jthread renderThread;
+        PMFS* pmfs;
+        double last_concentration_reading = 0;
         void createUI();
         void createPlots();
         bool useCoordinates();
         int selectVariable();
         std::string printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y);
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
+        Vector2 selectedCoordinates;
+        Vector2 goalCoordinates;
     };
 
     // utility structure for realtime plot

@@ -1,4 +1,3 @@
-#include "gsl_server/algorithms/PMFS/internal/UI.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
@@ -16,7 +15,6 @@ namespace GSL
                       Grid2D<double>(sourceProbabilityPMFS, simulationOccupancy, gridMetadata),
                       Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.simulation),
           pubs(node->get_clock())
-              IF_GUI(, ui(this))
     {}
 
     void SemanticPMFS::Initialize()
@@ -24,10 +22,6 @@ namespace GSL
         Algorithm::Initialize();
 
         PMFSLib::InitializePublishers(pubs.pmfsPubs, node);
-
-        IF_GUI(
-            if (!settings.visualization.headless)
-                ui.run(););
 
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
