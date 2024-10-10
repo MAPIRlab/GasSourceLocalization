@@ -16,7 +16,7 @@ namespace GSL
         uint16_t scale; // with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
         size_t numFreeCells;
 
-        Vector2Int coordinatesToIndices(double x, double y) const
+        Vector2Int coordinatesToIndices(float x, float y) const
         {
             return Vector2Int((x - origin.x) / (cellSize), (y - origin.y) / (cellSize));
         }

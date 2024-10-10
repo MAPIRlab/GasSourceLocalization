@@ -70,6 +70,7 @@ namespace GSL::Utils
         static thread_local uint32_t seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
         static thread_local uint32_t state = 0xFFFF;
         state = XXHash32::hash(&state, sizeof(state), seed);
+        state = std::min(state, std::numeric_limits<uint32_t>::max() - 1); // make it so the return interval does not include 1
 
         constexpr T reciprocalMax = 1. / (T)std::numeric_limits<uint32_t>::max();
         T rndVal01 = state * reciprocalMax;
