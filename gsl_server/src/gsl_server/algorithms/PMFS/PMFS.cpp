@@ -1,23 +1,27 @@
-#include <gsl_server/algorithms/PMFS/PMFS.hpp>
-#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
-#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
-#include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
+#include "gsl_server/core/ros_typedefs.hpp"
 #include <angles/angles.h>
+#include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
+#include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
+#include <rclcpp/publisher.hpp>
 
-//Initialization
+// Initialization
 namespace GSL
 {
     using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
-    PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node) : Algorithm(_node),
-        simulations(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
-                    Grid2D<double>(sourceProbability, occupancy, gridMetadata),
-                    Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
-                    settings.simulation),
-        pubs(node->get_clock())
-        IF_GUI(, ui(this))
+    PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node)
+        : Algorithm(_node),
+          simulations(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
+                      Grid2D<double>(sourceProbability, occupancy, gridMetadata),
+                      Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
+                      settings.simulation),
+          pubs(node->get_clock())
+              IF_GUI(, ui(this))
     {}
 
-// A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
+    // A lot of the initialization is done inside of the map callback, rather than here. That is because we need to know the map beforehand
     void PMFS::Initialize()
     {
         Algorithm::Initialize();
@@ -25,11 +29,9 @@ namespace GSL
         anemometer_pub_ = node->create_publisher<olfaction_msgs::msg::Anemometer>("/PioneerP3DX/Anemometer/WindSensor_reading", 1);
         tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
 
-        IF_GUI
-        (
+        IF_GUI(
             if (!settings.visualization.headless)
-            ui.run();
-        );
+                ui.run(););
 
         iterationsCounter = 0;
 
@@ -78,7 +80,6 @@ namespace GSL
                                Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
                                simulations, *visibilityMap);
 
-
         // set all variables to the prior probability
         for (HitProbability& h : hitProbability)
             h.setProbability(settings.hitProbability.prior);
@@ -88,13 +89,12 @@ namespace GSL
 
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         functionQueue.submit([this]()
-        {
+                             {
             Grid2D<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
             PMFSLib::InitializeWindPredictions(*this, windGrid,
                                                pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
             PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
-            stateMachine.forceSetState(stopAndMeasureState.get());
-        });
+            stateMachine.forceSetState(stopAndMeasureState.get()); });
     }
 
 } // namespace GSL
@@ -122,8 +122,8 @@ namespace GSL
     {
         static int number_of_updates = 0;
 
-        //Update the gas presence map
-        // ------------------------------
+        // Update the gas presence map
+        //  ------------------------------
         Grid2D<HitProbability> grid(hitProbability, occupancy, gridMetadata);
         if (concentration > thresholdGas)
         {
@@ -141,17 +141,17 @@ namespace GSL
         }
 
         // SEPARAR EN OTRA FUNCION (GENERAR PROBABILIDADES)
-        //Update the wind estimations
+        // Update the wind estimations
         // ------------------------------
         PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
                               Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                               node,
                               pubs.gmrfWind
-                              IF_GADEN(, pubs.groundTruthWind));
+                                  IF_GADEN(, pubs.groundTruthWind));
 
-                simulations.updateSourceProbability(settings.simulation.refineFraction);
+        simulations.updateSourceProbability(settings.simulation.refineFraction);
 
-        //Visualization
+        // Visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
@@ -166,14 +166,14 @@ namespace GSL
         {
             // Gas & wind
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(x,y));
+                                              gridMetadata.coordinatesToIndices(x, y));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(x,y));
+                                              gridMetadata.coordinatesToIndices(x, y));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
@@ -182,17 +182,17 @@ namespace GSL
 
     void PMFS::updateSourceProbability()
     {
-        //Update the wind estimations (request data to GMRF)
-        // ------------------------------
+        // Update the wind estimations (request data to GMRF)
+        //  ------------------------------
         PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
                               Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                               node,
                               pubs.gmrfWind
-                              IF_GADEN(, pubs.groundTruthWind));
+                                  IF_GADEN(, pubs.groundTruthWind));
 
         simulations.updateSourceProbability(settings.simulation.refineFraction);
 
-        //Visualization
+        // Visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
@@ -206,12 +206,12 @@ namespace GSL
     Vector2 PMFS::getVarianceSourcePosition()
     {
         // TODO: Calculate  Var_x and Var_y
-        return expectedValueSource(1.); //varianceSourcePosition();
+        return expectedValueSource(1.); // varianceSourcePosition();
     }
 
     void PMFS::publishAnemometer(double x, double y, double windSpeed, double windDirection)
     {
-        // 1. Set TF map->anemometer to current sampling location        
+        // 1. Set TF map->anemometer to current sampling location
         geometry_msgs::msg::TransformStamped transform_stamped;
 
         // Set the frame IDs
@@ -233,6 +233,21 @@ namespace GSL
         msg.wind_speed = windSpeed;
         msg.wind_direction = windDirection;
         anemometer_pub_->publish(msg);
+
+        static rclcpp::Publisher<Marker>::SharedPtr arrowPub = node->create_publisher<Marker>("csvWindVector", 1);
+        Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = node->now();
+        marker.type = Marker::ARROW;
+        marker.pose.position.x = x;
+        marker.pose.position.y = y;
+        marker.pose.position.z = 0.5;
+        marker.pose.orientation = Utils::createQuaternionMsgFromYaw(windDirection + M_PI);
+        marker.scale.x = windSpeed * 0.2;
+        marker.scale.y = 0.03f;
+        marker.scale.z = 0.03f;
+        marker.color = Utils::create_color(0, 1, 0, 1);
+        arrowPub->publish(marker);
     }
 
     float PMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg)
@@ -241,6 +256,5 @@ namespace GSL
         IF_GUI(ui.addConcentrationReading(ppm));
         return ppm;
     }
-
 
 } // namespace GSL

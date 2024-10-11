@@ -20,18 +20,27 @@
 #include "VectorsImpl/vmath_DDACustomVec.hpp"
 #endif
 
-#include <fmt/ostream.h>
-inline std::ostream& operator<<(std::ostream& os, const GSL::Vector2Int& v)
+#include <fmt/format.h>
+template <> struct fmt::formatter<GSL::Vector2Int> : formatter<std::string>
 {
-    return os << "(" << v.x << ", " << v.y << ")";
-}
+    auto format(GSL::Vector2Int const& v, format_context& ctx)
+    {
+        return fmt::format_to(ctx.out(), "({},{})", v.x, v.y);
+    }
+};
 
-inline std::ostream& operator<<(std::ostream& os, const GSL::Vector2& v)
+template <> struct fmt::formatter<GSL::Vector2> : formatter<std::string>
 {
-    return os << "(" << v.x << ", " << v.y << ")";
-}
+    auto format(GSL::Vector2 const& v, format_context& ctx)
+    {
+        return fmt::format_to(ctx.out(), "({},{})", v.x, v.y);
+    }
+};
 
-inline std::ostream& operator<<(std::ostream& os, const GSL::Vector3& v)
+template <> struct fmt::formatter<GSL::Vector3> : formatter<std::string>
 {
-    return os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
-}
+    auto format(GSL::Vector3 const& v, format_context& ctx)
+    {
+        return fmt::format_to(ctx.out(), "({},{},{})", v.x, v.y, v.z);
+    }
+};

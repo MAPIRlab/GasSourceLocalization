@@ -123,7 +123,7 @@ namespace GSL::PMFS_internal
         int numberOfLevelsSimulated = 1;
         // Choose the most interesting quadtree leaves (the ones with the best result in the previous iteration) and subdivide them to do more
         // simulations. Keep going until none of the leaves can be subdivided any more
-        while (scores.size() > 0)
+        while (scores.size() > 0 && numberOfLevelsSimulated<=3)
         {
             std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2) { return result1.score > result2.score; });
 

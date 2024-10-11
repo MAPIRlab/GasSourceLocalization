@@ -15,7 +15,7 @@ def launch_arguments():
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
-        DeclareLaunchArgument("map_height", default_value="0.24"),
+        DeclareLaunchArgument("map_height", default_value="0.16"),
     ]
 #==========================
 
@@ -121,23 +121,23 @@ def launch_setup(context, *args, **kwargs):
                     {"kernelStretchConstant": 1.2},
                     {"hitPriorProbability": 0.3},
                     {"confidenceSigmaSpatial": 1.0},
-                    {"confidenceMeasurementWeight": 0.1},
+                    {"confidenceMeasurementWeight": 0.4},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
-                    {"refineFraction": 0.1},
+                    {"refineFraction": 0.5},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     # ICASSP
-                    {"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    {"test_folder": "/mnt/HDD/ICASSP/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
                     {"zMin": map_height-0.08},
-                    {"zMax": map_height+0.08},
+                    {"zMax": map_height+0.16},
 
 
                     
@@ -216,7 +216,7 @@ def generate_launch_description():
         ##############################################
         SetLaunchConfiguration(
             name="th_gas_present", 
-            value="0.105"
+            value="0.1"
         ),
         SetLaunchConfiguration(
             name="th_wind_present", 
@@ -225,7 +225,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.2"
+            value="0.4"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
