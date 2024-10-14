@@ -85,9 +85,8 @@ namespace GSL::SemanticPMFS_internal
             }
 
             static std::string result;
-            if (ImGui::Button("Print") && pmfs->gridMetadata.indicesInBounds({x, y}))
+            if (ImGui::Button("Print"))
             {
-                //TODO fix this in pmfs
                 if (!pmfs->gridMetadata.indicesInBounds({x, y}))
                 {
                     GSL_ERROR("Querying cell {}, which is outside the map!", Vector2Int{x, y});

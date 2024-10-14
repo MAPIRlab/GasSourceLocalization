@@ -79,9 +79,14 @@ namespace GSL::PMFS_internal
             }
 
             static std::string result;
-            if (ImGui::Button("Print") && pmfs->gridMetadata.indicesInBounds({x, y}))
+            if (ImGui::Button("Print"))
             {
-                if (selectedVar == 0)
+                if (!pmfs->gridMetadata.indicesInBounds({x, y}))
+                {
+                    GSL_ERROR("Querying cell {}, which is outside the map!", Vector2Int{x, y});
+                    result = "Error! :(";
+                }
+                else if (selectedVar == 0)
                     result = PMFS_internal::UI::printCell(Grid2D<HitProbability>(pmfs->hitProbability, pmfs->occupancy, pmfs->gridMetadata), x, y);
                 else if (selectedVar == 1)
                     result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->sourceProbability[pmfs->gridMetadata.indexOf({x, y})]);
@@ -248,16 +253,9 @@ namespace GSL::PMFS_internal
     {
         static std::string queryResult;
 
-        if (grid.metadata.indicesInBounds({x, y}))
-        {
-            GSL_ERROR("Querying cell outside the map!");
-        }
-        else
-        {
-            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
-                          fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
-                          fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
-        }
+        queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
+                      fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
+                      fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
 
         return queryResult.c_str();
     }
