@@ -114,15 +114,22 @@ def launch_setup(context, *args, **kwargs):
                     {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
 
                     #PMFS
-                        # Hit probabilities
                     {"headless": False},
+                    {"proportionExpectedValue": 1.0}, #How many of the candidate source positions to include when calculating the expected value, as a proportion
+
+
+                        # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 2.0},
-                    {"kernelStretchConstant": 1.2},
-                    {"hitPriorProbability": 0.3},
+                    {"kernelStretchConstant": 1.5},
+                    {"hitPriorProbability": 0.1},
+                    
+                    {"confidencePrior": 0.0},
                     {"confidenceSigmaSpatial": 1.0},
-                    {"confidenceMeasurementWeight": 0.4},
+                    {"confidenceMeasurementWeight": 0.5},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
+                    {"pHit" : 0.6}, # p(H | hit) -- needs to be > than the prior
+                    {"pMiss" : 0.03}, # p(H | miss) -- needs to be < than the prior
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
@@ -135,7 +142,7 @@ def launch_setup(context, *args, **kwargs):
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     # ICASSP
-                    {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    {"test_folder": "/mnt/HDD/ICASSP/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
                     {"zMin": map_height-0.18},
                     {"zMax": map_height+0.18},
 
@@ -225,11 +232,11 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.4"
+            value="0.3"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
-            value="0.2"
+            value="0.15"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 

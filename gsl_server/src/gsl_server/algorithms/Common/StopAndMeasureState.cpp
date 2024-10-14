@@ -158,8 +158,9 @@ namespace GSL
                         GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed,
                                  windDirection);
                         algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
-                        std::cin.clear();
-                        std::cin.get();
+                        // std::cin.clear();
+                        // std::cin.get();
+                        rclcpp::sleep_for(std::chrono::milliseconds(300));
                     }
                 }
 
@@ -173,10 +174,10 @@ namespace GSL
                     Vector2 expectedValue = algorithm->getExpectedValueSourcePosition();
                     Vector2 variance = algorithm->getVarianceSourcePosition();
 
-                    GSL_INFO_COLOR(fmt::terminal_color::blue, "Expected value:{}  --  Variance: {}", expectedValue, variance);
+                    GSL_INFO_COLOR(fmt::terminal_color::bright_blue, "Expected value:{}  --  Variance: {}", expectedValue, variance);
                     num_samples = 0;
-                    std::cin.clear();
-                    std::cin.get();
+                    // std::cin.clear(); 
+                    // std::cin.get();
                 }
             }
             GSL_TRACE("Batch-{} completed", batch_i);

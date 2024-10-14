@@ -29,6 +29,9 @@ namespace GSL::PMFS_internal
         // physical proximity to the measurement location, this is not variance or anything like that
         double confidenceMeasurementWeight; // sigma_omega in kernel DMV. Controls how much confidence you gain from one measurement (affects
         // all distances)
+
+        double pHit;
+        double pMiss;
     };
     struct SimulationSettings
     {
