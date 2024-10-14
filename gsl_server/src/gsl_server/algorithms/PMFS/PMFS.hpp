@@ -41,11 +41,14 @@ namespace GSL
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
-        void processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection);
-        void updateSourceProbability();
-        void publishAnemometer(double x, double y, double windSpeed, double windDirection);
-        Vector2 getExpectedValueSourcePosition();
-        Vector2 getVarianceSourcePosition();
+        void processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection) override;
+        void updateSourceProbability() override;
+        void publishAnemometer(double x, double y, double windSpeed, double windDirection) override;
+        Vector2 getExpectedValueSourcePosition() override;
+        Vector2 getVarianceSourcePosition() override;
+
+        bool isPaused() override {return paused;}
+        void handleUI() override {functionQueue.run();}
 
         GSLResult checkSourceFound() override;
         void saveResultsToFile(GSLResult result) override;

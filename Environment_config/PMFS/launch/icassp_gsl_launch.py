@@ -121,14 +121,14 @@ def launch_setup(context, *args, **kwargs):
                     {"kernelStretchConstant": 1.2},
                     {"hitPriorProbability": 0.3},
                     {"confidenceSigmaSpatial": 1.0},
-                    {"confidenceMeasurementWeight": 0.1},
+                    {"confidenceMeasurementWeight": 0.4},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
-                    {"refineFraction": 0.1},
+                    {"refineFraction": 0.5},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
@@ -225,7 +225,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.2"
+            value="0.4"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 

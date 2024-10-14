@@ -7,7 +7,7 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <rclcpp/subscription.hpp>
 
-#include <vector>
+#include <rclcpp/node.hpp>
 #include <string>
 #include <thread>
 
@@ -31,6 +31,7 @@ namespace GSL::PMFS_internal
         void renderImgui();
         std::jthread renderThread;
         PMFS* pmfs;
+        rclcpp::Node::SharedPtr node;
         double last_concentration_reading = 0;
         void createUI();
         void createPlots();

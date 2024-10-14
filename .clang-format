@@ -1,0 +1,19 @@
+---
+BasedOnStyle: Microsoft
+PointerAlignment: Left
+SortIncludes: true
+UseTab: Never
+IndentWidth: 4
+BreakBeforeBraces: Custom
+BraceWrapping:
+  SplitEmptyFunction: false
+  BeforeLambdaBody: true
+AccessModifierOffset: -4
+#IndentPPDirectives: BeforeHash
+ColumnLimit: 0
+NamespaceIndentation: All
+KeepEmptyLinesAtTheStartOfBlocks: false
+AlwaysBreakTemplateDeclarations: No
+AllowShortLoopsOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+...

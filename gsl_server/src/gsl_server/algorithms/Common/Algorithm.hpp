@@ -55,6 +55,8 @@ namespace GSL
         virtual void updateSourceProbability() = 0; //called from StopAndMeasure
         virtual Vector2 getExpectedValueSourcePosition() = 0;
         virtual Vector2 getVarianceSourcePosition() = 0;
+        virtual bool isPaused() = 0;
+        virtual void handleUI() = 0;
 
         virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
         virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);

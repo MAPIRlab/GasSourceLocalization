@@ -1,3 +1,4 @@
+#include <rclcpp/executors.hpp>
 #ifdef USE_GUI
 
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
@@ -11,7 +12,8 @@ namespace GSL::PMFS_internal
 {
     UI::UI(PMFS* _pmfs) : pmfs(_pmfs)
     {
-        clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1,
+        node = std::make_shared<rclcpp::Node>("UI_node");
+        clickedPointSub = node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1,
                           [this](const geometry_msgs::msg::PointStamped::SharedPtr point )
         {
             selectedCoordinates.x = point->point.x;
@@ -39,6 +41,7 @@ namespace GSL::PMFS_internal
 
         while (rclcpp::ok() && !pmfs->HasEnded())
         {
+            rclcpp::spin_some(node);
             AmentImgui::StartFrame();
             createUI();
             createPlots();

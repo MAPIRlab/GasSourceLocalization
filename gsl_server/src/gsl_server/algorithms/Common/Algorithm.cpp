@@ -1,14 +1,15 @@
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp" // IWYU pragma: keep
+#include <angles/angles.h>
+#include <fstream>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
-#include <angles/angles.h>
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
-#include <fstream>
 
 namespace GSL
 {
 
-    Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node) : node(_node), tfBuffer(node->get_clock())
+    Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node)
+        : node(_node), tfBuffer(node->get_clock())
     {}
 
     Algorithm::~Algorithm()
@@ -16,13 +17,13 @@ namespace GSL
 
     void Algorithm::Initialize()
     {
-        declareParameters(); //this will be overriden by each method with its own parameters
+        declareParameters(); // this will be overriden by each method with its own parameters
 
         // Subscribers
         //------------
         using namespace std::placeholders;
         localizationSub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
-                          std::bind(&Algorithm::localizationCallback, this, _1));
+                                                                               std::bind(&Algorithm::localizationCallback, this, _1));
         // rclcpp::Rate rate(1);
         // while (resultLogging.robotPosesVector.size() == 0)
         // {
@@ -32,21 +33,19 @@ namespace GSL
         // }
 
         gasSub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
-                 std::bind(&Algorithm::gasCallback, this, _1));
+                                                                           std::bind(&Algorithm::gasCallback, this, _1));
 
         windSub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
-                      getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
+            getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
 
-
-
-        //extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
-        static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), //extra time to make sure this only happens if the node is deadlocked
-                                 []()
-        {
-            rclcpp::shutdown();
-            GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
-            CLOSE_PROGRAM;
-        });
+        // extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
+        static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), // extra time to make sure this only happens if the node is deadlocked
+                                                         []()
+                                                         {
+                                                             rclcpp::shutdown();
+                                                             GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
+                                                             CLOSE_PROGRAM;
+                                                         });
 
         startTime = node->now();
         GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
@@ -131,8 +130,6 @@ namespace GSL
         resultLogging.robotPosesVector.push_back(currentRobotPose);
     }
 
-
-
     // Internal callbacks (triggered by our code)
     //-------------------------
     void Algorithm::onGetMap(const OccupancyGrid::SharedPtr msg)
@@ -161,8 +158,6 @@ namespace GSL
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
     }
-
-
 
     // This is overriden by non-reactive methods to be based on the uncertainty of the estimation
     GSLResult Algorithm::checkSourceFound()
@@ -262,7 +257,6 @@ namespace GSL
             GSL_ERROR("Unable to open Results file at: {}", resultLogging.resultsFile.c_str());
     }
 
-
     // Utils
     //--------------------
     bool Algorithm::isPointInsideMapBounds(const Vector2& point) const
@@ -305,9 +299,9 @@ namespace GSL
         for (int i = 0; i < safetyLimit; i++)
         {
             p.pose.position.x = Utils::uniformRandom(currentRobotPose.pose.pose.position.x - randomPoseDistance,
-                                currentRobotPose.pose.pose.position.x + randomPoseDistance);
+                                                     currentRobotPose.pose.pose.position.x + randomPoseDistance);
             p.pose.position.y = Utils::uniformRandom(currentRobotPose.pose.pose.position.y - randomPoseDistance,
-                                currentRobotPose.pose.pose.position.y + randomPoseDistance);
+                                                     currentRobotPose.pose.pose.position.y + randomPoseDistance);
             p.pose.orientation = Utils::createQuaternionMsgFromYaw(0.0);
             if (idx % 5 == 0)
             {
@@ -336,7 +330,7 @@ namespace GSL
     int8_t Algorithm::sampleCostmap(const Vector2& point)
     {
         if (!isPointInsideMapBounds(point))
-            return 255;
+            return 127;
 
         int h = (point.x - map.info.origin.position.x) / map.info.resolution;
         int v = (point.y - map.info.origin.position.y) / map.info.resolution;

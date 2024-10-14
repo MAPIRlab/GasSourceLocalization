@@ -1,6 +1,7 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/Macros.hpp"
+#include <chrono>
 #include <cmath> // For atan2 and M_PI
 #include <filesystem>
 #include <fmt/color.h>
@@ -8,10 +9,14 @@
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/Common/StopAndMeasureState.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <rclcpp/executors.hpp>
+#include <rclcpp/utilities.hpp>
+#include <angles/angles.h>
 
 namespace GSL
 {
-    StopAndMeasureState::StopAndMeasureState(Algorithm* _algorithm) : State(_algorithm)
+    StopAndMeasureState::StopAndMeasureState(Algorithm* _algorithm)
+        : State(_algorithm)
     {
         measure_time = algorithm->getParam<double>("stop_and_measure_time", 2.0);
     }
@@ -37,7 +42,7 @@ namespace GSL
     {
         // Down-Wind angle
         double angle = atan2(wind_v, wind_u) + M_PI;
-        return angle;
+        return angles::normalize_angle(angle);
     }
 
     void StopAndMeasureState::OnUpdate()
@@ -55,18 +60,27 @@ namespace GSL
         float zMin = Utils::getParam<float>(algorithm->node, "zMin", 0.0);
         float zMax = Utils::getParam<float>(algorithm->node, "zMax", 0.1);
 
-        if(!std::filesystem::exists(test_folder_path))
+        if (!std::filesystem::exists(test_folder_path))
         {
             GSL_ERROR("Test data folder '{}' does not exist! Set the path using the 'test_folder' param", test_folder_path);
             CLOSE_PROGRAM;
         }
 
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Filtering measurements between z={} and z={}", zMin, zMax);
-        
+
         int num_samples = 0;
         // 1. Loop over each batch
         for (int batch_i = 1; batch_i <= total_batches; batch_i++)
         {
+            // Horrible, pero es que si no al nunca salir de esta funcion no funcionan los botones de la GUI
+            algorithm->handleUI();
+            while (algorithm->isPaused())
+            {
+                algorithm->handleUI();
+                rclcpp::sleep_for(std::chrono::milliseconds(30));
+            }
+
+
             // Path to the batch-i folder (adjust to your actual folder structure)
             std::string batch_folder = test_folder_path + "/batch-" + std::to_string(batch_i);
             GSL_INFO("Processing Batch {}...", batch_i);
@@ -134,7 +148,7 @@ namespace GSL
                     double windDirection = calculateWindDirection(row[7], row[8]);
 
                     // FILTER BY HEIGHT
-                    if (z>zMin && z<zMax)
+                    if (z > zMin && z < zMax)
                     {
                         num_samples++;
                         // Publish Anemometer to GMRF (topic based)
@@ -142,10 +156,11 @@ namespace GSL
 
                         // Update Gas-Hit maps
                         GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed,
-                                windDirection);
+                                 windDirection);
                         algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
-                        //std::cin.get();
-                    }                    
+                        std::cin.clear();
+                        std::cin.get();
+                    }
                 }
 
                 // Check if the sample is a multiple of 10
@@ -153,13 +168,14 @@ namespace GSL
                 {
                     GSL_TRACE("Toca estimar GSL: sample {} in batch-{} with {} new samples", sample_j, batch_i, num_samples);
                     algorithm->updateSourceProbability();
-                    
+
                     // Get Source Location estimation
                     Vector2 expectedValue = algorithm->getExpectedValueSourcePosition();
                     Vector2 variance = algorithm->getVarianceSourcePosition();
-                    
+
                     GSL_INFO_COLOR(fmt::terminal_color::blue, "Expected value:{}  --  Variance: {}", expectedValue, variance);
                     num_samples = 0;
+                    std::cin.clear();
                     std::cin.get();
                 }
             }
