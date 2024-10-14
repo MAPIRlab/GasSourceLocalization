@@ -82,6 +82,7 @@ namespace GSL
 
         hitProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         sourceProbabilityPMFS.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
+        sourceProbSemantics.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         navigationOccupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         combinedSourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         simulationOccupancy = Utils::parseMapImage(getParam<std::string>("wallsOccupancyFile", "?"), gridMetadata);
@@ -102,6 +103,9 @@ namespace GSL
             h.setProbability(settings.hitProbability.prior);
 
         for (double& p : sourceProbabilityPMFS)
+            p = 1.0 / gridMetadata.numFreeCells;
+
+        for (double& p : sourceProbSemantics)
             p = 1.0 / gridMetadata.numFreeCells;
 
         // the wind estimation stuff requires spinning, so it must be done through the function queue
@@ -138,7 +142,7 @@ namespace GSL
         if (!semantics)
             return;
 
-        std::vector<double> sourceProbSemantics = semantics->GetSourceProbability();
+        semantics->GetSourceProbabilityInPlace(sourceProbSemantics);
 #pragma omp parallel for
         for (size_t i = 0; i < sourceProbSemantics.size(); i++)
         {
@@ -167,9 +171,21 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-        PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), node,
-                              pubs.pmfsPubs.gmrfWind IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-        PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.visualization, pubs.pmfsPubs);
+        PMFSLib::EstimateWind(
+            settings.simulation.useWindGroundTruth,
+            Grid2D<Vector2>(estimatedWindVectors,
+                            simulationOccupancy,
+                            gridMetadata),
+            node,
+            pubs.pmfsPubs.gmrfWind
+                IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+        PMFSViz::PlotWindVectors(
+            Grid2D<Vector2>(
+                estimatedWindVectors,
+                simulationOccupancy,
+                gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
 
         number_of_updates++;
 

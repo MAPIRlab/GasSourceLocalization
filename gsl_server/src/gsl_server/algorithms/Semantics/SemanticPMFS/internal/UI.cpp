@@ -1,4 +1,7 @@
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include <fmt/core.h>
 #ifdef USE_GUI
 
 // TODO This is currently just a straight-up copy of the PMFS UI. We could definitely do better, but I don't believe it is a good idea to set up an inheritance tree for UIs
@@ -68,7 +71,7 @@ namespace GSL::SemanticPMFS_internal
         {
             static int x = 0;
             static int y = 0;
-            int selectedVar = selectVariable();
+            Variable selectedVar = selectVariable();
 
             if (useCoordinates())
             {
@@ -92,10 +95,7 @@ namespace GSL::SemanticPMFS_internal
                     GSL_ERROR("Querying cell {}, which is outside the map!", Vector2Int{x, y});
                     result = "Error! :(";
                 }
-                else if (selectedVar == 0)
-                    result = printCell(Grid2D<HitProbability>(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata), x, y);
-                else if (selectedVar == 1)
-                    result = fmt::format("Cell {0},{1}: {2}\n", x, y, pmfs->combinedSourceProbability[pmfs->gridMetadata.indexOf({x, y})]);
+                printCell(selectedVar, x, y);
             }
             if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
@@ -252,20 +252,30 @@ namespace GSL::SemanticPMFS_internal
         return selected == 0;
     }
 
-    int UI::selectVariable()
+    UI::Variable UI::selectVariable()
     {
         static int selected = 0;
         ImGui::Combo("Select Variable", &selected, "Hit\0Source\0");
-        return selected;
+        return static_cast<Variable>(selected);
     }
 
-    std::string UI::printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y)
+    std::string UI::printCell(Variable variable, const int& x, const int& y)
     {
+        size_t index = pmfs->gridMetadata.indexOf({x, y});
         static std::string queryResult;
-
-        queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
-                      fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
-                      fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
+        if (variable == Variable::HitProb)
+        {
+            Grid2D<HitProbability> grid(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata);
+            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
+                          fmt::format("Hit probability:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
+        }
+        else if (variable == Variable::SourceProb)
+        {
+            queryResult = fmt::format("Cell {0},{1}: \n", x, y) +
+                          fmt::format("Total probability: {}", pmfs->combinedSourceProbability[index]) +
+                          fmt::format("Olfaction probability: {}", pmfs->sourceProbabilityPMFS[index]) +
+                          fmt::format("Semantics probability: {}", pmfs->sourceProbSemantics[index]);
+        }
 
         return queryResult.c_str();
     }

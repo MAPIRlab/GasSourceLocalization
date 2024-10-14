@@ -42,6 +42,7 @@ namespace GSL
         //-------------PMFS-------------
         Grid2DMetadata gridMetadata;
         std::vector<double> sourceProbabilityPMFS;
+        std::vector<double> sourceProbSemantics;
         std::vector<HitProbability> hitProbability;
         std::vector<Occupancy> navigationOccupancy;
         std::vector<Occupancy> simulationOccupancy;

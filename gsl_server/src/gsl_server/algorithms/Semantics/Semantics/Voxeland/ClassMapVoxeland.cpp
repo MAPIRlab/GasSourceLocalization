@@ -66,7 +66,7 @@ namespace GSL
 
     void ClassMapVoxeland::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
     {
-        // #pragma omp parallel for collapse(2)
+        #pragma omp parallel for collapse(2)
         for (size_t i = 0; i < sourceProb.size(); i++)
         {
             for (size_t z = 0; z < gridMetadata.dimensions.z; z++)
