@@ -15,7 +15,7 @@ def launch_arguments():
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
-        DeclareLaunchArgument("map_height", default_value="0.24"),
+        DeclareLaunchArgument("map_height", default_value="0.32"), #[0.025, 0.105, 0.185, 0.265, 0.345, 0.425, 0.505, 0.585, 0.665, 0.745, 0.825, 0.905]
     ]
 #==========================
 
@@ -135,9 +135,9 @@ def launch_setup(context, *args, **kwargs):
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     # ICASSP
-                    {"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
-                    {"zMin": map_height-0.08},
-                    {"zMax": map_height+0.08},
+                    {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    {"zMin": map_height-0.18},
+                    {"zMax": map_height+0.18},
 
 
                     
@@ -216,7 +216,7 @@ def generate_launch_description():
         ##############################################
         SetLaunchConfiguration(
             name="th_gas_present", 
-            value="0.105"
+            value="0.134"
         ),
         SetLaunchConfiguration(
             name="th_wind_present", 
