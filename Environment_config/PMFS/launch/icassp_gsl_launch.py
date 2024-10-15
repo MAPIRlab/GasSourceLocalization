@@ -15,7 +15,7 @@ def launch_arguments():
         DeclareLaunchArgument("simulation", default_value="A1"),
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
-        DeclareLaunchArgument("map_height", default_value="0.32"), #[0.025, 0.105, 0.185, 0.265, 0.345, 0.425, 0.505, 0.585, 0.665, 0.745, 0.825, 0.905]
+        DeclareLaunchArgument("map_height", default_value="0.32"), #[0.025, 0.105, 0.185,    0.265, 0.345, 0.425,    0.505, 0.585, 0.665, 0.745, 0.825, 0.905]
     ]
 #==========================
 
@@ -119,7 +119,7 @@ def launch_setup(context, *args, **kwargs):
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 2.0},
                     {"kernelStretchConstant": 1.2},
-                    {"hitPriorProbability": 0.3},
+                    {"hitPriorProbability": 0.1},
                     {"confidenceSigmaSpatial": 1.0},
                     {"confidenceMeasurementWeight": 0.4},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
@@ -128,7 +128,7 @@ def launch_setup(context, *args, **kwargs):
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
-                    {"refineFraction": 0.5},
+                    {"refineFraction": 0.7},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
@@ -136,8 +136,8 @@ def launch_setup(context, *args, **kwargs):
 
                     # ICASSP
                     {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
-                    {"zMin": map_height-0.18},
-                    {"zMax": map_height+0.18},
+                    {"zMin": 0.26},
+                    {"zMax": 0.43},
 
 
                     
@@ -225,7 +225,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.4"
+            value="0.2"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
