@@ -10,7 +10,7 @@
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/core/ConditionalMacros.hpp>
 
-#include <gmrf_wind_mapping/srv/wind_estimation.hpp>
+#include <gmrf_msgs/srv/wind_estimation.hpp>
 
 #ifdef USE_GADEN
 #include <gaden_player/srv/wind_position.hpp>
@@ -23,7 +23,7 @@ namespace GSL
     // Your variant will need to have much of the same stuff as PMFS, though (Settings, HitProbability Grid, etc)
     class PMFSLib
     {
-        using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
+        using WindEstimation = gmrf_msgs::srv::WindEstimation;
         using HashSet = std::unordered_set<Vector2Int>;
 
         using HitProbability = PMFS_internal::HitProbability;

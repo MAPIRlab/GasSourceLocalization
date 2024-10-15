@@ -10,7 +10,7 @@
 // Initialization
 namespace GSL
 {
-    using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
+    using WindEstimation = gmrf_msgs::srv::WindEstimation;
     PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node)
         : Algorithm(_node),
           simulations(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
@@ -80,9 +80,13 @@ namespace GSL
                                Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
                                simulations, *visibilityMap);
 
+        double confidencePrior = Utils::getParam<double>(node, "confidencePrior", 0.0);
         // set all variables to the prior probability
         for (HitProbability& h : hitProbability)
+        {
             h.setProbability(settings.hitProbability.prior);
+            h.omega = confidencePrior;
+        }
 
         for (double& p : sourceProbability)
             p = 1.0 / gridMetadata.numFreeCells;
@@ -200,7 +204,8 @@ namespace GSL
 
     Vector2 PMFS::getExpectedValueSourcePosition()
     {
-        return expectedValueSource(1.);
+        double proportionToInclude = Utils::getParam(node, "proportionExpectedValue", 1.);
+        return expectedValueSource(proportionToInclude);
     }
 
     Vector2 PMFS::getVarianceSourcePosition()
@@ -230,6 +235,7 @@ namespace GSL
         // 2. Publish anemometer data over topic
         olfaction_msgs::msg::Anemometer msg;
         msg.header.frame_id = "anemometer";
+        msg.header.stamp = node->now();
         msg.wind_speed = windSpeed;
         msg.wind_direction = windDirection;
         anemometer_pub_->publish(msg);

@@ -1,7 +1,7 @@
 
 file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp") 
 
-find_package(gmrf_wind_mapping REQUIRED)
+find_package(gmrf_msgs REQUIRED)
 
 # Create the library
 add_library(GrGSL ${SOURCES})
@@ -9,7 +9,7 @@ add_library(GrGSL ${SOURCES})
 # Link ament dependencies
 ament_target_dependencies(GrGSL
     ${COMMON_AMENT_DEPENDENCIES}
-    gmrf_wind_mapping
+    gmrf_msgs
     ${CONDITIONAL_GADEN_PLAYER}
 )
 

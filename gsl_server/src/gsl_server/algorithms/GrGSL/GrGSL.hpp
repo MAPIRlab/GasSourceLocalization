@@ -1,7 +1,7 @@
 #pragma once
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
-#include <gmrf_wind_mapping/srv/wind_estimation.hpp>
+#include <gmrf_msgs/srv/wind_estimation.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
 #include "GrGSL_internal.hpp"
 
@@ -11,7 +11,7 @@ namespace GSL
     class GrGSL : public Algorithm
     {
         friend class MovingStateGrGSL;
-        using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
+        using WindEstimation = gmrf_msgs::srv::WindEstimation;
         using HashSet = std::unordered_set<Vector2Int>;
 
     public:
