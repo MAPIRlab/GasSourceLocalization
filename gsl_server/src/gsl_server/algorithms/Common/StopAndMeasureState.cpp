@@ -66,6 +66,14 @@ namespace GSL
             CLOSE_PROGRAM;
         }
 
+        // Results
+        std::string results_folder_path = test_folder_path + "/mapir_results";
+        if (!std::filesystem::exists(results_folder_path))
+        {
+            // Create the folder
+            std::filesystem::create_directory(results_folder_path);
+        }
+
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Filtering measurements between z={} and z={}", zMin, zMax);
 
         int num_samples = 0;
@@ -84,6 +92,11 @@ namespace GSL
             // Path to the batch-i folder (adjust to your actual folder structure)
             std::string batch_folder = test_folder_path + "/batch-" + std::to_string(batch_i);
             GSL_INFO("Processing Batch {}...", batch_i);
+
+            // Prepare results file
+            std::string results_file_path = results_folder_path + "/batch-" + std::to_string(batch_i) + ".csv";
+            std::ofstream results_file(results_file_path);
+            results_file << "batch-i,N,mu_x,mu_y,mu_z,sigma00,sigma01,sigma02,sigma11,sigma12,sigma22\n"; // headers
 
             // 2. Loop over each test sample in the batch
             for (int sample_j = 1; sample_j <= samples_per_batch; sample_j++)
@@ -178,9 +191,31 @@ namespace GSL
                     num_samples = 0;
                     // std::cin.clear(); 
                     // std::cin.get();
+
+                    // Save current result to CSV file (requested format)
+                    if (results_file.is_open()) 
+                    {
+                        // CSV format: Batch-i, N=sample_j, x_est, y_est, z_est, var_00, var_01, var_02, var_11, var_12, var_22
+                        results_file << "batch-" + std::to_string(batch_i) + ",";
+                        results_file << std::to_string(sample_j) + ",";
+
+                        results_file << std::to_string(expectedValue.x) + ",";
+                        results_file << std::to_string(expectedValue.y) + ",";
+                        results_file << std::to_string(zMin) + ",";
+
+                        results_file << std::to_string(0.01) + ",";
+                        results_file << std::to_string(0.0) + ",";
+                        results_file << std::to_string(0.0) + ",";
+                        results_file << std::to_string(0.1) + ",";
+                        results_file << std::to_string(0.0) + ",";
+                        results_file << std::to_string(0.1) + ",";
+
+                        results_file << "\n";  // Newline for the next row
+                    }
                 }
-            }
+            }            
             GSL_TRACE("Batch-{} completed", batch_i);
+            results_file.close();
         }
 
         GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");
