@@ -84,7 +84,7 @@ def launch_setup(context, *args, **kwargs):
             Node(
                 package="gsl_server",
                 executable="gsl_actionserver_node",
-                prefix="xterm -e",
+                prefix="xterm -hold -e",
                 name="GSL",
                 parameters=[
                     # Common
