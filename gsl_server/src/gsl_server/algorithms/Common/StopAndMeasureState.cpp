@@ -185,9 +185,9 @@ namespace GSL
 
                     // Get Source Location estimation
                     Vector2 expectedValue = algorithm->getExpectedValueSourcePosition();
-                    Vector2 variance = algorithm->getVarianceSourcePosition();
+                    Algorithm::CovarianceMatrix variance = algorithm->getVarianceSourcePosition();
 
-                    GSL_INFO_COLOR(fmt::terminal_color::bright_blue, "Expected value:{}  --  Variance: {}", expectedValue, variance);
+                    GSL_INFO_COLOR(fmt::terminal_color::bright_blue, "Expected value:{}  --  Variance: (X:{}, Y:{}, XY:{})", expectedValue, variance.x, variance.y, variance.covariance);
                     num_samples = 0;
                     // std::cin.clear(); 
                     // std::cin.get();

@@ -1,4 +1,6 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
+#include "gsl_server/core/Logging.hpp"
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
@@ -208,10 +210,29 @@ namespace GSL
         return expectedValueSource(proportionToInclude);
     }
 
-    Vector2 PMFS::getVarianceSourcePosition()
+    Algorithm::CovarianceMatrix PMFS::getVarianceSourcePosition()
     {
-        // TODO: Calculate  Var_x and Var_y
-        return expectedValueSource(1.); // varianceSourcePosition();
+        Vector2 expectedValue = expectedValueSource(1.);
+        float sum = 0;
+        float varX = 0;
+        float varY = 0;
+        float covar = 0;
+        for (int i = 0; i < sourceProbability.size(); i++)
+        {
+            if (occupancy[i] == Occupancy::Free)
+            {
+                Vector2 coords = gridMetadata.indicesToCoordinates(gridMetadata.indices2D(i));
+                float xDiff = (coords.x - expectedValue.x);
+                float yDiff = (coords.y - expectedValue.y);
+
+                varX += sourceProbability[i] * xDiff * xDiff;
+                varY += sourceProbability[i] * yDiff * yDiff;
+                covar += sourceProbability[i] * xDiff * yDiff;
+                sum += sourceProbability[i];
+            }
+        }
+        GSL_INFO("SUM : {}", sum);
+        return {.x = varX / sum, .y = varY / sum, .covariance = covar / sum};
     }
 
     void PMFS::publishAnemometer(double x, double y, double windSpeed, double windDirection)
