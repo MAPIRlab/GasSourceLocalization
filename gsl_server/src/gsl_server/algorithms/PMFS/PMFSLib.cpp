@@ -407,7 +407,7 @@ namespace GSL
 
         pubs.markers.quadtreePublisher = node->create_publisher<MarkerArray>("quadtree", 1);
 
-        pubs.gmrfWind.client = node->create_client<gmrf_wind_mapping::srv::WindEstimation>("/WindEstimation");
+        pubs.gmrfWind.client = node->create_client<gmrf_msgs::srv::WindEstimation>("/WindEstimation");
         IF_GADEN(pubs.groundTruthWind.client = node->create_client<gaden_msgs::srv::WindPosition>("/wind_value"));
     }
 
