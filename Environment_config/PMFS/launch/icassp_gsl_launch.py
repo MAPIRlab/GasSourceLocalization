@@ -98,7 +98,7 @@ def launch_setup(context, *args, **kwargs):
                     #{"ground_truth_y": parse_substitution("$(var source_y)")},
                     {"resultsFile": parse_substitution("Results/$(var simulation)/$(var method).csv")},
                     
-                    {"scale": 35},
+                    {"scale": 70},
                     {"markers_height": 0.2},
 
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
@@ -120,16 +120,17 @@ def launch_setup(context, *args, **kwargs):
 
                         # Hit probabilities
                     {"maxUpdatesPerStop": 5},
-                    {"kernelSigma": 2.0},
-                    {"kernelStretchConstant": 1.5},
-                    {"hitPriorProbability": 0.1},
+                    {"kernelSigma": 1.5},
+                    {"kernelStretchConstant": 1.2},
+                    {"hitPriorProbability": 0.05},
                     
                     {"confidencePrior": 0.0},
                     {"confidenceSigmaSpatial": 1.0},
                     {"confidenceMeasurementWeight": 0.5},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                     {"pHit" : 0.6}, # p(H | hit) -- needs to be > than the prior
-                    {"pMiss" : 0.03}, # p(H | miss) -- needs to be < than the prior
+                    {"pMiss" : 0.02}, # p(H | miss) -- needs to be < than the prior
+                    {"confidenceGainOverTime": 0.002},
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
@@ -142,7 +143,7 @@ def launch_setup(context, *args, **kwargs):
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     # ICASSP
-                    {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    {"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
                     {"zMin": 0.26},
                     {"zMax": 0.43},
 
@@ -161,7 +162,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {"sensor_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
             {"map_topic": parse_substitution("$(var robot_name)/map")},
-            {"cell_size": 0.1},
+            {"cell_size": 0.05},
         ]
     )
 
@@ -232,11 +233,11 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.2"
+            value="0.4"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
-            value="0.15"
+            value="0.2"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
