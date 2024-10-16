@@ -52,7 +52,7 @@ namespace GSL::PMFS_internal
         {}
 
         void initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap);
-        void updateSourceProbability(float refineFraction);
+        void updateSourceProbability(float refineFraction, uint maxLevels);
         void printImage(const SimulationSource& source);
 
         std::vector<std::vector<Utils::NQA::Node*>> mapSegmentation;

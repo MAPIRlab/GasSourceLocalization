@@ -35,7 +35,7 @@ namespace GSL::PMFS_internal
     void Simulations::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
     {
         ZoneScoped;
-        quadtree = std::make_unique<Utils::NQA::Quadtree>(occupancyMap);
+        quadtree = std::make_unique<Utils::NQA::Quadtree>(occupancyMap, settings.maxRegionSize);
         QTleaves = quadtree->fusedLeaves(settings.maxRegionSize);
 
         mapSegmentation.resize(occupancyMap.size(), std::vector<Utils::NQA::Node*>(occupancyMap[0].size(), nullptr));
@@ -59,7 +59,7 @@ namespace GSL::PMFS_internal
         }
     }
 
-    void Simulations::updateSourceProbability(float refineFraction)
+    void Simulations::updateSourceProbability(float refineFraction, uint maxLevels)
     {
         ZoneScoped;
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Started simulations. Might take a while!");
@@ -123,7 +123,7 @@ namespace GSL::PMFS_internal
         int numberOfLevelsSimulated = 1;
         // Choose the most interesting quadtree leaves (the ones with the best result in the previous iteration) and subdivide them to do more
         // simulations. Keep going until none of the leaves can be subdivided any more
-        while (scores.size() > 0)
+        while (scores.size() > 0 && (maxLevels==0 || numberOfLevelsSimulated< maxLevels))
         {
             std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2) { return result1.score > result2.score; });
 
