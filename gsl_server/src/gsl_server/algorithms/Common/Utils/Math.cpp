@@ -103,6 +103,23 @@ namespace GSL::Utils
         }
     }
 
+    void NormalizeDistributionLong(std::vector<long double>& variable, std::vector<Occupancy>& occupancy)
+    {
+        long double total = 0;
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i] == Occupancy::Free)
+                total += variable[i];
+        }
+
+#pragma omp parallel for
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i] == Occupancy::Free)
+                variable[i] = variable[i] / total;
+        }
+    }
+
     float EquallyDistributed01F()
     {
         constexpr float phi = 1.61803398875;

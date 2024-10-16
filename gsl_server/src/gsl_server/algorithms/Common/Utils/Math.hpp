@@ -84,6 +84,7 @@ namespace GSL::Utils
     }
 
     void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy);
+    void NormalizeDistributionLong(std::vector<long double>& variable, std::vector<Occupancy>& occupancy);
     template<typename T>
     void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy)
     {

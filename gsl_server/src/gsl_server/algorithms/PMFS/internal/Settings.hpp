@@ -47,6 +47,7 @@ namespace GSL::PMFS_internal
         int iterationsToRecord;
         double deltaTime;
         double noiseSTDev;
+        double weightOfHit; //how much more important it is to find gas than to not find it. A bit of a hack for the ICASSP competition to deal with the sparsity of hits
     };
     struct MovementSettings
     {

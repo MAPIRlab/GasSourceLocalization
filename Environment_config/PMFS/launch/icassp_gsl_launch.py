@@ -84,7 +84,7 @@ def launch_setup(context, *args, **kwargs):
             Node(
                 package="gsl_server",
                 executable="gsl_actionserver_node",
-                prefix="xterm -hold -e",
+                # prefix="xterm -hold -e",
                 name="GSL",
                 parameters=[
                     # Common
@@ -134,9 +134,11 @@ def launch_setup(context, *args, **kwargs):
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
-                    {"maxRegionSize": 7},
+                    {"maxRegionSize": 5},
                     {"maxSimulationLevels": 0},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
+                    {"weightOfHit": 10},
+                    
                     {"refineFraction": 0.7},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
@@ -144,7 +146,7 @@ def launch_setup(context, *args, **kwargs):
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     # ICASSP
-                    #{"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    # {"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
                     {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"},
                     {"zMin": 0.26},
                     {"zMax": 0.43},
@@ -235,7 +237,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.4"
+            value="0.7"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
@@ -255,7 +257,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="filamentDeltaTime", 
-            value="0.1"
+            value="0.05"
         ),
     ]
     

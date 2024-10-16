@@ -233,7 +233,6 @@ namespace GSL
                 sum += sourceProbability[i];
             }
         }
-        GSL_INFO("SUM : {}", sum);
         return {.x = varX / sum, .y = varY / sum, .covariance = covar / sum};
     }
 

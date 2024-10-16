@@ -62,15 +62,16 @@ namespace GSL::PMFS_internal
         VisibilityMap* visibilityMap;
 
     protected:
+        std::vector<long double> sourceProbInternal; // calculated from the simulations, used for movement
         struct SimulationResult
         {
             bool valid = false;
             std::vector<float> hitMap;
-            double sourceProb;
+            long double sourceProb;
         };
         struct LeafScore
         {
-            float score;
+            long double score;
             Utils::NQA::Node* leaf;
         };
 
@@ -84,7 +85,7 @@ namespace GSL::PMFS_internal
         void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit, int timesteps,
                                       float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament) const;
-        double sourceProbFromMaps(const Grid2D<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
+        long double sourceProbFromMaps(const Grid2D<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
     };
 } // namespace GSL::PMFS_internal

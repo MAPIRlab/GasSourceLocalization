@@ -416,6 +416,7 @@ namespace GSL
         settings.noiseSTDev = algorithm.getParam<double>("noiseSTDev", 0.5);
         settings.iterationsToRecord = algorithm.getParam<int>("iterationsToRecord", 200);
         settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
+        settings.weightOfHit = algorithm.getParam<int>("weightOfHit", 1);
     }
 
     void PMFSLib::GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings)
