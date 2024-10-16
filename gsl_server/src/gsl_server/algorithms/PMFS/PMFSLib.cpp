@@ -8,9 +8,9 @@
 namespace GSL
 {
 
-//---------------
-// P(H)
-//---------------
+    //---------------
+    // P(H)
+    //---------------
 
     void PMFSLib::EstimateHitProbabilities(Grid2D<HitProbability>& hitProb, const VisibilityMap& visibilityMap,
                                            PMFS_internal::HitProbabilitySettings& settings, bool hit, double downwindDirection, double windSpeed,
@@ -23,16 +23,15 @@ namespace GSL
         // old news
         HashSet closedPropagationSet;
 
-        double kernel_rotation_wind = -angles::normalize_angle( downwindDirection + M_PI / 2);
+        double kernel_rotation_wind = -angles::normalize_angle(downwindDirection + M_PI / 2);
         HitProbKernel kernel =
-        {
-            .angle = kernel_rotation_wind,
-            .sigma = Vector2(
-                settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma), // semi-minor ellipse axis
-                settings.kernelSigma + settings.kernelStretchConstant * windSpeed // semi-major axis
-            ),
-            .valueAt1 = (hit ? 0.6f : 0.1f)
-        };
+            {
+                .angle = kernel_rotation_wind,
+                .sigma = Vector2(
+                    settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma), // semi-minor ellipse axis
+                    settings.kernelSigma + settings.kernelStretchConstant * windSpeed                               // semi-major axis
+                    ),
+                .valueAt1 = (hit ? 0.6f : 0.1f)};
 
         size_t oC = std::max(0, robotPosition.x - settings.localEstimationWindowSize);
         size_t fC = std::min(hitProb.metadata.dimensions.x - 1, robotPosition.x + settings.localEstimationWindowSize);
@@ -51,9 +50,9 @@ namespace GSL
                 else
                     activePropagationSet.insert(rc);
 
-                //TODO should probably use the coordinates rather than the cell indices, but it would require adjusting all the parameters in the launch file, so...
-                //TODO good news is once we've done this the parameters become cell-size-independent
-                //Vector2 offset = hitProb.metadata.indicesToCoordinates(rc) - hitProb.metadata.indicesToCoordinates(robotPosition);
+                // TODO should probably use the coordinates rather than the cell indices, but it would require adjusting all the parameters in the launch file, so...
+                // TODO good news is once we've done this the parameters become cell-size-independent
+                // Vector2 offset = hitProb.metadata.indicesToCoordinates(rc) - hitProb.metadata.indicesToCoordinates(robotPosition);
                 Vector2 offset = Vector2(rc - robotPosition);
                 hitProb.dataAt(col, row).distanceFromRobot = vmath::length(offset);
                 hitProb.dataAt(col, row).originalPropagationDirection = vmath::normalized(offset);
@@ -192,7 +191,7 @@ namespace GSL
         metadata.scale = scale;
     }
 
-    //TODO shouldn't some of this be done with the simulationOccupancy rather than the navigationOccupancy?
+    // TODO shouldn't some of this be done with the simulationOccupancy rather than the navigationOccupancy?
     void PMFSLib::InitializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
                                 VisibilityMap& visibilityMap)
     {
@@ -213,7 +212,7 @@ namespace GSL
                 HashSet activePropagationSet;
                 HashSet closedPropagationSet;
                 Vector2Int currentIndices = grid.metadata.coordinatesToIndices(algorithm.currentRobotPose.pose.pose.position.x,
-                                            algorithm.currentRobotPose.pose.pose.position.y);
+                                                                               algorithm.currentRobotPose.pose.pose.position.y);
                 grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0; // the arbitrary value
                 activePropagationSet.insert(currentIndices);
                 PMFSLib::PropagateProbabilities(grid, PMFS_internal::HitProbabilitySettings(), openPropagationSet, closedPropagationSet,
@@ -228,10 +227,13 @@ namespace GSL
                     {
                         grid.dataAt(i, j).logOdds = DBL_MIN;
                         grid.occupancyAt(i, j) = Occupancy::Obstacle;
+                        occupancyMap[i][j] = 0;
                     }
                     else
+                    {
                         grid.metadata.numFreeCells++;
-                    occupancyMap[i][j] = grid.occupancyAt(i, j) == Occupancy::Free ? 1 : 0;
+                        occupancyMap[i][j] = 1;
+                    }
                 }
             }
             GSL_TRACE("Pruned unreachable cells");
@@ -279,11 +281,11 @@ namespace GSL
 
     void PMFSLib::InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,
                                             WindEstimation::Request::SharedPtr& GMRFRequest
-                                            IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest))
+                                                IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest))
     {
         grid.data.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y);
-  
-  #ifdef USE_GADEN
+
+#ifdef USE_GADEN
         std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
         geometry_msgs::msg::TransformStamped tfm;
         bool has_tf = false;
@@ -299,8 +301,7 @@ namespace GSL
                 GSL_ERROR("TF error when looking up map -> anemometer:\n{}", e.what());
                 rclcpp::spin_some(algorithm.node);
             }
-        }
-        while (!has_tf && rclcpp::ok());
+        } while (!has_tf && rclcpp::ok());
 
         float anemometer_Z = tfm.transform.translation.z;
         GSL_INFO("anemometer z is {}", anemometer_Z);
