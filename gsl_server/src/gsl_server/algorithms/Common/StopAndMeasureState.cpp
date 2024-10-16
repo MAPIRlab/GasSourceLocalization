@@ -172,7 +172,7 @@ namespace GSL
                         algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
                         // std::cin.clear();
                         // std::cin.get();
-                        // rclcpp::sleep_for(std::chrono::milliseconds(100));
+                        rclcpp::sleep_for(std::chrono::milliseconds(100));
                     }
                 }
 

@@ -28,7 +28,7 @@ namespace GSL
     {
         Algorithm::Initialize();
         PMFSLib::InitializePublishers(pubs, node);
-        anemometer_pub_ = node->create_publisher<olfaction_msgs::msg::Anemometer>("/PioneerP3DX/Anemometer/WindSensor_reading", 1);
+        anemometer_pub_ = node->create_publisher<olfaction_msgs::msg::Anemometer>("/PioneerP3DX/Anemometer/WindSensor_reading", 100);
         tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node);
 
         IF_GUI(

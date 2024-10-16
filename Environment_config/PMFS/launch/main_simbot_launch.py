@@ -81,7 +81,7 @@ def launch_setup(context, *args, **kwargs):
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
-                    {"maxRegionSize": 5},
+                    {"maxRegionSize": 3},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
                     {"refineFraction": 0.1},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
@@ -260,11 +260,11 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.5"
+            value="0.7"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
-            value="0.2"
+            value="0.15"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
