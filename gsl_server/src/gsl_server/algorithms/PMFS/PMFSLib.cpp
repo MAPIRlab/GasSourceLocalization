@@ -234,10 +234,13 @@ namespace GSL
                     {
                         grid.dataAt(i, j).logOdds = DBL_MIN;
                         grid.occupancyAt(i, j) = Occupancy::Obstacle;
+                        occupancyMap[i][j] = 0;
                     }
                     else
+                    {
                         grid.metadata.numFreeCells++;
-                    occupancyMap[i][j] = grid.occupancyAt(i, j) == Occupancy::Free ? 1 : 0;
+                        occupancyMap[i][j] = 1;
+                    }
                 }
             }
             GSL_TRACE("Pruned unreachable cells");
