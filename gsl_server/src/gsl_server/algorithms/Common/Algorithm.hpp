@@ -54,6 +54,7 @@ namespace GSL
         virtual void publishAnemometer(double x, double y, double windSpeed, double windDirection) = 0;
         virtual void updateSourceProbability() = 0; //called from StopAndMeasure
         virtual Vector2 getExpectedValueSourcePosition() = 0;
+        virtual void resetMaps() = 0;
 
         struct CovarianceMatrix
         {

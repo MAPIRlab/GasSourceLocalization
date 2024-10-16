@@ -235,6 +235,20 @@ namespace GSL
         return {.x = varX / sum, .y = varY / sum, .covariance = covar / sum};
     }
 
+    void PMFS::resetMaps()
+    {
+        double confidencePrior = Utils::getParam<double>(node, "confidencePrior", 0.0);
+        // set all variables to the prior probability
+        for (HitProbability& h : hitProbability)
+        {
+            h.setProbability(settings.hitProbability.prior);
+            h.omega = confidencePrior;
+        }
+
+        for (double& p : sourceProbability)
+            p = 1.0 / gridMetadata.numFreeCells;
+    }
+
     void PMFS::publishAnemometer(double x, double y, double windSpeed, double windDirection)
     {
         // 1. Set TF map->anemometer to current sampling location

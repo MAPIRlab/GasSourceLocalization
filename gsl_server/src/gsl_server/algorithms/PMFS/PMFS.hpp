@@ -46,6 +46,7 @@ namespace GSL
         void publishAnemometer(double x, double y, double windSpeed, double windDirection) override;
         Vector2 getExpectedValueSourcePosition() override;
         CovarianceMatrix getVarianceSourcePosition() override;
+        void resetMaps() override;
 
         bool isPaused() override {return paused;}
         void handleUI() override {functionQueue.run();}

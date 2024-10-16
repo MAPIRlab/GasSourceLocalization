@@ -216,6 +216,7 @@ namespace GSL
             }            
             GSL_TRACE("Batch-{} completed", batch_i);
             results_file.close();
+            algorithm->resetMaps();
         }
 
         GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");
