@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/Time.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
@@ -57,6 +58,8 @@ namespace GSL::PMFS_internal
                 }
             }
         }
+
+        sourceProbInternal.resize(sourceProb.data.size(), 0.0);
     }
 
     void Simulations::updateSourceProbability(float refineFraction)
@@ -125,7 +128,8 @@ namespace GSL::PMFS_internal
         // simulations. Keep going until none of the leaves can be subdivided any more
         while (scores.size() > 0)
         {
-            std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2) { return result1.score > result2.score; });
+            std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2)
+                      { return result1.score > result2.score; });
 
             // subdivide the good cells and add the children to the list of cells to simulate
             std::vector<LeafScore> newLevel;
@@ -154,7 +158,13 @@ namespace GSL::PMFS_internal
         GSL_INFO("Number of levels in the simulation: {0}", numberOfLevelsSimulated);
         GSL_INFO("Total number of simulations: {0}", numberOfSimulations);
 
-        Utils::NormalizeDistribution(sourceProb.data, sourceProb.occupancy);
+        Utils::NormalizeDistributionLong(
+            sourceProbInternal,
+            sourceProb.occupancy);
+
+        for (size_t i = 0; i < sourceProb.data.size(); i++)
+            sourceProb.data[i] = (double)sourceProbInternal[i];
+
         GSL_INFO("Time ellapsed in simulation = {} s", stopwatch.ellapsed());
     }
 
@@ -179,22 +189,24 @@ namespace GSL::PMFS_internal
         // assign this probability to all cells that fall inside this region
         for (int cellI = node->origin.x; cellI < (node->origin.x + node->size.x); cellI++)
             for (int cellJ = node->origin.y; cellJ < (node->origin.y + node->size.y); cellJ++)
-                sourceProb.dataAt(cellI, cellJ) = result.sourceProb;
+                sourceProbInternal[sourceProb.metadata.indexOf({cellI, cellJ})] = result.sourceProb;
         return result;
     }
 
-    double Simulations::sourceProbFromMaps(const Grid2D<HitProbability>& measuredHitProb, const std::vector<float>& hitMap) const
+    long double Simulations::sourceProbFromMaps(const Grid2D<HitProbability>& measuredHitProb, const std::vector<float>& hitMap) const
     {
         ZoneScoped;
-        double total = 1;
+        long double total = 1;
         for (int i = 0; i < measuredHitProb.data.size(); i++)
         {
             if (measuredHitProb.occupancy[i] != Occupancy::Free)
                 continue;
             double measured = Utils::logOddsToProbability(measuredHitProb.data[i].logOdds);
             const double& simulated = hitMap[i];
-            double val =
-                Utils::lerp(1, (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower), measuredHitProb.data[i].confidence);
+            double val = Utils::lerp(
+                1,
+                (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower),
+                measuredHitProb.data[i].confidence);
             total *= val;
             GSL_ASSERT(!std::isnan(total));
         }
@@ -318,7 +330,7 @@ namespace GSL::PMFS_internal
         Vector2 end = metadata.indicesToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
 
         Vector2 randP(Utils::uniformRandomF(start.x, end.x), Utils::uniformRandomF(start.y, end.y));
-        GSL_ASSERT(randP.x >=start.x && randP.x < end.x && randP.y >=start.y && randP.y < end.y);
+        GSL_ASSERT(randP.x >= start.x && randP.x < end.x && randP.y >= start.y && randP.y < end.y);
         return randP;
     }
 
@@ -347,7 +359,8 @@ namespace GSL::PMFS_internal
             DDA::_2D::castRay<GSL::Occupancy>(currentPosition, movement, vmath::length(movement),
                                               DDA::_2D::Map<GSL::Occupancy>(measuredHitProb.occupancy, measuredHitProb.metadata.origin,
                                                                             measuredHitProb.metadata.cellSize, measuredHitProb.metadata.dimensions),
-                                              [](const GSL::Occupancy& occ) { return occ == GSL::Occupancy::Free; });
+                                              [](const GSL::Occupancy& occ)
+                                              { return occ == GSL::Occupancy::Free; });
         // This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
         // ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
         constexpr float wallStoppingProportion = 0.7;
