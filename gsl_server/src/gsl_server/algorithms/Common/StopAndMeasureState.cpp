@@ -52,7 +52,7 @@ namespace GSL
         //          3. Load all data points (usually from 4 to 6), and update maps
         //          4. If rem(j,10)==0, estimar posición de fuente
         GSL_TRACE("Entering StopAndMeasure::OnUpdate");
-        int total_batches = 1;       // Total number of batches
+        int total_batches = 10;       // Total number of batches
         int samples_per_batch = 500; // Total number of samples per batch
 
         // Launch params
@@ -201,14 +201,14 @@ namespace GSL
 
                         results_file << std::to_string(expectedValue.x) + ",";
                         results_file << std::to_string(expectedValue.y) + ",";
-                        results_file << std::to_string(zMin) + ",";
+                        results_file << std::to_string(0.179) + ",";
 
+                        results_file << std::to_string(variance.x) + ",";
+                        results_file << std::to_string(variance.covariance) + ",";
+                        results_file << std::to_string(0.0) + ",";
+                        results_file << std::to_string(variance.y) + ",";
+                        results_file << std::to_string(0.0) + ",";
                         results_file << std::to_string(0.01) + ",";
-                        results_file << std::to_string(0.0) + ",";
-                        results_file << std::to_string(0.0) + ",";
-                        results_file << std::to_string(0.1) + ",";
-                        results_file << std::to_string(0.0) + ",";
-                        results_file << std::to_string(0.1) + ",";
 
                         results_file << "\n";  // Newline for the next row
                     }
