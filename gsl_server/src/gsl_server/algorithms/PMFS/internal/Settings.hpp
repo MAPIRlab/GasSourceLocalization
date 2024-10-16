@@ -32,6 +32,7 @@ namespace GSL::PMFS_internal
 
         double pHit;
         double pMiss;
+        double omegaGain;
     };
     struct SimulationSettings
     {
@@ -61,7 +62,7 @@ namespace GSL::PMFS_internal
 
         // range of values that will be mapped to blue-red
         Vector2 hitLimits = Vector2(0, 1);
-        Vector2 sourceLimits = Vector2(0.00001, 0.1);
+        Vector2 sourceLimits = Vector2(1e-6, 0.2);
         double markers_height;
     };
 

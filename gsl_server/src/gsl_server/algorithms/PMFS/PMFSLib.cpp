@@ -12,13 +12,17 @@ namespace GSL
     // P(H)
     //---------------
 
-    void PMFSLib::EstimateHitProbabilities(Grid2D<HitProbability>& hitProb, const VisibilityMap& visibilityMap,
-                                           PMFS_internal::HitProbabilitySettings& settings, bool hit, double downwindDirection, double windSpeed,
+    void PMFSLib::EstimateHitProbabilities(Grid2D<HitProbability>& hitProb,
+                                           const VisibilityMap& visibilityMap,
+                                           PMFS_internal::HitProbabilitySettings& settings,
+                                           bool hit,
+                                           double downwindDirection,
+                                           double windSpeed,
                                            Vector2Int robotPosition)
     {
         if (!hitProb.metadata.indicesInBounds(robotPosition))
             return;
-        
+
         // receiving propagation this step. Can still be modified by better estimations.
         HashSet openPropagationSet;
         // causing propagation this step. No longer modifiable
@@ -79,7 +83,7 @@ namespace GSL
             GSL_ASSERT(!std::isnan(cell.logOdds));
 
             // confidence
-            cell.omega += Utils::evaluate1DGaussian(cell.distanceFromRobot, settings.confidenceSigmaSpatial);
+            cell.omega += Utils::evaluate1DGaussian(cell.distanceFromRobot, settings.confidenceSigmaSpatial) + settings.omegaGain;
             double exponent = -cell.omega / std::pow(settings.confidenceMeasurementWeight, 2);
             cell.confidence = 1 - std::exp(exponent);
         }
@@ -422,6 +426,7 @@ namespace GSL
         settings.localEstimationWindowSize = algorithm.getParam<int>("localEstimationWindowSize", 2);
         settings.pHit = algorithm.getParam<double>("pHit", 0.6);
         settings.pMiss = algorithm.getParam<double>("pMiss", 0.1);
+        settings.omegaGain = algorithm.getParam("confidenceGainOverTime", 0.0);
     }
 
     void PMFSLib::InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node)
