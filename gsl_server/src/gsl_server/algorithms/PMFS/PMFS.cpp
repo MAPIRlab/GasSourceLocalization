@@ -156,7 +156,7 @@ namespace GSL
                               pubs.gmrfWind
                                   IF_GADEN(, pubs.groundTruthWind));
 
-        simulations.updateSourceProbability(settings.simulation.refineFraction);
+        simulations.updateSourceProbability(settings.simulation.refineFraction, 0);
 
         // Visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
@@ -197,7 +197,8 @@ namespace GSL
                               pubs.gmrfWind
                                   IF_GADEN(, pubs.groundTruthWind));
 
-        simulations.updateSourceProbability(settings.simulation.refineFraction);
+        uint maxLevels = getParam("maxSimulationLevels", 0);
+        simulations.updateSourceProbability(settings.simulation.refineFraction, maxLevels);
 
         // Visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);

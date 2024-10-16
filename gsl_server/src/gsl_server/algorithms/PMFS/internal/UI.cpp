@@ -139,7 +139,7 @@ namespace GSL::PMFS_internal
             {
                 pmfs->functionQueue.submit([this]()
                 {
-                    pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
+                    pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction, 0);
                     PMFSViz::ShowSourceProb(Grid2D<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs);
                 });
             }

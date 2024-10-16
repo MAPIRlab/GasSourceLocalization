@@ -134,7 +134,8 @@ def launch_setup(context, *args, **kwargs):
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
-                    {"maxRegionSize": 5},
+                    {"maxRegionSize": 7},
+                    {"maxSimulationLevels": 0},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
                     {"refineFraction": 0.7},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
