@@ -86,9 +86,9 @@ namespace GSL
         for (int i = 0; i < QTleaves.size(); i++)
         {
             const NQA::Node* leaf = &QTleaves[i];
-            Marker mark = Utils::emptyMarker({0.1, 0.1}, pubs.clock);
+            Marker mark = Utils::emptyMarker({0,0}, pubs.clock);
             mark.type = Marker::CUBE;
-            Vector2 worldSpaceScale = (Vector2(leaf->size.y, leaf->size.x)) * gridMetadata.cellSize;
+            Vector2 worldSpaceScale = (Vector2(leaf->size.x, leaf->size.y)) * gridMetadata.cellSize;
 
             auto coords = gridMetadata.indicesToCoordinates(leaf->origin.x, leaf->origin.y, false) + (worldSpaceScale * 0.5f);
 
@@ -99,8 +99,8 @@ namespace GSL
             // mark.points.push_back(p);
             mark.pose.position = p;
             mark.id = i;
-            mark.scale.x = worldSpaceScale.x - 0.05;
-            mark.scale.y = worldSpaceScale.y - 0.05;
+            mark.scale.x = worldSpaceScale.x - gridMetadata.cellSize * 0.2;
+            mark.scale.y = worldSpaceScale.y - gridMetadata.cellSize * 0.2;
             mark.scale.z = 0.01;
 
             if (leaf->value <= 0.5)
@@ -110,7 +110,6 @@ namespace GSL
             segmentMarker.markers.push_back(mark);
 
             pubs.markers.quadtreePublisher->publish(segmentMarker);
-
             if (!rclcpp::ok())
                 break;
         }

@@ -1,6 +1,7 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/Macros.hpp"
+#include <angles/angles.h>
 #include <chrono>
 #include <cmath> // For atan2 and M_PI
 #include <filesystem>
@@ -11,7 +12,6 @@
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/utilities.hpp>
-#include <angles/angles.h>
 
 namespace GSL
 {
@@ -80,15 +80,6 @@ namespace GSL
         // 1. Loop over each batch
         for (int batch_i = 1; batch_i <= total_batches; batch_i++)
         {
-            // Horrible, pero es que si no al nunca salir de esta funcion no funcionan los botones de la GUI
-            algorithm->handleUI();
-            while (algorithm->isPaused())
-            {
-                algorithm->handleUI();
-                rclcpp::sleep_for(std::chrono::milliseconds(30));
-            }
-
-
             // Path to the batch-i folder (adjust to your actual folder structure)
             std::string batch_folder = test_folder_path + "/batch-" + std::to_string(batch_i);
             GSL_INFO("Processing Batch {}...", batch_i);
@@ -101,6 +92,14 @@ namespace GSL
             // 2. Loop over each test sample in the batch
             for (int sample_j = 1; sample_j <= samples_per_batch; sample_j++)
             {
+                // Horrible, pero es que si no al nunca salir de esta funcion no funcionan los botones de la GUI
+                algorithm->handleUI();
+                while (algorithm->isPaused())
+                {
+                    algorithm->handleUI();
+                    rclcpp::sleep_for(std::chrono::milliseconds(30));
+                }
+                
                 // Path to the test-sample-j CSV file (adjust to your actual file structure)
                 std::string sample_file = batch_folder + "/testing-" + intToStringWithLeadingZeros(sample_j) + "_preproc.csv";
 
@@ -173,7 +172,7 @@ namespace GSL
                         algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
                         // std::cin.clear();
                         // std::cin.get();
-                        rclcpp::sleep_for(std::chrono::milliseconds(300));
+                        // rclcpp::sleep_for(std::chrono::milliseconds(100));
                     }
                 }
 
@@ -189,11 +188,11 @@ namespace GSL
 
                     GSL_INFO_COLOR(fmt::terminal_color::bright_blue, "Expected value:{}  --  Variance: (X:{}, Y:{}, XY:{})", expectedValue, variance.x, variance.y, variance.covariance);
                     num_samples = 0;
-                    // std::cin.clear(); 
+                    // std::cin.clear();
                     // std::cin.get();
 
                     // Save current result to CSV file (requested format)
-                    if (results_file.is_open()) 
+                    if (results_file.is_open())
                     {
                         // CSV format: Batch-i, N=sample_j, x_est, y_est, z_est, var_00, var_01, var_02, var_11, var_12, var_22
                         results_file << "batch-" + std::to_string(batch_i) + ",";
@@ -210,10 +209,10 @@ namespace GSL
                         results_file << std::to_string(0.0) + ",";
                         results_file << std::to_string(0.01) + ",";
 
-                        results_file << "\n";  // Newline for the next row
+                        results_file << "\n"; // Newline for the next row
                     }
                 }
-            }            
+            }
             GSL_TRACE("Batch-{} completed", batch_i);
             results_file.close();
             algorithm->resetMaps();
