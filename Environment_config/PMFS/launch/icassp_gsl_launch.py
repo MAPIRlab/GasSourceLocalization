@@ -89,7 +89,7 @@ def launch_setup(context, *args, **kwargs):
                 parameters=[
                     # Common
                     {'use_sim_time': False},	
-                    {"maxSearchTime": 300.0},
+                    {"maxSearchTime": 36000.0},
                     {"robot_location_topic": "ground_truth"},
                     {"stop_and_measure_time": 0.4},
                     {"th_gas_present": parse_substitution("$(var th_gas_present)")},
@@ -143,7 +143,8 @@ def launch_setup(context, *args, **kwargs):
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     # ICASSP
-                    {"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    #{"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"},
                     {"zMin": 0.26},
                     {"zMax": 0.43},
 
