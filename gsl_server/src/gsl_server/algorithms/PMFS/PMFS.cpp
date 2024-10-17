@@ -7,7 +7,7 @@
 // Initialization
 namespace GSL
 {
-    using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
+    using WindEstimation = gmrf_msgs::srv::WindEstimation;
     PMFS::PMFS(std::shared_ptr<rclcpp::Node> _node)
         : Algorithm(_node),
           simulations(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
@@ -71,6 +71,7 @@ namespace GSL
 
         visibilityMap.emplace(gridMetadata.dimensions.y, gridMetadata.dimensions.x, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, occupancy, gridMetadata);
         PMFSLib::InitializeMap(*this,
                                Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata),
                                simulations, *visibilityMap);

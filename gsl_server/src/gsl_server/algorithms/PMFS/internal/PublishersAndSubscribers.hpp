@@ -3,7 +3,7 @@
 #include <rclcpp/publisher.hpp>
 #include <rclcpp/subscription.hpp>
 #include <rclcpp/client.hpp>
-#include <gmrf_wind_mapping/srv/wind_estimation.hpp>
+#include <gmrf_msgs/srv/wind_estimation.hpp>
 
 #ifdef USE_GADEN
 #include <gaden_msgs/srv/wind_position.hpp>
@@ -14,7 +14,7 @@ namespace GSL
     namespace PMFS_internal
     {
 
-        using WindEstimation = gmrf_wind_mapping::srv::WindEstimation;
+        using WindEstimation = gmrf_msgs::srv::WindEstimation;
 
         struct GMRFWind
         {
