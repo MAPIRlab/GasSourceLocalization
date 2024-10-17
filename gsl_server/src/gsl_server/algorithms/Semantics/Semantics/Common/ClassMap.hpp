@@ -29,6 +29,9 @@ namespace GSL
         // get the final value for p(S | semantics)
         double computeSourceProbability(size_t index);
 
+        //get the class distribution considering both observations and rooms
+        ClassDistribution classDistributionAt(size_t index);
+
         // run the bayesian filter for p(O | Z) with a new observation. It is assumed that occupancy is already factored into the new probabilities (if applicable)
         void updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores);
 
@@ -61,6 +64,7 @@ namespace GSL
             std::unordered_map<std::string, float> classProb; // p(class | room)
         };
 
+        std::vector<std::string> class_list;
         std::unordered_map<std::string, Room> rooms;       // all rooms that exist
         std::vector<const Room*> roomOfObjects;            // for each object (identified by index) a pointer to the room they are in
         std::unordered_map<std::string, float> classPrior; // not all classes have the same prior -- specifically, the "other" class is more likely due to the occupancy probability

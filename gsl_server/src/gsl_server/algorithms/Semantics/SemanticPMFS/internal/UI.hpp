@@ -27,21 +27,21 @@ namespace GSL::SemanticPMFS_internal
         void run();
         void addConcentrationReading(double ppm);
     protected:
-        enum Variable{HitProb, SourceProb};
+        enum Variable{HitProb, SourceProb, Semantics};
         
         void renderImgui();
         void createUI();
         void createPlots();
-        bool useCoordinates();
         Variable selectVariable();
-        std::string printCell(Variable variable, const int& x, const int& y);
+        std::string printCell(Variable variable);
+        void visualizeQueryPoint();
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         
         
         std::jthread renderThread;
         SemanticPMFS* pmfs;
         double last_concentration_reading = 0;
-        Vector2 selectedCoordinates;
+        Vector3 selectedCoordinates;
         Vector2 goalCoordinates;
     };
 

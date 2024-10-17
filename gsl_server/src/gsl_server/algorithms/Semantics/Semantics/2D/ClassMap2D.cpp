@@ -42,6 +42,18 @@ namespace GSL
         visualize();
     }
 
+    std::string ClassMap2D::GetDebugInfo(const Vector3& point)
+    {
+        Vector2 pointProjected(point.x, point.y);
+        ClassDistribution dist = classMap.classDistributionAt(gridMetadata.indexOf(gridMetadata.coordinatesToIndices(pointProjected)));
+        std::stringstream ss;
+        for (auto& [_class, prob] : dist)
+        {
+            ss << fmt::format("{}: {:.3f}\n", _class, prob);
+        }
+        return ss.str();
+    }
+
     std::vector<double> ClassMap2D::GetSourceProbability()
     {
         std::vector<double> probs(gridMetadata.dimensions.y * gridMetadata.dimensions.x, 0.0);
@@ -182,7 +194,7 @@ namespace GSL
         // yaw of the camera in world space
         double cameraYaw = Utils::getYaw(robotPose.orientation);
 
-        Vector2 robotCoords{robotPose.position.x, robotPose.position.y};
+        Vector2 robotCoords(robotPose.position.x, robotPose.position.y);
 
         for (Vector2Int indices : aabb)
         {

@@ -21,6 +21,7 @@ namespace GSL
         void GetSourceProbabilityInPlace(std::vector<double>& sourceProb) override;
         double GetSourceProbabilityAt(const Vector3& point) override;
         void OnUpdate() override;
+        std::string GetDebugInfo(const Vector3& point) override;
     private:
         rclcpp::Node::SharedPtr node;
 

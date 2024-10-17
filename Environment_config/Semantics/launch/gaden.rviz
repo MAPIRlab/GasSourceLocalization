@@ -7,6 +7,7 @@ Panels:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
         - /Object classes1
+        - /Marker1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 593
   - Class: rviz_common/Selection
@@ -470,6 +471,19 @@ Visualization Manager:
         Value: /bonxai_point_cloud_centers
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /giraff/UIQueryPoint
       Value: true
   Enabled: true
   Global Options:

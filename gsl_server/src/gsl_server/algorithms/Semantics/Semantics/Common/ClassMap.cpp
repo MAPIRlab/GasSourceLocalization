@@ -1,4 +1,5 @@
 #include "ClassMap.hpp"
+#include <algorithm>
 #include <filesystem>
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
@@ -8,6 +9,7 @@
 #include <gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
+#include <vector>
 #include <yaml-cpp/node/node.h>
 #include <yaml-cpp/node/parse.h>
 #include <yaml-cpp/yaml.h>
@@ -36,7 +38,7 @@ namespace GSL
                 if (_class != ClassMap::otherClassName)
                     classPrior[_class] = priorNormalClass;
 
-            int numClassesInOther = numberOfClasses - (sourceProbByClass.size() - 1);                    // -1 because we dont want to count the "other class itself
+            int numClassesInOther = numberOfClasses - (sourceProbByClass.size() - 1);                    // -1 because we dont want to count the "other" class itself
             classPrior[ClassMap::otherClassName] = (numClassesInOther - 1) * priorNormalClass            // the normal classes that went into "other"
                                                    + std::lerp(1, 1. / numberOfClasses, occupancyPrior); // the "background" class, which has a higher prior than any of the others due to the occupancy uncertainty
 
@@ -58,7 +60,6 @@ namespace GSL
         }
 
         // read p(o|s) from the ontology file
-        std::vector<std::string> class_list;
         YAML::Node gases = YAML::LoadFile(path)["Gases"];
         for (const YAML::Node& gas : gases)
         {
@@ -86,7 +87,7 @@ namespace GSL
             GSL_INFO("{}: {}", kv.first, kv.second);
 
         for (ClassDistribution& dist : classProbabilityZ)
-            dist.Initialize(class_list); //TODO use the prior
+            dist.Initialize(class_list); // TODO use the prior
     }
 
     void ClassMap::parseRoomCategorization(const std::string& masksYAMLPath, const std::string& ontologyPath,
@@ -169,13 +170,27 @@ namespace GSL
         double retValue = 0;
         for (auto& [_class, prob] : classProbabilityZ[index])
         {
-            // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification (
-            // p(o|room) )
+            // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification ( p(o|room) )
             std::string className = filterClassID(_class);
             float totalClassProb = prob * room->GetClassProb(className) / classPrior.at(className);
             retValue += totalClassProb * sourceProbByClass.at(_class) / classPrior.at(className); // TODO this prior here seems weird, but it appears in the formulation. Check it.
         }
         return retValue;
+    }
+
+    ClassDistribution ClassMap::classDistributionAt(size_t index)
+    {
+        ClassDistribution dist;
+        dist.Initialize(class_list);
+        const Room* room = roomOfObjects[index];
+        for (auto& [_class, prob] : classProbabilityZ[index])
+        {
+            // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification ( p(o|room) )
+            std::string className = filterClassID(_class);
+            float totalClassProb = prob * room->GetClassProb(className) / classPrior.at(className);
+            dist.SetProbOf(className, totalClassProb);
+        }
+        return dist;
     }
 
     void ClassMap::updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores)

@@ -1,7 +1,9 @@
 #include "ClassMapVoxeland.hpp"
+#include "gsl_server/algorithms/Semantics/Semantics/Common/ClassDistribution.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/algorithms/Common/Utils/Time.hpp>
+#include <sstream>
 
 namespace GSL
 {
@@ -57,6 +59,22 @@ namespace GSL
         visualize();
     }
 
+    std::string ClassMapVoxeland::GetDebugInfo(const Vector3& point)
+    {
+        if(!gridMetadata.indicesInBounds(gridMetadata.coordinatesToIndices(point)))
+        {
+            return "ERROR!";
+        }
+
+        ClassDistribution dist = classMap.classDistributionAt(gridMetadata.indexOf(gridMetadata.coordinatesToIndices(point)));
+        std::stringstream ss;
+        for (auto& [_class, prob] : dist)
+        {
+            ss << fmt::format("{}: {:.3f}\n", _class, prob);
+        }
+        return ss.str();
+    }
+
     std::vector<double> ClassMapVoxeland::GetSourceProbability()
     {
         std::vector<double> probs(gridMetadata.dimensions.x * gridMetadata.dimensions.y, 0.0);
@@ -66,7 +84,7 @@ namespace GSL
 
     void ClassMapVoxeland::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
     {
-        #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
         for (size_t i = 0; i < sourceProb.size(); i++)
         {
             for (size_t z = 0; z < gridMetadata.dimensions.z; z++)

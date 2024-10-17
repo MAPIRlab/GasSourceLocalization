@@ -1,6 +1,9 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include "gsl_server/core/ros_typedefs.hpp"
+#include "imgui.h"
 #include <fmt/core.h>
 #ifdef USE_GUI
 
@@ -27,6 +30,7 @@ namespace GSL::SemanticPMFS_internal
             {
                 selectedCoordinates.x = point->point.x;
                 selectedCoordinates.y = point->point.y;
+                selectedCoordinates.z = point->point.z;
             });
     }
 
@@ -56,7 +60,7 @@ namespace GSL::SemanticPMFS_internal
             AmentImgui::StartFrame();
             createUI();
             createPlots();
-
+            visualizeQueryPoint();
             AmentImgui::Render();
             rate.sleep();
         }
@@ -69,45 +73,42 @@ namespace GSL::SemanticPMFS_internal
     {
         ImGui::Begin("Queries");
         {
-            static int x = 0;
-            static int y = 0;
+            static int xInd = 0;
+            static int yInd = 0;
             Variable selectedVar = selectVariable();
 
-            if (useCoordinates())
+            // Select coordinates
             {
-                ImGui::InputFloat("X", &selectedCoordinates.x);
-                ImGui::InputFloat("Y", &selectedCoordinates.y);
+                ImGui::DragFloat("X", &selectedCoordinates.x, 0.03f);
+                ImGui::DragFloat("Y", &selectedCoordinates.y, 0.03f);
+                ImGui::DragFloat("Z", &selectedCoordinates.z, 0.03f);
                 auto indices = pmfs->gridMetadata.coordinatesToIndices(selectedCoordinates.x, selectedCoordinates.y);
-                x = indices.x;
-                y = indices.y;
-            }
-            else
-            {
-                ImGui::InputInt("X", &x);
-                ImGui::InputInt("Y", &y);
+                xInd = indices.x;
+                yInd = indices.y;
             }
 
             static std::string result;
             if (ImGui::Button("Print"))
             {
-                if (!pmfs->gridMetadata.indicesInBounds({x, y}))
+                if (!pmfs->gridMetadata.indicesInBounds({xInd, yInd}))
                 {
-                    GSL_ERROR("Querying cell {}, which is outside the map!", Vector2Int{x, y});
+                    GSL_ERROR("Querying cell {}, which is outside the map!", Vector2Int{xInd, yInd});
                     result = "Error! :(";
                 }
-                printCell(selectedVar, x, y);
+                else
+                    result = printCell(selectedVar);
             }
-            if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({x, y}))
+            if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({xInd, yInd}))
             {
-                Utils::NQA::Node* leaf = pmfs->simulations.mapSegmentation[x][y];
+                Utils::NQA::Node* leaf = pmfs->simulations.mapSegmentation[xInd][yInd];
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else
                     pmfs->simulations.printImage(SimulationSource(leaf, pmfs->gridMetadata));
             }
-            else if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({x, y}))
+            if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({xInd, yInd}))
             {
-                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(x, y), pmfs->gridMetadata));
+                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(xInd, yInd), pmfs->gridMetadata));
             }
 
             ImGui::Text("%s", result.c_str());
@@ -245,39 +246,54 @@ namespace GSL::SemanticPMFS_internal
         ImGui::End();
     }
 
-    bool UI::useCoordinates()
-    {
-        static int selected = 0;
-        ImGui::Combo("Use", &selected, "Coordinates\0Indices\0");
-        return selected == 0;
-    }
-
     UI::Variable UI::selectVariable()
     {
         static int selected = 0;
-        ImGui::Combo("Select Variable", &selected, "Hit\0Source\0");
+        ImGui::Combo("Select Variable", &selected, "Hit\0Source\0Semantics\0");
         return static_cast<Variable>(selected);
     }
 
-    std::string UI::printCell(Variable variable, const int& x, const int& y)
+    std::string UI::printCell(Variable variable)
     {
-        size_t index = pmfs->gridMetadata.indexOf({x, y});
+        Vector2Int indices = pmfs->gridMetadata.coordinatesToIndices(selectedCoordinates.x, selectedCoordinates.y);
+        size_t index = pmfs->gridMetadata.indexOf({indices.x, indices.y});
         static std::string queryResult;
         if (variable == Variable::HitProb)
         {
             Grid2D<HitProbability> grid(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata);
-            queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
-                          fmt::format("Hit probability:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
+            queryResult = fmt::format("Cell {0},{1}:\n", indices.x, indices.y) + fmt::format("free:{} \n", grid.freeAt(indices.x, indices.y)) +
+                          fmt::format("Hit probability:{:.3f} \n", Utils::logOddsToProbability(grid.dataAt(indices.x, indices.y).logOdds));
         }
         else if (variable == Variable::SourceProb)
         {
-            queryResult = fmt::format("Cell {0},{1}: \n", x, y) +
-                          fmt::format("Total probability: {}", pmfs->combinedSourceProbability[index]) +
-                          fmt::format("Olfaction probability: {}", pmfs->sourceProbabilityPMFS[index]) +
+            queryResult = fmt::format("Cell {0},{1}: \n", indices.x, indices.y) +
+                          fmt::format("Total probability: {}\n", pmfs->combinedSourceProbability[index]) +
+                          fmt::format("Olfaction probability: {}\n", pmfs->sourceProbabilityPMFS[index]) +
                           fmt::format("Semantics probability: {}", pmfs->sourceProbSemantics[index]);
+        }
+        else if (variable == Variable::Semantics)
+        {
+            queryResult = pmfs->semantics->GetDebugInfo(selectedCoordinates);
         }
 
         return queryResult.c_str();
+    }
+
+    void UI::visualizeQueryPoint()
+    {
+        static rclcpp::Publisher<Marker>::SharedPtr pub = pmfs->node->create_publisher<Marker>("UIQueryPoint", 1);
+        Marker marker;
+        marker.header.frame_id ="map";
+        marker.header.stamp = pmfs->node->now();
+        marker.pose.position.x = selectedCoordinates.x;
+        marker.pose.position.y = selectedCoordinates.y;
+        marker.pose.position.z = selectedCoordinates.z;
+        marker.type = Marker::SPHERE;
+        marker.color = Utils::create_color(1, 0, 0, 1);
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.1;
+        marker.scale.z = 0.1;
+        pub->publish(marker);
     }
 
     void UI::addConcentrationReading(double ppm)
