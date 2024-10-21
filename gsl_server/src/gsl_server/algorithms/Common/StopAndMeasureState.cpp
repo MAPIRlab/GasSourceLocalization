@@ -52,7 +52,7 @@ namespace GSL
         //          3. Load all data points (usually from 4 to 6), and update maps
         //          4. If rem(j,10)==0, estimar posición de fuente
         GSL_TRACE("Entering StopAndMeasure::OnUpdate");
-        int total_batches = 10;       // Total number of batches
+        int total_batches = 5;      // Total number of batches
         int samples_per_batch = 500; // Total number of samples per batch
 
         // Launch params
@@ -99,7 +99,7 @@ namespace GSL
                     algorithm->handleUI();
                     rclcpp::sleep_for(std::chrono::milliseconds(30));
                 }
-                
+
                 // Path to the test-sample-j CSV file (adjust to your actual file structure)
                 std::string sample_file = batch_folder + "/testing-" + intToStringWithLeadingZeros(sample_j) + "_preproc.csv";
 
@@ -167,12 +167,11 @@ namespace GSL
                         algorithm->publishAnemometer(x, y, windSpeed, windDirection);
 
                         // Update Gas-Hit maps
-                        GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed,
-                                 windDirection);
+                        // GSL_INFO("UPDATING GAS-HIT: (x,y,z)=({},{},{}) avg_gas={}; avg_windSpeed={}; avg_wind_dir={}", x, y, z, concentration, windSpeed, windDirection);
                         algorithm->processGasAndWindMeasurements(x, y, concentration, windSpeed, windDirection);
                         // std::cin.clear();
                         // std::cin.get();
-                        rclcpp::sleep_for(std::chrono::milliseconds(100));
+                        // rclcpp::sleep_for(std::chrono::milliseconds(20));
                     }
                 }
 
@@ -183,10 +182,17 @@ namespace GSL
                     algorithm->updateSourceProbability();
 
                     // Get Source Location estimation
-                    Vector2 expectedValue = algorithm->getExpectedValueSourcePosition();
-                    Algorithm::CovarianceMatrix variance = algorithm->getVarianceSourcePosition();
+                    const Vector2 groundTruth(0.675, 0.336);
+                    double proportionToInclude = Utils::getParam(algorithm->node, "proportionBest", 1.); 
 
-                    GSL_INFO_COLOR(fmt::terminal_color::bright_blue, "Expected value:{}  --  Variance: (X:{}, Y:{}, XY:{})", expectedValue, variance.x, variance.y, variance.covariance);
+                    Vector2 expectedValue = algorithm->getExpectedValueSourcePosition(proportionToInclude);
+                    Algorithm::CovarianceMatrix variance = algorithm->getVarianceSourcePosition(proportionToInclude);
+                    float error = vmath::length(groundTruth - expectedValue);
+                    algorithm->addErrorToUI(error);
+
+                    GSL_INFO_COLOR(fmt::terminal_color::bright_blue,
+                                   "\nExpected value:{}\nVariance: (X:{}, Y:{}, XY:{}\nError: {}m)",
+                                   expectedValue, variance.x, variance.y, variance.covariance, error);
                     num_samples = 0;
                     // std::cin.clear();
                     // std::cin.get();
@@ -219,7 +225,6 @@ namespace GSL
         }
 
         GSL_TRACE("ALL BATCHES PROCESSED!! - WORK IS DONE!");
-        std::cin.get();
         CLOSE_PROGRAM;
 
         // // ORIGINAL

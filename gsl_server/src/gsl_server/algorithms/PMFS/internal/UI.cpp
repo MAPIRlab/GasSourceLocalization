@@ -1,3 +1,4 @@
+#include "implot/implot.h"
 #include <rclcpp/executors.hpp>
 #ifdef USE_GUI
 
@@ -202,13 +203,13 @@ namespace GSL::PMFS_internal
             if (ImGui::Button("Toggle Pause"))
                 paused = !paused;
 
-            ImGui::BulletText("Gas concentration measured over time");
+            ImGui::BulletText("Distance to ground truth");
             static PMFS_internal::ScrollingBuffer sdata1;
             ImVec2 mouse = ImGui::GetMousePos();
             static float t = 0;
             t += ImGui::GetIO().DeltaTime;
-            if (last_concentration_reading != -1)
-                sdata1.AddPoint(t, last_concentration_reading);
+            if (last_distance != -1)
+                sdata1.AddPoint(t, last_distance);
 
             static float history = 10.0f;
             ImGui::SliderFloat("History", &history, 1, 30, "%.1f s");
@@ -218,14 +219,14 @@ namespace GSL::PMFS_internal
             if (!paused)
                 xAxisLimits = {t - history, t};
 
-            if (ImPlot::BeginPlot("##Concentration", ImVec2(-1, -1)))
+            if (ImPlot::BeginPlot("##Error", ImVec2(-1, -1)))
             {
                 ImPlot::SetupAxes(NULL, NULL, ImPlotAxisFlags_NoGridLines, flags);
                 ImPlot::SetupAxisLimits(ImAxis_X1, xAxisLimits.x, xAxisLimits.y, paused ? ImGuiCond_None : ImGuiCond_Always);
-                ImPlot::SetupAxisLimits(ImAxis_Y1, 0, 1);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, 0, .5, ImPlotCond_Always);
                 ImPlot::SetNextLineStyle({1, 0, 0, 1}, 2);
                 if (sdata1.Data.size() > 0)
-                    ImPlot::PlotLine("Concentration", &sdata1.Data[0].x, &sdata1.Data[0].y, sdata1.Data.size(), 0, sdata1.IndexOfLast,
+                    ImPlot::PlotLine("Error", &sdata1.Data[0].x, &sdata1.Data[0].y, sdata1.Data.size(), 0, sdata1.IndexOfLast,
                                      2 * sizeof(float));
                 ImPlot::EndPlot();
             }
@@ -268,7 +269,7 @@ namespace GSL::PMFS_internal
 
     void UI::addConcentrationReading(double ppm)
     {
-        last_concentration_reading = ppm;
+        // last_distance = ppm;
     }
 
 } // namespace GSL::PMFS_internal

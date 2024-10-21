@@ -1,4 +1,5 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
+#include "gsl_server/core/ConditionalMacros.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
@@ -125,6 +126,11 @@ namespace GSL
         PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
+    void GSL::PMFS::addErrorToUI(float error)
+    {
+        IF_GUI(ui.last_distance = error;)
+    }
+
     void PMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
         static int number_of_updates = 0;
@@ -174,14 +180,14 @@ namespace GSL
             // Gas & wind
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
                                               gridMetadata.coordinatesToIndices(x, y));
-            GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
+            // GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
                                               gridMetadata.coordinatesToIndices(x, y));
-            GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
+            // GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
@@ -206,15 +212,14 @@ namespace GSL
         PMFSViz::PlotWindVectors(Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata), settings.visualization, pubs);
     }
 
-    Vector2 PMFS::getExpectedValueSourcePosition()
+    Vector2 PMFS::getExpectedValueSourcePosition(float proportion)
     {
-        double proportionToInclude = Utils::getParam(node, "proportionExpectedValue", 1.);
-        return expectedValueSource(proportionToInclude);
+        return expectedValueSource(proportion);
     }
 
-    Algorithm::CovarianceMatrix PMFS::getVarianceSourcePosition()
+    Algorithm::CovarianceMatrix PMFS::getVarianceSourcePosition(float proportion)
     {
-        Vector2 expectedValue = expectedValueSource(1.);
+        Vector2 expectedValue = expectedValueSource(proportion);
         float sum = 0;
         float varX = 0;
         float varY = 0;

@@ -413,7 +413,8 @@ namespace GSL
         settings.stepsBetweenSourceUpdates = algorithm.getParam<int>("stepsSourceUpdate", 10);
         settings.maxRegionSize = algorithm.getParam<int>("maxRegionSize", 5);
         settings.deltaTime = algorithm.getParam<double>("deltaTime", 0.2);
-        settings.noiseSTDev = algorithm.getParam<double>("noiseSTDev", 0.5);
+        settings.noiseSTDev_x = algorithm.getParam<double>("noiseSTDev_x", 0.5);
+        settings.noiseSTDev_y= algorithm.getParam<double>("noiseSTDev_y", 0.5);
         settings.iterationsToRecord = algorithm.getParam<int>("iterationsToRecord", 200);
         settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
         settings.weightOfHit = algorithm.getParam<int>("weightOfHit", 1);

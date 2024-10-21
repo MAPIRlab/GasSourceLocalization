@@ -27,12 +27,12 @@ namespace GSL::PMFS_internal
         ~UI();
         void run();
         void addConcentrationReading(double ppm);
+        double last_distance = 0;
     protected:
         void renderImgui();
         std::jthread renderThread;
         PMFS* pmfs;
         rclcpp::Node::SharedPtr node;
-        double last_concentration_reading = 0;
         void createUI();
         void createPlots();
         bool useCoordinates();

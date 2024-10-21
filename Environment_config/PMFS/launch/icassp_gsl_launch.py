@@ -115,7 +115,7 @@ def launch_setup(context, *args, **kwargs):
 
                     #PMFS
                     {"headless": False},
-                    {"proportionExpectedValue": 1.0}, #How many of the candidate source positions to include when calculating the expected value, as a proportion
+                    {"proportionBest": 1.0}, #How many of the candidate source positions to include when calculating the expected value and variance, as a proportion
 
 
                         # Hit probabilities
@@ -128,26 +128,27 @@ def launch_setup(context, *args, **kwargs):
                     {"confidenceSigmaSpatial": 1.0},
                     {"confidenceMeasurementWeight": 0.5},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
-                    {"pHit" : 0.6}, # p(H | hit) -- needs to be > than the prior
+                    {"pHit" : 0.8}, # p(H | hit) -- needs to be > than the prior
                     {"pMiss" : 0.02}, # p(H | miss) -- needs to be < than the prior
-                    {"confidenceGainOverTime": 0.002},
+                    {"confidenceGainOverTime": 0.003},
                         #Filament simulation
                     {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"maxSimulationLevels": 0},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
-                    {"weightOfHit": 10},
+                    {"weightOfHit": 5},
                     
-                    {"refineFraction": 0.7},
+                    {"refineFraction": 0.25},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
-                    {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
+                    {"noiseSTDev_x": parse_substitution("$(var filament_movement_stdev_x)")},
+                    {"noiseSTDev_y": parse_substitution("$(var filament_movement_stdev_y)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     # ICASSP
-                    # {"test_folder": "/home/pepe/Documents/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
-                    {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"},
+                    {"test_folder": "/mnt/HDD/ICASSP/test"}, #"/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"
+                    # {"test_folder": "/mnt/d/Projects/2024_GSL_Challenge_IEEE_ICASSP/train/test"},
                     {"zMin": 0.26},
                     {"zMax": 0.43},
 
@@ -236,12 +237,16 @@ def generate_launch_description():
         ),
 
         SetLaunchConfiguration(
-            name="filament_movement_stdev", 
+            name="filament_movement_stdev_x", 
             value="0.7"
         ),
         SetLaunchConfiguration(
+            name="filament_movement_stdev_y", 
+            value="1.4"
+        ),
+        SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
-            value="0.2"
+            value="0.1"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 

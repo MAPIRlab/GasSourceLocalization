@@ -36,6 +36,7 @@ namespace GSL
         void OnUpdate() override;
         Vector2 expectedValueSource(double proportionBest);
         double varianceSourcePosition();
+        void addErrorToUI(float error) override;
 
     protected:
         void declareParameters() override;
@@ -44,8 +45,8 @@ namespace GSL
         void processGasAndWindMeasurements(double x, double y, double concentration, double windSpeed, double windDirection) override;
         void updateSourceProbability() override;
         void publishAnemometer(double x, double y, double windSpeed, double windDirection) override;
-        Vector2 getExpectedValueSourcePosition() override;
-        CovarianceMatrix getVarianceSourcePosition() override;
+        Vector2 getExpectedValueSourcePosition(float proportion) override;
+        Algorithm::CovarianceMatrix getVarianceSourcePosition(float proportion) override;
         void resetMaps() override;
 
         bool isPaused() override {return paused;}

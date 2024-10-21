@@ -179,8 +179,7 @@ namespace GSL::PMFS_internal
         result.hitMap.resize(measuredHitProb.data.size(), 0.0);
 
         SimulationSource source(node, measuredHitProb.metadata);
-        simulateSourceInPosition(source, result.hitMap, true, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
-                                 settings.noiseSTDev);
+        simulateSourceInPosition(source, result.hitMap, true, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime);
 
         result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
 
@@ -206,7 +205,9 @@ namespace GSL::PMFS_internal
             double weight = Utils::lerp(1, settings.weightOfHit, measured);
             double val = Utils::lerp(
                 1,
-                (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower) * weight,
+                Utils::clamp(
+                    (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower * weight),
+                    0, 1),
                 measuredHitProb.data[i].confidence);
             total *= val;
             GSL_ASSERT(!std::isnan(total));
@@ -214,9 +215,9 @@ namespace GSL::PMFS_internal
         return total;
     }
 
-    void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
+    void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime) const
     {
-        Vector2 velocity = wind.dataAt(indices.x, indices.y) + Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
+        Vector2 velocity = wind.dataAt(indices.x, indices.y) + Vector2(gaussian.nextValue(0, settings.noiseSTDev_x), gaussian.nextValue(0, settings.noiseSTDev_y));
 
         Vector2 newPos = filament.position + deltaTime * velocity;
         moveAlongPath(filament.position, newPos);
@@ -229,7 +230,7 @@ namespace GSL::PMFS_internal
     }
 
     void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
-                                               int timesteps, float deltaTime, float noiseSTDev) const
+                                               int timesteps, float deltaTime) const
     {
         constexpr int numFilamentsIteration = 5;
         std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
@@ -262,7 +263,7 @@ namespace GSL::PMFS_internal
                     auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
                     // move active filaments
-                    moveFilament(filament, indices, deltaTime * 2, noiseSTDev);
+                    moveFilament(filament, indices, deltaTime * 2);
 
                     // remove filaments
                     if (filamentIsOutside(filament))
@@ -306,7 +307,7 @@ namespace GSL::PMFS_internal
                 }
 
                 // move active filaments
-                moveFilament(filament, indices, deltaTime, noiseSTDev);
+                moveFilament(filament, indices, deltaTime);
 
                 // remove filaments
                 if (filamentIsOutside(filament))
@@ -394,8 +395,7 @@ namespace GSL::PMFS_internal
     void Simulations::printImage(const SimulationSource& source)
     {
         std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
-        simulateSourceInPosition(source, hitMap, false, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
-                                 settings.noiseSTDev);
+        simulateSourceInPosition(source, hitMap, false, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime);
 
         cv::Mat image(cv::Size(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y), CV_32FC3, cv::Scalar(0, 0, 0));
 
