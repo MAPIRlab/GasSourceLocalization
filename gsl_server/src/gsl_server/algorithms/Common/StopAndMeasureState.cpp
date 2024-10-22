@@ -52,7 +52,7 @@ namespace GSL
         //          3. Load all data points (usually from 4 to 6), and update maps
         //          4. If rem(j,10)==0, estimar posición de fuente
         GSL_TRACE("Entering StopAndMeasure::OnUpdate");
-        int total_batches = 5;      // Total number of batches
+        int total_batches = 10;      // Total number of batches
         int samples_per_batch = 500; // Total number of samples per batch
 
         // Launch params
@@ -110,7 +110,7 @@ namespace GSL
                 // Skip the first line (header)
                 if (std::getline(file, line))
                 {
-                    GSL_INFO("Skipping header: {}", line);
+                    // GSL_INFO("Skipping header: {}", line);
                 }
 
                 // Read each line of the CSV (usually from 4 to 6 preprocessed data points)

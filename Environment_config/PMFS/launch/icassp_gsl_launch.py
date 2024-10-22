@@ -16,6 +16,25 @@ def launch_arguments():
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
         DeclareLaunchArgument("map_height", default_value="0.32"), #[0.025, 0.105, 0.185,    0.265, 0.345, 0.425,    0.505, 0.585, 0.665, 0.745, 0.825, 0.905]
+
+
+        DeclareLaunchArgument(
+            name="filament_movement_stdev_x", 
+            default_value="0.7"
+        ),
+        DeclareLaunchArgument(
+            name="filament_movement_stdev_y", 
+            default_value="1.4"
+        ),
+        DeclareLaunchArgument(
+            name="sourceDiscriminationPower", 
+            default_value="0.05"
+        ),
+        DeclareLaunchArgument(
+            name="proportionBest", 
+            default_value="1.0"
+        ),
+        
     ]
 #==========================
 
@@ -98,7 +117,7 @@ def launch_setup(context, *args, **kwargs):
                     #{"ground_truth_y": parse_substitution("$(var source_y)")},
                     {"resultsFile": parse_substitution("Results/$(var simulation)/$(var method).csv")},
                     
-                    {"scale": 70},
+                    {"scale": 90},
                     {"markers_height": 0.2},
 
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
@@ -114,8 +133,8 @@ def launch_setup(context, *args, **kwargs):
                     {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
 
                     #PMFS
-                    {"headless": False},
-                    {"proportionBest": 1.0}, #How many of the candidate source positions to include when calculating the expected value and variance, as a proportion
+                    {"headless": True},
+                    {"proportionBest": parse_substitution("$(var proportionBest)")}, #How many of the candidate source positions to include when calculating the expected value and variance, as a proportion
 
 
                         # Hit probabilities
@@ -196,8 +215,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(gmrf_wind)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.append(rvizHit)
-    actions.append(rvizSource)
+    # actions.append(rvizHit)
+    # actions.append(rvizSource)
 
     return actions
 
@@ -234,19 +253,6 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="th_wind_present", 
             value="0.02"
-        ),
-
-        SetLaunchConfiguration(
-            name="filament_movement_stdev_x", 
-            value="0.7"
-        ),
-        SetLaunchConfiguration(
-            name="filament_movement_stdev_y", 
-            value="1.4"
-        ),
-        SetLaunchConfiguration(
-            name="sourceDiscriminationPower", 
-            value="0.1"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
