@@ -1,4 +1,5 @@
 #include "ClassMap.hpp"
+#include "gsl_server/algorithms/Semantics/Semantics/Common/ClassDistribution.hpp"
 #include <algorithm>
 #include <filesystem>
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
@@ -166,16 +167,25 @@ namespace GSL
 
     double ClassMap::computeSourceProbability(size_t index)
     {
+        // reusable to avoid constantly re-creating the std::map with string keys
+        // we need it because we have to normalize after adding the room probs
+        static thread_local ClassDistribution dist;
+        dist.Initialize(class_list);
+
         const Room* room = roomOfObjects[index];
-        double retValue = 0;
         for (auto& [_class, prob] : classProbabilityZ[index])
         {
             // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification ( p(o|room) )
-            std::string className = filterClassID(_class);
-            float totalClassProb = prob * room->GetClassProb(className) / classPrior.at(className);
-            retValue += totalClassProb * sourceProbByClass.at(_class) / classPrior.at(className); // TODO this prior here seems weird, but it appears in the formulation. Check it.
+            double totalClassProb = prob * room->GetClassProb(_class);
+            dist.SetProbOf(_class, totalClassProb);
         }
-        return retValue;
+        dist.Normalize();
+
+        double sourceProb = 0;
+        for (auto& [_class, prob] : dist)
+            sourceProb += prob * sourceProbByClass.at(_class) / classPrior.at(_class);
+
+        return sourceProb;
     }
 
     ClassDistribution ClassMap::classDistributionAt(size_t index)

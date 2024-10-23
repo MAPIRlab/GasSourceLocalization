@@ -7,7 +7,7 @@ namespace GSL::Utils
 {
     static thread_local std::minstd_rand0 RNGengine;
 
-    bool approx(double v1, double v2)
+    bool approx(double v1, double v2, double epsilon)
     {
         return std::abs(v1 - v2) < epsilon;
     }

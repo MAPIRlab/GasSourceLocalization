@@ -14,9 +14,13 @@ namespace GSL
 
         void Initialize(const std::vector<std::string>& classes)
         {
+            if (initialized)
+                return;
+
             float p = 1.0 / classes.size();
             for (const std::string& _class : classes)
                 probabilityDist[_class] = p;
+            initialized = true;
         }
 
         float ProbabilityOf(const std::string& _class) const
@@ -79,6 +83,7 @@ namespace GSL
 
     private:
         std::map<std::string, float> probabilityDist;
+        bool initialized = false;
 
         // Iterator definition
     public:
