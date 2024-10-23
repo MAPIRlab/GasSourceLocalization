@@ -176,7 +176,7 @@ namespace GSL
         for (auto& [_class, prob] : classProbabilityZ[index])
         {
             // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification ( p(o|room) )
-            double totalClassProb = prob * room->GetClassProb(_class);
+            double totalClassProb = prob * room->GetClassProb(_class)/ classPrior.at(_class);
             dist.SetProbOf(_class, totalClassProb);
         }
         dist.Normalize();
@@ -200,6 +200,7 @@ namespace GSL
             float totalClassProb = prob * room->GetClassProb(className) / classPrior.at(className);
             dist.SetProbOf(className, totalClassProb);
         }
+        dist.Normalize();
         return dist;
     }
 

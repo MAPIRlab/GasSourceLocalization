@@ -20,7 +20,6 @@
     #define GSL_TRACE(...)
 #endif
 
-#define GSL_DEBUG 1
 // Asserts will raise SIGTRAP if condition fails. If you have a debugger, that will stop it in the appropriate line. Otherwise, the program ends.
 #if GSL_DEBUG
     #define GSL_ASSERT_MSG(cnd, ...)                                                                                                                 \
