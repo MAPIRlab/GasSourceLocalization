@@ -1,9 +1,9 @@
 #include "ClassMapVoxeland.hpp"
-#include "gsl_server/algorithms/Semantics/Semantics/Common/ClassDistribution.hpp"
+#include "gsl_server/algorithms/Common/Occupancy.hpp"
+#include "gsl_server/core/Logging.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/algorithms/Common/Utils/Time.hpp>
-#include <sstream>
 
 namespace GSL
 {
@@ -61,18 +61,12 @@ namespace GSL
 
     std::string ClassMapVoxeland::GetDebugInfo(const Vector3& point)
     {
-        if(!gridMetadata.indicesInBounds(gridMetadata.coordinatesToIndices(point)))
+        if (!gridMetadata.indicesInBounds(gridMetadata.coordinatesToIndices(point)))
         {
             return "ERROR!";
         }
 
-        ClassDistribution dist = classMap.classDistributionAt(gridMetadata.indexOf(gridMetadata.coordinatesToIndices(point)));
-        std::stringstream ss;
-        for (auto& [_class, prob] : dist)
-        {
-            ss << fmt::format("{}: {:.3f}\n", _class, prob);
-        }
-        return ss.str();
+        return classMap.GetDebugInfo(gridMetadata.indexOf(gridMetadata.coordinatesToIndices(point)));
     }
 
     std::vector<double> ClassMapVoxeland::GetSourceProbability()
@@ -90,7 +84,10 @@ namespace GSL
             for (size_t z = 0; z < gridMetadata.dimensions.z; z++)
             {
                 size_t index = i + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
-                sourceProb[i] = classMap.computeSourceProbability(index);
+                if (wallsOccupancy[index] == Occupancy::Free)
+                    sourceProb[i] = classMap.computeSourceProbability(index);
+                else
+                    sourceProb[i] = 0;
             }
         }
 
@@ -122,11 +119,13 @@ namespace GSL
         auto future_result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(10));
         if (future_result == rclcpp::FutureReturnCode::SUCCESS)
         {
-            GSL_INFO("Received response in {}s", watch.ellapsed());
+            GSL_INFO("Received response in {:.3f}s", watch.ellapsed());
             client->remove_pending_request(future);
+            watch.restart();
             voxeland_msgs::srv::GetClassDistributions::Response::SharedPtr response = future.get();
             for (size_t i = 0; i < classMap.classProbabilityZ.size(); i++)
                 classMap.FromMsg(i, response->distributions[i].probabilities);
+            GSL_TRACE("Done parsing msg in {:.3f}s", watch.ellapsed());
         }
         else
             GSL_ERROR("Could not get an answer from the semantic map service (FutureReturnCode {})", rclcpp::to_string(future_result));

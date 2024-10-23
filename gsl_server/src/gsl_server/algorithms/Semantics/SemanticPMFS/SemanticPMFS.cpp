@@ -1,3 +1,4 @@
+#include "gsl_server/core/Logging.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
@@ -171,21 +172,21 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-        PMFSLib::EstimateWind(
-            settings.simulation.useWindGroundTruth,
-            Grid2D<Vector2>(estimatedWindVectors,
-                            simulationOccupancy,
-                            gridMetadata),
-            node,
-            pubs.pmfsPubs.gmrfWind
-                IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-        PMFSViz::PlotWindVectors(
-            Grid2D<Vector2>(
-                estimatedWindVectors,
-                simulationOccupancy,
-                gridMetadata),
-            settings.visualization,
-            pubs.pmfsPubs);
+        // PMFSLib::EstimateWind(
+        //     settings.simulation.useWindGroundTruth,
+        //     Grid2D<Vector2>(estimatedWindVectors,
+        //                     simulationOccupancy,
+        //                     gridMetadata),
+        //     node,
+        //     pubs.pmfsPubs.gmrfWind
+        //         IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+        // PMFSViz::PlotWindVectors(
+        //     Grid2D<Vector2>(
+        //         estimatedWindVectors,
+        //         simulationOccupancy,
+        //         gridMetadata),
+        //     settings.visualization,
+        //     pubs.pmfsPubs);
 
         number_of_updates++;
 

@@ -29,8 +29,8 @@ namespace GSL
         // get the final value for p(S | semantics)
         double computeSourceProbability(size_t index);
 
-        //get the class distribution considering both observations and rooms
-        ClassDistribution classDistributionAt(size_t index);
+        //get a string representation of the semantic data
+        std::string GetDebugInfo(size_t index);
 
         // run the bayesian filter for p(O | Z) with a new observation. It is assumed that occupancy is already factored into the new probabilities (if applicable)
         void updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores);

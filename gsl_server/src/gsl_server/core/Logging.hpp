@@ -36,7 +36,7 @@
 
 #else
 
-    #define GSL_ASSERT_MSG(cnd, msg)
+    #define GSL_ASSERT_MSG(cnd, ...)
 
 #endif
 

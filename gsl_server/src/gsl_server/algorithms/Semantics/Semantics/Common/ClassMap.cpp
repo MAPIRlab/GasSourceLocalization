@@ -188,7 +188,7 @@ namespace GSL
         return sourceProb;
     }
 
-    ClassDistribution ClassMap::classDistributionAt(size_t index)
+    std::string ClassMap::GetDebugInfo(size_t index)
     {
         ClassDistribution dist;
         dist.Initialize(class_list);
@@ -201,7 +201,14 @@ namespace GSL
             dist.SetProbOf(className, totalClassProb);
         }
         dist.Normalize();
-        return dist;
+
+        std::stringstream ss;
+        ss<<"Room '"<<room->name<<"'\n\n";
+        for (auto& [_class, prob] : dist)
+        {
+            ss << fmt::format("{}: {:.3f}\n", _class, prob);
+        }
+        return ss.str();
     }
 
     void ClassMap::updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores)

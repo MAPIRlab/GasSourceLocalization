@@ -45,13 +45,7 @@ namespace GSL
     std::string ClassMap2D::GetDebugInfo(const Vector3& point)
     {
         Vector2 pointProjected(point.x, point.y);
-        ClassDistribution dist = classMap.classDistributionAt(gridMetadata.indexOf(gridMetadata.coordinatesToIndices(pointProjected)));
-        std::stringstream ss;
-        for (auto& [_class, prob] : dist)
-        {
-            ss << fmt::format("{}: {:.3f}\n", _class, prob);
-        }
-        return ss.str();
+        return classMap.GetDebugInfo(gridMetadata.indexOf(gridMetadata.coordinatesToIndices(pointProjected)));
     }
 
     std::vector<double> ClassMap2D::GetSourceProbability()
@@ -75,7 +69,10 @@ namespace GSL
     {
         Vector2Int indices = gridMetadata.coordinatesToIndices(point.x, point.y);
         size_t index = gridMetadata.indexOf(indices);
-        return classMap.computeSourceProbability(index);
+        if (wallsOccupancy[index] == Occupancy::Free)
+            return classMap.computeSourceProbability(index);
+        else
+            return 0;
     }
 
     void ClassMap2D::detectionCallback(Detection3DArray::ConstSharedPtr msg)

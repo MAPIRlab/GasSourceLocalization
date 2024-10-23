@@ -60,12 +60,17 @@ namespace GSL::Utils::Time
             return toSeconds(clock.now() - start) >= length;
         }
 
+        float timeRemaining()
+        {
+            return toSeconds(clock.now() - start);
+        }
+
         float proportionComplete()
         {
             if (length <= 0)
                 return 1;
             else
-                return toSeconds(clock.now() - start) / length;
+                return timeRemaining() / length;
         }
 
     private:

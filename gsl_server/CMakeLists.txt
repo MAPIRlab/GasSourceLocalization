@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log fi
 #OPTIONS
 #########################
 #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
-set(GSL_DEBUG ON) 
+set(GSL_DEBUG OFF) 
 #extra logging to tell you what is being executed
 set(GSL_TRACING ON) 
  
@@ -25,7 +25,7 @@ set(USE_GUI ON)
 
 
 # Tracy is a profiler. ON enables some instrumentation macros (and adds a dependency to tracy). To do sampling-based profiling you also need to run the node as sudo
-set(USE_TRACY OFF) 
+set(USE_TRACY ON) 
 #disable to do sampling-only profiling
 set(USE_TRACY_INSTRUMENTATION OFF) 
 ##############################################################################
