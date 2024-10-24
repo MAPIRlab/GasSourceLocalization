@@ -1,14 +1,14 @@
 #pragma once
-#include <gsl_server/algorithms/Common/Grid2D.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
-#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
-#include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
-#include <gsl_server/algorithms/PMFS/internal/PublishersAndSubscribers.hpp>
-#include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
-#include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
+#include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
+#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include <gsl_server/algorithms/PMFS/internal/PublishersAndSubscribers.hpp>
+#include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
+#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
+#include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
 #include <gsl_server/core/ConditionalMacros.hpp>
+#include <gsl_server/core/ros_typedefs.hpp>
 
 #include <gmrf_msgs/srv/wind_estimation.hpp>
 
@@ -31,32 +31,49 @@ namespace GSL
 
     public:
         static void InitMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale);
-        static void InitializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
-                                  VisibilityMap& visibilityMap);
-        static void InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid, WindEstimation::Request::SharedPtr& GMRFRequest
-                                              IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest)
-                                             );
+        
+        static void InitializeMap(Grid2D<HitProbability> grid,
+                                  PMFS_internal::Simulations& simulations,
+                                  VisibilityMap& visibilityMap,
+                                  Vector2 startingPosition);
+
+        static void InitializeWindPredictions(Algorithm& algorithm,
+                                              Grid2D<Vector2> grid,
+                                              WindEstimation::Request::SharedPtr& GMRFRequest
+                                                  IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest));
         static void InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node);
 
-        static void EstimateHitProbabilities(Grid2D<HitProbability>& hitLocalVariable, const VisibilityMap& visibilityMap, PMFS_internal::HitProbabilitySettings& settings,
-                                             bool hit, double windDirection, double windSpeed, Vector2Int robotPosition);
+        static void EstimateHitProbabilities(Grid2D<HitProbability>& hitLocalVariable,
+                                             const VisibilityMap& visibilityMap,
+                                             PMFS_internal::HitProbabilitySettings& settings,
+                                             bool hit,
+                                             double windDirection,
+                                             double windSpeed,
+                                             Vector2Int robotPosition);
 
         // returns the sum of all auxWeights, for normalization purposes
-        static double PropagateProbabilities(Grid2D<HitProbability>& var, const PMFS_internal::HitProbabilitySettings& settings,
-                                             HashSet& openSet, HashSet& closedSet, HashSet& activeSet, const HitProbKernel& kernel);
+        static double PropagateProbabilities(Grid2D<HitProbability>& var,
+                                             const PMFS_internal::HitProbabilitySettings& settings,
+                                             HashSet& openSet,
+                                             HashSet& closedSet,
+                                             HashSet& activeSet,
+                                             const HitProbKernel& kernel);
 
-        //Get the updated wind map from the service (Gaden, if using groundTruth, GMRF otherwise)
-        static void EstimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind, rclcpp::Node::SharedPtr node,
+        // Get the updated wind map from the service (Gaden, if using groundTruth, GMRF otherwise)
+        static void EstimateWind(bool useGroundTruth,
+                                 Grid2D<Vector2> estimatedWind,
+                                 rclcpp::Node::SharedPtr node,
                                  PMFS_internal::GMRFWind& gmrf
-                                 IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth)
-                                );
+                                     IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth));
 
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
 
-    private:
+        static void PruneUnreachableCells(Grid2D<HitProbability> grid, Vector2 startPosition);
 
-        static double applyFalloffLogOdds(Vector2 originalVectorScaled, const HitProbKernel& kernel,
+    private:
+        static double applyFalloffLogOdds(Vector2 originalVectorScaled,
+                                          const HitProbKernel& kernel,
                                           const PMFS_internal::HitProbabilitySettings& settings);
     };
 

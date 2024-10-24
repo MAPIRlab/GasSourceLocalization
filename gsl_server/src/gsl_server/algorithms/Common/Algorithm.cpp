@@ -267,7 +267,7 @@ namespace GSL
     //--------------------
     bool Algorithm::isPointInsideMapBounds(const Vector2& point) const
     {
-        const static Vector2 mapStart = {map.info.origin.position.x, map.info.origin.position.y};
+        const static Vector2 mapStart = Vector2(map.info.origin.position.x, map.info.origin.position.y);
         const static Vector2 mapEnd = mapStart + Vector2(map.info.width, map.info.height) * map.info.resolution;
 
         return point.x >= mapStart.x && point.x < mapEnd.x && point.y >= mapStart.y && point.y < mapEnd.y;

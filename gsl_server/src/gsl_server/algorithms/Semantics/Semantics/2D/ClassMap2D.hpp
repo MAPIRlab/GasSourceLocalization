@@ -19,11 +19,16 @@ namespace GSL
     public:
         ClassMap2D(Grid2DMetadata _gridMetadata, std::vector<Occupancy>& occupancy, BufferWrapper& _bufferWrapper,
                    const PoseWithCovarianceStamped& _currentRobotPose);
+        void OnUpdate() override;
 
         std::vector<double> GetSourceProbability() override;
         void GetSourceProbabilityInPlace(std::vector<double>& sourceProb) override;
         double GetSourceProbabilityAt(const Vector3& point) override;
-        void OnUpdate() override;
+
+        double GetEntropyAt(const Vector3& point) override;
+        std::vector<double> GetEntropy() override;
+        void GetEntropyInPlace(std::vector<double>& entropy) override;
+
         std::string GetDebugInfo(const Vector3& point) override;
 
     private:

@@ -1,7 +1,7 @@
 map: "../_occupancy.yaml"
 robots: 
   - name: "PioneerP3DX"
-    position: [-4.0, -3.3, -0.7]
+    position: [-3.0, -3.3, -0.7]
     angle: 1
     sensors:
       - type: "laser"

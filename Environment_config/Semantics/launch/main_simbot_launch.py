@@ -79,13 +79,13 @@ def launch_setup(context, *args, **kwargs):
                     {"kernelSigma": 1.5},
                     {"kernelStretchConstant": 1.5},
                     {"hitPriorProbability": 0.3},
-                    {"confidenceSigmaSpatial": 1.0},
-                    {"confidenceMeasurementWeight": 1.0},
+                    {"confidenceSigmaSpatial": 1.2},
+                    {"confidenceMeasurementWeight": 0.7},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
-                    {"useWindGroundTruth": True},
+                    {"useWindGroundTruth": False},
                     {"stepsSourceUpdate": 3},
-                    {"maxRegionSize": 5},
+                    {"maxRegionSize": 4},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
                     {"refineFraction": 0.1},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
@@ -215,7 +215,7 @@ def launch_setup(context, *args, **kwargs):
         package="gsl_server",
         executable="send_pose",
         parameters=[
-            {"x":-5.4},
+            {"x":-3.0},
             {"y":-3.5},
             {"z":-0.73},
             {"topic":"/giraff/resetPose"}
@@ -277,7 +277,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.5"
+            value="0.1"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
@@ -286,6 +286,10 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="iterationsToRecord", 
             value="200"
+        ),
+        SetLaunchConfiguration(
+            name="minWarmupIterations", 
+            value="100"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations", 
@@ -297,7 +301,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="filamentDeltaTime", 
-            value="0.1"
+            value="0.2"
         ),
     ]
     

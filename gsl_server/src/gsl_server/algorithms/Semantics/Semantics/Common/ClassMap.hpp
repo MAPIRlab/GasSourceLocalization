@@ -11,9 +11,15 @@
 
 namespace GSL
 {
+
+    // TODO would probably be easier to store the total class probability instead of separating observations and rooms
+    // that does change how new observations need to be treated, but overall I think it is better
+    // something for the future, anyhow
+
+    //
     class ClassMap
     {
-        using MapToPixel = std::function<Vector2Int(size_t)>;
+        using MapToPixel = std::function<Vector2Int(size_t)>; // turn a cell index into a pixel in an image for parsing room info
 
     public:
         static constexpr const char* otherClassName = "other";
@@ -27,13 +33,16 @@ namespace GSL
         void Initialize(rclcpp::Node::SharedPtr node, size_t size, MapToPixel indexToPixel);
 
         // get the final value for p(S | semantics)
-        double computeSourceProbability(size_t index);
+        double ComputeSourceProbability(size_t index);
 
-        //get a string representation of the semantic data
+        // currently this is the entropy of p(o|z). Does not take the room into consideration!
+        float Entropy(size_t index);
+
+        // get a string representation of the semantic data
         std::string GetDebugInfo(size_t index);
 
         // run the bayesian filter for p(O | Z) with a new observation. It is assumed that occupancy is already factored into the new probabilities (if applicable)
-        void updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores);
+        void UpdateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores);
 
         // overwrite p(O | Z) with the distribution received from msg. Does not include the room classification stuff (that is always handled locally)
         void FromMsg(size_t index, const std::vector<vision_msgs::msg::ObjectHypothesis>& msg);
@@ -42,11 +51,12 @@ namespace GSL
         std::string filterClassID(const std::string& id);
 
     private:
+        std::vector<std::string> class_list; // the names of the classes included in the distributions. Only the ones considered by the ontology
+
         // We need this concept of an occupancy probability to match how Voxeland does classification
         // It also has the very reasonable side effect of making the background class more likely than any of the others a priori
         // Good, because most cells in any environment will actually be empty
         static constexpr float occupancyPrior = 0.5;
-
 
         // Knowledge of the room types is useful to provide a prediction of the class of the cell before we even observe the cell
         //  e.g. a cell that is in a kitchen is more likely to be an oven than a toilet, I don't need to see it to tell you that
@@ -64,7 +74,6 @@ namespace GSL
             std::unordered_map<std::string, float> classProb; // p(class | room)
         };
 
-        std::vector<std::string> class_list;
         std::unordered_map<std::string, Room> rooms;       // all rooms that exist
         std::vector<const Room*> roomOfObjects;            // for each object (identified by index) a pointer to the room they are in
         std::unordered_map<std::string, float> classPrior; // not all classes have the same prior -- specifically, the "other" class is more likely due to the occupancy probability

@@ -165,7 +165,7 @@ namespace GSL
         }
     }
 
-    double ClassMap::computeSourceProbability(size_t index)
+    double ClassMap::ComputeSourceProbability(size_t index)
     {
         // reusable to avoid constantly re-creating the std::map with string keys
         // we need it because we have to normalize after adding the room probs
@@ -176,7 +176,7 @@ namespace GSL
         for (auto& [_class, prob] : classProbabilityZ[index])
         {
             // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification ( p(o|room) )
-            double totalClassProb = prob * room->GetClassProb(_class)/ classPrior.at(_class);
+            double totalClassProb = prob * room->GetClassProb(_class) / classPrior.at(_class);
             dist.SetProbOf(_class, totalClassProb);
         }
         dist.Normalize();
@@ -186,6 +186,11 @@ namespace GSL
             sourceProb += prob * sourceProbByClass.at(_class) / classPrior.at(_class);
 
         return sourceProb;
+    }
+
+    float ClassMap::Entropy(size_t index)
+    {
+        return classProbabilityZ[index].Entropy();
     }
 
     std::string ClassMap::GetDebugInfo(size_t index)
@@ -203,7 +208,7 @@ namespace GSL
         dist.Normalize();
 
         std::stringstream ss;
-        ss<<"Room '"<<room->name<<"'\n\n";
+        ss << "Room '" << room->name << "'\n\n";
         for (auto& [_class, prob] : dist)
         {
             ss << fmt::format("{}: {:.3f}\n", _class, prob);
@@ -211,7 +216,7 @@ namespace GSL
         return ss.str();
     }
 
-    void ClassMap::updateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores)
+    void ClassMap::UpdateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores)
     {
         for (const auto& pair : scores)
         {

@@ -8,9 +8,9 @@
 
 namespace GSL
 {
+    static constexpr int8_t lethal_cost = 70;
 #if NAVIGATION_FIXES
     static constexpr int max_navigation_time = 20;
-    static constexpr int8_t lethal_cost = 70;
 #endif
 
     MovingState::MovingState(Algorithm* _algorithm) : State(_algorithm)
@@ -124,7 +124,7 @@ namespace GSL
 
         // send the "make plan" goal to nav2 and wait until the response comes back
 
-        auto callback = [&currentPlan, this](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult & w_result)
+        auto callback = [&currentPlan](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult & w_result)
         {
             currentPlan = w_result.result->path;
         };
@@ -156,11 +156,9 @@ namespace GSL
 
     bool MovingState::checkGoal(const NavigateToPose::Goal& goal)
     {
-        Vector2 goalPosition = {goal.pose.pose.position.x, goal.pose.pose.position.y};
+        Vector2 goalPosition = Vector2(goal.pose.pose.position.x, goal.pose.pose.position.y);
         if (!algorithm->isPointInsideMapBounds(goalPosition)
-#if NAVIGATION_FIXES
-                || !algorithm->sampleCostmap(goalPosition) > lethal_cost
-#endif
+            || algorithm->sampleCostmap(goalPosition) > lethal_cost
            )
             return false;
 

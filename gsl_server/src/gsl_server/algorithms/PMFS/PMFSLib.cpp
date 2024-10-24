@@ -1,3 +1,4 @@
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <DDA/DDA.h>
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
@@ -192,8 +193,10 @@ namespace GSL
     }
 
     // TODO shouldn't some of this be done with the simulationOccupancy rather than the navigationOccupancy?
-    void PMFSLib::InitializeMap(Algorithm& algorithm, Grid2D<HitProbability> grid, PMFS_internal::Simulations& simulations,
-                                VisibilityMap& visibilityMap)
+    void PMFSLib::InitializeMap(Grid2D<HitProbability> grid,
+                                PMFS_internal::Simulations& simulations,
+                                VisibilityMap& visibilityMap,
+                                Vector2 startingPosition)
     {
         // create the PMFS cells
         {
@@ -202,42 +205,11 @@ namespace GSL
             GSL_TRACE("Created grid");
         }
 
+        PruneUnreachableCells(grid, startingPosition);
         std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.dimensions.x, std::vector<uint8_t>(grid.metadata.dimensions.y));
-        // prune unreachable free cells
-        {
-            // get an arbitrary seed value into the cell the robot is currently in and propagagate it. If a cell has not received that value by the
-            // end, it must not be reachable
-            {
-                HashSet openPropagationSet;
-                HashSet activePropagationSet;
-                HashSet closedPropagationSet;
-                Vector2Int currentIndices = grid.metadata.coordinatesToIndices(algorithm.currentRobotPose.pose.pose.position.x,
-                                                                               algorithm.currentRobotPose.pose.pose.position.y);
-                grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0; // the arbitrary value
-                activePropagationSet.insert(currentIndices);
-                PMFSLib::PropagateProbabilities(grid, PMFS_internal::HitProbabilitySettings(), openPropagationSet, closedPropagationSet,
-                                                activePropagationSet, {1, {1, 0}, 0});
-            }
-
-            for (int i = 0; i < grid.metadata.dimensions.x; i++)
-            {
-                for (int j = 0; j < grid.metadata.dimensions.y; j++)
-                {
-                    if (!grid.freeAt(i, j) || grid.dataAt(i, j).auxWeight == -1)
-                    {
-                        grid.dataAt(i, j).logOdds = DBL_MIN;
-                        grid.occupancyAt(i, j) = Occupancy::Obstacle;
-                        occupancyMap[i][j] = 0;
-                    }
-                    else
-                    {
-                        grid.metadata.numFreeCells++;
-                        occupancyMap[i][j] = 1;
-                    }
-                }
-            }
-            GSL_TRACE("Pruned unreachable cells");
-        }
+        for (int i = 0; i < occupancyMap.size(); i++)
+            for (int j = 0; j < occupancyMap[0].size(); j++)
+                occupancyMap[i][j] = grid.freeAt(i, j) ? 1 : 0;
 
         // precomputed visibility map
         {
@@ -277,6 +249,42 @@ namespace GSL
         simulations.initializeMap(occupancyMap);
         simulations.visibilityMap = &visibilityMap;
         simulations.varianceOfHitProb.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y, 0);
+    }
+
+    void PMFSLib::PruneUnreachableCells(Grid2D<HitProbability> grid, Vector2 startPosition)
+    {
+        for (int i = 0; i < grid.data.size(); i++)
+            grid.data[i].auxWeight = -1;
+
+        // get an arbitrary seed value into the cell the robot is currently in and propagagate it. If a cell has not received that value by the
+        // end, it must not be reachable
+        {
+            HashSet openPropagationSet;
+            HashSet activePropagationSet;
+            HashSet closedPropagationSet;
+            Vector2Int currentIndices = grid.metadata.coordinatesToIndices(startPosition);
+            grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0; // the arbitrary value
+            activePropagationSet.insert(currentIndices);
+            PMFSLib::PropagateProbabilities(grid, PMFS_internal::HitProbabilitySettings(), openPropagationSet, closedPropagationSet,
+                                            activePropagationSet, {1, {1, 0}, 0});
+        }
+
+        for (int i = 0; i < grid.metadata.dimensions.x; i++)
+        {
+            for (int j = 0; j < grid.metadata.dimensions.y; j++)
+            {
+                if (!grid.freeAt(i, j) || grid.dataAt(i, j).auxWeight == -1)
+                {
+                    grid.dataAt(i, j).logOdds = DBL_MIN;
+                    grid.occupancyAt(i, j) = Occupancy::Obstacle;
+                }
+                else
+                {
+                    grid.metadata.numFreeCells++;
+                }
+            }
+        }
+        GSL_TRACE("Pruned unreachable cells");
     }
 
     void PMFSLib::InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,
@@ -386,6 +394,7 @@ namespace GSL
         settings.noiseSTDev = algorithm.getParam<double>("noiseSTDev", 0.5);
         settings.iterationsToRecord = algorithm.getParam<int>("iterationsToRecord", 200);
         settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
+        settings.minWarmupIterations = algorithm.getParam<int>("minWarmupIterations", 0);
     }
 
     void PMFSLib::GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings)

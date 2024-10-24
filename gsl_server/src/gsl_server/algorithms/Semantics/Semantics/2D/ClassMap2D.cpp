@@ -59,7 +59,7 @@ namespace GSL
     {
         for (int i = 0; i < sourceProb.size(); i++)
         {
-            sourceProb[i] = classMap.computeSourceProbability(i);
+            sourceProb[i] = classMap.ComputeSourceProbability(i);
         }
 
         Utils::NormalizeDistribution(sourceProb, wallsOccupancy);
@@ -70,9 +70,36 @@ namespace GSL
         Vector2Int indices = gridMetadata.coordinatesToIndices(point.x, point.y);
         size_t index = gridMetadata.indexOf(indices);
         if (wallsOccupancy[index] == Occupancy::Free)
-            return classMap.computeSourceProbability(index);
+            return classMap.ComputeSourceProbability(index);
         else
             return 0;
+    }
+
+    double ClassMap2D::GetEntropyAt(const Vector3& point)
+    {
+        Vector2Int indices = gridMetadata.coordinatesToIndices(point.x, point.y);
+        size_t index = gridMetadata.indexOf(indices);
+        if (wallsOccupancy[index] == Occupancy::Free)
+            return classMap.Entropy(index);
+        else
+            return 0;
+    }
+
+    std::vector<double> ClassMap2D::GetEntropy()
+    {
+        std::vector<double> entr(gridMetadata.dimensions.x * gridMetadata.dimensions.y, 0.0);
+        GetEntropyInPlace(entr);
+        return entr;
+    }
+
+    void ClassMap2D::GetEntropyInPlace(std::vector<double>& entropy)
+    {
+#pragma omp parallel for
+        for (size_t i = 0; i < entropy.size(); i++)
+        {
+            if (wallsOccupancy[i] == Occupancy::Free)
+                entropy[i] = classMap.Entropy(i);
+        }
     }
 
     void ClassMap2D::detectionCallback(Detection3DArray::ConstSharedPtr msg)
@@ -110,7 +137,7 @@ namespace GSL
                     break;
                 }
                 size_t index = gridMetadata.indexOf(indices);
-                classMap.updateObjectProbabilities(index, scores);
+                classMap.UpdateObjectProbabilities(index, scores);
                 remainingCellsInFOV.erase(indices);
             }
         }
@@ -133,7 +160,7 @@ namespace GSL
                     scores.emplace_back(kv.first, score);
                 }
                 size_t index = gridMetadata.indexOf(indices);
-                classMap.updateObjectProbabilities(index, scores);
+                classMap.UpdateObjectProbabilities(index, scores);
             }
         }
     }

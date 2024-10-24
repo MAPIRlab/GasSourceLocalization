@@ -59,6 +59,37 @@ namespace GSL
         visualize();
     }
 
+    double ClassMapVoxeland::GetEntropyAt(const Vector3& point)
+    {
+        Vector3Int indices = gridMetadata.coordinatesToIndices(point.x, point.y, point.z);
+        size_t index = gridMetadata.indexOf(indices);
+        if (wallsOccupancy[index] == Occupancy::Free)
+            return classMap.Entropy(index);
+        else
+            return 0;
+    }
+
+    std::vector<double> ClassMapVoxeland::GetEntropy()
+    {
+        std::vector<double> entr(gridMetadata.dimensions.x * gridMetadata.dimensions.y, 0.0);
+        GetEntropyInPlace(entr);
+        return entr;
+    }
+
+    void ClassMapVoxeland::GetEntropyInPlace(std::vector<double>& entropy)
+    {
+#pragma omp parallel for collapse(2)
+        for (size_t i = 0; i < entropy.size(); i++)
+        {
+            for (size_t z = 0; z < gridMetadata.dimensions.z; z++)
+            {
+                size_t index = i + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
+                if (wallsOccupancy[index] == Occupancy::Free)
+                    entropy[i] += classMap.Entropy(index);
+            }
+        }
+    }
+
     std::string ClassMapVoxeland::GetDebugInfo(const Vector3& point)
     {
         if (!gridMetadata.indicesInBounds(gridMetadata.coordinatesToIndices(point)))
@@ -85,9 +116,7 @@ namespace GSL
             {
                 size_t index = i + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
                 if (wallsOccupancy[index] == Occupancy::Free)
-                    sourceProb[i] = classMap.computeSourceProbability(index);
-                else
-                    sourceProb[i] = 0;
+                    sourceProb[i] += classMap.ComputeSourceProbability(index);
             }
         }
 
@@ -98,7 +127,10 @@ namespace GSL
     {
         Vector3Int indices = gridMetadata.coordinatesToIndices(point.x, point.y, point.z);
         size_t index = gridMetadata.indexOf(indices);
-        return classMap.computeSourceProbability(index);
+        if (wallsOccupancy[index] == Occupancy::Free)
+            return classMap.ComputeSourceProbability(index);
+        else
+            return 0;
     }
 
     void ClassMapVoxeland::getUpdatedMapFromService()
@@ -108,24 +140,26 @@ namespace GSL
         if (!serviceCD.isDone())
             return;
 
-        serviceCD.Restart(0.5);
+        serviceCD.Restart(2);
 
         auto request = std::make_shared<voxeland_msgs::srv::GetClassDistributions::Request>();
         request->query_points = requestPoints; // TODO probably better to avoid copying this
 
         Utils::Time::Stopwatch watch;
         auto future = client->async_send_request(request);
-        GSL_INFO("Sending Vxl Request {}", future.request_id);
+        // GSL_INFO("Sending Vxl Request {}", future.request_id);
         auto future_result = rclcpp::spin_until_future_complete(node, future, std::chrono::seconds(10));
         if (future_result == rclcpp::FutureReturnCode::SUCCESS)
         {
-            GSL_INFO("Received response in {:.3f}s", watch.ellapsed());
+            // GSL_INFO("Received response in {:.3f}s", watch.ellapsed());
             client->remove_pending_request(future);
             watch.restart();
             voxeland_msgs::srv::GetClassDistributions::Response::SharedPtr response = future.get();
+
+#pragma omp parallel for
             for (size_t i = 0; i < classMap.classProbabilityZ.size(); i++)
                 classMap.FromMsg(i, response->distributions[i].probabilities);
-            GSL_TRACE("Done parsing msg in {:.3f}s", watch.ellapsed());
+            // GSL_TRACE("Done parsing msg in {:.3f}s", watch.ellapsed());
         }
         else
             GSL_ERROR("Could not get an answer from the semantic map service (FutureReturnCode {})", rclcpp::to_string(future_result));

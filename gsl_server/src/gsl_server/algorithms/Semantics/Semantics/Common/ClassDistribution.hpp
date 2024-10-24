@@ -66,6 +66,14 @@ namespace GSL
                 prob /= sum;
         }
 
+        float Entropy()
+        {
+            float sum = 0;
+            for (const auto& [_class, prob] : probabilityDist)
+                sum += prob * std::log(prob);
+            return sum;
+        }
+
         void Clear()
         {
             for (auto& [_class, prob] : probabilityDist)

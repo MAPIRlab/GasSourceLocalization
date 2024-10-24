@@ -40,6 +40,7 @@ namespace GSL::PMFS_internal
         double refineFraction; // proportion of the cells that will be subdivided for the finer simulation
 
         int maxWarmupIterations;
+        int minWarmupIterations;
         int iterationsToRecord;
         double deltaTime;
         double noiseSTDev;

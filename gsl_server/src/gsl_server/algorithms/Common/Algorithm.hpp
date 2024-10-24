@@ -44,6 +44,8 @@ namespace GSL
             else
                 return node->declare_parameter<T>(name, defaultValue);
         }
+
+        Vector2 currentCoordinates() {return Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);}
     protected:        
         virtual void declareParameters();
         virtual GSLResult checkSourceFound();

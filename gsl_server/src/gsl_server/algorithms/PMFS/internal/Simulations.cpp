@@ -179,7 +179,7 @@ namespace GSL::PMFS_internal
         result.hitMap.resize(measuredHitProb.data.size(), 0.0);
 
         SimulationSource source(node, measuredHitProb.metadata);
-        simulateSourceInPosition(source, result.hitMap, true, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
+        simulateSourceInPosition(source, result.hitMap, true, settings.iterationsToRecord, settings.deltaTime,
                                  settings.noiseSTDev);
 
         result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
@@ -227,11 +227,11 @@ namespace GSL::PMFS_internal
         return !measuredHitProb.metadata.indicesInBounds(newIndices);
     }
 
-    void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit,
+    void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup,
                                                int timesteps, float deltaTime, float noiseSTDev) const
     {
         constexpr int numFilamentsIteration = 5;
-        std::vector<Filament> filaments(warmupLimit * numFilamentsIteration + timesteps * numFilamentsIteration);
+        std::vector<Filament> filaments(settings.maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration);
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
@@ -244,7 +244,7 @@ namespace GSL::PMFS_internal
 
             bool stable = false;
             int count = 0;
-            while (!stable && count < warmupLimit)
+            while (count<settings.minWarmupIterations || (!stable && count < settings.maxWarmupIterations))
             {
                 for (int i = 0; i < numFilamentsIteration; i++)
                 {
@@ -393,7 +393,7 @@ namespace GSL::PMFS_internal
     void Simulations::printImage(const SimulationSource& source)
     {
         std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
-        simulateSourceInPosition(source, hitMap, false, settings.maxWarmupIterations, settings.iterationsToRecord, settings.deltaTime,
+        simulateSourceInPosition(source, hitMap, true, settings.iterationsToRecord, settings.deltaTime,
                                  settings.noiseSTDev);
 
         cv::Mat image(cv::Size(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y), CV_32FC3, cv::Scalar(0, 0, 0));

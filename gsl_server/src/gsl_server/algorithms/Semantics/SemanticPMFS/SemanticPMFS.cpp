@@ -1,3 +1,4 @@
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
@@ -81,6 +82,8 @@ namespace GSL
         int scale = getParam<int>("scale", 65); // scale for dynamic map reduction
         PMFSLib::InitMetadata(gridMetadata, map, scale);
 
+        //resize all the vectors to the dimensions of the environment
+        //----------------------------------
         hitProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         sourceProbabilityPMFS.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         sourceProbSemantics.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
@@ -92,12 +95,14 @@ namespace GSL
                               std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
         // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
 
-        GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
+
+        //initialize the hit probability and the simulationOccupancy maps
+        //----------------------------------
         PMFSLib::InitializeMap(
-            *this,
             Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
             simulations,
-            *visibilityMap);
+            *visibilityMap,
+            currentCoordinates());
 
         // set all variables to the prior probability
         for (HitProbability& h : hitProbability)
@@ -109,7 +114,20 @@ namespace GSL
         for (double& p : sourceProbSemantics)
             p = 1.0 / gridMetadata.numFreeCells;
 
+
+        //initialize the navigation occupancy
+        //----------------------------------
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
+        PMFSLib::PruneUnreachableCells(
+            Grid2D<HitProbability>(
+                hitProbability,
+                navigationOccupancy,
+                gridMetadata),
+            currentCoordinates());
+
+
         // the wind estimation stuff requires spinning, so it must be done through the function queue
+        //----------------------------------
         functionQueue.submit([this]()
                              {
             Grid<Vector2> windGrid(estimatedWindVectors, simulationOccupancy, gridMetadata);
@@ -172,46 +190,42 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-        // PMFSLib::EstimateWind(
-        //     settings.simulation.useWindGroundTruth,
-        //     Grid2D<Vector2>(estimatedWindVectors,
-        //                     simulationOccupancy,
-        //                     gridMetadata),
-        //     node,
-        //     pubs.pmfsPubs.gmrfWind
-        //         IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-        // PMFSViz::PlotWindVectors(
-        //     Grid2D<Vector2>(
-        //         estimatedWindVectors,
-        //         simulationOccupancy,
-        //         gridMetadata),
-        //     settings.visualization,
-        //     pubs.pmfsPubs);
+        PMFSLib::EstimateWind(
+            settings.simulation.useWindGroundTruth,
+            Grid2D<Vector2>(estimatedWindVectors,
+                            simulationOccupancy,
+                            gridMetadata),
+            node,
+            pubs.pmfsPubs.gmrfWind
+                IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+        PMFSViz::PlotWindVectors(
+            Grid2D<Vector2>(
+                estimatedWindVectors,
+                simulationOccupancy,
+                gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
 
         number_of_updates++;
 
-        // TODO
-        // if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
-        //{
-        // number_of_updates = 0;
-        // bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
-        // iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
-        // if (timeToSimulate)
-        // {
-        // // simulations.compareRefineFractions();
-        // simulations.updateSourceProbability(settings.simulation.refineFraction);
-        // }
-        //
-        // auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
-        // if (iterationsCounter > settings.movement.initialExplorationMoves)
-        // movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
-        // else
-        // movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
-        // movingStatePMFS->chooseGoalAndMove();
-        // movingStatePMFS->publishMarkers();
-        // }
-        // else
-        stateMachine.forceResetState(stopAndMeasureState.get());
+        if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
+        {
+            number_of_updates = 0;
+            bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
+                                  iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
+            if (timeToSimulate)
+                simulations.updateSourceProbability(settings.simulation.refineFraction);
+
+            auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
+            if (iterationsCounter > settings.movement.initialExplorationMoves)
+                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
+            else
+                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
+            movingStatePMFS->chooseGoalAndMove();
+            movingStatePMFS->publishMarkers();
+        }
+        else
+            stateMachine.forceResetState(stopAndMeasureState.get());
     }
 
 } // namespace GSL

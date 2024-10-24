@@ -82,8 +82,8 @@ namespace GSL::PMFS_internal
 
         SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
-        void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup, int warmupLimit, int timesteps,
-                                      float deltaTime, float noiseSTDev) const;
+        void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup,
+                                      int timesteps, float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament) const;
         long double sourceProbFromMaps(const Grid2D<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;

@@ -1,13 +1,15 @@
-#include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
-#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
-#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include "gsl_server/algorithms/Common/Occupancy.hpp"
+#include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
-#include <angles/angles.h>
+#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
+#include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 
 namespace GSL
 {
-    MovingStateSemanticPMFS::MovingStateSemanticPMFS(Algorithm* _algorithm) : MovingState(_algorithm)
+    MovingStateSemanticPMFS::MovingStateSemanticPMFS(Algorithm* _algorithm)
+        : MovingState(_algorithm)
     {
         pmfs = dynamic_cast<SemanticPMFS*>(_algorithm);
 
@@ -33,6 +35,9 @@ namespace GSL
                 for (int c = oJ; c <= fJ; c++)
                 {
                     Vector2Int p(r, c);
+                    if (pmfs->navigationOccupancy[pmfs->gridMetadata.indexOf(p)] != Occupancy::Free)
+                        continue;
+                    
                     if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i, j}, p) == Visibility::Visible)
                         openMoveSet.insert(p);
                 }
@@ -43,7 +48,6 @@ namespace GSL
         NavigateToPose::Goal goal;
         int goalI = -1, goalJ = -1;
         double bestInterest = -DBL_MAX;
-        double maxDist = 0;
 
         float explorationC = Utils::uniformRandom(0, 1);
 
@@ -58,8 +62,8 @@ namespace GSL
 
             double interest =
                 currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
-                ? explorationTerm
-                : varianceTerm;
+                    ? explorationTerm
+                    : varianceTerm;
 
             if (interest > bestInterest)
             {
@@ -68,7 +72,6 @@ namespace GSL
                     bestInterest = interest;
                     goalI = r;
                     goalJ = c;
-                    maxDist = pmfs->hitProbability[gridMetadata.indexOf({r, c})].distanceFromRobot;
                     goal = tempGoal;
                 }
             }
@@ -90,6 +93,8 @@ namespace GSL
         double sum = 0;
         for (const auto& p : range)
         {
+            if (pmfs->navigationOccupancy[pmfs->gridMetadata.indexOf(p)] != Occupancy::Free)
+                continue;
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].confidence) * std::exp(-distance);
             GSL_ASSERT(sum > 0);
@@ -104,7 +109,7 @@ namespace GSL
         goal.pose.header.stamp = pmfs->node->now();
 
         Vector2 pos = pmfs->gridMetadata.indicesToCoordinates(i, j);
-        Vector2 coordR = {pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y};
+        Vector2 coordR = Vector2(pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y);
 
         double move_angle = (std::atan2(pos.y - coordR.y, pos.x - coordR.x));
         goal.pose.pose.position.x = pos.x;
@@ -144,7 +149,6 @@ namespace GSL
     {
         Grid2DMetadata& gridMetadata = pmfs->gridMetadata;
         Grid2D<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->navigationOccupancy, gridMetadata);
-
 
         Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());
 
