@@ -201,13 +201,23 @@ def launch_setup(context, *args, **kwargs):
         ])
     ]
 
-    rviz = Node(
+    rvizHit = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz",
         #prefix="xterm -e",
         arguments=[
-            "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "gaden.rviz")
+            "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "hit.rviz")
+        ],
+    )
+
+    rvizSource = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        #prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "source.rviz")
         ],
     )
 
@@ -234,7 +244,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(gmrf_wind)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.append(rviz)
+    actions.append(rvizHit)
+    actions.append(rvizSource)
     actions.append(send_pose)
     actions.append(semantics)
 
@@ -289,7 +300,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="minWarmupIterations", 
-            value="100"
+            value="500"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations", 

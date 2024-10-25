@@ -21,6 +21,8 @@ namespace GSL
     void MovingStateSemanticPMFS::chooseGoalAndMove()
     {
         auto& gridMetadata = pmfs->gridMetadata;
+
+        // Update the open set with the neighbours of the current position
         {
             int i = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).x, j = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).y;
 
@@ -37,18 +39,31 @@ namespace GSL
                     Vector2Int p(r, c);
                     if (pmfs->navigationOccupancy[pmfs->gridMetadata.indexOf(p)] != Occupancy::Free)
                         continue;
-                    
+
                     if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i, j}, p) == Visibility::Visible)
                         openMoveSet.insert(p);
                 }
             }
         }
 
+        // don't choose the current position again (not adding it to the closed set, so it may be revisited later, just not now)
         openMoveSet.erase(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
+
+        // get the semantic uncertainty
+        if (semanticsEntropy.size() == 0)
+            semanticsEntropy.resize(pmfs->hitProbability.size(), 0.);
+        // TODO use this!
+        pmfs->semantics->GetEntropyInPlace(semanticsEntropy);
+
+
+        // check all the candidates in the open set and choose the most informative one
+        //------------------------------------------
         NavigateToPose::Goal goal;
         int goalI = -1, goalJ = -1;
         double bestInterest = -DBL_MAX;
 
+        // there is a random chance to choose the cell based on exploration value rather than source information
+        // kind of arbitrary, but helps when the wind estimation is bad and the robot is getting obsessed with a small area of the map
         float explorationC = Utils::uniformRandom(0, 1);
 
         for (const auto& indices : openMoveSet)
@@ -58,7 +73,8 @@ namespace GSL
             NavigateToPose::Goal tempGoal = indexToGoal(r, c);
 
             double explorationTerm = explorationValue(r, c);
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({r, c})] * (1 - pmfs->hitProbability[gridMetadata.indexOf({r, c})].confidence);
+            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({r, c})] //
+                                  * (1 - pmfs->hitProbability[gridMetadata.indexOf({r, c})].confidence);
 
             double interest =
                 currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
@@ -67,6 +83,7 @@ namespace GSL
 
             if (interest > bestInterest)
             {
+                //checkGoal is somewhat slow because of the service calls, so only do it if the cell is actually interesting
                 if (checkGoal(tempGoal))
                 {
                     bestInterest = interest;
@@ -77,6 +94,7 @@ namespace GSL
             }
         }
 
+        // re-add the current position to the open set so it can be re-visited in the future
         if (closedMoveSet.find(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose)) == closedMoveSet.end())
             openMoveSet.insert(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
         GSL_ASSERT_MSG(closedMoveSet.find({goalI, goalJ}) == closedMoveSet.end(), "Goal is in closed set, what the hell");
@@ -95,7 +113,7 @@ namespace GSL
         {
             if (pmfs->navigationOccupancy[pmfs->gridMetadata.indexOf(p)] != Occupancy::Free)
                 continue;
-            float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
+            float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are near enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].confidence) * std::exp(-distance);
             GSL_ASSERT(sum > 0);
         }

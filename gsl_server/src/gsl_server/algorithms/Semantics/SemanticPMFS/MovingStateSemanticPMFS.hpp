@@ -25,6 +25,7 @@ namespace GSL
         void publishMarkers();
 
     protected:
+        std::vector<double> semanticsEntropy;
         HashSet closedMoveSet;
         HashSet openMoveSet;
         NavigateToPose::Goal indexToGoal(int i, int j);

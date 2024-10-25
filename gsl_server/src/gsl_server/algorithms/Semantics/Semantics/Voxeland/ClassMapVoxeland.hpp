@@ -31,7 +31,7 @@ namespace GSL
         rclcpp::Node::SharedPtr node;
 
         ClassMap classMap;
-        std::vector<Occupancy> wallsOccupancy; //TODO this is a copy. Should it be?
+        std::vector<Occupancy>& wallsOccupancy;
         Grid3DMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
 

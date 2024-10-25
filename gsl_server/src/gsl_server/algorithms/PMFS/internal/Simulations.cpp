@@ -244,7 +244,7 @@ namespace GSL::PMFS_internal
 
             bool stable = false;
             int count = 0;
-            while (count<settings.minWarmupIterations || (!stable && count < settings.maxWarmupIterations))
+            while (count < settings.minWarmupIterations || (!stable && count < settings.maxWarmupIterations))
             {
                 for (int i = 0; i < numFilamentsIteration; i++)
                 {
@@ -287,7 +287,7 @@ namespace GSL::PMFS_internal
                 lastActivated++;
             }
 
-            for (size_t filamentInd = 0; filamentInd < lastActivated; filamentInd++) 
+            for (size_t filamentInd = 0; filamentInd < lastActivated; filamentInd++)
             {
                 Filament& filament = filaments[filamentInd];
                 if (!filament.active)
@@ -370,11 +370,12 @@ namespace GSL::PMFS_internal
 #else
         const auto& metadata = measuredHitProb.metadata;
         bool pathIsFree = true;
-        float stepSize = metadata.cellSize * 0.2f;
 
         Vector2 vector = end - currentPosition;
+        float travelDistance = vmath::length(vector);
+        float stepSize = std::min(travelDistance, metadata.cellSize * 0.1f);
         Vector2 increment = vmath::normalized(vector) * stepSize;
-        int steps = vmath::length(vector) / stepSize;
+        int steps = travelDistance / stepSize;
 
         int index = 0;
         while (index < steps && pathIsFree)

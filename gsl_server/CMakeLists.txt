@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log fi
 #OPTIONS
 #########################
 #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
-set(GSL_DEBUG OFF) 
+set(GSL_DEBUG ON) 
 #extra logging to tell you what is being executed
 set(GSL_TRACING ON) 
  
@@ -20,7 +20,7 @@ set(USE_GADEN ON)
 #It adds some extra features, but currently it has a relatively high performance cost due to async inter-process communication  
 set(USE_NAV_ASSISTANT OFF) 
 
-# Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
+# Compile graphical interface with DearImGUI. Currently only affects the PMFS and SemanticPMFS algorithms. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
 
 

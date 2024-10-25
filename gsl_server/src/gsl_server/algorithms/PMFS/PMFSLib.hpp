@@ -69,7 +69,7 @@ namespace GSL
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
 
-        static void PruneUnreachableCells(Grid2D<HitProbability> grid, Vector2 startPosition);
+        static size_t PruneUnreachableCells(std::vector<Occupancy>& occupancy, Grid2DMetadata metadata, Vector2 startPosition);
 
     private:
         static double applyFalloffLogOdds(Vector2 originalVectorScaled,

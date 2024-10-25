@@ -82,7 +82,7 @@ namespace GSL
         int scale = getParam<int>("scale", 65); // scale for dynamic map reduction
         PMFSLib::InitMetadata(gridMetadata, map, scale);
 
-        //resize all the vectors to the dimensions of the environment
+        // resize all the vectors to the dimensions of the environment
         //----------------------------------
         hitProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         sourceProbabilityPMFS.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
@@ -95,8 +95,7 @@ namespace GSL
                               std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
         // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
 
-
-        //initialize the hit probability and the simulationOccupancy maps
+        // initialize the hit probability and the simulationOccupancy maps
         //----------------------------------
         PMFSLib::InitializeMap(
             Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
@@ -114,17 +113,13 @@ namespace GSL
         for (double& p : sourceProbSemantics)
             p = 1.0 / gridMetadata.numFreeCells;
 
-
-        //initialize the navigation occupancy
+        // initialize the navigation occupancy
         //----------------------------------
         GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
         PMFSLib::PruneUnreachableCells(
-            Grid2D<HitProbability>(
-                hitProbability,
-                navigationOccupancy,
-                gridMetadata),
+            navigationOccupancy,
+            gridMetadata,
             currentCoordinates());
-
 
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         //----------------------------------

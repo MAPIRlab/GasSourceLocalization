@@ -1,3 +1,5 @@
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/Common/Occupancy.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <DDA/DDA.h>
 #include <angles/angles.h>
@@ -5,6 +7,7 @@
 #include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/core/Logging.hpp>
+#include <vector>
 
 namespace GSL
 {
@@ -205,7 +208,7 @@ namespace GSL
             GSL_TRACE("Created grid");
         }
 
-        PruneUnreachableCells(grid, startingPosition);
+        grid.metadata.numFreeCells = PruneUnreachableCells(grid.occupancy, grid.metadata, startingPosition);
         std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.dimensions.x, std::vector<uint8_t>(grid.metadata.dimensions.y));
         for (int i = 0; i < occupancyMap.size(); i++)
             for (int j = 0; j < occupancyMap[0].size(); j++)
@@ -251,8 +254,10 @@ namespace GSL
         simulations.varianceOfHitProb.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y, 0);
     }
 
-    void PMFSLib::PruneUnreachableCells(Grid2D<HitProbability> grid, Vector2 startPosition)
+    size_t PMFSLib::PruneUnreachableCells(std::vector<Occupancy>& occupancy, Grid2DMetadata metadata, Vector2 startPosition)
     {
+        std::vector<HitProbability> hitProb(occupancy.size());
+        Grid2D<HitProbability> grid(hitProb, occupancy, metadata);
         for (int i = 0; i < grid.data.size(); i++)
             grid.data[i].auxWeight = -1;
 
@@ -269,6 +274,7 @@ namespace GSL
                                             activePropagationSet, {1, {1, 0}, 0});
         }
 
+        size_t numFreeCells = 0;
         for (int i = 0; i < grid.metadata.dimensions.x; i++)
         {
             for (int j = 0; j < grid.metadata.dimensions.y; j++)
@@ -279,12 +285,11 @@ namespace GSL
                     grid.occupancyAt(i, j) = Occupancy::Obstacle;
                 }
                 else
-                {
-                    grid.metadata.numFreeCells++;
-                }
+                    numFreeCells++;
             }
         }
         GSL_TRACE("Pruned unreachable cells");
+        return numFreeCells;
     }
 
     void PMFSLib::InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,

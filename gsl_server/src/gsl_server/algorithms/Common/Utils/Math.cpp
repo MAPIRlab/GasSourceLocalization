@@ -64,7 +64,7 @@ namespace GSL::Utils
 
     template <typename T> T uniformRandomT(T min, T max)
     {
-#if 1
+#if 0
         // xxHash-based RNG. It's supposed to be faster 
         // !!!! the range is [0,1] inclusive!
         static thread_local uint32_t seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();

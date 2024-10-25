@@ -1,9 +1,10 @@
 #pragma once
-#include "AABB.hpp"
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/algorithms/Common/Utils/BufferWrapper.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/ClassMap.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/ISemantics.hpp>
+#include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticUtils.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
 #include <rclcpp/rclcpp.hpp>
@@ -36,18 +37,12 @@ namespace GSL
         rclcpp::Subscription<Detection3DArray>::SharedPtr cameraSub;
         rclcpp::Publisher<Marker>::SharedPtr classMarkers;
 
+        Semantics::FOV fov;
         ClassMap classMap;
-        std::vector<Occupancy> wallsOccupancy; // TODO this is a copy. Should it be?
+        std::vector<Occupancy>& wallsOccupancy;
         Grid2DMetadata gridMetadata;
         BufferWrapper& bufferWrapper;
         const PoseWithCovarianceStamped& currentRobotPose;
-
-        struct FOV
-        {
-            float angleRads;
-            float minDist;
-            float maxDist;
-        } fov;
 
         void detectionCallback(Detection3DArray::ConstSharedPtr msg);
         AABB2DInt getAABB(const Detection3D& detection);

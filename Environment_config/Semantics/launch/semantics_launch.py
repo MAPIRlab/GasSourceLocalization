@@ -21,7 +21,11 @@ def launch_setup(context, *args, **kwargs):
             get_share_file_path_from_package(package_name="voxeland", file_name="voxeland_server.launch.py")
         ),
         launch_arguments= {
-            "resolution" : "0.25"
+            "resolution" : "0.25",
+            "pHit" : "0.6",
+            "pMiss" : "0.4",
+            "clampOccupancyMax" : "0.97",
+            "clampOccupancyMin" : "0.12",
         }.items()
     )
 
