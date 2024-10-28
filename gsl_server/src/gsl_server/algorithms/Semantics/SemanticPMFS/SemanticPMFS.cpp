@@ -41,17 +41,17 @@ namespace GSL
 
     void SemanticPMFS::OnUpdate()
     {
-        Algorithm::OnUpdate();
-        if (paused)
-            return;
+        if (!paused)
+        {
+            Algorithm::OnUpdate();
+            if (semantics) // TODO allow this to run slower that the update loop? kinda messes up the callback-based one
+            {
+                semantics->OnUpdate();
+                updateSourceFromSemantics();
+            }
+        }
 
         functionQueue.run();
-
-        if (semantics) // TODO allow this to run slower that the update loop? kinda messes up the callback-based one
-        {
-            semantics->OnUpdate();
-            updateSourceFromSemantics();
-        }
 
         PMFSViz::ShowHitProb(
             Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),

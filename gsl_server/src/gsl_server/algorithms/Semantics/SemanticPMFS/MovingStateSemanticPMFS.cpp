@@ -24,24 +24,28 @@ namespace GSL
 
         // Update the open set with the neighbours of the current position
         {
-            int i = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).x, j = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).y;
+            int i = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).x;
+            int j = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).y;
 
             int openMoveSetExpasion = pmfs->settings.movement.openMoveSetExpasion;
-            int oI = std::max(0, i - openMoveSetExpasion);
-            int fI = std::min((int)gridMetadata.dimensions.x - 1, i + openMoveSetExpasion);
-            int oJ = std::max(0, j - openMoveSetExpasion);
-            int fJ = std::min((int)gridMetadata.dimensions.y - 1, j + openMoveSetExpasion);
+            int oC = std::max(0, i - openMoveSetExpasion);
+            int fC = std::min((int)gridMetadata.dimensions.x - 1, i + openMoveSetExpasion);
+            int oR = std::max(0, j - openMoveSetExpasion);
+            int fR = std::min((int)gridMetadata.dimensions.y - 1, j + openMoveSetExpasion);
 
-            for (int r = oI; r <= fI; r++)
+            for (int col = oC; col <= fC; col++)
             {
-                for (int c = oJ; c <= fJ; c++)
+                for (int row = oR; row <= fR; row++)
                 {
-                    Vector2Int p(r, c);
+                    Vector2Int p(col, row);
                     if (pmfs->navigationOccupancy[pmfs->gridMetadata.indexOf(p)] != Occupancy::Free)
                         continue;
 
-                    if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i, j}, p) == Visibility::Visible)
+                    if (closedMoveSet.find(p) == closedMoveSet.end() //
+                        && pmfs->hitProbability[gridMetadata.indexOf(p)].distanceFromRobot <= pmfs->settings.movement.openMoveSetExpasion)
+                    {
                         openMoveSet.insert(p);
+                    }
                 }
             }
         }
@@ -54,7 +58,6 @@ namespace GSL
             semanticsEntropy.resize(pmfs->hitProbability.size(), 0.);
         // TODO use this!
         pmfs->semantics->GetEntropyInPlace(semanticsEntropy);
-
 
         // check all the candidates in the open set and choose the most informative one
         //------------------------------------------
@@ -83,7 +86,7 @@ namespace GSL
 
             if (interest > bestInterest)
             {
-                //checkGoal is somewhat slow because of the service calls, so only do it if the cell is actually interesting
+                // checkGoal is somewhat slow because of the service calls, so only do it if the cell is actually interesting
                 if (checkGoal(tempGoal))
                 {
                     bestInterest = interest;

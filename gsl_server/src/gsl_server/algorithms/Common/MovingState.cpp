@@ -1,7 +1,7 @@
-#include <gsl_server/algorithms/Common/MovingState.hpp>
-#include <gsl_server/core/Logging.hpp>
-#include <gsl_server/core/GSLResult.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
+#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/core/GSLResult.hpp>
+#include <gsl_server/core/Logging.hpp>
 
 #define NAVIGATION_FIXES 0 // enables some navigation checks that should be handled by nav2 directly, but can cause problems if it is not correcly configured
 // honestly, don't use this, just configure nav2 properly
@@ -13,7 +13,8 @@ namespace GSL
     static constexpr int max_navigation_time = 20;
 #endif
 
-    MovingState::MovingState(Algorithm* _algorithm) : State(_algorithm)
+    MovingState::MovingState(Algorithm* _algorithm)
+        : State(_algorithm)
     {
 #ifdef USE_NAV_ASSISTANT
         make_plan_client = algorithm->node->create_client<MakePlan>("navigation_assistant/make_plan");
@@ -124,7 +125,7 @@ namespace GSL
 
         // send the "make plan" goal to nav2 and wait until the response comes back
 
-        auto callback = [&currentPlan](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult & w_result)
+        auto callback = [&currentPlan](const rclcpp_action::ClientGoalHandle<MakePlan>::WrappedResult& w_result)
         {
             currentPlan = w_result.result->path;
         };
@@ -157,9 +158,13 @@ namespace GSL
     bool MovingState::checkGoal(const NavigateToPose::Goal& goal)
     {
         Vector2 goalPosition = Vector2(goal.pose.pose.position.x, goal.pose.pose.position.y);
-        if (!algorithm->isPointInsideMapBounds(goalPosition)
-            || algorithm->sampleCostmap(goalPosition) > lethal_cost
-           )
+        if (!algorithm->isPointInsideMapBounds(goalPosition))
+        {
+            GSL_ASSERT(false);
+            algorithm->isPointInsideMapBounds(goalPosition);
+            return false;
+        }
+        if (algorithm->sampleCostmap(goalPosition) > lethal_cost)
             return false;
 
         PoseStamped start;

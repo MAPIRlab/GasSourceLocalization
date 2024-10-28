@@ -50,7 +50,6 @@ namespace GSL
         NavigateToPose::Goal goal;
         int goalI = -1, goalJ = -1;
         double bestInterest = -DBL_MAX;
-        double maxDist = 0;
 
         // We have a small random chance of using the explorationValue instead of the proper information value even in the second phase
         // because it is beneficial to have at least some measurements spanning a large area of the map
@@ -79,7 +78,6 @@ namespace GSL
                     bestInterest = interest;
                     goalI = col;
                     goalJ = row;
-                    maxDist = pmfs->hitProbability[gridMetadata.indexOf({col, row})].distanceFromRobot;
                     goal = tempGoal;
                 }
             }
@@ -117,7 +115,7 @@ namespace GSL
         goal.pose.header.stamp = pmfs->node->now();
 
         Vector2 pos = pmfs->gridMetadata.indicesToCoordinates(i, j);
-        Vector2 coordR = {pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y};
+        Vector2 coordR(pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y);
 
         double move_angle = (std::atan2(pos.y - coordR.y, pos.x - coordR.x));
         goal.pose.pose.position.x = pos.x;

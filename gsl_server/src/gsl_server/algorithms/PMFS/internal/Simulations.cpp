@@ -243,8 +243,8 @@ namespace GSL::PMFS_internal
             ZoneScopedN("Warmup");
 
             bool stable = false;
-            int count = 0;
-            while (count < settings.minWarmupIterations || (!stable && count < settings.maxWarmupIterations))
+            int iterationCount = 0;
+            while (iterationCount < settings.minWarmupIterations || (!stable && iterationCount < settings.maxWarmupIterations))
             {
                 for (int i = 0; i < numFilamentsIteration; i++)
                 {
@@ -271,7 +271,7 @@ namespace GSL::PMFS_internal
                         break;
                     }
                 }
-                count++;
+                iterationCount++;
             }
         }
 
@@ -373,7 +373,7 @@ namespace GSL::PMFS_internal
 
         Vector2 vector = end - currentPosition;
         float travelDistance = vmath::length(vector);
-        float stepSize = std::min(travelDistance, metadata.cellSize * 0.1f);
+        float stepSize = std::min(travelDistance, metadata.cellSize * 0.5f);
         Vector2 increment = vmath::normalized(vector) * stepSize;
         int steps = travelDistance / stepSize;
 

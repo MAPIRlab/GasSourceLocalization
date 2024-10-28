@@ -45,7 +45,7 @@ def launch_setup(context, *args, **kwargs):
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="GSL",
-                prefix="xterm -hold -e",
+                # prefix="xterm -hold -e",
                 parameters=[
                     # Common
                     {'use_sim_time': False},	
@@ -91,6 +91,7 @@ def launch_setup(context, *args, **kwargs):
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
+                    {"minWarmupIterations": parse_substitution("$(var minWarmupIterations)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
 
                     #Semantics
@@ -225,8 +226,8 @@ def launch_setup(context, *args, **kwargs):
         package="gsl_server",
         executable="send_pose",
         parameters=[
-            {"x":-3.0},
-            {"y":-3.5},
+            {"x":-6.1},
+            {"y":2.45},
             {"z":-0.73},
             {"topic":"/giraff/resetPose"}
         ]
@@ -300,7 +301,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="minWarmupIterations", 
-            value="500"
+            value="200"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations", 
