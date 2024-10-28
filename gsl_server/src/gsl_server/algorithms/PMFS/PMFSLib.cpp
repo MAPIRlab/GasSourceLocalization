@@ -195,7 +195,6 @@ namespace GSL
         metadata.scale = scale;
     }
 
-    // TODO shouldn't some of this be done with the simulationOccupancy rather than the navigationOccupancy?
     void PMFSLib::InitializeMap(Grid2D<HitProbability> grid,
                                 PMFS_internal::Simulations& simulations,
                                 VisibilityMap& visibilityMap,

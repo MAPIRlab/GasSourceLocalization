@@ -185,26 +185,26 @@ namespace GSL
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
-        PMFSLib::EstimateWind(
-            settings.simulation.useWindGroundTruth,
-            Grid2D<Vector2>(estimatedWindVectors,
-                            simulationOccupancy,
-                            gridMetadata),
-            node,
-            pubs.pmfsPubs.gmrfWind
-                IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-        PMFSViz::PlotWindVectors(
-            Grid2D<Vector2>(
-                estimatedWindVectors,
-                simulationOccupancy,
-                gridMetadata),
-            settings.visualization,
-            pubs.pmfsPubs);
-
         number_of_updates++;
 
         if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
         {
+            PMFSLib::EstimateWind(
+                settings.simulation.useWindGroundTruth,
+                Grid2D<Vector2>(estimatedWindVectors,
+                                simulationOccupancy,
+                                gridMetadata),
+                node,
+                pubs.pmfsPubs.gmrfWind
+                    IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+            PMFSViz::PlotWindVectors(
+                Grid2D<Vector2>(
+                    estimatedWindVectors,
+                    simulationOccupancy,
+                    gridMetadata),
+                settings.visualization,
+                pubs.pmfsPubs);
+
             number_of_updates = 0;
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;

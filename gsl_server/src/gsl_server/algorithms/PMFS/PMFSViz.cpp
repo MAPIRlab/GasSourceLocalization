@@ -8,7 +8,8 @@ namespace GSL
     void PMFSViz::ShowHitProb(Grid2D<PMFS_internal::HitProbability> grid, const PMFS_internal::VisualizationSettings& settings,
                               const PMFS_internal::PublishersAndSubscribers& pubs)
     {
-        Marker gasProbMarker = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
+        float markerSize = grid.metadata.cellSize * 0.95;
+        Marker gasProbMarker = Utils::emptyMarker({markerSize, markerSize}, pubs.clock);
 
         Marker confidenceMarker = gasProbMarker;
 
@@ -51,7 +52,8 @@ namespace GSL
     void PMFSViz::ShowSourceProb(Grid2D<double> grid, const PMFS_internal::VisualizationSettings& settings,
                                  const PMFS_internal::PublishersAndSubscribers& pubs)
     {
-        Marker sourceProbMarker = Utils::emptyMarker({0.2, 0.2}, pubs.clock);
+        float markerSize = grid.metadata.cellSize * 0.95;
+        Marker sourceProbMarker = Utils::emptyMarker({markerSize, markerSize}, pubs.clock);
         for (int b = 0; b < grid.metadata.dimensions.y; b++)
         {
             for (int a = 0; a < grid.metadata.dimensions.x; a++)
@@ -154,7 +156,6 @@ namespace GSL
                     marker.scale.y = 0.03; // arrow width
                     marker.scale.z = 0.05; // arrow height
                     // color -> must normalize to [0-199]
-                    size_t idx_color = 199 * (module / max_module);
                     marker.color.r = 1;
                     marker.color.g = 0;
                     marker.color.b = 0;

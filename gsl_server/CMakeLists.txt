@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log fi
 #OPTIONS
 #########################
 #enabling debug mode disables optimizations and activates a bunch of assertions in the code.
-set(GSL_DEBUG ON) 
+set(GSL_DEBUG OFF) 
 #extra logging to tell you what is being executed
 set(GSL_TRACING ON) 
  
