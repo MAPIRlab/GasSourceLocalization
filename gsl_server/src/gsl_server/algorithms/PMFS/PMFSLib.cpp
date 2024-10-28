@@ -37,6 +37,7 @@ namespace GSL
                     ),
                 .valueAt1 = (hit ? 0.6f : 0.1f)};
 
+        GSL_ASSERT(hitProb.metadata.indicesInBounds(robotPosition));
         size_t oC = std::max(0, robotPosition.x - settings.localEstimationWindowSize);
         size_t fC = std::min(hitProb.metadata.dimensions.x - 1, robotPosition.x + settings.localEstimationWindowSize);
         size_t oR = std::max(0, robotPosition.y - settings.localEstimationWindowSize);
@@ -225,17 +226,17 @@ namespace GSL
                         visibilityMap.emplace(ij, {});
                         continue;
                     }
-                    int oI = std::max(0, i - (int)visibilityMap.range) - i;
-                    int fI = std::min((int)grid.metadata.dimensions.x - 1, i + (int)visibilityMap.range) - i;
-                    int oJ = std::max(0, j - (int)visibilityMap.range) - j;
-                    int fJ = std::min((int)grid.metadata.dimensions.y - 1, j + (int)visibilityMap.range) - j;
+                    int oR = std::max(0, j - (int)visibilityMap.range);
+                    int fR = std::min((int)grid.metadata.dimensions.y - 1, j + (int)visibilityMap.range);
+                    int oC = std::max(0, i - (int)visibilityMap.range);
+                    int fC = std::min((int)grid.metadata.dimensions.x - 1, i + (int)visibilityMap.range);
 
                     std::vector<Vector2Int> visibleCells;
-                    for (int r = oI; r <= fI; r++)
+                    for (int row = oR; row <= fR; row++)
                     {
-                        for (int c = oJ; c <= fJ; c++)
+                        for (int col = oC; col <= fC; col++)
                         {
-                            Vector2Int thisCell(i + r, j + c);
+                            Vector2Int thisCell(col, row);
                             Vector2 start = grid.metadata.indicesToCoordinates(ij);
                             Vector2 end = grid.metadata.indicesToCoordinates(thisCell);
                             if (thisCell == ij || GridUtils::PathFree(grid.metadata, grid.occupancy, start, end))

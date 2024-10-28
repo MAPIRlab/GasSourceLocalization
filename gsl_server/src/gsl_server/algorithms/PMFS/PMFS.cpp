@@ -69,7 +69,8 @@ namespace GSL
         sourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         occupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
 
-        visibilityMap.emplace(gridMetadata.dimensions.y, gridMetadata.dimensions.x, std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
+        visibilityMap.emplace(gridMetadata.dimensions.x, gridMetadata.dimensions.y,
+                              std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
         GridUtils::reduceOccupancyMap(map.data, map.info.width, occupancy, gridMetadata);
         PMFSLib::InitializeMap(

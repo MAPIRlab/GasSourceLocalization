@@ -1,9 +1,9 @@
 #pragma once
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
-#include <gsl_server/core/Vectors.hpp>
-#include <gsl_server/core/Logging.hpp>
-#include <vector>
 #include <gsl_server/algorithms/Common/Utils/Profiling.hpp>
+#include <gsl_server/core/Logging.hpp>
+#include <gsl_server/core/Vectors.hpp>
+#include <vector>
 
 namespace GSL
 {
@@ -15,7 +15,8 @@ namespace GSL
         Iter e;
 
     public:
-        Range(Iter b, Iter e) : b(b), e(e)
+        Range(Iter b, Iter e)
+            : b(b), e(e)
         {}
 
         Iter begin() const
@@ -65,7 +66,7 @@ namespace GSL
                 return Visibility::OutOfRange;
 
             auto set = at_c(from);
-            //if (!find(set, to))
+            // if (!find(set, to))
             if (std::find(set.begin(), set.end(), to) == set.end())
                 return Visibility::NotVisible;
             return Visibility::Visible;
@@ -76,8 +77,11 @@ namespace GSL
             if (value.size() > bucketSize)
                 GSL_ERROR("VisibilityMap of range {} cannot hold vector of size {}!", range, value.size());
 
-            //store the actual size so we can quickly return the correct range later
-            m_map[indexOf(key)] = Vector2Int(value.size(), value.size());
+            // store the actual size so we can quickly return the correct range later
+            size_t startIndex = indexOf(key);
+            GSL_ASSERT_MSG(m_map[startIndex] == Vector2Int(-1, -1),
+                           "Hash collision in visibility map at index {}. This is a big error! Most likely cause is the width/height of the map are wrong", startIndex);
+            m_map[startIndex] = Vector2Int(value.size(), value.size());
 
             for (size_t i = 0; i < value.size(); i++)
             {
@@ -102,7 +106,6 @@ namespace GSL
             return Range<std::vector<Vector2Int>::const_iterator>::make_range(m_map.begin(), beginIndex, beginIndex + usedSize);
         }
 
-
     private:
         const size_t bucketSize;
         const size_t m_width;
@@ -110,7 +113,7 @@ namespace GSL
 
         size_t indexOf(const Vector2Int& key) const
         {
-            return key.x * m_width + key.y * bucketSize;
+            return key.y * m_width + key.x * bucketSize;
         }
 
         bool find(const Range<std::vector<Vector2Int>::const_iterator>& range, const Vector2Int& value) const
