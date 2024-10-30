@@ -137,7 +137,7 @@ namespace GSL::Utils
         return occupancyGrid;
     }
 
-    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid)
+    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& loggingName)
     {
         static auto debugNode = std::make_shared<rclcpp::Node>("debugNode");
         static auto pub = debugNode->create_publisher<Marker>("/debugMarkers", 1);
@@ -181,7 +181,7 @@ namespace GSL::Utils
                 }
             }
         }
-        GSL_INFO("Publishing debug markers at {}", pub->get_topic_name());
+        GSL_INFO("[{}] Publishing debug markers at {}", loggingName, pub->get_topic_name());
         pub->publish(points);
 
     } // namespace GSL::Utils

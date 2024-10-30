@@ -25,11 +25,13 @@ namespace GSL
         void publishMarkers();
 
     protected:
+        std::vector<double> mutualInformationGas;
         std::vector<double> semanticsEntropy;
         HashSet closedMoveSet;
         HashSet openMoveSet;
         NavigateToPose::Goal indexToGoal(int i, int j);
         void Fail() override;
+        void calculateMutualInformationGas();
 
         SemanticPMFS* pmfs;
 

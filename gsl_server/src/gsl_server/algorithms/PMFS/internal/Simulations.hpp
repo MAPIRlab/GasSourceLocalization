@@ -46,6 +46,14 @@ namespace GSL::PMFS_internal
         using HashSet = std::unordered_set<Vector2Int>;
 
     public:
+        struct SimulationResult
+        {
+            bool valid = false;
+            std::vector<float> hitMap;
+            long double sourceProb;
+        };
+
+    public:
         Simulations(Grid2D<HitProbability> _measuredHitProb, Grid2D<double> _sourceProb, Grid2D<Vector2> _wind,
                     const PMFS_internal::SimulationSettings& _settings)
             : settings(_settings), measuredHitProb(_measuredHitProb), sourceProb(_sourceProb), wind(_wind)
@@ -54,21 +62,18 @@ namespace GSL::PMFS_internal
         void initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap);
         void updateSourceProbability(float refineFraction);
         void printImage(const SimulationSource& source);
+        double probabilityFromSingleCell(double measured, double simulated, double confidence) const;
 
         std::vector<std::vector<Utils::NQA::Node*>> mapSegmentation;
         std::unique_ptr<Utils::NQA::Quadtree> quadtree;
         std::vector<Utils::NQA::Node> QTleaves;
         std::vector<double> varianceOfHitProb; // calculated from the simulations, used for movement
+        std::vector<SimulationResult> resultsFirstLevel;
         VisibilityMap* visibilityMap;
 
     protected:
         std::vector<long double> sourceProbInternal; // calculated from the simulations, used for movement
-        struct SimulationResult
-        {
-            bool valid = false;
-            std::vector<float> hitMap;
-            long double sourceProb;
-        };
+
         struct LeafScore
         {
             long double score;

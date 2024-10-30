@@ -1,13 +1,19 @@
+#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
+#include "gsl_server/algorithms/Common/Utils/Time.hpp"
+#include "gsl_server/core/Logging.hpp"
+#include <algorithm>
 #include <angles/angles.h>
-#include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
+#include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include <std_msgs/msg/detail/color_rgba__struct.hpp>
 
 namespace GSL
 {
-    MovingStatePMFS::MovingStatePMFS(Algorithm* _algorithm) : MovingState(_algorithm)
+    MovingStatePMFS::MovingStatePMFS(Algorithm* _algorithm)
+        : MovingState(_algorithm)
     {
         pmfs = dynamic_cast<PMFS*>(_algorithm);
 
@@ -54,6 +60,7 @@ namespace GSL
         // We have a small random chance of using the explorationValue instead of the proper information value even in the second phase
         // because it is beneficial to have at least some measurements spanning a large area of the map
         float explorationC = Utils::uniformRandom(0, 1);
+        calculateMutualInformationGas();
 
         for (const auto& indices : openMoveSet)
         {
@@ -67,10 +74,10 @@ namespace GSL
 
             double interest =
                 currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
-                ? explorationTerm
-                : varianceTerm;
+                    ? explorationTerm
+                    : varianceTerm;
 
-            //keep the best so far as the goal
+            // keep the best so far as the goal
             if (interest > bestInterest)
             {
                 if (checkGoal(tempGoal))
@@ -91,6 +98,106 @@ namespace GSL
         sendGoal(goal);
     }
 
+    void MovingStatePMFS::calculateMutualInformationGas()
+    {
+        Utils::Time::Stopwatch watch;
+        ZoneScopedN("MutualInformation");
+
+        // normalize the source probs
+        {
+            double sum = 0;
+            for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
+            {
+                if (!simResult.valid)
+                    continue;
+                sum += simResult.sourceProb;
+            }
+            for (auto& simResult : pmfs->simulations.resultsFirstLevel)
+                simResult.sourceProb /= sum;
+        }
+
+        constexpr uint discretizationLevels = 5;
+        std::vector<double> probF(pmfs->sourceProbability.size() * discretizationLevels, 0.0);
+        // calculate the probability of each discretized value of the hit frequency
+        {
+            ZoneScopedN("ProbF");
+            // #pragma omp parallel for
+            for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
+            {
+                if (!simResult.valid)
+                    continue;
+
+                for (size_t i = 0; i < simResult.hitMap.size(); i++)
+                {
+                    if (pmfs->occupancy[i] != Occupancy::Free)
+                        continue;
+                    uint bucket = simResult.hitMap[i] / (1. / discretizationLevels);
+                    probF[i * discretizationLevels + bucket] += simResult.sourceProb;
+                }
+            }
+        }
+
+        // use the hit frequency probabilities to calculate the conditional entropy
+        std::vector<double> conditionalEntropy(pmfs->sourceProbability.size(), 0.0);
+        {
+            ZoneScopedN("ConditionalEntropy");
+
+            // #pragma omp parallel for
+            for (size_t i = 0; i < conditionalEntropy.size(); i++)
+            {
+                if (pmfs->occupancy[i] != Occupancy::Free)
+                    continue;
+
+                for (size_t bucket = 0; bucket < discretizationLevels; bucket++)
+                {
+                    double probabilityOfFreq = probF[i * discretizationLevels + bucket];
+                    double freq = bucket * (1. / discretizationLevels);
+                    // if (probabilityOfFreq < 0.05)
+                    //     continue;
+
+                    for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
+                    {
+                        if (!simResult.valid)
+                            continue;
+
+                        double sourceProbWithFreq = pmfs->simulations.probabilityFromSingleCell(freq, simResult.hitMap[i], 1);
+                        conditionalEntropy[i] -= probabilityOfFreq * sourceProbWithFreq * std::log(sourceProbWithFreq);
+                    }
+                }
+            }
+        }
+
+        // calculate the mutual information
+        {
+            mutualInformationGas.clear();
+            mutualInformationGas.resize(pmfs->sourceProbability.size(), 0.0);
+            double entropyS = 0;
+            for (size_t i = 0; i < pmfs->sourceProbability.size(); i++)
+            {
+                double p = pmfs->sourceProbability[i];
+                entropyS += p * std::log(p);
+            }
+            
+            for (size_t i = 0; i < conditionalEntropy.size(); i++)
+                mutualInformationGas[i] = entropyS - conditionalEntropy[i];
+        }
+
+        GSL_INFO("Ellapsed mutual info: {:.3f}", watch.ellapsed());
+
+        {
+            auto maxElement = std::max_element(mutualInformationGas.begin(), mutualInformationGas.end());
+            double maxVal = *maxElement;
+            GSL_INFO("Max mutual info: {:.3f}", maxVal);
+
+            std::vector<std_msgs::msg::ColorRGBA> colors(mutualInformationGas.size());
+            for (size_t i = 0; i < mutualInformationGas.size(); i++)
+                colors[i] = Utils::valueToColor(mutualInformationGas[i], 0, maxVal, Utils::valueColorMode::Linear);
+
+            Utils::publishDebugMarkers(
+                Grid2D<std_msgs::msg::ColorRGBA>(colors, pmfs->occupancy, pmfs->gridMetadata),
+                "MutualInformation");
+        }
+    }
     double MovingStatePMFS::explorationValue(int i, int j)
     {
         // the exploration value is the sum of the uncertainty about the hit probability for all cells around (i,j)

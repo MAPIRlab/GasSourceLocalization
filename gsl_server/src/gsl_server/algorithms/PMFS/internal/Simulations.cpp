@@ -89,7 +89,8 @@ namespace GSL::PMFS_internal
         std::vector<VarianceCalculationData> varianceCalculationData(measuredHitProb.data.size());
 
         int numberOfSimulations = 0;
-
+        resultsFirstLevel.clear();
+        resultsFirstLevel.reserve(scores.size());
 // iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
 #pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
@@ -101,6 +102,7 @@ namespace GSL::PMFS_internal
 // update the information for the variance calulation
 #pragma omp critical
             {
+                resultsFirstLevel.push_back(result); // TODO test if it's worth the effort to avoid this copy
                 numberOfSimulations++;
                 for (int cell = 0; cell < result.hitMap.size(); cell++)
                 {
@@ -201,16 +203,21 @@ namespace GSL::PMFS_internal
         {
             if (measuredHitProb.occupancy[i] != Occupancy::Free)
                 continue;
+
             double measured = Utils::logOddsToProbability(measuredHitProb.data[i].logOdds);
             const double& simulated = hitMap[i];
-            double val = Utils::lerp(
-                1,
-                (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower),
-                measuredHitProb.data[i].confidence);
-            total *= val;
+            total *= probabilityFromSingleCell(measured, simulated, measuredHitProb.data[i].confidence);
             GSL_ASSERT(!std::isnan(total));
         }
         return total;
+    }
+
+    double Simulations::probabilityFromSingleCell(double measured, double simulated, double confidence) const
+    {
+        return Utils::lerp(
+            1,
+            (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower),
+            confidence);
     }
 
     void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
