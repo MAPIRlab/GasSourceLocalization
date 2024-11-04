@@ -170,58 +170,7 @@ namespace GSL
 
     void MovingStateSemanticPMFS::calculateMutualInformationGas()
     {
-        ZoneScopedN("MutualInformation");
-        constexpr uint discretizationLevels = 5;
-        std::vector<double> probF(pmfs->sourceProbabilityPMFS.size() * discretizationLevels, 0.0);
-        // calculate the probability of each discretized value of the hit frequency
-        {
-            ZoneScopedN("ProbF");
-// #pragma omp parallel for
-            for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
-            {
-                if (!simResult.valid)
-                    continue;
-
-                for (size_t i = 0; i < simResult.hitMap.size(); i++)
-                {
-                    if (pmfs->simulationOccupancy[i] != Occupancy::Free)
-                        continue;
-                    uint bucket = simResult.hitMap[i] / (1. / discretizationLevels);
-                    probF[i * discretizationLevels + bucket] = simResult.sourceProb;
-                }
-            }
-        }
-
-        // use the hit frequency probabilities to calculate the conditional entropy
-        {
-            ZoneScopedN("ConditionalEntropy");
-            if (mutualInformationGas.size() == 0)
-                mutualInformationGas.resize(pmfs->sourceProbabilityPMFS.size(), 0.0);
-
-// #pragma omp parallel for
-            for (size_t i = 0; i < mutualInformationGas.size(); i++)
-            {
-                if (pmfs->simulationOccupancy[i] != Occupancy::Free)
-                    continue;
-
-                for (size_t bucket = 0; bucket < discretizationLevels; bucket++)
-                {
-                    double probabilityOfFreq = probF[i * discretizationLevels + bucket];
-                    double freq = bucket * (1. / discretizationLevels);
-                    if (probabilityOfFreq < 0.1)
-                        continue;
-
-                    for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
-                    {
-                        if (!simResult.valid)
-                            continue;
-                        
-                        double sourceProbWithFreq = pmfs->simulations.probabilityFromSingleCell(freq, simResult.hitMap[i], 1);
-                        mutualInformationGas[i] += probabilityOfFreq * sourceProbWithFreq * std::log(sourceProbWithFreq); 
-                    }
-                }
-            }
-        }
+       
     }
 
     void MovingStateSemanticPMFS::publishMarkers()

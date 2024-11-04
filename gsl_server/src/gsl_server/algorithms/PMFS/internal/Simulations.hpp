@@ -62,7 +62,7 @@ namespace GSL::PMFS_internal
         void initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap);
         void updateSourceProbability(float refineFraction);
         void printImage(const SimulationSource& source);
-        double probabilityFromSingleCell(double measured, double simulated, double confidence) const;
+        double probabilitySingleFrequency(double measured, double simulated) const;
 
         std::vector<std::vector<Utils::NQA::Node*>> mapSegmentation;
         std::unique_ptr<Utils::NQA::Quadtree> quadtree;
@@ -91,6 +91,7 @@ namespace GSL::PMFS_internal
                                       int timesteps, float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament) const;
         long double sourceProbFromMaps(const Grid2D<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
+        double probabilityFromSingleCell(HitProbability measured, double simulated) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
     };
 } // namespace GSL::PMFS_internal

@@ -1,3 +1,4 @@
+#include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
 #include <cstddef>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/Time.hpp>
@@ -91,8 +92,8 @@ namespace GSL::PMFS_internal
         int numberOfSimulations = 0;
         resultsFirstLevel.clear();
         resultsFirstLevel.reserve(scores.size());
-// iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
-#pragma omp parallel for schedule(dynamic)
+        // iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
+        #pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
         {
             SimulationResult result = runSimulation(scores, leafIndex);
@@ -107,7 +108,11 @@ namespace GSL::PMFS_internal
                 for (int cell = 0; cell < result.hitMap.size(); cell++)
                 {
                     auto& var = varianceCalculationData[cell];
-                    weighted_incremental_variance(result.hitMap[cell], result.sourceProb, var.mean, var.weight_sum, var.weight_squared_sum,
+                    weighted_incremental_variance(result.hitMap[cell],
+                                                  result.sourceProb,
+                                                  var.mean,
+                                                  var.weight_sum,
+                                                  var.weight_squared_sum,
                                                   var.variance);
                 }
             }
@@ -204,20 +209,29 @@ namespace GSL::PMFS_internal
             if (measuredHitProb.occupancy[i] != Occupancy::Free)
                 continue;
 
-            double measured = Utils::logOddsToProbability(measuredHitProb.data[i].logOdds);
             const double& simulated = hitMap[i];
-            total *= probabilityFromSingleCell(measured, simulated, measuredHitProb.data[i].confidence);
+            total *= probabilityFromSingleCell(measuredHitProb.data[i], simulated);
             GSL_ASSERT(!std::isnan(total));
         }
         return total;
     }
 
-    double Simulations::probabilityFromSingleCell(double measured, double simulated, double confidence) const
+    double Simulations::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
     {
-        return Utils::lerp(
-            1,
-            (1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower),
-            confidence);
+        auto frequencyDistribution = hitProb.frequencyDistribution();
+        double result = 0;
+        for (int freqIndex = 0; freqIndex < frequencyDistribution.size(); freqIndex++)
+        {
+            double measured = (freqIndex + 0.5) / HitProbability::numBuckets;
+            result += frequencyDistribution[freqIndex] * probabilitySingleFrequency(measured, simulated);
+            GSL_ASSERT(!std::isnan(result));
+        }
+        return result;
+    }
+
+    double Simulations::probabilitySingleFrequency(double measured, double simulated) const
+    {
+        return 1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower;
     }
 
     void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const

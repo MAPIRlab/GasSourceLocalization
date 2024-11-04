@@ -1,8 +1,8 @@
 #include <filesystem>
-#include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/core/Macros.hpp>
+#include <gsl_server/core/ros_typedefs.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -129,7 +129,7 @@ namespace GSL::Utils
         size_t height = mapImage.size().height;
         std::vector<int8_t> imageAsVec(width * height);
         for (int i = 0; i < width * height; i++)
-            imageAsVec[i] = (int8_t) std::clamp(100 - (int)mapImage.data[i], 0, 100);
+            imageAsVec[i] = (int8_t)std::clamp(100 - (int)mapImage.data[i], 0, 100);
 
         std::vector<Occupancy> occupancyGrid(width * height / metadata.scale);
         GridUtils::reduceOccupancyMap(imageAsVec, width, occupancyGrid, metadata);
@@ -142,27 +142,22 @@ namespace GSL::Utils
         static auto debugNode = std::make_shared<rclcpp::Node>("debugNode");
         static auto pub = debugNode->create_publisher<Marker>("/debugMarkers", 1);
 
+        Marker points;
+        {
+            points.header.frame_id = "map";
+            points.ns = "cells";
+            points.id = 0;
+            points.type = Marker::POINTS;
+            points.action = Marker::ADD;
 
-        constexpr auto emptyMarker = []()
-                                     {
-                                         Marker points;
-                                         points.header.frame_id = "map";
-                                         points.ns = "cells";
-                                         points.id = 0;
-                                         points.type = Marker::POINTS;
-                                         points.action = Marker::ADD;
-
-                                         points.color.r = 1.0;
-                                         points.color.g = 0.0;
-                                         points.color.b = 1.0;
-                                         points.color.a = 1.0;
-                                         points.scale.x = 0.15;
-                                         points.scale.y = 0.15;
-                                         return points;
-                                     };
-
-        Marker points = emptyMarker();
-        points.header.stamp = debugNode->now();
+            points.color.r = 1.0;
+            points.color.g = 0.0;
+            points.color.b = 1.0;
+            points.color.a = 1.0;
+            points.scale.x = grid.metadata.cellSize * 0.9f;
+            points.scale.y = grid.metadata.cellSize * 0.9f;
+            points.header.stamp = debugNode->now();
+        }
 
         for (int row = 0; row < grid.metadata.dimensions.y; row++)
         {
@@ -177,7 +172,7 @@ namespace GSL::Utils
                     p.z = 0;
 
                     points.points.push_back(p);
-                    points.colors.push_back(grid.dataAt(col,row));
+                    points.colors.push_back(grid.dataAt(col, row));
                 }
             }
         }
@@ -185,4 +180,4 @@ namespace GSL::Utils
         pub->publish(points);
 
     } // namespace GSL::Utils
-}
+} // namespace GSL::Utils
