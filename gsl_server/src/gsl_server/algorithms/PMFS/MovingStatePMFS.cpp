@@ -126,7 +126,7 @@ namespace GSL
         {
             ZoneScopedN("ConditionalEntropy");
 
-            // #pragma omp parallel for
+            #pragma omp parallel for
             for (size_t i = 0; i < conditionalEntropy.size(); i++)
             {
                 if (pmfs->occupancy[i] != Occupancy::Free)
@@ -135,18 +135,40 @@ namespace GSL
                 for (size_t bucket = 0; bucket < discretizationLevels; bucket++)
                 {
                     double probabilityOfFreq = probF[i][bucket];
-                    double freq = bucket * (1. / discretizationLevels);
-                    // if (probabilityOfFreq < 0.05)
-                    //     continue;
+                    double freq = (bucket + 0.5) * (1. / discretizationLevels);
 
-                    for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
+                    // Run through this twice to normalize the source probabilities
+                    //-----------------------------------------------------
+
+                    // cache this to avoid having to re-compute, because this is now pretty heavy
+                    std::vector<long double> sourceProbs(pmfs->simulations.resultsFirstLevel.size(), 0.0);
+                    long double sum = 0;
+                    for (size_t i = 0; i < pmfs->simulations.resultsFirstLevel.size(); i++)
                     {
+                        const auto& simResult = pmfs->simulations.resultsFirstLevel[i];
                         if (!simResult.valid)
                             continue;
 
-                        double sourceProbWithFreq = pmfs->simulations.probabilitySingleFrequency(freq, simResult.hitMap[i]);
-                        conditionalEntropy[i] -= probabilityOfFreq * sourceProbWithFreq * std::log(sourceProbWithFreq);
+                        std::vector<PMFS_internal::HitProbability> localCopy = pmfs->hitProbability;
+                        localCopy[i].setProbability(freq);
+                        localCopy[i].confidence = 1;
+                        sourceProbs[i] = pmfs->simulations.sourceProbFromMaps(
+                            Grid2D<PMFS_internal::HitProbability>(localCopy, pmfs->occupancy, pmfs->gridMetadata),
+                            simResult.hitMap);
+                        sum += sourceProbs[i];
                     }
+
+                    double entropyThisFreq = 0;
+                    for (size_t i = 0; i < pmfs->simulations.resultsFirstLevel.size(); i++)
+                    {
+                        const auto& simResult = pmfs->simulations.resultsFirstLevel[i];
+                        if (!simResult.valid)
+                            continue;
+
+                        long double sourceProbWithFreq = sourceProbs[i] / sum;
+                        entropyThisFreq -= sourceProbWithFreq * std::log(sourceProbWithFreq);
+                    }
+                    conditionalEntropy[i] += probabilityOfFreq * entropyThisFreq;
                 }
             }
         }
@@ -161,30 +183,53 @@ namespace GSL
                 if (pmfs->occupancy[i] != Occupancy::Free)
                     continue;
                 double p = pmfs->sourceProbability[i];
-                entropyS += p * std::log(p);
+                entropyS -= p * std::log(p);
             }
 
             for (size_t i = 0; i < conditionalEntropy.size(); i++)
-                // mutualInformationGas[i] = entropyS - conditionalEntropy[i];
+            {
+                if (pmfs->occupancy[i] != Occupancy::Free)
+                    continue;
                 mutualInformationGas[i] = std::abs(entropyS - conditionalEntropy[i]);
+                // mutualInformationGas[i] = entropyS - conditionalEntropy[i];
+            }
+
+            // TEMP
+            // double minValue = *std::min_element(mutualInformationGas.begin(), mutualInformationGas.end());
+            // if (minValue < 0)
+            // {
+            //     for (size_t i = 0; i < mutualInformationGas.size(); i++)
+            //     {
+            //         if (pmfs->occupancy[i] != Occupancy::Free)
+            //             continue;
+            //         mutualInformationGas[i] += -minValue;
+            //     }
+            // }
         }
 
         // visualization with rviz markers
         {
-            auto maxElement = std::max_element(mutualInformationGas.begin(), mutualInformationGas.end());
-            double maxVal = *maxElement;
+            double min = DBL_MAX;
+            for (size_t i = 0; i < mutualInformationGas.size(); i++)
+            {
+                if (pmfs->occupancy[i] != Occupancy::Free)
+                    continue;
+                min = std::min(min, mutualInformationGas[i]);
+            }
+
+            auto maxVal = *std::max_element(mutualInformationGas.begin(), mutualInformationGas.end());
             GSL_INFO("Max mutual info: {:.3f}", maxVal);
 
             std::vector<std_msgs::msg::ColorRGBA> colors(mutualInformationGas.size());
             for (size_t i = 0; i < mutualInformationGas.size(); i++)
-                colors[i] = Utils::valueToColor(mutualInformationGas[i], 0, maxVal, Utils::valueColorMode::Linear);
+                colors[i] = Utils::valueToColor(mutualInformationGas[i], min, maxVal, Utils::valueColorMode::Linear);
 
             Utils::publishDebugMarkers(
                 Grid2D<std_msgs::msg::ColorRGBA>(colors, pmfs->occupancy, pmfs->gridMetadata),
                 "MutualInformation");
         }
 
-        GSL_INFO("Ellapsed mutual info: {:.3f}", watch.ellapsed());
+        GSL_INFO("Ellapsed mutual info: {:.3f}s", watch.ellapsed());
     }
     double MovingStatePMFS::explorationValue(int i, int j)
     {

@@ -92,8 +92,8 @@ namespace GSL::PMFS_internal
         int numberOfSimulations = 0;
         resultsFirstLevel.clear();
         resultsFirstLevel.reserve(scores.size());
-        // iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
-        #pragma omp parallel for schedule(dynamic)
+// iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
+#pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
         {
             SimulationResult result = runSimulation(scores, leafIndex);
@@ -211,6 +211,7 @@ namespace GSL::PMFS_internal
 
             const double& simulated = hitMap[i];
             total *= probabilityFromSingleCell(measuredHitProb.data[i], simulated);
+            // total *= Utils::lerp(1, probabilitySingleFrequency(measuredHitProb.data[i].probability(), simulated), measuredHitProb.data[i].confidence);
             GSL_ASSERT(!std::isnan(total));
         }
         return total;
