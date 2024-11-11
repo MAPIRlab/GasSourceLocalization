@@ -1,5 +1,7 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
+#include "gsl_server/core/ros_typedefs.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
@@ -61,6 +63,17 @@ namespace GSL
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             settings.visualization,
             pubs.pmfsPubs);
+        
+        // show olfaction-only source distribution
+        {
+            std::vector<ColorRGBA> colors(sourceProbabilityPMFS.size());
+            for (int i = 0; i < sourceProbabilityPMFS.size(); i++)
+                colors[i] = Utils::valueToColor(sourceProbabilityPMFS[i],
+                                                settings.visualization.sourceLimits.x,
+                                                settings.visualization.sourceLimits.y,
+                                                settings.visualization.sourceMode);
+            Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, simulationOccupancy, gridMetadata), "sourceOlfactionOnly");
+        }
     }
 
     void SemanticPMFS::declareParameters()
@@ -210,7 +223,6 @@ namespace GSL
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
             if (timeToSimulate)
                 simulations.updateSourceProbability(settings.simulation.refineFraction);
-
             auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
             if (iterationsCounter > settings.movement.initialExplorationMoves)
                 movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;

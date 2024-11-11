@@ -1,10 +1,14 @@
 #include <filesystem>
-#include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/core/Macros.hpp>
+#include <gsl_server/core/ros_typedefs.hpp>
+#include <map>
+#include <memory>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <rclcpp/publisher.hpp>
+#include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace GSL::Utils
@@ -129,7 +133,7 @@ namespace GSL::Utils
         size_t height = mapImage.size().height;
         std::vector<int8_t> imageAsVec(width * height);
         for (int i = 0; i < width * height; i++)
-            imageAsVec[i] = (int8_t) std::clamp(100 - (int)mapImage.data[i], 0, 100);
+            imageAsVec[i] = (int8_t)std::clamp(100 - (int)mapImage.data[i], 0, 100);
 
         std::vector<Occupancy> occupancyGrid(width * height / metadata.scale);
         GridUtils::reduceOccupancyMap(imageAsVec, width, occupancyGrid, metadata);
@@ -137,32 +141,31 @@ namespace GSL::Utils
         return occupancyGrid;
     }
 
-    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& loggingName)
+    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic)
     {
         static auto debugNode = std::make_shared<rclcpp::Node>("debugNode");
-        static auto pub = debugNode->create_publisher<Marker>("/debugMarkers", 1);
 
+        static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
 
-        constexpr auto emptyMarker = []()
-                                     {
-                                         Marker points;
-                                         points.header.frame_id = "map";
-                                         points.ns = "cells";
-                                         points.id = 0;
-                                         points.type = Marker::POINTS;
-                                         points.action = Marker::ADD;
+        if (!publisherMap.contains(topic))
+            publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
+        auto pub = publisherMap[topic];
 
-                                         points.color.r = 1.0;
-                                         points.color.g = 0.0;
-                                         points.color.b = 1.0;
-                                         points.color.a = 1.0;
-                                         points.scale.x = 0.15;
-                                         points.scale.y = 0.15;
-                                         return points;
-                                     };
-
-        Marker points = emptyMarker();
+        Marker points;
+        points.header.frame_id = "map";
         points.header.stamp = debugNode->now();
+        points.ns = "cells";
+        points.id = 0;
+        points.type = Marker::POINTS;
+        points.action = Marker::ADD;
+
+        points.color.r = 1.0;
+        points.color.g = 0.0;
+        points.color.b = 1.0;
+        points.color.a = 1.0;
+        points.scale.x = grid.metadata.cellSize * 0.95;
+        points.scale.y = grid.metadata.cellSize * 0.95;
+
 
         for (int row = 0; row < grid.metadata.dimensions.y; row++)
         {
@@ -177,12 +180,13 @@ namespace GSL::Utils
                     p.z = 0;
 
                     points.points.push_back(p);
-                    points.colors.push_back(grid.dataAt(col,row));
+                    points.colors.push_back(grid.dataAt(col, row));
                 }
             }
         }
-        GSL_INFO("[{}] Publishing debug markers at {}", loggingName, pub->get_topic_name());
+        
+        // GSL_INFO("Publishing debug markers at {}", pub->get_topic_name());
         pub->publish(points);
 
     } // namespace GSL::Utils
-}
+} // namespace GSL::Utils

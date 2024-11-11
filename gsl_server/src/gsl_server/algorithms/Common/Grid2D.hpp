@@ -111,7 +111,7 @@ namespace GSL
     public:
         GridUtils() = delete;
 
-        // reduce the resolution of an occupancy grid, considering that a cell in the smaller map is occupied as soon as a single smaller cell in it is
+        // reduce the resolution of an occupancy grid, considering that a cell in the coarser map is occupied as soon as a single smaller cell in it is
         static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy,
                                        const Grid2DMetadata& metadata)
         {
