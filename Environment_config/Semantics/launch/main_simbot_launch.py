@@ -227,9 +227,9 @@ def launch_setup(context, *args, **kwargs):
         package="gsl_server",
         executable="send_pose",
         parameters=[
-            {"x":4.0},
-            {"y":0.9},
-            {"z":0.0},
+            {"x":parse_substitution("$(var start_pos_x)")},
+            {"y":parse_substitution("$(var start_pos_y)")},
+            {"z":parse_substitution("$(var start_pos_z)")},
             {"topic":"/giraff/resetPose"}
         ]
     )
@@ -243,9 +243,9 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(anemometer)
     actions.extend(PID)
     actions.append(nav2)
-    # actions.append(gmrf_wind)
-    # actions.extend(gsl_node)
-    # actions.extend(gsl_call)
+    actions.append(gmrf_wind)
+    actions.extend(gsl_node)
+    actions.extend(gsl_call)
     actions.append(rvizHit)
     actions.append(rvizSource)
     actions.append(send_pose)
