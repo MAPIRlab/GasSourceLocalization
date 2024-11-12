@@ -62,9 +62,6 @@ namespace GSL
         FunctionQueue functionQueue;
         uint iterationsCounter;
 
-        Vector2 expectedValueSource(double proportionBest);
-        double varianceSourcePosition();
-
         IF_GUI(PMFS_internal::UI ui);
     };
 } // namespace GSL

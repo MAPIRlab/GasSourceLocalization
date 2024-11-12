@@ -1,3 +1,4 @@
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <filesystem>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
@@ -13,6 +14,7 @@
 
 namespace GSL::Utils
 {
+    static rclcpp::Node::SharedPtr debugNode;
 
     geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw)
     {
@@ -141,9 +143,39 @@ namespace GSL::Utils
         return occupancyGrid;
     }
 
+    void publishDebugSingleMarker(Vector3 position, ColorRGBA color, const std::string& topic)
+    {
+        if (!debugNode)
+            debugNode = std::make_shared<rclcpp::Node>("debugNode");
+
+        static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
+
+
+        if (!publisherMap.contains(topic))
+            publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
+        auto pub = publisherMap[topic];
+
+        Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = debugNode->now();
+        marker.type = Marker::SPHERE;
+
+        marker.color = color;
+        marker.scale.x = 0.2;
+        marker.scale.y = 0.2;
+        marker.scale.z = 0.2;
+
+        marker.pose.position.x = position.x;
+        marker.pose.position.y = position.y;
+        marker.pose.position.z = position.z;
+
+        pub->publish(marker);
+    }
+
     void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic)
     {
-        static auto debugNode = std::make_shared<rclcpp::Node>("debugNode");
+        if (!debugNode)
+            debugNode = std::make_shared<rclcpp::Node>("debugNode");
 
         static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
 
@@ -154,8 +186,6 @@ namespace GSL::Utils
         Marker points;
         points.header.frame_id = "map";
         points.header.stamp = debugNode->now();
-        points.ns = "cells";
-        points.id = 0;
         points.type = Marker::POINTS;
         points.action = Marker::ADD;
 
@@ -165,7 +195,6 @@ namespace GSL::Utils
         points.color.a = 1.0;
         points.scale.x = grid.metadata.cellSize * 0.95;
         points.scale.y = grid.metadata.cellSize * 0.95;
-
 
         for (int row = 0; row < grid.metadata.dimensions.y; row++)
         {
@@ -184,7 +213,7 @@ namespace GSL::Utils
                 }
             }
         }
-        
+
         // GSL_INFO("Publishing debug markers at {}", pub->get_topic_name());
         pub->publish(points);
 
