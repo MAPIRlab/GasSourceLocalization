@@ -208,8 +208,7 @@ def launch_setup(context, *args, **kwargs):
         name="rviz",
         #prefix="xterm -e",
         arguments=[
-            "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "sourceOlfactionOnly.rviz")
-            # "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "hit.rviz")
+            "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "hit.rviz")
         ],
     )
 
