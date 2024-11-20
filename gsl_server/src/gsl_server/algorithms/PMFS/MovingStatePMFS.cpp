@@ -98,12 +98,21 @@ namespace GSL
         sendGoal(goal);
     }
 
+    // Calculating this is a bit complex, specially if you want to do it in a reasonable amount of time
+    // The main idea is to evaluate how much information about the source a specific cell gives by considering the case in which you know its hit frequency perfectly (confidence of 1)
+    // You calculate the source prob distribution in that hypothetical case, and take the change in entropy with respect to the current entropy
+    // The thing is, you can set the confidence to 1, but with what hit frequency?
+    // Well, we can calculate a probability distribution for the hit frequency from the *current* confidence, and use that to then calculate the expected value of the entropy reduction
+    // And that's what this does. There is some additional complexity in making it run fast (explained below), where we avoid re-comparing entire maps after modifying a single cell
+
+    // Also, for speed reasons we are currently using the result of the coarsest simulation level instead of the final source distribution.
+    // Could probably be changed without it becoming too slow. Probably.
     void MovingStatePMFS::calculateMutualInformationGas()
     {
         Utils::Time::Stopwatch watch;
         ZoneScopedN("MutualInformation");
 
-        // normalize the source probs
+        // normalize the current source probs
         {
             double sum = 0;
             for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
@@ -116,6 +125,7 @@ namespace GSL
                 simResult.sourceProb /= sum;
         }
 
+        // get the probability of each hit frequency in each cell, according to the current p(h_i) and the confidence value
         constexpr size_t discretizationLevels = PMFS_internal::HitProbability::numBuckets;
         std::vector<std::array<double, discretizationLevels>> probF(pmfs->hitProbability.size());
         for (size_t i = 0; i < probF.size(); i++)
@@ -126,7 +136,8 @@ namespace GSL
         {
             ZoneScopedN("ConditionalEntropy");
 
-            #pragma omp parallel for
+            // The cell index needs to be the outer loop, because we need to normalize the source probabilities given knowledge of this cell
+#pragma omp parallel for
             for (size_t i = 0; i < conditionalEntropy.size(); i++)
             {
                 if (pmfs->occupancy[i] != Occupancy::Free)
@@ -140,24 +151,35 @@ namespace GSL
                     // Run through this twice to normalize the source probabilities
                     //-----------------------------------------------------
 
-                    // cache this to avoid having to re-compute, because this is now pretty heavy
+                    // store the source probs for later normalization
                     std::vector<long double> sourceProbs(pmfs->simulations.resultsFirstLevel.size(), 0.0);
-                    long double sum = 0;
+                    long double sum = 0; // for normalizing
+
                     for (size_t simulationIndex = 0; simulationIndex < pmfs->simulations.resultsFirstLevel.size(); simulationIndex++)
                     {
                         const auto& simResult = pmfs->simulations.resultsFirstLevel[simulationIndex];
                         if (!simResult.valid)
                             continue;
 
-                        std::vector<PMFS_internal::HitProbability> localCopy = pmfs->hitProbability;
-                        localCopy[i].setProbability(freq);
-                        localCopy[i].confidence = 1;
-                        sourceProbs[simulationIndex] = pmfs->simulations.sourceProbFromMaps(
-                            Grid2D<PMFS_internal::HitProbability>(localCopy, pmfs->occupancy, pmfs->gridMetadata),
-                            simResult.hitMap);
+                        // instead of calculating the source probability by comparing the two maps (the simulated one, and the measured one with a single cell modified)
+                        // we use the already calculated source prob. If we divide p(s_k | f) by the current p(s_k | f_i) and then multiply by the modified p(s_k | f_i*)
+                        // we get the same result but avoid re-comparing all the untouched cells
+
+                        // current p(s_k | f_i)
+                        double probGivenThisCell = pmfs->simulations.probabilityFromSingleCell(pmfs->hitProbability[i], simResult.hitMap[i]);
+
+                        PMFS_internal::HitProbability localCopy = pmfs->hitProbability[i];
+                        localCopy.setProbability(freq);
+                        localCopy.confidence = 1;
+                        double probWithNewFreq = pmfs->simulations.probabilityFromSingleCell(localCopy, simResult.hitMap[i]);
+
+                        // source prob after modifying this cell in the map
+                        // we store it in a vector because we need to normalize before calculating the entropy
+                        sourceProbs[simulationIndex] = (simResult.sourceProb / probGivenThisCell) * probWithNewFreq;
                         sum += sourceProbs[simulationIndex];
                     }
 
+                    // calculate the entropy for this particular conditional
                     double entropyThisFreq = 0;
                     for (size_t simulationIndex = 0; simulationIndex < pmfs->simulations.resultsFirstLevel.size(); simulationIndex++)
                     {

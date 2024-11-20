@@ -210,8 +210,9 @@ namespace GSL::PMFS_internal
                 continue;
 
             const double& simulated = hitMap[i];
-            total *= probabilityFromSingleCell(measuredHitProb.data[i], simulated);
-            // total *= Utils::lerp(1, probabilitySingleFrequency(measuredHitProb.data[i].probability(), simulated), measuredHitProb.data[i].confidence);
+            double sourceGivenThisCell = probabilityFromSingleCell(measuredHitProb.data[i], simulated);
+            // double sourceGivenThisCell = Utils::lerp(1, probabilitySingleFrequency(measuredHitProb.data[i].probability(), simulated), measuredHitProb.data[i].confidence);
+            total *= sourceGivenThisCell;
             GSL_ASSERT(!std::isnan(total));
         }
         return total;

@@ -63,6 +63,7 @@ namespace GSL::PMFS_internal
         void updateSourceProbability(float refineFraction);
         void printImage(const SimulationSource& source);
         double probabilitySingleFrequency(double measured, double simulated) const;
+        double probabilityFromSingleCell(HitProbability measured, double simulated) const;
         long double sourceProbFromMaps(const Grid2D<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
 
         std::vector<std::vector<Utils::NQA::Node*>> mapSegmentation;
@@ -91,7 +92,6 @@ namespace GSL::PMFS_internal
         void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup,
                                       int timesteps, float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament) const;
-        double probabilityFromSingleCell(HitProbability measured, double simulated) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
     };
 } // namespace GSL::PMFS_internal
