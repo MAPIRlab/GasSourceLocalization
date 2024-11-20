@@ -1,14 +1,20 @@
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <filesystem>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/core/Macros.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
+#include <map>
+#include <memory>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <rclcpp/publisher.hpp>
+#include <string>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace GSL::Utils
 {
+    static rclcpp::Node::SharedPtr debugNode;
 
     geometry_msgs::msg::Quaternion createQuaternionMsgFromYaw(double yaw)
     {
@@ -137,27 +143,57 @@ namespace GSL::Utils
         return occupancyGrid;
     }
 
-    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& loggingName)
+    void publishDebugSingleMarker(Vector3 position, ColorRGBA color, const std::string& topic)
     {
-        static auto debugNode = std::make_shared<rclcpp::Node>("debugNode");
-        static auto pub = debugNode->create_publisher<Marker>("/debugMarkers", 1);
+        if (!debugNode)
+            debugNode = std::make_shared<rclcpp::Node>("debugNode");
+
+        static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
+
+        if (!publisherMap.contains(topic))
+            publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
+        auto pub = publisherMap[topic];
+
+        Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = debugNode->now();
+        marker.type = Marker::SPHERE;
+
+        marker.color = color;
+        marker.scale.x = 0.2;
+        marker.scale.y = 0.2;
+        marker.scale.z = 0.2;
+
+        marker.pose.position.x = position.x;
+        marker.pose.position.y = position.y;
+        marker.pose.position.z = position.z;
+
+        pub->publish(marker);
+    }
+
+    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic)
+    {
+        if (!debugNode)
+            debugNode = std::make_shared<rclcpp::Node>("debugNode");
+
+        static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
+
+        if (!publisherMap.contains(topic))
+            publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
+        auto pub = publisherMap[topic];
 
         Marker points;
-        {
-            points.header.frame_id = "map";
-            points.ns = "cells";
-            points.id = 0;
-            points.type = Marker::POINTS;
-            points.action = Marker::ADD;
+        points.header.frame_id = "map";
+        points.header.stamp = debugNode->now();
+        points.type = Marker::POINTS;
+        points.action = Marker::ADD;
 
-            points.color.r = 1.0;
-            points.color.g = 0.0;
-            points.color.b = 1.0;
-            points.color.a = 1.0;
-            points.scale.x = grid.metadata.cellSize * 0.9f;
-            points.scale.y = grid.metadata.cellSize * 0.9f;
-            points.header.stamp = debugNode->now();
-        }
+        points.color.r = 1.0;
+        points.color.g = 0.0;
+        points.color.b = 1.0;
+        points.color.a = 1.0;
+        points.scale.x = grid.metadata.cellSize * 0.95;
+        points.scale.y = grid.metadata.cellSize * 0.95;
 
         for (int row = 0; row < grid.metadata.dimensions.y; row++)
         {
@@ -176,7 +212,8 @@ namespace GSL::Utils
                 }
             }
         }
-        GSL_INFO("[{}] Publishing debug markers at {}", loggingName, pub->get_topic_name());
+
+        // GSL_INFO("Publishing debug markers at {}", pub->get_topic_name());
         pub->publish(points);
 
     } // namespace GSL::Utils

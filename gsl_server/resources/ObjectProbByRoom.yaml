@@ -1,14 +1,14 @@
 number_classes: 81 #including background class
 room_categories:
   Kitchen:
-    oven: 0.2
-    refrigerator: 0.1
+    oven: 0.3
+    refrigerator: 0.2
     microwave: 0.05
     sink: 0.05
   
   Bathroom:
-    toilet: 0.2
-    sink: 0.2
+    toilet: 0.5
+    sink: 0.3
 
   Bedroom:
-    bed: 0.3
+    bed: 0.6

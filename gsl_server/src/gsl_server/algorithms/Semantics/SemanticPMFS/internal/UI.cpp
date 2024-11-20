@@ -1,3 +1,4 @@
+#ifdef USE_GUI
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
@@ -5,7 +6,6 @@
 #include "gsl_server/core/ros_typedefs.hpp"
 #include "imgui.h"
 #include <fmt/core.h>
-#ifdef USE_GUI
 
 // TODO This is currently just a straight-up copy of the PMFS UI. We could definitely do better, but I don't believe it is a good idea to set up an inheritance tree for UIs
 // TODO it ends up limiting the design of the actual algorithm classes, and keeping that well organized is higher priority than making the debug UI easy to maintain
@@ -283,7 +283,7 @@ namespace GSL::SemanticPMFS_internal
     {
         static rclcpp::Publisher<Marker>::SharedPtr pub = pmfs->node->create_publisher<Marker>("UIQueryPoint", 1);
         Marker marker;
-        marker.header.frame_id ="map";
+        marker.header.frame_id = "map";
         marker.header.stamp = pmfs->node->now();
         marker.pose.position.x = selectedCoordinates.x;
         marker.pose.position.y = selectedCoordinates.y;

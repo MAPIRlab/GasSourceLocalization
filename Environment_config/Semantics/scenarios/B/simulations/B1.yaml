@@ -29,6 +29,9 @@ outlets_models:
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet003.stl"
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet004.stl"
 
+start_pos_x: -6.0
+start_pos_y: 2.0
+start_pos_z: -0.73
 
 # simulation playback params
 allow_looping: False

@@ -1,5 +1,7 @@
-#include <gsl_server/algorithms/PMFS/PMFS.hpp>
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include <fstream>
+#include <gsl_server/algorithms/PMFS/PMFS.hpp>
 
 namespace GSL
 {
@@ -14,7 +16,6 @@ namespace GSL
         }
     }
 
-
     GSLResult PMFS::checkSourceFound()
     {
         if (stateMachine.getCurrentState() == waitForMapState.get())
@@ -23,8 +24,6 @@ namespace GSL
         rclcpp::Duration time_spent = node->now() - startTime;
         if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
-            Vector2 locationAll = expectedValueSource(1);
-            Vector2 location = expectedValueSource(0.05);
             saveResultsToFile(GSLResult::Failure);
             return GSLResult::Failure;
         }
@@ -38,12 +37,8 @@ namespace GSL
             }
         }
 
-        double variance = varianceSourcePosition();
+        double variance = Utils::Variance(Grid2D<double>(sourceProbability, occupancy, gridMetadata));
         GSL_INFO("Variance: {}", variance);
-
-        Vector2 locationAll = expectedValueSource(1);
-
-        Vector2 location = expectedValueSource(0.05);
 
         if (variance < settings.declaration.threshold)
         {
@@ -54,78 +49,14 @@ namespace GSL
         return GSLResult::Running;
     }
 
-    Vector2 PMFS::expectedValueSource(double proportionBest)
-    {
-        struct CellData
-        {
-            Vector2Int indices;
-            double probability;
-            CellData(Vector2Int ind, double prob)
-            {
-                indices = ind;
-                probability = prob;
-            }
-        };
-        std::vector<CellData> data;
-        for (int i = 0; i < gridMetadata.dimensions.x; i++)
-        {
-            for (int j = 0; j < gridMetadata.dimensions.x; j++)
-            {
-                if (occupancy[gridMetadata.indexOf({i, j})] == Occupancy::Free)
-                {
-                    CellData cd(Vector2Int(i, j), sourceProbability[gridMetadata.indexOf({i, j})]);
-                    data.push_back(cd);
-                }
-            }
-        }
-
-        std::sort(data.begin(), data.end(), [](const CellData & a, const CellData & b)
-        {
-            return a.probability > b.probability;
-        });
-
-        double averageX = 0, averageY = 0;
-        double sum = 0;
-
-        for (int i = 0; i < data.size() * proportionBest; i++)
-        {
-            CellData& cd = data[i];
-            Vector2 coord = gridMetadata.indicesToCoordinates(cd.indices.x, cd.indices.y);
-            averageX += cd.probability * coord.x;
-            averageY += cd.probability * coord.y;
-            sum += cd.probability;
-        }
-        return Vector2(averageX / sum, averageY / sum);
-    }
-
-    double PMFS::varianceSourcePosition()
-    {
-        Vector2 expected = expectedValueSource(1);
-        double x = 0, y = 0;
-        for (int i = 0; i < gridMetadata.dimensions.x; i++)
-        {
-            for (int j = 0; j < gridMetadata.dimensions.x; j++)
-            {
-                if (occupancy[gridMetadata.indexOf({i, j})] == Occupancy::Free)
-                {
-                    Vector2 coords = gridMetadata.indicesToCoordinates(i, j);
-                    double p = sourceProbability[gridMetadata.indexOf({i, j})];
-                    x += pow(coords.x - expected.x, 2) * p;
-                    y += pow(coords.y - expected.y, 2) * p;
-                }
-            }
-        }
-        return x + y;
-    }
-
     void PMFS::saveResultsToFile(GSLResult result)
     {
         // 1. Search time.
         rclcpp::Duration time_spent = node->now() - startTime;
         double search_t = time_spent.seconds();
 
-        Vector2 sourceLocationAll = expectedValueSource(1);
-        Vector2 sourceLocation = expectedValueSource(0.05);
+        Vector2 sourceLocationAll = Utils::ExpectedValue(Grid2D<double>(sourceProbability, occupancy, gridMetadata), 1);
+        Vector2 sourceLocation = Utils::ExpectedValue(Grid2D<double>(sourceProbability, occupancy, gridMetadata), 0.05);
 
         double error = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocation.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocation.y, 2));
         double errorAll = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocationAll.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocationAll.y, 2));
@@ -142,7 +73,7 @@ namespace GSL
                 file << "FAILED ";
 
             file << resultLogging.navigationTime << " " << search_t << " " << errorAll << " " << error << " " << iterationsCounter << " "
-                 << varianceSourcePosition() << "\n";
+                 <<  Utils::Variance(Grid2D<double>(sourceProbability, occupancy, gridMetadata)) << "\n";
             file.close();
         }
         else

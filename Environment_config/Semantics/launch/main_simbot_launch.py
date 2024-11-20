@@ -226,9 +226,9 @@ def launch_setup(context, *args, **kwargs):
         package="gsl_server",
         executable="send_pose",
         parameters=[
-            {"x":-6.1},
-            {"y":2.45},
-            {"z":-0.73},
+            {"x":parse_substitution("$(var start_pos_x)")},
+            {"y":parse_substitution("$(var start_pos_y)")},
+            {"z":parse_substitution("$(var start_pos_z)")},
             {"topic":"/giraff/resetPose"}
         ]
     )

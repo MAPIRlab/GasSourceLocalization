@@ -3,6 +3,7 @@
 #include <gsl_server/core/Vectors.hpp>
 #include <cfloat>
 #include <gsl_server/algorithms/Common/Occupancy.hpp>
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
 
 namespace GSL::Utils
 {
@@ -45,6 +46,10 @@ namespace GSL::Utils
     void NormalizeDistributionLong(std::vector<long double>& variable, std::vector<Occupancy>& occupancy);
 
     float EquallyDistributed01F();
+
+    Vector2 ExpectedValue(const Grid2D<double> grid, double proportionBest);
+    double Variance(const Grid2D<double> grid);
+
 
     //holds a long list of N(0,1) values, and returns them one at a time, scaled as requested.
     //obviously not as good as generating them on the fly, but it's not like we are doing cryptography here

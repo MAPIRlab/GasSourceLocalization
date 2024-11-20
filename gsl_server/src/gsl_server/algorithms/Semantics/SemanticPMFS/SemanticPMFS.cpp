@@ -1,5 +1,8 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
+#include "gsl_server/core/ros_typedefs.hpp"
+#include <fstream>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
@@ -61,6 +64,37 @@ namespace GSL
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             settings.visualization,
             pubs.pmfsPubs);
+
+#define DEBUG_VISUALIZATION 1
+#if DEBUG_VISUALIZATION
+        {
+            std::vector<ColorRGBA> colors(sourceProbabilityPMFS.size());
+            for (int i = 0; i < sourceProbabilityPMFS.size(); i++)
+                colors[i] = Utils::valueToColor(sourceProbabilityPMFS[i],
+                                                settings.visualization.sourceLimits.x,
+                                                settings.visualization.sourceLimits.y,
+                                                settings.visualization.sourceMode);
+            Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, simulationOccupancy, gridMetadata), "sourceOlfactionOnly");
+
+            std::ofstream outf("progression.csv", std::ios_base::app);
+            Vector2 expecOlfOnly = Utils::ExpectedValue(AsGrid(sourceProbabilityPMFS, simulationOccupancy), 1);
+            double varianceOlfOnly = Utils::Variance(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
+            double errorOlfOnly = vmath::length(expecOlfOnly - resultLogging.sourcePositionGT);
+
+            Vector2 expecBoth = Utils::ExpectedValue(AsGrid(combinedSourceProbability, simulationOccupancy), 1);
+            double varianceBoth = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
+            double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
+            outf << fmt::format("{};{};  {};{};\n", errorOlfOnly, varianceOlfOnly, errorBoth, varianceBoth);
+            outf.close();
+
+            Utils::publishDebugSingleMarker(vmath::WithZ(expecOlfOnly, 0.0),
+                                            Utils::create_color(1, 0, 0, 1),
+                                            "EXPECTED_OLFACTION");
+            Utils::publishDebugSingleMarker(vmath::WithZ(expecBoth, 0.0),
+                                            Utils::create_color(1, 0, 1, 1),
+                                            "EXPECTED_BOTH");
+        }
+#endif
     }
 
     void SemanticPMFS::declareParameters()
@@ -191,23 +225,19 @@ namespace GSL
         {
             PMFSLib::EstimateWind(
                 settings.simulation.useWindGroundTruth,
-                Grid2D<Vector2>(estimatedWindVectors,
-                                simulationOccupancy,
-                                gridMetadata),
+                AsGrid(estimatedWindVectors, simulationOccupancy),
                 node,
                 pubs.pmfsPubs.gmrfWind
                     IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
             PMFSViz::PlotWindVectors(
-                Grid2D<Vector2>(
-                    estimatedWindVectors,
-                    simulationOccupancy,
-                    gridMetadata),
+                AsGrid(estimatedWindVectors, simulationOccupancy),
                 settings.visualization,
                 pubs.pmfsPubs);
 
             number_of_updates = 0;
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
+
             if (timeToSimulate)
                 simulations.updateSourceProbability(settings.simulation.refineFraction);
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gsl_server/algorithms/Common/Occupancy.hpp"
 #include "internal/UI.hpp"
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
@@ -10,6 +11,7 @@
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/ISemantics.hpp>
 #include <gsl_server/core/FunctionQueue.hpp>
+#include <vector>
 
 namespace GSL
 {
@@ -34,6 +36,15 @@ namespace GSL
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
         void updateSourceFromSemantics();
+
+        void createClassMap2D();
+        void createClassMapVoxeland();
+
+        template <typename T>
+        Grid2D<T> AsGrid(std::vector<T>& vec, std::vector<Occupancy>& occupancy)
+        {
+            return Grid<T>(vec, occupancy, gridMetadata);
+        }
 
     private:
         std::unique_ptr<ISemantics> semantics;
@@ -60,8 +71,5 @@ namespace GSL
         uint iterationsCounter = 0;
         bool paused = false;
         IF_GUI(SemanticPMFS_internal::UI ui);
-
-        void createClassMap2D();
-        void createClassMapVoxeland();
     };
 } // namespace GSL
