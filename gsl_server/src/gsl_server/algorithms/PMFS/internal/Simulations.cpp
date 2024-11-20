@@ -189,6 +189,13 @@ namespace GSL::PMFS_internal
         simulateSourceInPosition(source, result.hitMap, true, settings.iterationsToRecord, settings.deltaTime,
                                  settings.noiseSTDev);
 
+        if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
+        {
+            cv::Mat asImage(result.hitMap);
+            asImage.reshape(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y);
+            cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
+        }
+
         result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
 
         scores[index].score = result.sourceProb;
