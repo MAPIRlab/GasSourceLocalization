@@ -211,7 +211,6 @@ namespace GSL::PMFS_internal
 
             const double& simulated = hitMap[i];
             double sourceGivenThisCell = probabilityFromSingleCell(measuredHitProb.data[i], simulated);
-            // double sourceGivenThisCell = Utils::lerp(1, probabilitySingleFrequency(measuredHitProb.data[i].probability(), simulated), measuredHitProb.data[i].confidence);
             total *= sourceGivenThisCell;
             GSL_ASSERT(!std::isnan(total));
         }
@@ -220,6 +219,9 @@ namespace GSL::PMFS_internal
 
     double Simulations::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
     {
+#if 1
+        return Utils::lerp(1, probabilitySingleFrequency(hitProb.probability(), simulated), hitProb.confidence);
+#else
         auto frequencyDistribution = hitProb.frequencyDistribution();
         double result = 0;
         for (int freqIndex = 0; freqIndex < frequencyDistribution.size(); freqIndex++)
@@ -229,6 +231,7 @@ namespace GSL::PMFS_internal
             GSL_ASSERT(!std::isnan(result));
         }
         return result;
+#endif
     }
 
     double Simulations::probabilitySingleFrequency(double measured, double simulated) const
