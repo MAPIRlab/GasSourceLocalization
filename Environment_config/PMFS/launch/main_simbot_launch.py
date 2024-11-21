@@ -69,8 +69,9 @@ def launch_setup(context, *args, **kwargs):
                     {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
 
                     #PMFS
-                        # Hit probabilities
                     {"headless": False},
+                    {"distanceWeight": 0.1},
+                        # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 1.5},
                     {"kernelStretchConstant": 1.5},
@@ -275,7 +276,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
-            value="0.2"
+            value="0.3"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 

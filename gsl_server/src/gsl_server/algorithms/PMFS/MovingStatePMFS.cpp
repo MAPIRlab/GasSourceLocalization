@@ -1,5 +1,4 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
-#include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/Navigation.hpp"
 #include "gsl_server/core/Profiling.hpp"
@@ -75,21 +74,20 @@ namespace GSL
         { return a.evaluation > b.evaluation; };
         std::set<PositionEval, decltype(compareEval)> evaluations;
 
-        // for (const auto& indices : openMoveSet)
         for (size_t i = 0; i < pmfs->sourceProbability.size(); i++)
         {
             if (pmfs->occupancy[i] != Occupancy::Free)
                 continue;
             Vector2Int indices = gridMetadata.indices2D(i);
             double explorationTerm = explorationValue(indices.x, indices.y);
-            double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
 
-            double interest =
-                currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
-                    ? explorationTerm
-                    : varianceTerm;
+            double interest = currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
+                                  ? explorationTerm
+                                  : informationValue(indices.x, indices.y);
 
-            evaluations.insert({.indices = indices, .evaluation = interest});
+            double evaluation = interest / std::pow(pmfs->hitProbability[i].distanceFromRobot + 0.1f, pmfs->settings.movement.distanceWeight);
+
+            evaluations.insert({.indices = indices, .evaluation = evaluation});
         }
 
         for (const PositionEval& eval : evaluations)
@@ -154,12 +152,13 @@ namespace GSL
                 if (pmfs->occupancy[i] != Occupancy::Free)
                     continue;
 
+                // iterate over the list of possible hit frequency values for this one cell
                 for (size_t bucket = 0; bucket < discretizationLevels; bucket++)
                 {
                     double probabilityOfFreq = probF[i][bucket];
                     double freq = (bucket + 0.5) * (1. / discretizationLevels);
 
-                    // Run through this twice to normalize the source probabilities
+                    // We need to normalize the source probabilities before calculating the entropy
                     //-----------------------------------------------------
 
                     // store the source probs for later normalization
@@ -172,8 +171,8 @@ namespace GSL
                         if (!simResult.valid)
                             continue;
 
-                        // instead of calculating the source probability by comparing the two maps (the simulated one, and the measured one with a single cell modified)
-                        // we use the already calculated source prob. If we divide p(s_k | f) by the current p(s_k | f_i) and then multiply by the modified p(s_k | f_i*)
+                        // instead of calculating the source probability by comparing the two maps (the simulated one, and the measured one with a single cell modified),
+                        // we use the already calculated source prob. If we divide p(s_k | f) by the current p(s_k | f_i) and then multiply by the modified p(s_k | f_i*),
                         // we get the same result but avoid re-comparing all the untouched cells
 
                         // current p(s_k | f_i)
@@ -201,12 +200,14 @@ namespace GSL
                         long double sourceProbWithFreq = sourceProbs[simulationIndex] / sum;
                         entropyThisFreq -= sourceProbWithFreq * std::log(sourceProbWithFreq);
                     }
+
+                    // the conditional entropy is an expected value, so multiply by the probability of this frequency and add to a running total
                     conditionalEntropy[i] += probabilityOfFreq * entropyThisFreq;
                 }
             }
         }
 
-        // calculate the mutual information
+        // calculate the mutual information: H(S) - H(S|F)
         {
             mutualInformationGas.clear();
             mutualInformationGas.resize(pmfs->sourceProbability.size(), 0.0);
@@ -249,7 +250,7 @@ namespace GSL
                 "MutualInformation");
         }
     }
-    
+
     double MovingStatePMFS::explorationValue(int i, int j)
     {
         // the exploration value is the sum of the uncertainty about the hit probability for all cells around (i,j)
@@ -262,6 +263,25 @@ namespace GSL
         {
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].confidence) * std::exp(-distance);
+            GSL_ASSERT(sum > 0);
+        }
+        return sum;
+    }
+
+    double MovingStatePMFS::informationValue(int i, int j)
+    {
+        auto& gridMetadata = pmfs->gridMetadata;
+        Vector2Int ij(i, j);
+        auto range = pmfs->visibilityMap->at(ij);
+
+        double sum = 0;
+        for (const auto& p : range)
+        {
+            // double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
+            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(i, j)] * (1 - pmfs->hitProbability[gridMetadata.indexOf(i, j)].confidence);
+            
+            float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
+            sum += varianceTerm * std::exp(-distance);
             GSL_ASSERT(sum > 0);
         }
         return sum;

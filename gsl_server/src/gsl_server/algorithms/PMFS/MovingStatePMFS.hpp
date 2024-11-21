@@ -24,6 +24,9 @@ namespace GSL
         // Get the information value of cell (i,j) for the initial exploration phase
         double explorationValue(int i, int j);
 
+        // Get the information value of cell (i,j) for the main phase
+        double informationValue(int i, int j);
+
         // force the next movement to go to cell (i,j), ignoring the movement strategy
         void debugMoveTo(int i, int j);
 

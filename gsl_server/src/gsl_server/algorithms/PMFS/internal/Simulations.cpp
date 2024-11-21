@@ -226,7 +226,7 @@ namespace GSL::PMFS_internal
 
     double Simulations::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
     {
-#if 0
+#if 1
         return Utils::lerp(1, probabilitySingleFrequency(hitProb.probability(), simulated), hitProb.confidence);
 #else
         auto frequencyDistribution = hitProb.frequencyDistribution();
