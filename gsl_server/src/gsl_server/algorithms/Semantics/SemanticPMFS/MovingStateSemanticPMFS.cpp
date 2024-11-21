@@ -1,5 +1,5 @@
 #include "gsl_server/algorithms/Common/Occupancy.hpp"
-#include "gsl_server/algorithms/Common/Utils/Profiling.hpp"
+#include "gsl_server/core/Profiling.hpp"
 #include <angles/angles.h>
 #include <cstddef>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>

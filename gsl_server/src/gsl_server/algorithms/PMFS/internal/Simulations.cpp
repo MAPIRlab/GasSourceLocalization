@@ -12,7 +12,7 @@
 #include <opencv2/imgproc.hpp>
 
 #include <DDA/DDA.h>
-#include <gsl_server/algorithms/Common/Utils/Profiling.hpp>
+#include <gsl_server/core/Profiling.hpp>
 
 namespace GSL::PMFS_internal
 {
@@ -103,7 +103,7 @@ namespace GSL::PMFS_internal
 // update the information for the variance calulation
 #pragma omp critical
             {
-                resultsFirstLevel.push_back(result); // TODO test if it's worth the effort to avoid this copy
+                resultsFirstLevel.push_back(result); 
                 numberOfSimulations++;
                 for (int cell = 0; cell < result.hitMap.size(); cell++)
                 {
@@ -226,7 +226,7 @@ namespace GSL::PMFS_internal
 
     double Simulations::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
     {
-#if 1
+#if 0
         return Utils::lerp(1, probabilitySingleFrequency(hitProb.probability(), simulated), hitProb.confidence);
 #else
         auto frequencyDistribution = hitProb.frequencyDistribution();

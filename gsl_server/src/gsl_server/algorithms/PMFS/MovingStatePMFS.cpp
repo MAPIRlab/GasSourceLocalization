@@ -1,6 +1,9 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include "gsl_server/core/Logging.hpp"
+#include "gsl_server/core/Navigation.hpp"
+#include "gsl_server/core/Profiling.hpp"
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <algorithm>
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
@@ -24,6 +27,8 @@ namespace GSL
 
     void MovingStatePMFS::chooseGoalAndMove()
     {
+        // ScopedStopwatch watch("movement");
+
         auto& gridMetadata = pmfs->gridMetadata;
 
         // Add nearby cells to the open set
@@ -53,46 +58,52 @@ namespace GSL
 
         // Find the cell with the highest estimated information value
         //------------------------------------------------------
+        calculateMutualInformationGas();
         NavigateToPose::Goal goal;
-        int goalI = -1, goalJ = -1;
-        double bestInterest = -DBL_MAX;
 
         // We have a small random chance of using the explorationValue instead of the proper information value even in the second phase
         // because it is beneficial to have at least some measurements spanning a large area of the map
         float explorationC = Utils::uniformRandom(0, 1);
-        calculateMutualInformationGas();
 
-        for (const auto& indices : openMoveSet)
+        struct PositionEval
         {
-            int col = indices.x;
-            int row = indices.y;
-            NavigateToPose::Goal tempGoal = indexToGoal(col, row);
+            Vector2Int indices;
+            double evaluation;
+        };
 
-            double explorationTerm = explorationValue(col, row);
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({col, row})] *
-                                  (1 - pmfs->hitProbability[gridMetadata.indexOf({col, row})].confidence);
+        auto compareEval = [](const PositionEval& a, const PositionEval& b)
+        { return a.evaluation > b.evaluation; };
+        std::set<PositionEval, decltype(compareEval)> evaluations;
+
+        // for (const auto& indices : openMoveSet)
+        for (size_t i = 0; i < pmfs->sourceProbability.size(); i++)
+        {
+            if (pmfs->occupancy[i] != Occupancy::Free)
+                continue;
+            Vector2Int indices = gridMetadata.indices2D(i);
+            double explorationTerm = explorationValue(indices.x, indices.y);
+            double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
 
             double interest =
                 currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
                     ? explorationTerm
                     : varianceTerm;
 
-            // keep the best so far as the goal
-            if (interest > bestInterest)
+            evaluations.insert({.indices = indices, .evaluation = interest});
+        }
+
+        for (const PositionEval& eval : evaluations)
+        {
+            NavigateToPose::Goal tempGoal = indexToGoal(eval.indices.x, eval.indices.y);
+            if (checkGoal(tempGoal))
             {
-                if (checkGoal(tempGoal))
-                {
-                    bestInterest = interest;
-                    goalI = col;
-                    goalJ = row;
-                    goal = tempGoal;
-                }
+                goal = tempGoal;
+                break;
             }
         }
 
         if (closedMoveSet.find(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose)) == closedMoveSet.end())
             openMoveSet.insert(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
-        GSL_ASSERT_MSG(closedMoveSet.find({goalI, goalJ}) == closedMoveSet.end(), "Goal is in closed set, what the hell");
 
         pmfs->iterationsCounter++;
         sendGoal(goal);
@@ -109,7 +120,7 @@ namespace GSL
     // Could probably be changed without it becoming too slow. Probably.
     void MovingStatePMFS::calculateMutualInformationGas()
     {
-        Utils::Time::Stopwatch watch;
+        ScopedStopwatch watch("MutualInformation");
         ZoneScopedN("MutualInformation");
 
         // normalize the current source probs
@@ -237,9 +248,8 @@ namespace GSL
                 Grid2D<std_msgs::msg::ColorRGBA>(colors, pmfs->occupancy, pmfs->gridMetadata),
                 "MutualInformation");
         }
-
-        GSL_INFO("Ellapsed mutual info: {:.3f}s", watch.ellapsed());
     }
+    
     double MovingStatePMFS::explorationValue(int i, int j)
     {
         // the exploration value is the sum of the uncertainty about the hit probability for all cells around (i,j)
