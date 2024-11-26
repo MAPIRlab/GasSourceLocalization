@@ -5,17 +5,9 @@ To use one of the implemented algorithms, simply launch the `gsl_actionserver_no
 Currently available algorithms include:
 
 
-### (currently under review)
-- "PMFS"
-
-### (See paper: https://ieeexplore.ieee.org/document/9347683)
-- "GrGSL"
-
-### (See paper: https://dl.acm.org/doi/10.1145/3378184.3378220)
-- "surge_cast"
-- "surge_spiral"
-- "spiral"
-- "particle_filter"
+- "PMFS" (See paper [here](https://ieeexplore.ieee.org/document/10592836))
+- "GrGSL" (See paper: [here](https://ieeexplore.ieee.org/document/9347683))
+- "surge_cast", "surge_spiral", "spiral", "particle_filter" (See paper [here](https://dl.acm.org/doi/10.1145/3378184.3378220))
 
 # Installing and building
 You can download this package by navigating to your ROS workspace and running:
