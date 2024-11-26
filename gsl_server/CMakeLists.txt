@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(gsl_server)
 set(CMAKE_BUILD_TYPE "None") 
 set(CMAKE_CXX_FLAGS "-std=c++20 -g ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_STANDARD 20)
 
 
 
@@ -15,7 +16,7 @@ set(USE_GADEN ON) #if ON, the code is compiled with support for directly queryin
 set(USE_NAV_ASSISTANT OFF) # if ON uses the nav_assistant package rather than directly communicating with nav_2. It adds some extra features, but currently it has a relatively high performance cost due to async inter-process communication  
 
 # Compile graphical interface with DearImGUI. Currently only affects the PMFS algorithm. Not required to function, it is mostly for debugging purposes
-set(USE_GUI ON)
+set(USE_GUI OFF)
 
 ##############################################################################
 
@@ -53,7 +54,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(angles REQUIRED)
 find_package(olfaction_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
-find_package(gmrf_wind_mapping REQUIRED)
+find_package(gmrf_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
@@ -132,7 +133,7 @@ ament_target_dependencies( gsl_actionserver_node
     nav2_msgs
     std_msgs
 	
-    gmrf_wind_mapping
+    gmrf_msgs
     gsl_actions
 	
     ${CONDITIONAL_NAV_ASSISTANT}

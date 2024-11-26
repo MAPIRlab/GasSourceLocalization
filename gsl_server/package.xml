@@ -20,7 +20,7 @@
   <build_depend>tf2_geometry_msgs</build_depend>
   <build_depend>olfaction_msgs</build_depend>
   <build_depend>visualization_msgs</build_depend>
-  <build_depend>gmrf_wind_mapping</build_depend>
+  <build_depend>gmrf_msgs</build_depend>
   <build_depend>nav_assistant_msgs</build_depend>
   <build_depend>gsl_actions</build_depend>
 
