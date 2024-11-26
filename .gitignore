@@ -3,3 +3,9 @@
 *_V
 *_W
 **__pycache__**
+.vscode
+build
+*~
+.cache
+.clangd
+log
