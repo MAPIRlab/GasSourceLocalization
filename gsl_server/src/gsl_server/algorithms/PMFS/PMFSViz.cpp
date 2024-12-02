@@ -154,7 +154,7 @@ namespace GSL
                     // shape
                     marker.scale.x = estimatedWindVectors.metadata.cellSize * (module / max_module); // arrow length,
                     marker.scale.y = 0.03; // arrow width
-                    marker.scale.z = 0.05; // arrow height
+                    marker.scale.z = 0.03; // arrow height
                     // color -> must normalize to [0-199]
                     marker.color.r = 1;
                     marker.color.g = 0;
