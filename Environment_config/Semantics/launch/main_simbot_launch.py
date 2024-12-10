@@ -119,7 +119,7 @@ def launch_setup(context, *args, **kwargs):
             {"sensor_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
             {"map_topic": parse_substitution("$(var robot_name)/map")},
             {"cell_size": 0.25},
-            {"exec_freq": 20},
+            {"exec_freq": 10.0},
         ]
     )
 

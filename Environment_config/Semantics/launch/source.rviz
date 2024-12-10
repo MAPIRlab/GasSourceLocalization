@@ -236,7 +236,7 @@ Visualization Manager:
       Enabled: true
       Name: Source
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -422,7 +422,7 @@ Visualization Manager:
       Enabled: true
       Name: UIMarker
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -507,9 +507,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 5.198835372924805
-        Y: 4.672098159790039
-        Z: 2.2060506343841553
+        X: 0.05623176321387291
+        Y: -1.56744384765625
+        Z: 2.199775218963623
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

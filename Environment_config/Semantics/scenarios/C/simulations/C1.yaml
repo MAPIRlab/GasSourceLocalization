@@ -37,3 +37,7 @@ filament_movement_stdev: 0.5
 iterationsToRecord: 300
 maxWarmupIterations: 800
 initialExplorationMoves: 5
+
+start_pos_x: -3.4 
+start_pos_y: -3.5 
+start_pos_z: -0.1

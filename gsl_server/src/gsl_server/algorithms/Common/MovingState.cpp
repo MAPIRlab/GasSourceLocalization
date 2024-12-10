@@ -81,7 +81,7 @@ namespace GSL
         currentGoal = goal;
         if (code != rclcpp::FutureReturnCode::SUCCESS)
         {
-            GSL_ERROR("Error sending goal to navigation server! Received code {}", (int)code);
+            GSL_ERROR("Error sending goal to navigation server! Received code {}", rclcpp::to_string(code));
             rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult result;
             result.code = rclcpp_action::ResultCode::ABORTED;
             Fail();
