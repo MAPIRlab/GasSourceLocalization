@@ -32,6 +32,8 @@ allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
 
-start_pos_x: -3.4 
-start_pos_y: -3.5 
+start_pos_x: -1.4
+start_pos_y: -6.2 
 start_pos_z: -0.1
+
+targetGas: smoke

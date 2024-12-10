@@ -1,5 +1,5 @@
-source_x: -2.7
-source_y: 0.8
+source_x: -0.8
+source_y: -3.1
 source_z: -0.1
 
 wind_sim_path: "3,5-1_fast/3,5-1_fast" # _i.csv automatically appended
@@ -34,3 +34,7 @@ loop_to_iteration: 900
 
 #GSL
 filament_movement_stdev: 0.25
+
+start_pos_x: -1.4
+start_pos_y: -6.2 
+start_pos_z: -0.1

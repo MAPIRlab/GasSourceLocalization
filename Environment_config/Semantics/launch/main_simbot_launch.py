@@ -99,7 +99,7 @@ def launch_setup(context, *args, **kwargs):
                     {"wallsOccupancyFile": os.path.join(scenario_folder, "_occupancy_walls.pgm" )},
                     {"detectionsTopic": "/semantic_instances_3D"},
                     {"ontologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ontology.yaml")},
-                    {"targetGas" : "smoke"},
+                    {"targetGas" : parse_substitution("$(var targetGas)")},
                     {"masksYAMLPath" : os.path.join(scenario_folder, "room_categories", "roomMasks.yaml" )},
                     {"roomOntologyPath" : os.path.join(get_package_share_directory("gsl_server"), "resources", "ObjectProbByRoom.yaml")},
                     #ClassMap2D
@@ -119,7 +119,7 @@ def launch_setup(context, *args, **kwargs):
             {"sensor_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
             {"map_topic": parse_substitution("$(var robot_name)/map")},
             {"cell_size": 0.25},
-            {"exec_freq": 10.0},
+            {"exec_freq": 5.0},
         ]
     )
 
@@ -131,7 +131,7 @@ def launch_setup(context, *args, **kwargs):
                     "launch",
                     "gaden_player_launch.py",
                 )
-            ]
+            ]  
         ),
         launch_arguments={
             "use_rviz": "False",
@@ -315,6 +315,11 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="filamentDeltaTime", 
             value="0.2"
+        ),
+
+        SetLaunchConfiguration(
+            name="targetGas", 
+            value="smoke"
         ),
     ]
     
