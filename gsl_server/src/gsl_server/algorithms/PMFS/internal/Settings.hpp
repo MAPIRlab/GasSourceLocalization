@@ -44,6 +44,9 @@ namespace GSL::PMFS_internal
         int iterationsToRecord;
         double deltaTime;
         double noiseSTDev;
+
+        double blurSigmaX = 0;
+        double blurSigmaY = 0;
     };
     struct MovementSettings
     {
