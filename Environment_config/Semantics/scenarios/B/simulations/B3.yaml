@@ -34,3 +34,7 @@ outlets_models:
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
+
+start_pos_x: -4.0
+start_pos_y: -3.3
+start_pos_z: -0.7

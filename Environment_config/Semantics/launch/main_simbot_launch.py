@@ -45,7 +45,7 @@ def launch_setup(context, *args, **kwargs):
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="GSL",
-                # prefix="xterm -hold -e",
+                # prefix="xterm -hold -e gdb --args",
                 parameters=[
                     # Common
                     {'use_sim_time': False},	
@@ -83,16 +83,18 @@ def launch_setup(context, *args, **kwargs):
                     {"confidenceMeasurementWeight": 0.7},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
-                    {"useWindGroundTruth": False},
+                    {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 4},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
-                    {"refineFraction": 0.1},
+                    {"refineFraction": 0.2},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"minWarmupIterations": parse_substitution("$(var minWarmupIterations)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
+                    {"blurSigmaX": 3},
+                    {"blurSigmaY": 3},
 
                     #Semantics
                     {"semanticsType" : "ClassMapVoxeland"},
@@ -290,11 +292,11 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.1"
+            value="0.2"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
-            value="0.2"
+            value="0.1"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
@@ -306,7 +308,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations", 
-            value="500"
+            value="800"
         ),
         SetLaunchConfiguration(
             name="initialExplorationMoves", 
@@ -314,7 +316,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="filamentDeltaTime", 
-            value="0.2"
+            value="0.1"
         ),
 
         SetLaunchConfiguration(

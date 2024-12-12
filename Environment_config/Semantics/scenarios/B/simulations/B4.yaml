@@ -38,3 +38,7 @@ loop_to_iteration: 900
 #GSL params
 filament_movement_stdev: 0.2
 sourceDiscriminationPower: 0.4
+
+start_pos_x: -0.9
+start_pos_y: 0.15
+start_pos_z: -0.7
