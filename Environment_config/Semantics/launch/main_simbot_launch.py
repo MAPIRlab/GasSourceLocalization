@@ -45,6 +45,7 @@ def launch_setup(context, *args, **kwargs):
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="GSL",
+                # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e gdb --args",
                 parameters=[
                     # Common
@@ -83,7 +84,7 @@ def launch_setup(context, *args, **kwargs):
                     {"confidenceMeasurementWeight": 0.7},
                     {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
                         #Filament simulation
-                    {"useWindGroundTruth": True},
+                    {"useWindGroundTruth": False},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 4},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
@@ -93,8 +94,8 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"minWarmupIterations": parse_substitution("$(var minWarmupIterations)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
-                    {"blurSigmaX": 3},
-                    {"blurSigmaY": 3},
+                    {"blurSigmaX": 1.5},
+                    {"blurSigmaY": 1.5},
 
                     #Semantics
                     {"semanticsType" : "ClassMapVoxeland"},
@@ -249,7 +250,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_node)
     actions.extend(gsl_call)
     actions.append(rvizHit)
-    actions.append(rvizSource)
+    #actions.append(rvizSource)
     actions.append(send_pose)
     actions.append(semantics)
 

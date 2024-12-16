@@ -400,8 +400,8 @@ namespace GSL
         settings.iterationsToRecord = algorithm.getParam<int>("iterationsToRecord", 200);
         settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
 
-        settings.blurSigmaX = algorithm.getParam<int>("blurSigmaX", 0);
-        settings.blurSigmaY = algorithm.getParam<int>("blurSigmaY", 0);
+        settings.blurSigmaX = algorithm.getParam<double>("blurSigmaX", 0);
+        settings.blurSigmaY = algorithm.getParam<double>("blurSigmaY", 0);
     }
 
     void PMFSLib::GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings)

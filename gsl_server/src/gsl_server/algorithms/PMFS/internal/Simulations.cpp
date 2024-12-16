@@ -7,6 +7,7 @@
 #include <gsl_server/core/Logging.hpp>
 
 #include <opencv2/core.hpp>
+#include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -131,7 +132,9 @@ namespace GSL::PMFS_internal
         while (scores.size() > 0)
         {
             std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2)
-                      { return result1.score > result2.score; });
+                      {
+                          return result1.score > result2.score;
+                      });
 
             // subdivide the good cells and add the children to the list of cells to simulate
             std::vector<LeafScore> newLevel;
@@ -374,7 +377,9 @@ namespace GSL::PMFS_internal
                                               DDA::_2D::Map<GSL::Occupancy>(measuredHitProb.occupancy, measuredHitProb.metadata.origin,
                                                                             measuredHitProb.metadata.cellSize, measuredHitProb.metadata.dimensions),
                                               [](const GSL::Occupancy& occ)
-                                              { return occ == GSL::Occupancy::Free; });
+                                              {
+                                                  return occ == GSL::Occupancy::Free;
+                                              });
         // This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
         // ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
         constexpr float wallStoppingProportion = 0.7;
@@ -411,22 +416,27 @@ namespace GSL::PMFS_internal
         simulateSourceInPosition(source, hitMap, true, settings.iterationsToRecord, settings.deltaTime,
                                  settings.noiseSTDev);
 
-        cv::Mat image(cv::Size(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y), CV_32FC3, cv::Scalar(0, 0, 0));
+        cv::Mat asImage(hitMap);
+        asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
+        if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
+        {
+            cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
+        }
+
+        cv::Mat inColor;
+        cv::cvtColor(asImage, inColor, cv::COLOR_GRAY2BGR);
 
         for (int j = 0; j < measuredHitProb.metadata.dimensions.y; j++)
         {
             for (int i = 0; i < measuredHitProb.metadata.dimensions.x; i++)
             {
-                if (measuredHitProb.freeAt(i, j))
-                {
-                    float v = hitMap[measuredHitProb.metadata.indexOf({i, j})] * 255;
-                    image.at<cv::Vec3f>(measuredHitProb.metadata.dimensions.y - 1 - j, i) = cv::Vec3f(v, v, v);
-                }
-                else
-                    image.at<cv::Vec3f>(measuredHitProb.metadata.dimensions.y - 1 - j, i) = cv::Vec3f(0, 0, 255);
+                if (!measuredHitProb.freeAt(i, j))
+                    inColor.at<cv::Vec3f>(measuredHitProb.metadata.dimensions.y - 1 - j, i) = cv::Vec3f(0, 0, 1);
             }
         }
 
+#if 0
+        image *= 255;
         std::string filename;
         if (source.mode == SimulationSource::Mode::Quadtree)
             filename = fmt::format("leaf_{}.png", source.nqaNode->origin);
@@ -436,6 +446,13 @@ namespace GSL::PMFS_internal
         cv::imwrite(filename, image);
 
         GSL_WARN("hitMap image saved");
+#else
+        cv::Mat resized;
+        cv::resize(inColor, resized, cv::Size(inColor.size[1] * 10, inColor.size[0] * 10), 0, 0, cv::INTER_NEAREST);
+        cv::imshow("result", resized);
+        cv::waitKey();
+        cv::destroyAllWindows();
+#endif
     }
 
 } // namespace GSL::PMFS_internal
