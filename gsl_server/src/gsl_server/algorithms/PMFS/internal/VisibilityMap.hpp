@@ -1,6 +1,6 @@
 #pragma once
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
-#include <gsl_server/algorithms/Common/Utils/Profiling.hpp>
+#include <gsl_server/core/Profiling.hpp>
 #include <gsl_server/core/Logging.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>

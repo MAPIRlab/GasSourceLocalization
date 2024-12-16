@@ -150,7 +150,6 @@ namespace GSL::Utils
 
         static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
 
-
         if (!publisherMap.contains(topic))
             publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
         auto pub = publisherMap[topic];

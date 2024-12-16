@@ -69,8 +69,9 @@ def launch_setup(context, *args, **kwargs):
                     {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
 
                     #PMFS
-                        # Hit probabilities
                     {"headless": False},
+                    {"distanceWeight": 0.1},
+                        # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 1.5},
                     {"kernelStretchConstant": 1.5},
@@ -201,13 +202,23 @@ def launch_setup(context, *args, **kwargs):
         ])
     ]
 
-    rviz = Node(
+    rvizHit = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz",
         #prefix="xterm -e",
         arguments=[
-            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "gaden.rviz")
+            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "hit.rviz")
+        ],
+    )
+
+    rvizSource = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        #prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "source.rviz")
         ],
     )
 
@@ -220,7 +231,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.append(rviz)
+    actions.append(rvizHit)
+    actions.append(rvizSource)
 
     return actions
 
@@ -265,7 +277,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
-            value="0.2"
+            value="0.3"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
