@@ -38,3 +38,6 @@ loop_to_iteration: 900
 start_pos_x: -4.0
 start_pos_y: -3.3
 start_pos_z: -0.7
+markers_height: -0.6
+scale: 20
+filament_movement_stdev: 0.15

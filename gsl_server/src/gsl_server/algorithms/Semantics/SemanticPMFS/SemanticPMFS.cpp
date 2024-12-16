@@ -107,6 +107,7 @@ namespace GSL
         settings.movement.openMoveSetExpasion = getParam<int>("openMoveSetExpasion", 5);
         settings.movement.explorationProbability = getParam<double>("explorationProbability", 0.1);
         settings.movement.initialExplorationMoves = getParam<int>("initialExplorationMoves", 5);
+        settings.movement.distanceWeight = getParam<double>("distanceWeight", 0.1);
     }
 
     void SemanticPMFS::onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)

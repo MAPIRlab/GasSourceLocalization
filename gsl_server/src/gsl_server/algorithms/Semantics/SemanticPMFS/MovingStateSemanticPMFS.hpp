@@ -20,6 +20,9 @@ namespace GSL
 
         void chooseGoalAndMove();
         double explorationValue(int i, int j);
+        
+        // Get the information value of cell (i,j) for the main phase
+        double informationValue(int i, int j);
 
         void debugMoveTo(int i, int j);
         void publishMarkers();

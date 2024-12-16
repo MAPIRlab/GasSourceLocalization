@@ -59,8 +59,8 @@ def launch_setup(context, *args, **kwargs):
                     {"ground_truth_y": parse_substitution("$(var source_y)")},
                     {"resultsFile": parse_substitution("Results/$(var simulation)/$(var method).csv")},
                     
-                    {"scale": 25},
-                    {"markers_height": 0.2},
+                    {"scale": parse_substitution("$(var scale)")},
+                    {"markers_height": parse_substitution("$(var markers_height)")},
 
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
                     {"openMoveSetExpasion": 5},
@@ -74,8 +74,9 @@ def launch_setup(context, *args, **kwargs):
                     {"infoTaxis": False},
 
                     #PMFS
-                        # Hit probabilities
                     {"headless": False},
+                    {"distanceWeight": 0.2},
+                        # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 1.5},
                     {"kernelStretchConstant": 1.5},
@@ -293,7 +294,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="filament_movement_stdev", 
-            value="0.2"
+            value="0.15"
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower", 
@@ -301,7 +302,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord", 
-            value="200"
+            value="100"
         ),
         SetLaunchConfiguration(
             name="minWarmupIterations", 
@@ -323,6 +324,15 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="targetGas", 
             value="smoke"
+        ),
+        
+        SetLaunchConfiguration(
+            name="scale", 
+            value="25"
+        ),
+        SetLaunchConfiguration(
+            name="markers_height", 
+            value="0.1"
         ),
     ]
     

@@ -50,7 +50,7 @@ namespace GSL
         settings.movement.openMoveSetExpasion = getParam<int>("openMoveSetExpasion", 5);
         settings.movement.explorationProbability = getParam<double>("explorationProbability", 0.1);
         settings.movement.initialExplorationMoves = getParam<int>("initialExplorationMoves", 5);
-        settings.movement.distanceWeight = getParam<double>("distanceWeight", 0);
+        settings.movement.distanceWeight = getParam<double>("distanceWeight", 0.1);
 
         settings.visualization.markers_height = getParam<double>("markers_height", 0);
         IF_GUI(settings.visualization.headless = getParam<bool>("headless", false));

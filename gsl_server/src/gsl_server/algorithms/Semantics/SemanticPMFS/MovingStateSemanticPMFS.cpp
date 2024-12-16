@@ -1,5 +1,4 @@
 #include "gsl_server/algorithms/Common/Occupancy.hpp"
-#include "gsl_server/core/Profiling.hpp"
 #include <angles/angles.h>
 #include <cstddef>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
@@ -24,7 +23,7 @@ namespace GSL
     {
         auto& gridMetadata = pmfs->gridMetadata;
 
-        // Update the open set with the neighbours of the current position
+        // Add nearby cells to the open set
         {
             int i = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).x;
             int j = pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose).y;
@@ -40,69 +39,62 @@ namespace GSL
                 for (int row = oR; row <= fR; row++)
                 {
                     Vector2Int p(col, row);
-                    if (pmfs->navigationOccupancy[pmfs->gridMetadata.indexOf(p)] != Occupancy::Free)
-                        continue;
-
-                    if (closedMoveSet.find(p) == closedMoveSet.end() //
-                        && pmfs->hitProbability[gridMetadata.indexOf(p)].distanceFromRobot <= pmfs->settings.movement.openMoveSetExpasion)
-                    {
+                    if (closedMoveSet.find(p) == closedMoveSet.end() && pmfs->visibilityMap->isVisible({i, j}, p) == Visibility::Visible)
                         openMoveSet.insert(p);
-                    }
                 }
             }
         }
 
-        // don't choose the current position again (not adding it to the closed set, so it may be revisited later, just not now)
+        // remove this cell from the open set
         openMoveSet.erase(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
 
-        // get the semantic uncertainty
-        if (semanticsEntropy.size() == 0)
-            semanticsEntropy.resize(pmfs->hitProbability.size(), 0.);
-        // TODO use this!
-        pmfs->semantics->GetEntropyInPlace(semanticsEntropy);
-
-        // check all the candidates in the open set and choose the most informative one
-        //------------------------------------------
+        // Find the cell with the highest estimated information value
+        //------------------------------------------------------
+        calculateMutualInformationGas();
         NavigateToPose::Goal goal;
-        int goalI = -1, goalJ = -1;
-        double bestInterest = -DBL_MAX;
 
-        // there is a random chance to choose the cell based on exploration value rather than source information
-        // kind of arbitrary, but helps when the wind estimation is bad and the robot is getting obsessed with a small area of the map
+        // We have a small random chance of using the explorationValue instead of the proper information value even in the second phase
+        // because it is beneficial to have at least some measurements spanning a large area of the map
         float explorationC = Utils::uniformRandom(0, 1);
 
-        for (const auto& indices : openMoveSet)
+        struct PositionEval
         {
-            int r = indices.x;
-            int c = indices.y;
-            NavigateToPose::Goal tempGoal = indexToGoal(r, c);
+            Vector2Int indices;
+            double evaluation;
+        };
 
-            double explorationTerm = explorationValue(r, c);
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({r, c})] //
-                                  * (1 - pmfs->hitProbability[gridMetadata.indexOf({r, c})].confidence);
+        auto compareEval = [](const PositionEval& a, const PositionEval& b)
+        { return a.evaluation > b.evaluation; };
+        std::set<PositionEval, decltype(compareEval)> evaluations;
 
-            double interest =
-                currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
-                    ? explorationTerm
-                    : varianceTerm;
+        for (size_t i = 0; i < pmfs->combinedSourceProbability.size(); i++)
+        {
+            if (pmfs->navigationOccupancy[i] != Occupancy::Free)
+                continue;
+            Vector2Int indices = gridMetadata.indices2D(i);
+            double explorationTerm = explorationValue(indices.x, indices.y);
 
-            if (interest > bestInterest)
+            double interest = currentMovement == MovementType::Exploration || explorationC < pmfs->settings.movement.explorationProbability
+                                  ? explorationTerm
+                                  : informationValue(indices.x, indices.y);
+
+            double evaluation = interest / std::pow(pmfs->hitProbability[i].distanceFromRobot + 0.1f, pmfs->settings.movement.distanceWeight);
+
+            evaluations.insert({.indices = indices, .evaluation = evaluation});
+        }
+
+        for (const PositionEval& eval : evaluations)
+        {
+            NavigateToPose::Goal tempGoal = indexToGoal(eval.indices.x, eval.indices.y);
+            if (checkGoal(tempGoal))
             {
-                // checkGoal is somewhat slow because of the service calls, so only do it if the cell is actually interesting
-                if (checkGoal(tempGoal))
-                {
-                    bestInterest = interest;
-                    goalI = r;
-                    goalJ = c;
-                    goal = tempGoal;
-                }
+                goal = tempGoal;
+                break;
             }
         }
 
-        // re-add the current position to the open set so it can be re-visited in the future
         if (closedMoveSet.find(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose)) == closedMoveSet.end())
             openMoveSet.insert(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
-        GSL_ASSERT_MSG(closedMoveSet.find({goalI, goalJ}) == closedMoveSet.end(), "Goal is in closed set, what the hell");
 
         pmfs->iterationsCounter++;
         sendGoal(goal);
@@ -120,6 +112,25 @@ namespace GSL
                 continue;
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are near enough that it does not matter
             sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].confidence) * std::exp(-distance);
+            GSL_ASSERT(sum > 0);
+        }
+        return sum;
+    }
+
+    double MovingStateSemanticPMFS::informationValue(int i, int j)
+    {
+        auto& gridMetadata = pmfs->gridMetadata;
+        Vector2Int ij(i, j);
+        auto range = pmfs->visibilityMap->at(ij);
+
+        double sum = 0;
+        for (const auto& p : range)
+        {
+            // double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
+            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(i, j)] * (1 - pmfs->hitProbability[gridMetadata.indexOf(i, j)].confidence);
+            
+            float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
+            sum += varianceTerm * std::exp(-distance);
             GSL_ASSERT(sum > 0);
         }
         return sum;

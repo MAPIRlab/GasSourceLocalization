@@ -66,10 +66,10 @@ Visualization Manager:
         Value: /Gas_Distribution
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: Wind_arrow
       Namespaces:
-        {}
+        measured_wind_inverted: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -77,7 +77,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /giraff/Anemometer/WindSensor_display
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: Environment_CAD
@@ -284,10 +284,10 @@ Visualization Manager:
         Value: /giraff/explorationValue
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: false
+      Enabled: true
       Name: HitVariance
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -295,7 +295,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /giraff/varianceHit
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/Image
       Enabled: false
       Max Value: 1
@@ -553,16 +553,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 14.128458023071289
+      Distance: 14.346439361572266
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.574234962463379
-        Y: -1.884283423423767
-        Z: 2.199458599090576
+        X: -3.0056588649749756
+        Y: -2.413846731185913
+        Z: 2.1989221572875977
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

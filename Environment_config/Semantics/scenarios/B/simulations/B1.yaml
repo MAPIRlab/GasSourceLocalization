@@ -39,3 +39,4 @@ loop_from_iteration: 800
 loop_to_iteration: 900
 
 targetGas: smoke
+markers_height: -0.6
