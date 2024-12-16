@@ -86,7 +86,7 @@ def launch_setup(context, *args, **kwargs):
                         #Filament simulation
                     {"useWindGroundTruth": False},
                     {"stepsSourceUpdate": 3},
-                    {"maxRegionSize": 4},
+                    {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
                     {"refineFraction": 0.2},
                     {"deltaTime": parse_substitution("$(var filamentDeltaTime)")},
@@ -94,8 +94,8 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"minWarmupIterations": parse_substitution("$(var minWarmupIterations)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
-                    {"blurSigmaX": 1.5},
-                    {"blurSigmaY": 1.5},
+                    {"blurSigmaX": 1.0},
+                    {"blurSigmaY": 1.0},
 
                     #Semantics
                     {"semanticsType" : "ClassMapVoxeland"},

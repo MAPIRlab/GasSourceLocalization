@@ -431,7 +431,7 @@ namespace GSL::PMFS_internal
             for (int i = 0; i < measuredHitProb.metadata.dimensions.x; i++)
             {
                 if (!measuredHitProb.freeAt(i, j))
-                    inColor.at<cv::Vec3f>(measuredHitProb.metadata.dimensions.y - 1 - j, i) = cv::Vec3f(0, 0, 1);
+                    inColor.at<cv::Vec3f>(j,i) = cv::Vec3f(0, 0, 1);
             }
         }
 
@@ -447,6 +447,7 @@ namespace GSL::PMFS_internal
 
         GSL_WARN("hitMap image saved");
 #else
+        cv::flip(inColor, inColor, 0);
         cv::Mat resized;
         cv::resize(inColor, resized, cv::Size(inColor.size[1] * 10, inColor.size[0] * 10), 0, 0, cv::INTER_NEAREST);
         cv::imshow("result", resized);
