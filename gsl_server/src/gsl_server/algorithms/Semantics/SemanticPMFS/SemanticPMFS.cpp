@@ -56,16 +56,8 @@ namespace GSL
 
         functionQueue.run();
 
-        PMFSViz::ShowHitProb(
-            Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
-            settings.visualization,
-            pubs.pmfsPubs);
-        PMFSViz::ShowSourceProb(
-            Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
-            settings.visualization,
-            pubs.pmfsPubs);
 
-#define DEBUG_VISUALIZATION 1
+#define DEBUG_VISUALIZATION 0
 #if DEBUG_VISUALIZATION
         {
             std::vector<ColorRGBA> colors(sourceProbabilityPMFS.size());
@@ -252,6 +244,16 @@ namespace GSL
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
+
+
+        PMFSViz::ShowHitProb(
+            Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
+        PMFSViz::ShowSourceProb(
+            Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
     }
 
 } // namespace GSL

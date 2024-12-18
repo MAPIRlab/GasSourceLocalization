@@ -94,7 +94,7 @@ namespace GSL::PMFS_internal
         resultsFirstLevel.clear();
         resultsFirstLevel.reserve(scores.size());
 // iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
-#pragma omp parallel for schedule(dynamic)
+// #pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
         {
             SimulationResult result = runSimulation(scores, leafIndex);
@@ -104,7 +104,7 @@ namespace GSL::PMFS_internal
 // update the information for the variance calulation
 #pragma omp critical
             {
-                resultsFirstLevel.push_back(result); 
+                resultsFirstLevel.push_back(result);
                 numberOfSimulations++;
                 for (int cell = 0; cell < result.hitMap.size(); cell++)
                 {
@@ -267,11 +267,21 @@ namespace GSL::PMFS_internal
                                                int timesteps, float deltaTime, float noiseSTDev) const
     {
         constexpr int numFilamentsIteration = 5;
-        std::vector<Filament> filaments(settings.maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration);
+        size_t max_filaments = settings.maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration;
+
+        // To avoid having to delete filaments from the middle of the vector, which is quite slow, we will ping-pong the active filaments between two vectors
+        // at the start of any iteration, one vector (active) will contain all the released filaments and the other one will be empty
+        // after each filament has been moved, if it is still active, it will be copied to the other vector
+        // then, the active vector changes and the old one is cleared
+        std::vector<Filament> filaments1;
+        std::vector<Filament> filaments2;
+        filaments1.reserve(max_filaments);
+        filaments2.reserve(max_filaments);
+        std::vector<Filament>* activeFilamentVec = &filaments1;
+        std::vector<Filament>* otherFilamentVec = &filaments2;
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
-        size_t lastActivated = 0;
 
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
@@ -284,16 +294,12 @@ namespace GSL::PMFS_internal
             {
                 for (int i = 0; i < numFilamentsIteration; i++)
                 {
-                    filaments[lastActivated].position = source.getPoint();
-                    filaments[lastActivated].active = true;
-                    lastActivated++;
+                    activeFilamentVec->emplace_back();
+                    activeFilamentVec->back().position = source.getPoint();
                 }
 
-                for (size_t filamentInd = 0; filamentInd < lastActivated; filamentInd++)
+                for (Filament& filament : *activeFilamentVec)
                 {
-                    Filament& filament = filaments[filamentInd];
-                    if (!filament.active)
-                        continue;
                     auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
                     // move active filaments
@@ -302,12 +308,17 @@ namespace GSL::PMFS_internal
                     // remove filaments
                     if (filamentIsOutside(filament))
                     {
-                        filament.active = false;
                         stable = true;
                         break;
                     }
+                    else
+                        otherFilamentVec->push_back(filament);
                 }
                 iterationCount++;
+
+                // "other" now contains the list of all the filaments that are still available, so swap the vectors and remove the old list
+                activeFilamentVec->clear();
+                std::swap(activeFilamentVec, otherFilamentVec);
             }
         }
 
@@ -315,20 +326,14 @@ namespace GSL::PMFS_internal
         // now, we do the thing
         for (int t = 1; t < timesteps + 1; t++)
         {
-            // spawn new ones
             for (int i = 0; i < numFilamentsIteration; i++)
             {
-                filaments[lastActivated].position = source.getPoint();
-                filaments[lastActivated].active = true;
-                lastActivated++;
+                activeFilamentVec->emplace_back();
+                activeFilamentVec->back().position = source.getPoint();
             }
 
-            for (size_t filamentInd = 0; filamentInd < lastActivated; filamentInd++)
+            for (Filament& filament : *activeFilamentVec)
             {
-                Filament& filament = filaments[filamentInd];
-                if (!filament.active)
-                    continue;
-
                 // update map
                 auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
                 size_t index = measuredHitProb.metadata.indexOf(indices);
@@ -344,9 +349,11 @@ namespace GSL::PMFS_internal
                 moveFilament(filament, indices, deltaTime, noiseSTDev);
 
                 // remove filaments
-                if (filamentIsOutside(filament))
-                    filament.active = false;
+                if (!filamentIsOutside(filament))
+                    otherFilamentVec->push_back(filament);
             }
+            activeFilamentVec->clear();
+            std::swap(activeFilamentVec, otherFilamentVec);
         }
 
         // convert the total hit count into relative frequency
@@ -450,7 +457,7 @@ namespace GSL::PMFS_internal
             for (int i = 0; i < measuredHitProb.metadata.dimensions.x; i++)
             {
                 if (!measuredHitProb.freeAt(i, j))
-                    inColor.at<cv::Vec3f>(j,i) = cv::Vec3f(0, 0, 1);
+                    inColor.at<cv::Vec3f>(j, i) = cv::Vec3f(0, 0, 1);
             }
         }
 

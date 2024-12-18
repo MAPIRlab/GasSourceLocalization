@@ -15,7 +15,6 @@ namespace GSL::PMFS_internal
     struct Filament
     {
         Vector2 position;
-        bool active = false;
     };
 
     struct SimulationSource
