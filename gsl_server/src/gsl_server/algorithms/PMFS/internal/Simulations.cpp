@@ -94,7 +94,7 @@ namespace GSL::PMFS_internal
         resultsFirstLevel.clear();
         resultsFirstLevel.reserve(scores.size());
 // iterate over the leaves of the quadtree, doing one simulation for each and calculating how well it fits our measured gas map
-// #pragma omp parallel for schedule(dynamic)
+#pragma omp parallel for schedule(dynamic)
         for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
         {
             SimulationResult result = runSimulation(scores, leafIndex);
@@ -307,10 +307,7 @@ namespace GSL::PMFS_internal
 
                     // remove filaments
                     if (filamentIsOutside(filament))
-                    {
                         stable = true;
-                        break;
-                    }
                     else
                         otherFilamentVec->push_back(filament);
                 }

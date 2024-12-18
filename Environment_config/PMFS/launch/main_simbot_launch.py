@@ -89,6 +89,8 @@ def launch_setup(context, *args, **kwargs):
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
+                    {"blurSigmaX" : 0.5},
+                    {"blurSigmaY" : 0.5},
 
                     #Surge-Cast
                     {"step": 0.5},
@@ -282,6 +284,11 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="iterationsToRecord", 
             value="200"
+        ),
+
+        SetLaunchConfiguration(
+            name="minWarmupIterations", 
+            value="0"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations", 

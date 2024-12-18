@@ -25,9 +25,9 @@ int main(int argc, char** argv)
         if (gsl_node->m_activeGoal.get() != nullptr)
         {
             //in debug mode, don't catch the exception! It prevents the debugger from automatically stopping in the offending line
-// #if GSL_DEBUG
-//             gsl_node->execute(gsl_node->m_activeGoal);
-// #else
+#if GSL_DEBUG
+            gsl_node->execute(gsl_node->m_activeGoal);
+#else
             try
             {
                 gsl_node->execute(gsl_node->m_activeGoal);
@@ -36,7 +36,7 @@ int main(int argc, char** argv)
             {
                 GSL_ERROR("Exception while running GSL: {}", e.what());
             }
-// #endif
+#endif
 
             rclcpp::sleep_for(std::chrono::seconds(1));
             rclcpp::shutdown();
