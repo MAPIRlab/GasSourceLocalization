@@ -3,6 +3,7 @@
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
 #include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
+#include <opencv2/core.hpp>
 
 namespace GSL
 {
@@ -73,7 +74,6 @@ namespace GSL::PMFS_internal
         VisibilityMap* visibilityMap;
 
     protected:
-        std::vector<long double> sourceProbInternal; // calculated from the simulations, used for movement
 
         struct LeafScore
         {
@@ -81,10 +81,12 @@ namespace GSL::PMFS_internal
             Utils::NQA::Node* leaf;
         };
 
+        std::vector<long double> sourceProbInternal; // calculated from the simulations, used for movement
         const PMFS_internal::SimulationSettings& settings;
         Grid2D<HitProbability> measuredHitProb;
         Grid2D<double> sourceProb;
         Grid2D<Vector2> wind;
+        cv::Mat freeSpaceMask;
 
         SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
@@ -92,5 +94,7 @@ namespace GSL::PMFS_internal
                                       int timesteps, float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
+
+        void blurHitMap(cv::Mat& asImage);
     };
 } // namespace GSL::PMFS_internal

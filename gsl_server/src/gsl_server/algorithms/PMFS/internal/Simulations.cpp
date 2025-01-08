@@ -7,7 +7,8 @@
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/core/Logging.hpp>
 
-#include <opencv2/core.hpp>
+#include <opencv2/core/hal/interface.h>
+#include <opencv2/core/saturate.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -60,8 +61,18 @@ namespace GSL::PMFS_internal
                 }
             }
         }
-
         sourceProbInternal.resize(sourceProb.data.size(), 0.0);
+
+        // we want to have the occupancy mask as a cv image so we can correct the blur later
+        freeSpaceMask = cv::Mat(
+            cv::Size(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y),
+            CV_32F,
+            cv::Scalar(0, 0, 0));
+
+        for (int i = 0; i < measuredHitProb.metadata.dimensions.y; i++)
+            for (int j = 0; j < measuredHitProb.metadata.dimensions.x; j++)
+                if (measuredHitProb.freeAt(i, j))
+                    freeSpaceMask.at<float>(i, j) = 1;
     }
 
     void Simulations::updateSourceProbability(float refineFraction)
@@ -195,8 +206,8 @@ namespace GSL::PMFS_internal
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
         {
             cv::Mat asImage(result.hitMap);
-            asImage.reshape(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y);
-            cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
+            asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
+            blurHitMap(asImage);
         }
 
         result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
@@ -281,7 +292,6 @@ namespace GSL::PMFS_internal
         std::vector<Filament>* otherFilamentVec = &filaments2;
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
-
 
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
@@ -440,10 +450,10 @@ namespace GSL::PMFS_internal
                                  settings.noiseSTDev);
 
         cv::Mat asImage(hitMap);
-        asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
         {
-            cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
+            asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
+            blurHitMap(asImage);
         }
 
         cv::Mat inColor;
@@ -477,6 +487,20 @@ namespace GSL::PMFS_internal
         cv::waitKey();
         cv::destroyAllWindows();
 #endif
+    }
+
+    void Simulations::blurHitMap(cv::Mat& asImage)
+    {
+        cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
+        // divide by the blurred mask to correct the edges always getting lower
+        // TODO measure performance of doing this repeatedly. Is it worth it to pre-compute and only redo it if the blur sigma has changed?
+        cv::Mat blurredMask;
+        cv::GaussianBlur(freeSpaceMask, blurredMask, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
+
+        for (int i = 0; i < measuredHitProb.metadata.dimensions.y; i++)
+            for (int j = 0; j < measuredHitProb.metadata.dimensions.x; j++)
+                if (blurredMask.at<float>(i, j) != 0)
+                    asImage.at<float>(i, j) = Utils::clamp(asImage.at<float>(i, j) / blurredMask.at<float>(i, j), 0, 1);
     }
 
 } // namespace GSL::PMFS_internal

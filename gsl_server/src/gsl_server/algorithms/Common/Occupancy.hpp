@@ -4,7 +4,7 @@ namespace GSL
 {
     enum class Occupancy
     {
-        Free,
-        Obstacle
+        Obstacle = 0,
+        Free = 1
     };
 }
