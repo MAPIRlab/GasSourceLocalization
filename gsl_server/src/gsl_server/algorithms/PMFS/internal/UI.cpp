@@ -6,6 +6,7 @@
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
+#include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
 
 namespace GSL::PMFS_internal
 {
@@ -206,7 +207,7 @@ namespace GSL::PMFS_internal
                 paused = !paused;
 
             ImGui::BulletText("Gas concentration measured over time");
-            static PMFS_internal::ScrollingBuffer sdata1;
+            static GUI::ScrollingBuffer sdata1;
             static float t = 0;
             t += ImGui::GetIO().DeltaTime;
             if (last_concentration_reading != -1)

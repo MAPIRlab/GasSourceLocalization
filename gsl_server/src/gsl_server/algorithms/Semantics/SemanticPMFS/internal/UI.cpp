@@ -1,19 +1,18 @@
 #ifdef USE_GUI
+// TODO This is currently just a straight-up copy of the PMFS UI. We could definitely do better, but I don't believe it is a good idea to set up an inheritance tree for UIs
+// TODO it ends up limiting the design of the actual algorithm classes, and keeping that well organized is higher priority than making the debug UI easy to maintain
+#include "UI.hpp"
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
+#include "gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
 #include "imgui.h"
-#include <fmt/core.h>
-
-// TODO This is currently just a straight-up copy of the PMFS UI. We could definitely do better, but I don't believe it is a good idea to set up an inheritance tree for UIs
-// TODO it ends up limiting the design of the actual algorithm classes, and keeping that well organized is higher priority than making the debug UI easy to maintain
-
-#include "UI.hpp"
-#include "gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <fmt/core.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 
@@ -152,11 +151,12 @@ namespace GSL::SemanticPMFS_internal
             {
                 pmfs->functionQueue.submit([this]()
                                            {
-                    pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
-                    PMFSViz::ShowSourceProb(
-                        Grid2D<double>(pmfs->combinedSourceProbability, pmfs->simulationOccupancy, pmfs->gridMetadata), 
-                        pmfs->settings.visualization, 
-                        pmfs->pubs.pmfsPubs); });
+                                               pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
+                                               PMFSViz::ShowSourceProb(
+                                                   Grid2D<double>(pmfs->combinedSourceProbability, pmfs->simulationOccupancy, pmfs->gridMetadata),
+                                                   pmfs->settings.visualization,
+                                                   pmfs->pubs.pmfsPubs);
+                                           });
             }
         }
         ImGui::End();
@@ -217,7 +217,7 @@ namespace GSL::SemanticPMFS_internal
                 paused = !paused;
 
             ImGui::BulletText("Gas concentration measured over time");
-            static ScrollingBuffer sdata1;
+            static GUI::ScrollingBuffer sdata1;
             static float t = 0;
             t += ImGui::GetIO().DeltaTime;
             if (last_concentration_reading != -1)

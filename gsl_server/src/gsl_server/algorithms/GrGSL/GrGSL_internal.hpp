@@ -1,4 +1,5 @@
 #pragma once
+#include "gsl_server/core/Vectors.hpp"
 #include <rclcpp/publisher.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
@@ -29,6 +30,10 @@ namespace GSL::GrGSL_internal
         bool infoTaxis;
         bool allowMovementRepetition;
         bool useDiffusionTerm;
+        
+        //visualization
+        Vector2 colorScaleLimits = {0.0001f, 0.1f};
+        bool headless;
     };
 
     struct Markers

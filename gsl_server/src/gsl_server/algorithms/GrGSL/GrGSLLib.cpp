@@ -1,8 +1,10 @@
 #include "GrGSLLib.hpp"
+#include "gsl_server/core/Logging.hpp"
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include <angles/angles.h>
+#include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
-#include <gsl_server/algorithms/Common/Utils/Collections.hpp>
-#include <angles/angles.h>
 
 namespace GSL
 {
@@ -19,7 +21,7 @@ namespace GSL
     }
 
     void GrGSLLib::initializeMap(Algorithm& algorithm, Grid2D<Cell> grid)
-    {        
+    {
         // remove "free" cells that are actually unreachable
         {
             HashSet openPropagationSet;
@@ -47,7 +49,7 @@ namespace GSL
 
     void GrGSLLib::GetSettings(rclcpp::Node::SharedPtr node, GrGSL_internal::Settings& settings, GrGSL_internal::Markers& markers)
     {
-        settings.useDiffusionTerm = Utils::getParam<bool>(node, "useDiffusionTerm", false); //experimental way to extract useful info from low-wind measurements, not very reliable
+        settings.useDiffusionTerm = Utils::getParam<bool>(node, "useDiffusionTerm", false); // experimental way to extract useful info from low-wind measurements, not very reliable
         settings.stdevHit = Utils::getParam<double>(node, "stdevHit", 1.0);
         settings.stdevMiss = Utils::getParam<double>(node, "stdevMiss", 2.0);
         settings.infoTaxis = Utils::getParam<bool>(node, "infoTaxis", false);
@@ -57,7 +59,7 @@ namespace GSL
     }
 
     void GrGSLLib::estimateProbabilitiesfromGasAndWind(Grid2D<Cell> grid, const GrGSL_internal::Settings& settings,
-            bool hit, bool advection, double windDirection, Vector2 positionOfLastHit, Vector2Int robotPosition)
+                                                       bool hit, bool advection, double windDirection, Vector2 positionOfLastHit, Vector2Int robotPosition)
     {
         if (!advection && !(settings.useDiffusionTerm && hit))
             return;
@@ -73,11 +75,10 @@ namespace GSL
         //-------------------------------
         {
             Vector2 coordR = grid.metadata.indicesToCoordinates(robotPosition);
-            double idealPropagationDirection = hit ?
-                                               angles::normalize_angle(windDirection + M_PI) //upwind direction
-                                               : std::atan2((positionOfLastHit.y - coordR.y), (positionOfLastHit.x - coordR.x)) + M_PI; //direction that we have moved since the last hit
+            double idealPropagationDirection = hit ? angles::normalize_angle(windDirection + M_PI)                                          // upwind direction
+                                                   : std::atan2((positionOfLastHit.y - coordR.y), (positionOfLastHit.x - coordR.x)) + M_PI; // direction that we have moved since the last hit
 
-            //loop limits
+            // loop limits
             size_t startC = std::max(0, robotPosition.x - 2);
             size_t endC = std::min(grid.metadata.dimensions.x - 1, robotPosition.x + 2);
             size_t startR = std::max(0, robotPosition.y - 2);
@@ -87,20 +88,20 @@ namespace GSL
             {
                 for (int col = startC; col <= endC; col++)
                 {
-                    Vector2Int colRow {col, row};
+                    Vector2Int colRow{col, row};
                     if (!grid.freeAt(colRow))
                         continue;
 
-                    //the cells that the robot is in always gets the same probability as the best direction
+                    // the cells that the robot is in always gets the same probability as the best direction
                     if (colRow == robotPosition)
                     {
                         grid.dataAt(colRow).auxWeight = Utils::evaluate1DGaussian(
-                                                            (hit ? 0 : M_PI),
-                                                            (hit ? settings.stdevHit : settings.stdevMiss));
+                            (hit ? 0 : M_PI),
+                            (hit ? settings.stdevHit : settings.stdevMiss));
                         grid.dataAt(colRow).distance = 0;
                         closedPropagationSet.insert(colRow);
                     }
-                    //for the rest of the cells, we compare the direction of the connecting vector with the ideal direction
+                    // for the rest of the cells, we compare the direction of the connecting vector with the ideal direction
                     else
                     {
                         Vector2 coordC = grid.metadata.indicesToCoordinates(colRow);
@@ -109,10 +110,10 @@ namespace GSL
                         double angleDifference = atan2(sin(idealPropagationDirection - angleCellToRobot), cos(idealPropagationDirection - angleCellToRobot));
 
                         grid.dataAt(colRow).auxWeight = Utils::evaluate1DGaussian(angleDifference,
-                                                        hit ? settings.stdevHit : settings.stdevMiss);
+                                                                                  hit ? settings.stdevHit : settings.stdevMiss);
                         grid.dataAt(colRow).distance = (row == robotPosition.y || col == robotPosition.x)
-                                                       ? 1
-                                                       : sqrt(2);
+                                                           ? 1
+                                                           : sqrt(2);
 
                         activePropagationSet.insert(colRow);
                     }
@@ -128,23 +129,23 @@ namespace GSL
         if (advection)
         {
             double sum = 0;
-            mapFunctionToCells(grid, [&sum](Cell & cell, size_t index)
+            mapFunctionToCells(grid, [&sum](Cell& cell, size_t index)
                                {
                                    sum += cell.auxWeight;
-                               }
-                              );
-            mapFunctionToCells(grid, [&sum](Cell & cell, size_t index)
+                               });
+            mapFunctionToCells(grid, [&sum](Cell& cell, size_t index)
                                {
                                    cell.auxWeight /= sum;
-                               }
-                               , MapFunctionMode::Parallel);
+                               },
+                               MapFunctionMode::Parallel);
         }
         else
         {
-            mapFunctionToCells(grid, [](Cell & cell, size_t index)
+            mapFunctionToCells(grid, [](Cell& cell, size_t index)
                                {
                                    cell.auxWeight = 0;
-                               }, MapFunctionMode::Parallel);
+                               },
+                               MapFunctionMode::Parallel);
         }
 
         // DIFFUSION
@@ -153,7 +154,7 @@ namespace GSL
             // calculate and normalize these probabilities before combining them with the advection ones
             std::vector<double> diffusionProb = std::vector<double>(grid.data.size(), 0);
             double sum = 0;
-            mapFunctionToCells(grid, [&sum, &diffusionProb](Cell & cell, size_t index)
+            mapFunctionToCells(grid, [&sum, &diffusionProb](Cell& cell, size_t index)
                                {
                                    diffusionProb[index] = std::max(0.1, Utils::evaluate1DGaussian(cell.distance, 3));
                                    sum += diffusionProb[index];
@@ -161,20 +162,22 @@ namespace GSL
 
             if (sum > 0)
             {
-                mapFunctionToCells(grid, [&sum, &diffusionProb](Cell & cell, size_t index)
+                mapFunctionToCells(grid, [&sum, &diffusionProb](Cell& cell, size_t index)
                                    {
                                        diffusionProb[index] /= sum;
                                        cell.auxWeight += diffusionProb[index];
-                                   }, MapFunctionMode::Parallel);
+                                   },
+                                   MapFunctionMode::Parallel);
             }
         }
 
         // BAYESIAN FILTER
-        mapFunctionToCells(grid, [](Cell & cell, size_t index)
+        mapFunctionToCells(grid, [](Cell& cell, size_t index)
                            {
                                cell.sourceProb *= cell.auxWeight;
                                cell.auxWeight = 0;
-                           }, MapFunctionMode::Parallel);
+                           },
+                           MapFunctionMode::Parallel);
 
         Normalize(grid);
     }
@@ -182,10 +185,12 @@ namespace GSL
     void GrGSLLib::propagateProbabilities(Grid2D<Cell> grid, HashSet& openPropagationSet, HashSet& closedPropagationSet,
                                           HashSet& activePropagationSet)
     {
-#define DebugPropagation 0 // Run the propagation step by step to see how the sets change
+#define DebugPropagation 1 // Run the propagation step by step to see how the sets change
 #if DebugPropagation
 
-        std::vector<ColorRGBA> colors (grid.data.size());
+        std::vector<ColorRGBA> colors(grid.data.size());
+        if (debuggingPropagation)
+            GSL_WARN("Debugging propagation! Press [enter] (must be in an x-term window) to do one propagation step at a time");
 #endif
         while (!activePropagationSet.empty())
         {
@@ -196,9 +201,9 @@ namespace GSL
                 closedPropagationSet.insert(activeCell);
 
                 int startR = std::max(0, activeCell.y - 1);
-                int endR = std::min((int) grid.metadata.dimensions.y - 1, activeCell.y + 1);
+                int endR = std::min((int)grid.metadata.dimensions.y - 1, activeCell.y + 1);
                 int startC = std::max(0, activeCell.x - 1);
-                int endC = std::min((int) grid.metadata.dimensions.x - 1, activeCell.x + 1);
+                int endC = std::min((int)grid.metadata.dimensions.x - 1, activeCell.x + 1);
 
                 // 8-neighbour propagation
                 for (int col = startC; col <= endC; col++)
@@ -206,19 +211,18 @@ namespace GSL
                         if (grid.freeAt(col, row))
                             calculateWeight(grid, {col, row}, activeCell, openPropagationSet, closedPropagationSet, activePropagationSet);
             }
-#if DebugPropagation
-            mapFunctionToCells(grid, [&](Cell & cell, size_t index)
-                            {
-                                if(Utils::contains(openPropagationSet, grid.metadata.indices2D(index)))
-                                    colors[index] = Utils::create_color(0, 1, 0, 1);
-                                else if(Utils::contains(closedPropagationSet, grid.metadata.indices2D(index)))
-                                    colors[index] = Utils::create_color(1, 0, 0, 1);
-                                else
-                                    colors[index] = Utils::create_color(0, 0, 1, 1);
 
-                            }, MapFunctionMode::Parallel);
-            Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, grid.occupancy, grid.metadata));
-            std::cin.get(); // IMPORTANT!! you need to run the node in a xterm window! otherwise cin is blocked by ros and we cannot pause and step
+#if DebugPropagation
+            if (debuggingPropagation)
+            {
+                mapFunctionToCells(grid, [&](Cell& cell, size_t index)
+                                   {
+                                       colors[index] = Utils::valueToColor(cell.auxWeight, 0, 1, Utils::valueColorMode::Linear);
+                                   },
+                                   MapFunctionMode::Parallel);
+                Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, grid.occupancy, grid.metadata), "propagation");
+                std::cin.get(); // IMPORTANT!! you need to run the node in a xterm window! otherwise cin is blocked by ros and we cannot pause and step
+            }
 #endif
 
             activePropagationSet.clear();
@@ -233,15 +237,14 @@ namespace GSL
                                    HashSet& closedPropagationSet, HashSet& activePropagationSet)
     {
         if (closedPropagationSet.find(newCell) != closedPropagationSet.end() ||
-                activePropagationSet.find(newCell) != activePropagationSet.end())
+            activePropagationSet.find(newCell) != activePropagationSet.end())
             return;
 
         // if there already was a path to this cell
         if (openPropagationSet.find(newCell) != openPropagationSet.end())
         {
             double d = grid.dataAt(activeCell).distance +
-                       ((newCell.x == activeCell.x || newCell.y == activeCell.y) ?
-                        1 : sqrt(2)); // distance of this new path to the same cell
+                       ((newCell.x == activeCell.x || newCell.y == activeCell.y) ? 1 : sqrt(2)); // distance of this new path to the same cell
 
             // if the distance is the same, keep the best probability!
             if (Utils::approx(d, grid.dataAt(newCell).distance))
@@ -257,32 +260,29 @@ namespace GSL
         {
             grid.dataAt(newCell).auxWeight = grid.dataAt(activeCell).auxWeight;
             grid.dataAt(newCell).distance = grid.dataAt(activeCell).distance +
-                                            ((newCell.x == activeCell.x || newCell.y == activeCell.y) ?
-                                             1 : sqrt(2));
+                                            ((newCell.x == activeCell.x || newCell.y == activeCell.y) ? 1 : sqrt(2));
             openPropagationSet.insert(newCell);
         }
     }
 
     void GrGSLLib::Normalize(Grid2D<GrGSL_internal::Cell> grid)
     {
-        Utils::NormalizeDistribution<Cell>(grid.data,
-                                           [](Cell & cell) -> double&
+        Utils::NormalizeDistribution<Cell>(grid.data, [](Cell& cell) -> double&
                                            {
                                                return cell.sourceProb;
-                                           }
-                                           , grid.occupancy);
+                                           },
+                                           grid.occupancy);
     }
-
 
     double GrGSLLib::informationGain(const WindVector& windVec, Grid2D<Cell> grid, const Settings& settings, Vector2 positionOfLastHit)
     {
         auto predictionCells = grid.data; // temp copy of the matrix of cells that we can modify to simulate the effect of a measurement
-        auto accessProb = [](const Cell & cell)
-                          {
-                              return cell.sourceProb;
-                          };
+        auto accessProb = [](const Cell& cell)
+        {
+            return cell.sourceProb;
+        };
 
-        //simulate a hit in the considered position and see how much info that gives us
+        // simulate a hit in the considered position and see how much info that gives us
         GrGSLLib::estimateProbabilitiesfromGasAndWind(
             Grid2D<Cell>(predictionCells, grid.occupancy, grid.metadata),
             settings,
@@ -293,7 +293,7 @@ namespace GSL
             Vector2Int(windVec.col, windVec.row));
         double infoHit = Utils::KLD<Cell>(predictionCells, grid.data, grid.occupancy, accessProb);
 
-        //simulate a miss and repeat
+        // simulate a miss and repeat
         predictionCells = grid.data;
         GrGSLLib::estimateProbabilitiesfromGasAndWind(
             Grid2D<Cell>(predictionCells, grid.occupancy, grid.metadata),
@@ -305,7 +305,7 @@ namespace GSL
             Vector2Int(windVec.col, windVec.row));
         double infoMiss = Utils::KLD<Cell>(predictionCells, grid.data, grid.occupancy, accessProb);
 
-        //expected value of info, considering that the probability of a hit can be equated to the currently estimated source prob... which is a hack
+        // expected value of info, considering that the probability of a hit can be equated to the currently estimated source prob... which is a hack
         size_t index = grid.metadata.indexOf({windVec.col, windVec.row});
         return grid.data[index].sourceProb * infoHit + (1 - grid.data[index].sourceProb) * infoMiss;
     }
@@ -314,7 +314,7 @@ namespace GSL
     {
         if (mode == MapFunctionMode::Parallel)
         {
-            #pragma omp parallel for
+#pragma omp parallel for
             for (size_t index = 0; index < grid.data.size(); index++)
                 if (grid.occupancy[index] == Occupancy::Free)
                     function(grid.data[index], index);
@@ -327,26 +327,25 @@ namespace GSL
         }
     }
 
-
-    void GrGSLLib::VisualizeMarkers(Grid2D<Cell> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node)
+    void GrGSLLib::VisualizeMarkers(Grid2D<Cell> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node, Vector2 colorScaleLimits)
     {
         constexpr auto emptyMarker = []()
-                                     {
-                                         Marker points;
-                                         points.header.frame_id = "map";
-                                         points.ns = "cells";
-                                         points.id = 0;
-                                         points.type = Marker::POINTS;
-                                         points.action = Marker::ADD;
+        {
+            Marker points;
+            points.header.frame_id = "map";
+            points.ns = "cells";
+            points.id = 0;
+            points.type = Marker::POINTS;
+            points.action = Marker::ADD;
 
-                                         points.color.r = 1.0;
-                                         points.color.g = 0.0;
-                                         points.color.b = 1.0;
-                                         points.color.a = 1.0;
-                                         points.scale.x = 0.15;
-                                         points.scale.y = 0.15;
-                                         return points;
-                                     };
+            points.color.r = 1.0;
+            points.color.g = 0.0;
+            points.color.b = 1.0;
+            points.color.a = 1.0;
+            points.scale.x = 0.15;
+            points.scale.y = 0.15;
+            return points;
+        };
 
         Marker points = emptyMarker();
         points.header.stamp = node->now();
@@ -364,7 +363,7 @@ namespace GSL
                     p.z = 0;
 
                     std_msgs::msg::ColorRGBA color =
-                        Utils::valueToColor(grid.dataAt(col, row).sourceProb, 0.00001, 0.1, Utils::valueColorMode::Logarithmic);
+                        Utils::valueToColor(grid.dataAt(col, row).sourceProb, colorScaleLimits.x, colorScaleLimits.y, Utils::valueColorMode::Logarithmic);
 
                     points.points.push_back(p);
                     points.colors.push_back(color);
@@ -374,25 +373,25 @@ namespace GSL
         markers.probabilityMarkers->publish(points);
     }
 
-    void GrGSLLib::VisualizeMarkers(Grid2D<double> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node)
+    void GrGSLLib::VisualizeMarkers(Grid2D<double> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node, Vector2 colorScaleLimits)
     {
         constexpr auto emptyMarker = []()
-                                     {
-                                         Marker points;
-                                         points.header.frame_id = "map";
-                                         points.ns = "cells";
-                                         points.id = 0;
-                                         points.type = Marker::POINTS;
-                                         points.action = Marker::ADD;
+        {
+            Marker points;
+            points.header.frame_id = "map";
+            points.ns = "cells";
+            points.id = 0;
+            points.type = Marker::POINTS;
+            points.action = Marker::ADD;
 
-                                         points.color.r = 1.0;
-                                         points.color.g = 0.0;
-                                         points.color.b = 1.0;
-                                         points.color.a = 1.0;
-                                         points.scale.x = 0.15;
-                                         points.scale.y = 0.15;
-                                         return points;
-                                     };
+            points.color.r = 1.0;
+            points.color.g = 0.0;
+            points.color.b = 1.0;
+            points.color.a = 1.0;
+            points.scale.x = 0.15;
+            points.scale.y = 0.15;
+            return points;
+        };
 
         Marker points = emptyMarker();
         points.header.stamp = node->now();
@@ -410,7 +409,7 @@ namespace GSL
                     p.z = 0;
 
                     std_msgs::msg::ColorRGBA color =
-                        Utils::valueToColor(grid.dataAt(col, row), 0.00001, 0.1, Utils::valueColorMode::Logarithmic);
+                        Utils::valueToColor(grid.dataAt(col, row), colorScaleLimits.x, colorScaleLimits.y, Utils::valueColorMode::Logarithmic);
 
                     points.points.push_back(p);
                     points.colors.push_back(color);
@@ -419,7 +418,6 @@ namespace GSL
         }
         markers.probabilityMarkers->publish(points);
     }
-
 
     Vector2 GrGSLLib::expectedValueSource(Grid2D<Cell> grid, double proportionBest)
     {
@@ -443,7 +441,7 @@ namespace GSL
             }
         }
 
-        std::sort(data.begin(), data.end(), [](const CellData & a, const CellData & b)
+        std::sort(data.begin(), data.end(), [](const CellData& a, const CellData& b)
                   {
                       return a.probability > b.probability;
                   });
@@ -480,4 +478,4 @@ namespace GSL
         return x + y;
     }
 
-}
+} // namespace GSL

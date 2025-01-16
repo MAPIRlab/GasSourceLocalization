@@ -1,7 +1,8 @@
 #pragma once
 #ifdef USE_GUI
-#include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include <ament_imgui/ament_imgui.h>
+#include <gsl_server/algorithms/GrGSL/GrGSL_internal.hpp>
 #include <implot/implot.h>
 
 #include <geometry_msgs/msg/point_stamped.hpp>
@@ -12,34 +13,36 @@
 
 namespace GSL
 {
-    class PMFS;
+    class GrGSL;
 }
 
-namespace GSL::PMFS_internal
+namespace GSL::GrGSL_internal
 {
 
     class UI
     {
-
     public:
-        UI(PMFS* _pmfs);
+        UI(GrGSL* _grGSL);
         ~UI();
         void run();
         void addConcentrationReading(double ppm);
-    protected:
+
+    private:
         void renderImgui();
-        std::jthread renderThread;
-        PMFS* pmfs;
-        double last_concentration_reading = 0;
         void createUI();
         void createPlots();
         bool useCoordinates();
-        int selectVariable();
-        std::string printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y);
+        std::string printCell(const Grid2D<Cell>& grid, const int& x, const int& y);
+    
+    private:
+        std::jthread renderThread;
+        GrGSL* grgsl;
+        double last_concentration_reading = 0;
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         Vector2 selectedCoordinates;
         Vector2 goalCoordinates;
     };
-} // namespace GSL::PMFS_internal
+
+} // namespace GSL::GrGSL_internal
 
 #endif

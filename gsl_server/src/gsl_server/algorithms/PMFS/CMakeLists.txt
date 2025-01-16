@@ -11,7 +11,6 @@ ament_target_dependencies(PMFS
     ${COMMON_AMENT_DEPENDENCIES}
     gmrf_msgs
     ${CONDITIONAL_GADEN_MSGS}
-    ${CONDITIONAL_IMGUI}
 )
 
 # Link other dependencies

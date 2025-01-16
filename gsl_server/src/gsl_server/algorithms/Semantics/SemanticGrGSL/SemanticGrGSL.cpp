@@ -21,7 +21,8 @@ namespace GSL
         GrGSLLib::VisualizeMarkers(
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             markers,
-            node);
+            node,
+            settings.colorScaleLimits);
     }
 
     void SemanticGrGSL::Initialize()
@@ -58,7 +59,7 @@ namespace GSL
         GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
         GrGSLLib::initializeMap(*this,
                                 Grid2D<Cell>(cells, simulationOccupancy, gridMetadata));
-        positionOfLastHit = {currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y};
+        positionOfLastHit = Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
 
         // SEMANTICS
         //----------------------

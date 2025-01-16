@@ -1,5 +1,5 @@
 
-file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp") 
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 
 find_package(OpenCV REQUIRED)
 
@@ -10,6 +10,7 @@ target_include_directories(GSL_common PUBLIC ${OpenCV_INCLUDE_DIRS})
 # Link ament dependencies
 ament_target_dependencies(GSL_common
     ${COMMON_AMENT_DEPENDENCIES}
+    ${CONDITIONAL_IMGUI}
 )
 
 # Link other dependencies

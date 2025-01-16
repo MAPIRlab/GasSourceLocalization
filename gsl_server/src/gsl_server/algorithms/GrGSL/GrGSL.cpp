@@ -1,19 +1,29 @@
-#include <gsl_server/algorithms/GrGSL/GrGSL.hpp>
-#include <gsl_server/algorithms/GrGSL/MovingStateGrGSL.hpp>
-#include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>
-#include <gsl_server/algorithms/Common/Utils/Math.hpp>
-#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <angles/angles.h>
 #include <fstream>
+#include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <gsl_server/algorithms/GrGSL/GrGSL.hpp>
+#include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>
+#include <gsl_server/algorithms/GrGSL/MovingStateGrGSL.hpp>
 
 namespace GSL
 {
     using namespace GrGSL_internal;
 
+    GrGSL::GrGSL(std::shared_ptr<rclcpp::Node> _node)
+        : Algorithm(_node)
+              IF_GUI(, ui(this))
+    {}
+
     void GrGSL::Initialize()
     {
         Algorithm::Initialize();
 
+#if USE_GUI
+        if (!settings.headless)
+            ui.run();
+#endif
         markers.probabilityMarkers = node->create_publisher<Marker>("probabilityMarkers", 10);
         markers.estimationMarkers = node->create_publisher<Marker>("estimationMarkers", 10);
 
@@ -45,14 +55,11 @@ namespace GSL
         cells.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         occupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
 
-
         GridUtils::reduceOccupancyMap(map.data, map.info.width, occupancy, gridMetadata);
         GrGSLLib::initializeMap(*this,
                                 Grid2D<Cell>(cells, occupancy, gridMetadata));
-        positionOfLastHit = {currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y};
+        positionOfLastHit = Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
     }
-
-
 
     void GrGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
@@ -84,8 +91,8 @@ namespace GSL
         GrGSLLib::VisualizeMarkers(
             Grid2D<Cell>(cells, occupancy, gridMetadata),
             markers,
-            node
-        );
+            node,
+            settings.colorScaleLimits);
     }
 
     double GrGSL::probability(const Vector2Int& indices) const
@@ -134,9 +141,8 @@ namespace GSL
         rclcpp::Duration time_spent = node->now() - startTime;
         double search_t = time_spent.seconds();
 
-
-        Vector2 sourceLocationAll = GrGSLLib::expectedValueSource(grid,1);
-        Vector2 sourceLocation = GrGSLLib::expectedValueSource(grid,0.05);
+        Vector2 sourceLocationAll = GrGSLLib::expectedValueSource(grid, 1);
+        Vector2 sourceLocation = GrGSLLib::expectedValueSource(grid, 0.05);
 
         double error = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocation.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocation.y, 2));
         double errorAll = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocationAll.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocationAll.y, 2));
