@@ -40,7 +40,9 @@ def launch_setup(context, *args, **kwargs):
                 package="gsl_server",
                 executable="gsl_actionserver_node",
                 name="GSL",
-                #prefix="xterm -hold -e",
+                # prefix="xterm -hold -e gdb -ex run --args",
+                # prefix="xterm -hold -e gdb --args",
+                prefix="xterm -hold -e",
                 parameters=[
                     # Common
                     {'use_sim_time': False},	
@@ -70,7 +72,7 @@ def launch_setup(context, *args, **kwargs):
 
                     #PMFS
                     {"headless": False},
-                    {"distanceWeight": 0.1},
+                    {"distanceWeight": 0.15},
                         # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 1.5},
@@ -89,8 +91,8 @@ def launch_setup(context, *args, **kwargs):
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
-                    {"blurSigmaX" : 0.5},
-                    {"blurSigmaY" : 0.5},
+                    {"blurSigmaX" : 1.5},
+                    {"blurSigmaY" : 1.5},
 
                     #Surge-Cast
                     {"step": 0.5},

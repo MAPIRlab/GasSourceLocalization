@@ -34,3 +34,4 @@ outlets_models:
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
+markers_height: -0.6
