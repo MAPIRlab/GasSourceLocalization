@@ -20,7 +20,7 @@ namespace GSL
 
         static void estimateProbabilitiesfromGasAndWind(Grid2D<GrGSL_internal::Cell> grid, const GrGSL_internal::Settings& settings,
                 bool hit, bool advection, double windDirection, Vector2 positionOfLastHit, Vector2Int robotPosition);
-        static void propagateProbabilities(Grid2D<GrGSL_internal::Cell> grid, HashSet& openPropagationSet, HashSet& closedPropagationSet,
+        static void propagateProbabilities(Grid2D<GrGSL_internal::Cell> grid, const GrGSL_internal::Settings& settings, HashSet& openPropagationSet, HashSet& closedPropagationSet,
                                            HashSet& activePropagationSet);
         static void calculateWeight(Grid2D<GrGSL_internal::Cell> grid, Vector2Int newCell, Vector2Int activeCell, HashSet& openPropagationSet,
                                     HashSet& closedPropagationSet, HashSet& activePropagationSet);

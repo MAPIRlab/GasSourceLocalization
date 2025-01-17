@@ -31,7 +31,7 @@ namespace GSL
             Vector2Int currentIndices = grid.metadata.coordinatesToIndices(algorithm.currentRobotPose.pose.pose);
             grid.dataAt(currentIndices).auxWeight = 1;
             activePropagationSet.insert(currentIndices);
-            propagateProbabilities(grid, openPropagationSet, closedPropagationSet, activePropagationSet);
+            propagateProbabilities(grid, {}, openPropagationSet, closedPropagationSet, activePropagationSet);
             for (int i = 0; i < grid.data.size(); i++)
             {
                 if (grid.data[i].auxWeight == -1)
@@ -55,6 +55,7 @@ namespace GSL
         settings.infoTaxis = Utils::getParam<bool>(node, "infoTaxis", false);
         settings.allowMovementRepetition = Utils::getParam<bool>(node, "allowMovementRepetition", true);
         settings.convergence_thr = Utils::getParam<double>(node, "convergence_thr", 0.5); // threshold for source declaration
+        settings.headless = Utils::getParam<bool>(node, "headless", false); // threshold for source declaration
         markers.markersHeight = Utils::getParam<float>(node, "markers_height", 0);
     }
 
@@ -79,10 +80,11 @@ namespace GSL
                                                    : std::atan2((positionOfLastHit.y - coordR.y), (positionOfLastHit.x - coordR.x)) + M_PI; // direction that we have moved since the last hit
 
             // loop limits
-            size_t startC = std::max(0, robotPosition.x - 2);
-            size_t endC = std::min(grid.metadata.dimensions.x - 1, robotPosition.x + 2);
-            size_t startR = std::max(0, robotPosition.y - 2);
-            size_t endR = std::min(grid.metadata.dimensions.y - 1, robotPosition.y + 2);
+            const int localEstimationSize =1;
+            size_t startC = std::max(0, robotPosition.x - localEstimationSize);
+            size_t endC = std::min(grid.metadata.dimensions.x - 1, robotPosition.x + localEstimationSize);
+            size_t startR = std::max(0, robotPosition.y - localEstimationSize);
+            size_t endR = std::min(grid.metadata.dimensions.y - 1, robotPosition.y + localEstimationSize);
 
             for (int row = startR; row <= endR; row++)
             {
@@ -123,7 +125,7 @@ namespace GSL
 
         // propagate these short-range estimations to the entire environment using the navigation map
         // also calculate the distance field
-        propagateProbabilities(grid, openPropagationSet, closedPropagationSet, activePropagationSet);
+        propagateProbabilities(grid, settings, openPropagationSet, closedPropagationSet, activePropagationSet);
 
         // if we are going to use these probabilities, normalize them. Otherwise, to the trash with them
         if (advection)
@@ -182,7 +184,7 @@ namespace GSL
         Normalize(grid);
     }
 
-    void GrGSLLib::propagateProbabilities(Grid2D<Cell> grid, HashSet& openPropagationSet, HashSet& closedPropagationSet,
+    void GrGSLLib::propagateProbabilities(Grid2D<Cell> grid, const GrGSL_internal::Settings& settings, HashSet& openPropagationSet, HashSet& closedPropagationSet,
                                           HashSet& activePropagationSet)
     {
 #define DebugPropagation 1 // Run the propagation step by step to see how the sets change
@@ -217,7 +219,13 @@ namespace GSL
             {
                 mapFunctionToCells(grid, [&](Cell& cell, size_t index)
                                    {
-                                       colors[index] = Utils::valueToColor(cell.auxWeight, 0, 1, Utils::valueColorMode::Linear);
+                                       auto indices = grid.metadata.indices2D(index);
+                                       if (!(activePropagationSet.contains(indices) || closedPropagationSet.contains(indices)))
+                                           colors[index] = Utils::create_color(0, 0, 0, 1);
+                                       else
+                                           colors[index] = Utils::valueToColor(cell.auxWeight,
+                                                                               settings.colorScaleLimits.x, settings.colorScaleLimits.y,
+                                                                               Utils::valueColorMode::Linear);
                                    },
                                    MapFunctionMode::Parallel);
                 Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, grid.occupancy, grid.metadata), "propagation");

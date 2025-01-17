@@ -1,12 +1,13 @@
-#include <gsl_server/algorithms/GrGSL/MovingStateGrGSL.hpp>
-#include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>
-#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <angles/angles.h>
+#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>
+#include <gsl_server/algorithms/GrGSL/MovingStateGrGSL.hpp>
 
 namespace GSL
 {
     using namespace GrGSL_internal;
-    MovingStateGrGSL::MovingStateGrGSL(Algorithm* _algorithm) : MovingState(_algorithm)
+    MovingStateGrGSL::MovingStateGrGSL(Algorithm* _algorithm)
+        : MovingState(_algorithm)
     {
         grgsl = dynamic_cast<GrGSL*>(algorithm);
         clientWind = grgsl->node->create_client<GrGSL::WindEstimation>("/WindEstimation");
@@ -22,7 +23,7 @@ namespace GSL
             Vector2Int currentPosition = grgsl->gridMetadata.coordinatesToIndices(grgsl->currentRobotPose.pose.pose);
             int expansionSize = 5;
 
-            //loop limits
+            // loop limits
             size_t startC = std::max(0, currentPosition.x - expansionSize);
             size_t endC = std::min(grgsl->gridMetadata.dimensions.x - 1, currentPosition.x + expansionSize);
             size_t startR = std::max(0, currentPosition.y - expansionSize);
@@ -33,9 +34,7 @@ namespace GSL
                 for (int col = startC; col <= endC; col++)
                 {
                     Vector2Int colRow(col, row);
-                    if (closedMoveSet.find(colRow) == closedMoveSet.end()
-                            && grid.freeAt(colRow)
-                            && grid.dataAt(colRow).distance < 5)
+                    if (closedMoveSet.find(colRow) == closedMoveSet.end() && grid.freeAt(colRow) && grid.dataAt(colRow).distance < 5)
                     {
                         openMoveSet.insert(colRow);
                     }
@@ -70,7 +69,7 @@ namespace GSL
         {
             Vector2Int goalIndices = grid.metadata.coordinatesToIndices(goal->pose.pose.position.x, goal->pose.pose.position.y);
 
-            //loop limits
+            // loop limits
             size_t startC = std::max(0, goalIndices.x - 1);
             size_t endC = std::min(grgsl->gridMetadata.dimensions.x - 1, goalIndices.x + 1);
             size_t startR = std::max(0, goalIndices.y - 1);
@@ -107,7 +106,6 @@ namespace GSL
             {
                 if (grgsl->probability(p) > max || (grgsl->probability(p) == max && grid.dataAt(p).distance > maxDist))
                 {
-
                     NavigateToPose::Goal tempGoal = indexToGoal(p.x, p.y);
                     if (checkGoal(tempGoal))
                     {
@@ -129,6 +127,10 @@ namespace GSL
         const auto& settings = grgsl->settings;
         const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
 
+        // it is never helpful to stop the propagation for each of the considered movement positions, so temporarily turn debug mode off while we do this
+        bool wasDebugging = GrGSLLib::debuggingPropagation;
+        GrGSLLib::debuggingPropagation = false;
+
         // Infotactic navigation
         std::optional<NavigateToPose::Goal> goal = std::nullopt;
         std::vector<WindVector> wind = estimateWind();
@@ -138,7 +140,7 @@ namespace GSL
         rclcpp::Time tstart = grgsl->node->now();
         if (!wind.empty())
         {
-            #pragma omp parallel for
+#pragma omp parallel for
             for (int index = 0; index < wind.size(); index++)
             {
                 int col = wind[index].col;
@@ -167,18 +169,18 @@ namespace GSL
         GSL_INFO("Time infotaxis: {}", timeInfotaxis);
         GSL_INFO("Number of considered cells: {}", wind.size());
 
+        GrGSLLib::debuggingPropagation = wasDebugging;
         return goal;
     }
 
     NavigateToPose::Goal MovingStateGrGSL::indexToGoal(int i, int j)
     {
-
         NavigateToPose::Goal goal;
         goal.pose.header.frame_id = "map";
         goal.pose.header.stamp = grgsl->node->now();
 
         Vector2 pos = grgsl->gridMetadata.indicesToCoordinates(i, j);
-        Vector2 coordR = {grgsl->currentRobotPose.pose.pose.position.x, grgsl->currentRobotPose.pose.pose.position.y};
+        Vector2 coordR = Vector2(grgsl->currentRobotPose.pose.pose.position.x, grgsl->currentRobotPose.pose.pose.position.y);
 
         double move_angle = (atan2(pos.y - coordR.y, pos.x - coordR.x));
         goal.pose.pose.position.x = pos.x;

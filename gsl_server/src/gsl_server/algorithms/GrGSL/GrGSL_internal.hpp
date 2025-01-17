@@ -32,7 +32,7 @@ namespace GSL::GrGSL_internal
         bool useDiffusionTerm;
         
         //visualization
-        Vector2 colorScaleLimits = {0.0001f, 0.1f};
+        Vector2 colorScaleLimits = {0.0001f, 0.4f};
         bool headless;
     };
 

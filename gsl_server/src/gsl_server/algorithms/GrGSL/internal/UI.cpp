@@ -1,4 +1,6 @@
 #ifdef USE_GUI
+#include "gsl_server/algorithms/GrGSL/GrGSLLib.hpp"
+#include "imgui.h"
 
 #include "UI.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
@@ -128,6 +130,8 @@ namespace GSL::GrGSL_internal
             {
                 grgsl->paused = !grgsl->paused;
             }
+            
+            ImGui::Checkbox("Debug Propagation", &GrGSLLib::debuggingPropagation);
         }
         ImGui::End();
 
@@ -142,6 +146,7 @@ namespace GSL::GrGSL_internal
             settings.colorScaleLimits.y = sourceLimits[1];
         }
         ImGui::End();
+
     }
 
     void UI::createPlots()

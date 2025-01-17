@@ -44,3 +44,14 @@ template <> struct fmt::formatter<GSL::Vector3> : formatter<std::string>
         return fmt::format_to(ctx.out(), "({},{},{})", v.x, v.y, v.z);
     }
 };
+
+#include <tf2/LinearMath/Vector3.h>
+namespace GSL::vmath
+{
+    inline GSL::Vector3 FromTF2(const tf2::Vector3& l)
+    {
+        return GSL::Vector3(l.x(),
+                            l.y(),
+                            l.z());
+    }
+} // namespace vmath

@@ -217,4 +217,41 @@ namespace GSL::Utils
         pub->publish(points);
 
     } // namespace GSL::Utils
+
+    void publishDebugSingleArrow(Vector3 start, Vector3 end, std_msgs::msg::ColorRGBA color, const std::string& topic)
+    {
+        if (!debugNode)
+            debugNode = std::make_shared<rclcpp::Node>("debugNode");
+
+        static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
+
+        if (!publisherMap.contains(topic))
+            publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
+        auto pub = publisherMap[topic];
+
+        Marker marker;
+        marker.header.frame_id = "map";
+        marker.header.stamp = debugNode->now();
+        marker.type = Marker::ARROW;
+
+        marker.color = color;
+        marker.scale.x = 0.1;
+        marker.scale.y = 0.2;
+
+        Point startP;
+        startP.x = start.x;
+        startP.y = start.y;
+        startP.z = start.z;
+
+        Point endP;
+        endP.x = end.x;
+        endP.y = end.y;
+        endP.z = end.z;
+
+        marker.points.push_back(startP);
+        marker.points.push_back(endP);
+
+        pub->publish(marker);
+    }
+
 } // namespace GSL::Utils
