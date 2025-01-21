@@ -1,11 +1,13 @@
 #ifdef USE_GUI
-#include "gsl_server/algorithms/GrGSL/GrGSLLib.hpp"
-#include "imgui.h"
-
 #include "UI.hpp"
+#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
+#include "gsl_server/algorithms/GrGSL/GrGSLLib.hpp"
+#include "gsl_server/algorithms/GrGSL/GrGSL_internal.hpp"
+#include "gsl_server/algorithms/GrGSL/MovingStateGrGSL.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
+#include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/Common/Utils/Pointers.hpp>
 #include <gsl_server/algorithms/GrGSL/GrGSL.hpp>
 
 namespace GSL::GrGSL_internal
@@ -13,7 +15,8 @@ namespace GSL::GrGSL_internal
     UI::UI(GrGSL* _grgsl)
         : grgsl(_grgsl)
     {
-        clickedPointSub = grgsl->node->create_subscription<geometry_msgs::msg::PointStamped>(
+        uiNode = std::make_shared<rclcpp::Node>("UI");
+        clickedPointSub = uiNode->create_subscription<geometry_msgs::msg::PointStamped>(
             "/clicked_point", 1,
             [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
             {
@@ -36,7 +39,7 @@ namespace GSL::GrGSL_internal
     {
         AmentImgui::Setup(
             fmt::format("{}/resources/GrGSL_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
-            "PMFS",
+            "GrGSL",
             900,
             600);
         ImPlot::CreateContext();
@@ -45,6 +48,7 @@ namespace GSL::GrGSL_internal
 
         while (rclcpp::ok() && !grgsl->HasEnded())
         {
+            rclcpp::spin_some(uiNode);
             AmentImgui::StartFrame();
             createUI();
             createPlots();
@@ -59,35 +63,32 @@ namespace GSL::GrGSL_internal
 
     void UI::createUI()
     {
+        static Vector2Int selectedCell;
         ImGui::Begin("Queries");
         {
-            static int x = 0;
-            static int y = 0;
-
             if (UI::useCoordinates())
             {
                 ImGui::InputFloat("X", &selectedCoordinates.x);
                 ImGui::InputFloat("Y", &selectedCoordinates.y);
                 auto indices = grgsl->gridMetadata.coordinatesToIndices(selectedCoordinates.x, selectedCoordinates.y);
-                x = indices.x;
-                y = indices.y;
+                selectedCell = indices;
             }
             else
             {
-                ImGui::InputInt("X", &x);
-                ImGui::InputInt("Y", &y);
+                ImGui::InputInt("X", &selectedCell.x);
+                ImGui::InputInt("Y", &selectedCell.y);
             }
 
             static std::string result;
             if (ImGui::Button("Print"))
             {
-                if (!grgsl->gridMetadata.indicesInBounds({x, y}))
+                if (!grgsl->gridMetadata.indicesInBounds(selectedCell))
                 {
-                    GSL_ERROR("Querying cell {}, which is outside the map!", Vector2Int{x, y});
+                    GSL_ERROR("Querying cell {}, which is outside the map!", selectedCell);
                     result = "Error! :(";
                 }
                 else
-                    result = fmt::format("Probability of source in cell {0},{1}: {2}\n", x, y, grgsl->cells[grgsl->gridMetadata.indexOf({x, y})].sourceProb);
+                    result = fmt::format("Probability of source in cell {0}: {1}\n", selectedCell, grgsl->cells[grgsl->gridMetadata.indexOf(selectedCell)].sourceProb);
             }
 
             ImGui::Text("%s", result.c_str());
@@ -118,7 +119,6 @@ namespace GSL::GrGSL_internal
         // }
         // ImGui::End();
 
-
         ImGui::Begin("Pause/Play");
         {
             static std::string buttonText;
@@ -130,7 +130,12 @@ namespace GSL::GrGSL_internal
             {
                 grgsl->paused = !grgsl->paused;
             }
-            
+
+            if (ImGui::Button("Simulate Infotaxis"))
+            {
+                simulateInfotaxis(selectedCell);
+            }
+
             ImGui::Checkbox("Debug Propagation", &GrGSLLib::debuggingPropagation);
         }
         ImGui::End();
@@ -146,7 +151,6 @@ namespace GSL::GrGSL_internal
             settings.colorScaleLimits.y = sourceLimits[1];
         }
         ImGui::End();
-
     }
 
     void UI::createPlots()
@@ -211,6 +215,42 @@ namespace GSL::GrGSL_internal
         last_concentration_reading = ppm;
     }
 
-} // namespace GSL::PMFS_internal
+    void UI::simulateInfotaxis(const Vector2Int& selectedCell)
+    {
+        const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
+        std::vector<Vector2Int> index = {selectedCell};
+        auto windVecs = As<GSL::MovingStateGrGSL>(grgsl->movingState)->getWindVectors(index);
+
+        auto predictionCells = grid.data; // temp copy of the matrix of cells that we can modify to simulate the effect of a measurement
+        auto accessProb = [](const Cell& cell)
+        {
+            return cell.sourceProb;
+        };
+
+        // simulate a hit in the considered position and see how much info that gives us
+        GrGSLLib::estimateProbabilitiesfromGasAndWind(
+            Grid2D<Cell>(predictionCells, grid.occupancy, grid.metadata),
+            grgsl->settings,
+            true,
+            true,
+            windVecs[0].angle,
+            grgsl->positionOfLastHit,
+            selectedCell);
+        double infoHit = Utils::KLD<Cell>(predictionCells, grid.data, grid.occupancy, accessProb);
+
+        std::vector<ColorRGBA> colors;
+        const Grid2D<ColorRGBA> markerGrid(colors, grgsl->occupancy, grgsl->gridMetadata);
+        colors.reserve(grgsl->cells.size());
+        for (Cell& cell : predictionCells)
+            colors.push_back(Utils::valueToColor(cell.sourceProb,
+                                                 grgsl->settings.colorScaleLimits.x,
+                                                 grgsl->settings.colorScaleLimits.y,
+                                                 Utils::valueColorMode::Logarithmic));
+
+        Utils::publishDebugMarkers(markerGrid, "simulatedInfotaxis");
+        GSL_INFO("KLD: {}", infoHit);
+    }
+
+} // namespace GSL::GrGSL_internal
 
 #endif

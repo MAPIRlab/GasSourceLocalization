@@ -337,26 +337,25 @@ namespace GSL
 
     void GrGSLLib::VisualizeMarkers(Grid2D<Cell> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node, Vector2 colorScaleLimits)
     {
-        constexpr auto emptyMarker = []()
+        Marker marker;
         {
-            Marker points;
-            points.header.frame_id = "map";
-            points.ns = "cells";
-            points.id = 0;
-            points.type = Marker::POINTS;
-            points.action = Marker::ADD;
+            marker.header.frame_id = "map";
+            marker.ns = "cells";
+            marker.id = 0;
+            marker.type = Marker::POINTS;
+            marker.action = Marker::ADD;
 
-            points.color.r = 1.0;
-            points.color.g = 0.0;
-            points.color.b = 1.0;
-            points.color.a = 1.0;
-            points.scale.x = 0.15;
-            points.scale.y = 0.15;
-            return points;
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 1.0;
+            marker.color.a = 1.0;
+            
+            float markerSize = grid.metadata.cellSize * 0.95;
+            marker.scale.x = markerSize;
+            marker.scale.y = markerSize;
         };
 
-        Marker points = emptyMarker();
-        points.header.stamp = node->now();
+        marker.header.stamp = node->now();
 
         for (int row = 0; row < grid.metadata.dimensions.y; row++)
         {
@@ -373,36 +372,35 @@ namespace GSL
                     std_msgs::msg::ColorRGBA color =
                         Utils::valueToColor(grid.dataAt(col, row).sourceProb, colorScaleLimits.x, colorScaleLimits.y, Utils::valueColorMode::Logarithmic);
 
-                    points.points.push_back(p);
-                    points.colors.push_back(color);
+                    marker.points.push_back(p);
+                    marker.colors.push_back(color);
                 }
             }
         }
-        markers.probabilityMarkers->publish(points);
+        markers.probabilityMarkers->publish(marker);
     }
 
     void GrGSLLib::VisualizeMarkers(Grid2D<double> grid, GrGSL_internal::Markers& markers, rclcpp::Node::SharedPtr node, Vector2 colorScaleLimits)
     {
-        constexpr auto emptyMarker = []()
+        Marker marker;
         {
-            Marker points;
-            points.header.frame_id = "map";
-            points.ns = "cells";
-            points.id = 0;
-            points.type = Marker::POINTS;
-            points.action = Marker::ADD;
+            marker.header.frame_id = "map";
+            marker.ns = "cells";
+            marker.id = 0;
+            marker.type = Marker::POINTS;
+            marker.action = Marker::ADD;
 
-            points.color.r = 1.0;
-            points.color.g = 0.0;
-            points.color.b = 1.0;
-            points.color.a = 1.0;
-            points.scale.x = 0.15;
-            points.scale.y = 0.15;
-            return points;
+            marker.color.r = 1.0;
+            marker.color.g = 0.0;
+            marker.color.b = 1.0;
+            marker.color.a = 1.0;
+            
+            float markerSize = grid.metadata.cellSize * 0.95;
+            marker.scale.x = markerSize;
+            marker.scale.y = markerSize;
         };
 
-        Marker points = emptyMarker();
-        points.header.stamp = node->now();
+        marker.header.stamp = node->now();
 
         for (int row = 0; row < grid.metadata.dimensions.y; row++)
         {
@@ -419,12 +417,12 @@ namespace GSL
                     std_msgs::msg::ColorRGBA color =
                         Utils::valueToColor(grid.dataAt(col, row), colorScaleLimits.x, colorScaleLimits.y, Utils::valueColorMode::Logarithmic);
 
-                    points.points.push_back(p);
-                    points.colors.push_back(color);
+                    marker.points.push_back(p);
+                    marker.colors.push_back(color);
                 }
             }
         }
-        markers.probabilityMarkers->publish(points);
+        markers.probabilityMarkers->publish(marker);
     }
 
     Vector2 GrGSLLib::expectedValueSource(Grid2D<Cell> grid, double proportionBest)

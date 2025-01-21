@@ -196,23 +196,31 @@ namespace GSL
     {
         const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
 
-        // ask the gmrf_wind service for the estimated wind vector in cell i,j
-        auto request = std::make_shared<GrGSL::WindEstimation::Request>();
-
         std::vector<Vector2Int> indices;
         for (auto& p : openMoveSet)
         {
             if (grid.dataAt(p).distance < 5)
             {
-                Vector2 coords = grid.metadata.indicesToCoordinates(p.x, p.y);
-                request->x.push_back(coords.x);
-                request->y.push_back(coords.y);
                 indices.push_back(p);
             }
         }
 
-        std::vector<WindVector> result(indices.size());
+        std::vector<WindVector> result = getWindVectors(indices);
+        return result;
+    }
 
+    std::vector<GrGSL_internal::WindVector> MovingStateGrGSL::getWindVectors(const std::vector<Vector2Int>& indices)
+    {
+        const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
+        auto request = std::make_shared<GrGSL::WindEstimation::Request>();
+        for (const auto index : indices)
+        {
+            Vector2 coords = grid.metadata.indicesToCoordinates(index.x, index.y);
+            request->x.push_back(coords.x);
+            request->y.push_back(coords.y);
+        }
+
+        std::vector<WindVector> result(indices.size());
         auto future = clientWind->async_send_request(request);
         auto future_result = rclcpp::spin_until_future_complete(grgsl->node, future, std::chrono::seconds(1));
         if (future_result == rclcpp::FutureReturnCode::SUCCESS)
@@ -228,7 +236,8 @@ namespace GSL
         }
         else
             GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
-
+        
         return result;
     }
+
 } // namespace GSL

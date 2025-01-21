@@ -44,6 +44,9 @@ namespace GSL
 
     void GrGSL::OnUpdate()
     {
+        if (paused)
+            return;
+
         Algorithm::OnUpdate();
         functionQueue.run();
     }

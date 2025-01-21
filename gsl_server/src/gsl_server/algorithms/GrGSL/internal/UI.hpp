@@ -7,6 +7,7 @@
 
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <rclcpp/subscription.hpp>
+#include <rclcpp/node.hpp>
 
 #include <string>
 #include <thread>
@@ -33,8 +34,10 @@ namespace GSL::GrGSL_internal
         void createPlots();
         bool useCoordinates();
         std::string printCell(const Grid2D<Cell>& grid, const int& x, const int& y);
+        void simulateInfotaxis(const Vector2Int& selectedCell);
     
     private:
+        rclcpp::Node::SharedPtr uiNode;
         std::jthread renderThread;
         GrGSL* grgsl;
         double last_concentration_reading = 0;
