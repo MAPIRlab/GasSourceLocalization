@@ -1,5 +1,6 @@
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/Common/Utils/Pointers.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
@@ -92,11 +93,12 @@ namespace GSL
         // the wind estimation stuff requires spinning, so it must be done through the function queue
         functionQueue.submit([this]()
                              {
-            Grid2D<Vector2> windGrid (estimatedWindVectors, occupancy, gridMetadata);
-            PMFSLib::InitializeWindPredictions(*this, windGrid,
-                                               pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
-            PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
-            stateMachine.forceSetState(stopAndMeasureState.get()); });
+                                 Grid2D<Vector2> windGrid(estimatedWindVectors, occupancy, gridMetadata);
+                                 PMFSLib::InitializeWindPredictions(*this, windGrid,
+                                                                    pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
+                                 PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
+                                 stateMachine.forceSetState(stopAndMeasureState.get());
+                             });
     }
 
 } // namespace GSL
@@ -168,7 +170,7 @@ namespace GSL
             }
 
             // Movement
-            auto movingStatePMFS = dynamic_cast<MovingStatePMFS*>(movingState.get());
+            auto movingStatePMFS = As<MovingStatePMFS>(movingState);
             if (iterationsCounter > settings.movement.initialExplorationMoves)
                 movingStatePMFS->currentMovement = MovingStatePMFS::MovementType::Search;
             else

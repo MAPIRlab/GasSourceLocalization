@@ -45,7 +45,14 @@ namespace GSL
     void GrGSL::OnUpdate()
     {
         if (paused)
+        {
+            GrGSLLib::VisualizeMarkers(
+                Grid2D<Cell>(cells, occupancy, gridMetadata),
+                markers,
+                node,
+                settings.colorScaleLimits);
             return;
+        }
 
         Algorithm::OnUpdate();
         functionQueue.run();
