@@ -201,7 +201,7 @@ namespace GSL
         for (auto& [_class, prob] : classProbabilityZ[index])
         {
             // The total probability for the object class is the accumulated probability p(o|Z) times the probability due to room classification ( p(o|room) )
-            std::string className = filterClassID(_class);
+            const std::string& className = filterClassID(_class);
             float totalClassProb = prob * room->GetClassProb(className) / classPrior.at(className);
             dist.SetProbOf(className, totalClassProb);
         }
@@ -216,12 +216,12 @@ namespace GSL
         return ss.str();
     }
 
-    void ClassMap::UpdateObjectProbabilities(size_t index, const std::vector<std::pair<std::string, float>>& scores)
+    void ClassMap::UpdateObjectProbabilities(size_t index, const std::vector<ClassScore>& scores)
     {
         for (const auto& pair : scores)
         {
-            const std::string& _class = pair.first;
-            float score = pair.second;
+            const std::string& _class = pair.className;
+            float score = pair.score;
             float previous = classProbabilityZ[index].ProbabilityOf(_class);
 
             // clamp at arbitrary high value to avoid numerical issues as more observations pile up
@@ -239,18 +239,21 @@ namespace GSL
         {
             // all classes not present in the ontology get bundled into "other"
             // that means the probability of "other" is the sum of all their probs
-            std::string name = filterClassID(hyp.class_id);
+            const std::string& name = filterClassID(hyp.class_id);
             float previous = classProbabilityZ[index].ProbabilityOf(name);
             classProbabilityZ[index].SetProbOf(name, hyp.score + previous);
         }
         GSL_ASSERT_MSG(Utils::approx(classProbabilityZ[index].TotalProb(), 1), "Class distribution is not normalized after updating from msg");
     }
 
-    std::string ClassMap::filterClassID(const std::string& id)
+    const std::string& ClassMap::filterClassID(const std::string& id)
     {
-        if (!sourceProbByClass.contains(id))
+        auto iterator = sourceProbByClass.find(id);
+        if (iterator == sourceProbByClass.end())
             return ClassMap::otherClassName;
-        return id;
+        
+        // return a reference to the persistent version of the string: the one that is used as a key in the map. That way, we can always use references without worrying about lifetimes
+        return iterator->first; 
     }
 
     ClassMap::Room& ClassMap::createUnknownRoom()

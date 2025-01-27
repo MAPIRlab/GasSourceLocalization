@@ -1,8 +1,7 @@
 #ifdef USE_GUI
-// TODO This is currently just a straight-up copy of the PMFS UI. We could definitely do better, but I don't believe it is a good idea to set up an inheritance tree for UIs
-// TODO it ends up limiting the design of the actual algorithm classes, and keeping that well organized is higher priority than making the debug UI easy to maintain
 #include "UI.hpp"
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
 #include "gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp"
@@ -11,8 +10,8 @@
 #include "imgui.h"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fmt/core.h>
-#include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
+#include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 
@@ -176,9 +175,15 @@ namespace GSL::SemanticPMFS_internal
                 buttonText = "Play";
             else
                 buttonText = "Pause";
+
             if (ImGui::Button(buttonText.c_str()))
-            {
                 pmfs->paused = !pmfs->paused;
+
+            if (ImGui::Button("Cancel goal"))
+            {
+                auto state = As<MovingStateSemanticPMFS>(pmfs->stateMachine.getCurrentState());
+                if (state)
+                    state->Fail();
             }
         }
         ImGui::End();

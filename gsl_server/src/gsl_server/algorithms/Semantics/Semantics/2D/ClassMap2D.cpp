@@ -108,12 +108,12 @@ namespace GSL
         std::unordered_set<Vector2Int> remainingCellsInFOV = getCellsInFOV(currentRobotPose.pose.pose);
         for (const Detection3D& detection : msg->detections)
         {
-            std::vector<std::pair<std::string, float>> scores;
+            std::vector<ClassScore> scores;
             for (const auto& hyp : detection.results)
             {
                 // if the class label was not in the ontology, substitute it for the "other" class
-                std::string _class = classMap.filterClassID(hyp.hypothesis.class_id);
-                scores.emplace_back(_class, hyp.hypothesis.score);
+                const std::string& _class = classMap.filterClassID(hyp.hypothesis.class_id);
+                scores.push_back({_class, (float)hyp.hypothesis.score});
             }
 
             // fill in missing classes with a low score
@@ -122,10 +122,10 @@ namespace GSL
                 const std::string& _class = pair.first;
                 auto predicate = [&](const auto& t)
                 {
-                    return _class == t.first;
+                    return _class == t.className;
                 };
                 if (!Utils::containsPred(scores, predicate))
-                    scores.emplace_back(_class, 0.1f); // TODO change the value to something meaningful
+                    scores.push_back({_class, 0.1f}); // TODO change the value to something meaningful
             }
 
             AABB2DInt aabb = getAABB(detection);
@@ -150,7 +150,7 @@ namespace GSL
         {
             for (Vector2Int indices : remainingCellsInFOV)
             {
-                std::vector<std::pair<std::string, float>> scores;
+                std::vector<ClassScore> scores;
                 for (const auto& kv : classMap.sourceProbByClass)
                 {
                     float score;
@@ -158,7 +158,7 @@ namespace GSL
                         score = true_negative_prob;
                     else
                         score = false_negative_prob;
-                    scores.emplace_back(kv.first, score);
+                    scores.push_back({kv.first, score});
                 }
                 size_t index = gridMetadata.indexOf(indices);
                 classMap.UpdateObjectProbabilities(index, scores);

@@ -2,7 +2,6 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
-#include <fstream>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
@@ -56,7 +55,6 @@ namespace GSL
 
         functionQueue.run();
 
-
 #define DEBUG_VISUALIZATION 0
 #if DEBUG_VISUALIZATION
         {
@@ -87,6 +85,39 @@ namespace GSL
                                             "EXPECTED_BOTH");
         }
 #endif
+    }
+
+    GSLResult SemanticPMFS::checkSourceFound()
+    {
+        if (stateMachine.getCurrentState() == waitForMapState.get())
+            return GSLResult::Running;
+
+        rclcpp::Duration time_spent = node->now() - startTime;
+        if (time_spent.seconds() > resultLogging.maxSearchTime)
+        {
+            saveResultsToFile(GSLResult::Failure);
+            return GSLResult::Failure;
+        }
+
+        if (resultLogging.navigationTime == -1)
+        {
+            if (sqrt(pow(currentRobotPose.pose.pose.position.x - resultLogging.sourcePositionGT.x, 2) +
+                     pow(currentRobotPose.pose.pose.position.y - resultLogging.sourcePositionGT.y, 2)) < 0.5)
+            {
+                resultLogging.navigationTime = time_spent.seconds();
+            }
+        }
+
+        double variance = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
+        GSL_INFO("Variance: {:.2f}", variance);
+
+        if (variance < 1.f) //TODO parameter
+        {
+            saveResultsToFile(GSLResult::Success);
+            return GSLResult::Success;
+        }
+
+        return GSLResult::Running;
     }
 
     void SemanticPMFS::declareParameters()
@@ -152,19 +183,20 @@ namespace GSL
         //----------------------------------
         functionQueue.submit([this]()
                              {
-            Grid<Vector2> windGrid(estimatedWindVectors, simulationOccupancy, gridMetadata);
-            PMFSLib::InitializeWindPredictions(
-                *this, 
-                windGrid, 
-                pubs.pmfsPubs.gmrfWind.request 
-                IF_GADEN(, pubs.pmfsPubs.groundTruthWind.request));
-            PMFSLib::EstimateWind(
-                settings.simulation.useWindGroundTruth,
-                windGrid,
-                node,
-                pubs.pmfsPubs.gmrfWind
-                    IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-            stateMachine.forceSetState(stopAndMeasureState.get()); });
+                                 Grid<Vector2> windGrid(estimatedWindVectors, simulationOccupancy, gridMetadata);
+                                 PMFSLib::InitializeWindPredictions(
+                                     *this,
+                                     windGrid,
+                                     pubs.pmfsPubs.gmrfWind.request
+                                         IF_GADEN(, pubs.pmfsPubs.groundTruthWind.request));
+                                 PMFSLib::EstimateWind(
+                                     settings.simulation.useWindGroundTruth,
+                                     windGrid,
+                                     node,
+                                     pubs.pmfsPubs.gmrfWind
+                                         IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+                                 stateMachine.forceSetState(stopAndMeasureState.get());
+                             });
 
         // SEMANTICS
         //----------------------
@@ -244,7 +276,6 @@ namespace GSL
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
-
 
         PMFSViz::ShowHitProb(
             Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),

@@ -38,7 +38,7 @@ namespace GSL
         }
 
         double variance = Utils::Variance(Grid2D<double>(sourceProbability, occupancy, gridMetadata));
-        GSL_INFO("Variance: {}", variance);
+        GSL_INFO("Variance: {:.2f}", variance);
 
         if (variance < settings.declaration.threshold)
         {

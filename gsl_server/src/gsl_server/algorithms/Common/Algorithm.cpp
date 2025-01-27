@@ -172,7 +172,7 @@ namespace GSL
         if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
             // Report failure, we were too slow
-            GSL_INFO("FAILURE-> Time spent ({} s) > maxSearchTime = {}", time_spent.seconds(), resultLogging.maxSearchTime);
+            GSL_INFO("FAILURE-> Time spent ({:.2f} s) > maxSearchTime = {:.2f}", time_spent.seconds(), resultLogging.maxSearchTime);
             saveResultsToFile(GSLResult::Failure);
             return GSLResult::Failure;
         }
@@ -184,7 +184,7 @@ namespace GSL
         if (dist < resultLogging.distanceThreshold)
         {
             // GSL has finished with success!
-            GSL_INFO("SUCCESS -> Time spent ({} s)", time_spent.seconds());
+            GSL_INFO("SUCCESS -> Time spent ({:.2f} s)", time_spent.seconds());
             saveResultsToFile(GSLResult::Success);
             return GSLResult::Success;
         }

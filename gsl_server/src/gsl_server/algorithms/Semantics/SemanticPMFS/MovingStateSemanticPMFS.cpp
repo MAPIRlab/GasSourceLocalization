@@ -12,7 +12,7 @@ namespace GSL
     MovingStateSemanticPMFS::MovingStateSemanticPMFS(Algorithm* _algorithm)
         : MovingState(_algorithm)
     {
-        pmfs = dynamic_cast<SemanticPMFS*>(_algorithm);
+        pmfs = dynamic_cast<GSL::SemanticPMFS*>(_algorithm);
 
         publishers.explorationValue = pmfs->node->create_publisher<Marker>("explorationValue", 1);
         publishers.varianceHit = pmfs->node->create_publisher<Marker>("varianceHit", 1);

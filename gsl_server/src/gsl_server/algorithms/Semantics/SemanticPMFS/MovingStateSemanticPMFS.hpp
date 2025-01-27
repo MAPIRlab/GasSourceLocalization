@@ -1,6 +1,14 @@
 #pragma once
+#include "gsl_server/core/ConditionalMacros.hpp"
 #include <gsl_server/algorithms/Common/MovingState.hpp>
 #include <gsl_server/core/Vectors.hpp>
+
+#if USE_GUI
+namespace GSL::SemanticPMFS_internal
+{
+    class UI;
+}
+#endif
 
 namespace GSL
 {
@@ -8,6 +16,7 @@ namespace GSL
     class MovingStateSemanticPMFS : public MovingState
     {
         using HashSet = std::unordered_set<Vector2Int>;
+        IF_GUI(friend class SemanticPMFS_internal::UI);
 
     public:
         MovingStateSemanticPMFS(Algorithm* _algorithm);
@@ -20,7 +29,7 @@ namespace GSL
 
         void chooseGoalAndMove();
         double explorationValue(int i, int j);
-        
+
         // Get the information value of cell (i,j) for the main phase
         double informationValue(int i, int j);
 
@@ -37,7 +46,6 @@ namespace GSL
         void calculateMutualInformationGas();
 
         SemanticPMFS* pmfs;
-
 
         struct Publishers
         {
