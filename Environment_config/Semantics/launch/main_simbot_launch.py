@@ -251,7 +251,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_node)
     actions.extend(gsl_call)
     actions.append(rvizHit)
-    #actions.append(rvizSource)
+    actions.append(rvizSource)
     actions.append(send_pose)
     actions.append(semantics)
 
@@ -314,7 +314,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="initialExplorationMoves", 
-            value="5"
+            value="3"
         ),
         SetLaunchConfiguration(
             name="filamentDeltaTime", 

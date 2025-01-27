@@ -1,5 +1,6 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
+#include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
@@ -111,7 +112,7 @@ namespace GSL
         double variance = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
         GSL_INFO("Variance: {:.2f}", variance);
 
-        if (variance < 1.f) //TODO parameter
+        if (variance < 1.f) // TODO parameter
         {
             saveResultsToFile(GSLResult::Success);
             return GSLResult::Success;
@@ -215,6 +216,12 @@ namespace GSL
         if (!semantics)
             return;
 
+        // don't do this at more than 2 hz
+        static Utils::Time::Countdown cd;
+        if (!cd.isDone())
+            return;
+        cd.Restart(0.5);
+
         semantics->GetSourceProbabilityInPlace(sourceProbSemantics);
 #pragma omp parallel for
         for (size_t i = 0; i < sourceProbSemantics.size(); i++)
@@ -222,6 +229,11 @@ namespace GSL
             combinedSourceProbability[i] = sourceProbabilityPMFS[i] * sourceProbSemantics[i];
         }
         Utils::NormalizeDistribution(combinedSourceProbability, simulationOccupancy);
+
+        PMFSViz::ShowSourceProb(
+            Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
     }
 
     void SemanticPMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)

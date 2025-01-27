@@ -34,6 +34,7 @@ loop_to_iteration: 900
 
 start_pos_x: -1.4
 start_pos_y: -6.2 
-start_pos_z: -0.1
+start_pos_z: -0.6
+markers_height: -0.6
 
 targetGas: smoke
