@@ -42,6 +42,11 @@ namespace GSL
         void OnCompleteNavigation(GSLResult result, State* previousState) override;
         float gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
 
+        template <typename T>
+        Grid2D<T> AsGrid(std::vector<T>& vec)
+        {
+            return Grid2D<T>(vec, occupancy, gridMetadata);
+        }
 
         //-------------Core-------------
         Grid2DMetadata gridMetadata;
