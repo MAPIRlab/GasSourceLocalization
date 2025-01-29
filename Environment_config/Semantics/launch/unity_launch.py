@@ -34,18 +34,10 @@ def launch_setup(context, *args, **kwargs):
                 ],
         )
 
-    
-    detectron = Node(
-            package="detectron_ros",
-            executable="detectron_ros_node",
-            prefix = "xterm -hold -e",
-            parameters=[],
-        )
         
     return [
         tcp_endpoint,
         keyboard_control,
-        detectron
     ]
 
 

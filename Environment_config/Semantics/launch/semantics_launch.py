@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument,SetLaunchConfiguration,IncludeLaunchDescription,SetEnvironmentVariable,OpaqueFunction,GroupAction
 from launch.launch_description_sources import FrontendLaunchDescriptionSource, PythonLaunchDescriptionSource
@@ -7,7 +8,6 @@ from launch_ros.actions import Node, PushRosNamespace
 from ament_index_python.packages import get_package_share_directory
 from launch.frontend.parse_substitution import parse_substitution
 from ros2launch.api import get_share_file_path_from_package
-
 #===========================
 def launch_arguments():
     return [
@@ -15,7 +15,17 @@ def launch_arguments():
    ]
 #==========================
 
+class SegmentationNN(Enum):
+    YOLO = 1
+    DETECTRON = 2
+
 def launch_setup(context, *args, **kwargs):
+
+    # Select the segmentation network you want to use here! From here: https://github.com/MAPIRlab/instance_segmentation
+    ######################################################
+    segmentation_net = SegmentationNN.YOLO 
+
+
     voxeland_server = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_share_file_path_from_package(package_name="voxeland", file_name="voxeland_server.launch.py")
@@ -44,14 +54,9 @@ def launch_setup(context, *args, **kwargs):
             "map_frame_id" : "map",
             "robot_frame_id" : "giraff_base_link",
             "camera_frame_id" : "RGBD",
-        }.items()
-    )
 
-    unity = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="unity_launch.py")
-        ),
-        launch_arguments={}.items()
+            "service_name": f"/{segmentation_net}/segment",
+        }.items()
     )
 
     # For the 2D ClassMap
@@ -67,11 +72,34 @@ def launch_setup(context, *args, **kwargs):
                 {"depth_format": "mono16"}
                 ],
         )
-        
+    
+    detectron = Node(
+            package="detectron_ros",
+            executable="detectron_ros_node",
+            prefix = "xterm -hold -e",
+            parameters=[],
+        )
+    
+
+    yolo = Node(
+            package="yolo_ros",
+            executable="yolo_ros.py",
+            prefix = "xterm -hold -e",
+            parameters=[
+                {"model_file": "yolo11x-seg.pt"},
+            ],
+        )
+    
+    segmentationNode = None
+    if segmentation_net == SegmentationNN.YOLO:
+        segmentationNode = yolo
+    elif segmentation_net == SegmentationNN.DETECTRON:
+        segmentationNode = detectron
+
     return [
-        #unity, 
         voxeland_server,
-        voxeland_robot
+        voxeland_robot,
+        segmentationNode
     ]
 
 #==========================
