@@ -24,6 +24,9 @@ namespace GSL::PMFS_internal
             return Utils::logOddsToProbability(logOdds);
         }
 
+
+        // New, experimental idea:
+        // don't work with p(H_i), but with p(f_i) -- which is essentially p(p(H_i))
         static constexpr size_t numBuckets = 5;
         std::array<double, numBuckets> frequencyDistribution()
         {
@@ -38,6 +41,11 @@ namespace GSL::PMFS_internal
             size_t indexOfMode = std::min<size_t>(probabilityOfHit * numBuckets, numBuckets - 1);
             probs[indexOfMode] = probOfMode;
             return probs;
+        }
+
+        static float frequencyOfBucket(uint index)
+        {
+            return (0.5f + index) / numBuckets;
         }
     };
 
