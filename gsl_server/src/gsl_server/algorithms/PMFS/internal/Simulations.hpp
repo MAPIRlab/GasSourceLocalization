@@ -65,6 +65,7 @@ namespace GSL::PMFS_internal
         double probabilitySingleFrequency(double measured, double simulated) const;
         double probabilityFromSingleCell(HitProbability measured, double simulated) const;
         long double sourceProbFromMaps(const Grid2D<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
+        std::vector<float> simulateSourceInRegion(const Utils::NQA::Node* nqaNode);
 
         std::vector<std::vector<Utils::NQA::Node*>> mapSegmentation;
         std::unique_ptr<Utils::NQA::Quadtree> quadtree;
@@ -73,13 +74,25 @@ namespace GSL::PMFS_internal
         std::vector<SimulationResult> resultsFirstLevel;
         VisibilityMap* visibilityMap;
 
-    protected:
-
+    private:
         struct LeafScore
         {
             long double score;
             Utils::NQA::Node* leaf;
         };
+
+        SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
+        void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
+        void simulateSourceInPosition(const SimulationSource& source,
+                                      std::vector<float>& hitMap,
+                                      bool warmup,
+                                      int timesteps,
+                                      float deltaTime,
+                                      float noiseSTDev) const;
+        bool filamentIsOutside(const Filament& filament) const;
+        bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
+        void blurHitMap(cv::Mat& asImage);
+        Grid2DMetadata metadata(){return measuredHitProb.metadata;}
 
         std::vector<long double> sourceProbInternal; // calculated from the simulations, used for movement
         const PMFS_internal::SimulationSettings& settings;
@@ -87,14 +100,5 @@ namespace GSL::PMFS_internal
         Grid2D<double> sourceProb;
         Grid2D<Vector2> wind;
         cv::Mat freeSpaceMask;
-
-        SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
-        void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
-        void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup,
-                                      int timesteps, float deltaTime, float noiseSTDev) const;
-        bool filamentIsOutside(const Filament& filament) const;
-        bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
-
-        void blurHitMap(cv::Mat& asImage);
     };
 } // namespace GSL::PMFS_internal

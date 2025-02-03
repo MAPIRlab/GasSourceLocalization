@@ -240,8 +240,6 @@ namespace GSL::PMFS_internal
 
     double Simulations::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
     {
-#define FREQUENCY_DISTRIBUTION_METHOD 0
-#if FREQUENCY_DISTRIBUTION_METHOD
         auto frequencyDistribution = hitProb.frequencyDistribution();
         double result = 0;
         for (int freqIndex = 0; freqIndex < frequencyDistribution.size(); freqIndex++)
@@ -251,14 +249,26 @@ namespace GSL::PMFS_internal
             GSL_ASSERT(!std::isnan(result));
         }
         return result;
-#else
-        return Utils::lerp(1, probabilitySingleFrequency(hitProb.probability(), simulated), hitProb.confidence);
-#endif
     }
 
     double Simulations::probabilitySingleFrequency(double measured, double simulated) const
     {
         return 1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower;
+    }
+
+    std::vector<float> Simulations::simulateSourceInRegion(const Utils::NQA::Node* nqaNode)
+    {
+        SimulationSource source(nqaNode, metadata());
+        std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
+
+        simulateSourceInPosition(source,
+                                 hitMap,
+                                 true,
+                                 settings.iterationsToRecord,
+                                 settings.deltaTime,
+                                 settings.noiseSTDev);
+        
+        return std::move(hitMap); //TODO does this even do anything?
     }
 
     void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
@@ -275,8 +285,12 @@ namespace GSL::PMFS_internal
         return !measuredHitProb.metadata.indicesInBounds(newIndices);
     }
 
-    void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup,
-                                               int timesteps, float deltaTime, float noiseSTDev) const
+    void Simulations::simulateSourceInPosition(const SimulationSource& source,
+                                               std::vector<float>& hitMap,
+                                               bool warmup,
+                                               int timesteps,
+                                               float deltaTime,
+                                               float noiseSTDev) const
     {
         constexpr int numFilamentsIteration = 5;
         size_t max_filaments = settings.maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration;

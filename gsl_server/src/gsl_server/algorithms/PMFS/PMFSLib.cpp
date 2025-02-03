@@ -16,8 +16,11 @@ namespace GSL
     // P(H)
     //---------------
 
-    void PMFSLib::EstimateHitProbabilities(Grid2D<HitProbability>& hitProb, const VisibilityMap& visibilityMap,
-                                           PMFS_internal::HitProbabilitySettings& settings, bool hit, double downwindDirection, double windSpeed,
+    void PMFSLib::EstimateHitProbabilities(Grid2D<HitProbability>& hitProb,
+                                           const VisibilityMap& visibilityMap,
+                                           PMFS_internal::HitProbabilitySettings& settings,
+                                           float frequency,
+                                           double downwindDirection, double windSpeed,
                                            Vector2Int robotPosition)
     {
         // receiving propagation this step. Can still be modified by better estimations.
@@ -27,15 +30,15 @@ namespace GSL
         // old news
         HashSet closedPropagationSet;
 
-        double kernel_rotation_wind = -angles::normalize_angle(downwindDirection + M_PI / 2);
+        float kernel_rotation_wind = -angles::normalize_angle(downwindDirection + M_PI / 2);
         HitProbKernel kernel =
             {
+                .frequency = frequency,
                 .angle = kernel_rotation_wind,
                 .sigma = Vector2(
                     settings.kernelSigma / (1 + settings.kernelStretchConstant * windSpeed / settings.kernelSigma), // semi-minor ellipse axis
                     settings.kernelSigma + settings.kernelStretchConstant * windSpeed                               // semi-major axis
-                    ),
-                .valueAt1 = (hit ? 0.6f : 0.1f)};
+                    )};
 
         GSL_ASSERT(hitProb.metadata.indicesInBounds(robotPosition));
         size_t oC = std::max(0, robotPosition.x - settings.localEstimationWindowSize);
@@ -55,46 +58,26 @@ namespace GSL
                 else
                     activePropagationSet.insert(rc);
 
-                // TODO should probably use the coordinates rather than the cell indices, but it would require adjusting all the parameters in the launch file, so...
-                // TODO good news is once we've done this the parameters become cell-size-independent
-                // Vector2 offset = hitProb.metadata.indicesToCoordinates(rc) - hitProb.metadata.indicesToCoordinates(robotPosition);
-                Vector2 offset = Vector2(rc - robotPosition);
+                Vector2 offset = hitProb.metadata.indicesToCoordinates(rc) - hitProb.metadata.indicesToCoordinates(robotPosition);
                 hitProb.dataAt(col, row).distanceFromRobot = vmath::length(offset);
                 hitProb.dataAt(col, row).originalPropagationDirection = vmath::normalized(offset);
-                hitProb.dataAt(col, row).auxWeight = applyFalloffLogOdds(offset, kernel, settings);
+                addFrequencyEvidence(hitProb.dataAt(col, row), offset, kernel, settings);
             }
         }
 
         // propagate these short-range estimations to the entire environment using the navigation map
         // also calculate the distance field
         PropagateProbabilities(hitProb, settings, openPropagationSet, closedPropagationSet, activePropagationSet, kernel);
-
-        double logOddsPrior = std::log(settings.prior / (1 - settings.prior));
-        for (size_t i = 0; i < hitProb.data.size(); i++)
-        {
-            if (hitProb.occupancy[i] != Occupancy::Free)
-                continue;
-
-            HitProbability& cell = hitProb.data[i];
-            // BAYESIAN BINARY FILTER. this is the important part
-            cell.logOdds += cell.auxWeight - logOddsPrior;
-            GSL_ASSERT(!std::isnan(cell.logOdds));
-
-            // confidence
-            cell.omega += Utils::evaluate1DGaussian(cell.distanceFromRobot, settings.confidenceSigmaSpatial);
-            double exponent = -cell.omega / std::pow(settings.confidenceMeasurementWeight, 2);
-            cell.confidence = 1 - std::exp(exponent);
-        }
     }
 
-    double PMFSLib::PropagateProbabilities(Grid2D<HitProbability>& hitProb, const PMFS_internal::HitProbabilitySettings& settings,
-                                           HashSet& openPropagationSet, HashSet& closedPropagationSet, HashSet& activePropagationSet,
-                                           const HitProbKernel& kernel)
+    void PMFSLib::PropagateProbabilities(Grid2D<HitProbability>& hitProb,
+                                         const PMFS_internal::HitProbabilitySettings& settings,
+                                         HashSet& openPropagationSet,
+                                         HashSet& closedPropagationSet,
+                                         HashSet& activePropagationSet,
+                                         const HitProbKernel& kernel)
     {
-        double total = 0;
-
-        auto calculateNewAuxWeight = [&openPropagationSet, &closedPropagationSet, &activePropagationSet, &kernel, &settings,
-                                      &hitProb](int i, int j, Vector2Int previousCellIndices)
+        auto calculateNewAuxWeight = [&](int i, int j, Vector2Int previousCellIndices)
         {
             HitProbability& previousCell = hitProb.dataAt(previousCellIndices.x, previousCellIndices.y);
             HitProbability& currentCell = hitProb.dataAt(i, j);
@@ -102,7 +85,7 @@ namespace GSL
 
             float newDistance = previousCell.distanceFromRobot +
                                 ((i == previousCellIndices.x || j == previousCellIndices.y) ? 1 : sqrt(2)); // distance of this new path to the cell
-            float newWeight = applyFalloffLogOdds(previousCell.originalPropagationDirection * newDistance, kernel, settings);
+            float influence = addFrequencyEvidence(currentCell, previousCell.originalPropagationDirection * newDistance, kernel, settings);
 
             // if the cell can still receive propagation
             if (closedPropagationSet.find(ij) == closedPropagationSet.end() && activePropagationSet.find(ij) == activePropagationSet.end())
@@ -111,15 +94,12 @@ namespace GSL
                 if (openPropagationSet.find(ij) != openPropagationSet.end())
                 {
                     // if the distance is the same, keep the best probability!
-                    if (std::abs(newDistance - currentCell.distanceFromRobot) < 0.001 && newWeight > currentCell.auxWeight)
-                    {
-                        currentCell.auxWeight = newWeight;
-                        currentCell.originalPropagationDirection = previousCell.originalPropagationDirection;
-                    }
+                    bool betterDistance = newDistance < currentCell.distanceFromRobot;
                     // else, keep the shortest path
-                    else if (newDistance < currentCell.distanceFromRobot)
+                    bool sameDistanceBetterResult = Utils::approx(newDistance, currentCell.distanceFromRobot) && influence > currentCell.previousInfluence;
+                    if (betterDistance || sameDistanceBetterResult)
                     {
-                        currentCell.auxWeight = newWeight;
+                        currentCell.previousInfluence = influence;
                         currentCell.distanceFromRobot = newDistance;
                         currentCell.originalPropagationDirection = previousCell.originalPropagationDirection;
                     }
@@ -127,7 +107,7 @@ namespace GSL
                 // if this is the first time we reach this cell
                 else
                 {
-                    currentCell.auxWeight = newWeight;
+                    currentCell.previousInfluence = influence;
                     currentCell.distanceFromRobot = newDistance;
                     currentCell.originalPropagationDirection = previousCell.originalPropagationDirection;
                     openPropagationSet.insert(ij);
@@ -140,9 +120,6 @@ namespace GSL
             while (!activePropagationSet.empty())
             {
                 Vector2Int p = *activePropagationSet.begin();
-
-                if (hitProb.freeAt(p.x, p.y))
-                    total += hitProb.dataAt(p.x, p.y).auxWeight;
 
                 activePropagationSet.erase(activePropagationSet.begin());
                 closedPropagationSet.insert(p);
@@ -167,22 +144,26 @@ namespace GSL
             // the cells that were in the open set now are removed from it and can no longer receive propagation
             // therefore, the probabilities for these cells are now locked, and we can update the logodds
             for (const auto& par : openPropagationSet)
-            {
                 activePropagationSet.insert(par);
-            }
 
             openPropagationSet.clear();
         }
-        return total;
     }
 
-    double PMFSLib::applyFalloffLogOdds(Vector2 originalVectorScaled, const HitProbKernel& kernel,
+    float PMFSLib::addFrequencyEvidence(PMFS_internal::HitProbability& cell,
+                                        Vector2 originalVectorScaled,
+                                        const HitProbKernel& kernel,
                                         const PMFS_internal::HitProbabilitySettings& settings)
     {
-        double sampleGaussian = Utils::evaluate2DGaussian(originalVectorScaled, kernel.sigma, kernel.angle);
-        double maxPossible = Utils::evaluate2DGaussian({0, 0}, kernel.sigma, kernel.angle);
-        float prob = Utils::clamp(Utils::lerp(settings.prior, kernel.valueAt1, sampleGaussian / maxPossible), 0.001, 0.999);
-        return std::log(prob / (1 - prob));
+        float sampleGaussian = Utils::evaluate2DGaussian(originalVectorScaled, kernel.sigma, kernel.angle);
+        float maxPossible = Utils::evaluate2DGaussian({0, 0}, kernel.sigma, kernel.angle);
+
+        // value from 1 (the cell that was measured) to 0 (far away)
+        float influence = sampleGaussian / maxPossible;
+
+        float mass = Utils::lerp(0, settings.evidenceMassObservation, influence);
+        cell.addFrequencyEvidence(kernel.frequency, mass);
+        return influence;
     }
 
     void PMFSLib::InitMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale)
@@ -202,12 +183,6 @@ namespace GSL
                                 Vector2 startingPosition)
     {
         // create the PMFS cells
-        {
-            for (HitProbability& hp : grid.data)
-                hp.auxWeight = -1;
-            GSL_TRACE("Created grid");
-        }
-
         grid.metadata.numFreeCells = PruneUnreachableCells(grid.occupancy, grid.metadata, startingPosition);
         std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.dimensions.x, std::vector<uint8_t>(grid.metadata.dimensions.y));
         for (int i = 0; i < occupancyMap.size(); i++)
@@ -258,8 +233,6 @@ namespace GSL
     {
         std::vector<HitProbability> hitProb(occupancy.size());
         Grid2D<HitProbability> grid(hitProb, occupancy, metadata);
-        for (int i = 0; i < grid.data.size(); i++)
-            grid.data[i].auxWeight = -1;
 
         // get an arbitrary seed value into the cell the robot is currently in and propagagate it. If a cell has not received that value by the
         // end, it must not be reachable
@@ -268,10 +241,17 @@ namespace GSL
             HashSet activePropagationSet;
             HashSet closedPropagationSet;
             Vector2Int currentIndices = grid.metadata.coordinatesToIndices(startPosition);
-            grid.dataAt(currentIndices.x, currentIndices.y).auxWeight = 0; // the arbitrary value
+            grid.dataAt(currentIndices.x, currentIndices.y).distanceFromRobot = 0; // the arbitrary value
             activePropagationSet.insert(currentIndices);
-            PMFSLib::PropagateProbabilities(grid, PMFS_internal::HitProbabilitySettings(), openPropagationSet, closedPropagationSet,
-                                            activePropagationSet, {1, {1, 0}, 0});
+            PMFSLib::PropagateProbabilities(grid,
+                                            PMFS_internal::HitProbabilitySettings(),
+                                            openPropagationSet,
+                                            closedPropagationSet,
+                                            activePropagationSet,
+                                            HitProbKernel{
+                                                .frequency = 0,
+                                                .angle = 0,
+                                                .sigma = {1, 1}});
         }
 
         size_t numFreeCells = 0;
@@ -279,9 +259,8 @@ namespace GSL
         {
             for (int j = 0; j < grid.metadata.dimensions.y; j++)
             {
-                if (!grid.freeAt(i, j) || grid.dataAt(i, j).auxWeight == -1)
+                if (!grid.freeAt(i, j) || grid.dataAt(i, j).distanceFromRobot == -1)
                 {
-                    grid.dataAt(i, j).logOdds = DBL_MIN;
                     grid.occupancyAt(i, j) = Occupancy::Obstacle;
                 }
                 else
@@ -290,6 +269,19 @@ namespace GSL
         }
         GSL_TRACE("Pruned unreachable cells");
         return numFreeCells;
+    }
+
+    void PMFSLib::EstimatePrior(Grid2D<HitProbability> hitProb, PMFS_internal::Simulations& simulations)
+    {
+        for (Utils::NQA::Node& node : simulations.QTleaves)
+        {
+            std::vector<float> freqs = simulations.simulateSourceInRegion(&node);
+            for(size_t i = 0; i<freqs.size(); i++)
+            {
+                uint numCellsInRegion = node.size.x * node.size.y;
+                hitProb.data[i].addFrequencyEvidence(freqs[i], numCellsInRegion);
+            }
+        }
     }
 
     void PMFSLib::InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,
@@ -342,8 +334,11 @@ namespace GSL
         }
     }
 
-    void PMFSLib::EstimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind, rclcpp::Node::SharedPtr node,
-                               PMFS_internal::GMRFWind& gmrf IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth))
+    void PMFSLib::EstimateWind(bool useGroundTruth,
+                               Grid2D<Vector2> estimatedWind,
+                               rclcpp::Node::SharedPtr node,
+                               PMFS_internal::GMRFWind& gmrf
+                                   IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth))
     {
         // if not compiled with gaden support, you have no choice but to use GMRF :)
 #ifdef USE_GADEN
@@ -391,27 +386,25 @@ namespace GSL
     void PMFSLib::GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings)
     {
         settings.useWindGroundTruth = algorithm.getParam<bool>("useWindGroundTruth", false);
-        settings.sourceDiscriminationPower = algorithm.getParam<double>("sourceDiscriminationPower", 1);
-        settings.refineFraction = algorithm.getParam<double>("refineFraction", 10);
+        settings.sourceDiscriminationPower = algorithm.getParam<float>("sourceDiscriminationPower", 1);
+        settings.refineFraction = algorithm.getParam<float>("refineFraction", 10);
         settings.stepsBetweenSourceUpdates = algorithm.getParam<int>("stepsSourceUpdate", 10);
         settings.maxRegionSize = algorithm.getParam<int>("maxRegionSize", 5);
-        settings.deltaTime = algorithm.getParam<double>("deltaTime", 0.2);
-        settings.noiseSTDev = algorithm.getParam<double>("noiseSTDev", 0.5);
+        settings.deltaTime = algorithm.getParam<float>("deltaTime", 0.2);
+        settings.noiseSTDev = algorithm.getParam<float>("noiseSTDev", 0.5);
         settings.iterationsToRecord = algorithm.getParam<int>("iterationsToRecord", 200);
         settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
 
-        settings.blurSigmaX = algorithm.getParam<double>("blurSigmaX", 0);
-        settings.blurSigmaY = algorithm.getParam<double>("blurSigmaY", 0);
+        settings.blurSigmaX = algorithm.getParam<float>("blurSigmaX", 0);
+        settings.blurSigmaY = algorithm.getParam<float>("blurSigmaY", 0);
     }
 
     void PMFSLib::GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings)
     {
-        settings.prior = algorithm.getParam<double>("hitPriorProbability", 0.1);
         settings.maxUpdatesPerStop = algorithm.getParam<int>("maxUpdatesPerStop", 3);
-        settings.kernelSigma = algorithm.getParam<double>("kernelSigma", 0.5);
-        settings.kernelStretchConstant = algorithm.getParam<double>("kernelStretchConstant", 1);
-        settings.confidenceMeasurementWeight = algorithm.getParam<double>("confidenceMeasurementWeight", 0.5);
-        settings.confidenceSigmaSpatial = algorithm.getParam<double>("confidenceSigmaSpatial", 0.5);
+        settings.kernelSigma = algorithm.getParam<float>("kernelSigma", 0.5);
+        settings.kernelStretchConstant = algorithm.getParam<float>("kernelStretchConstant", 1);
+        settings.evidenceMassObservation = algorithm.getParam<float>("evidenceMassObservation", 0.5);
         settings.localEstimationWindowSize = algorithm.getParam<int>("localEstimationWindowSize", 2);
     }
 

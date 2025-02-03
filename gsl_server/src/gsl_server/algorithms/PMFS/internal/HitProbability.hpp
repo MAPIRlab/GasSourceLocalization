@@ -1,46 +1,41 @@
 #pragma once
-#include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/core/Vectors.hpp>
+#include <numeric>
 
 namespace GSL::PMFS_internal
 {
     struct HitProbability
     {
-        double logOdds = 0;
-        double auxWeight = 0;
         Vector2 originalPropagationDirection;
-        double omega = 0;      // intermediate step for the confidence value, goes from 0 to +infinity
-        double confidence = 0; // 0-1
-        double distanceFromRobot = 0;
+        float distanceFromRobot = -1;
+        float previousInfluence = -1;
 
-        void setProbability(double probability)
+        static constexpr size_t numBuckets = 5;
+        std::array<float, numBuckets> alphas{};
+
+        void addFrequencyEvidence(float freq, float mass)
         {
-            logOdds = std::log(probability / (1 - probability));
+            size_t index = numBuckets / freq;
+            alphas[index] += mass;
         }
 
-        double probability()
+        float probability(float freq)
         {
-            return Utils::logOddsToProbability(logOdds);
+            float sum = std::reduce(alphas.begin(), alphas.end(), 0);
+            size_t index = numBuckets / freq;
+            return alphas[index] / sum;
         }
-
 
         // New, experimental idea:
         // don't work with p(H_i), but with p(f_i) -- which is essentially p(p(H_i))
-        static constexpr size_t numBuckets = 5;
-        std::array<double, numBuckets> frequencyDistribution()
+        std::array<float, numBuckets> frequencyDistribution()
         {
-            // TODO make this not horrible
-
-            std::array<double, numBuckets> probs;
-            double probOfMode = Utils::lerp(1. / numBuckets, 1, confidence);
-            double probOthers = (1 - probOfMode) / (numBuckets - 1);
-            probs.fill(probOthers);
-
-            double probabilityOfHit = probability();
-            size_t indexOfMode = std::min<size_t>(probabilityOfHit * numBuckets, numBuckets - 1);
-            probs[indexOfMode] = probOfMode;
-            return probs;
+            std::array<float, numBuckets> probabilities;
+            float sum = std::reduce(alphas.begin(), alphas.end(), 0);
+            for (size_t i = 0; i < numBuckets; i++)
+                probabilities[i] = alphas[i] / sum;
+            return probabilities;
         }
 
         static float frequencyOfBucket(uint index)

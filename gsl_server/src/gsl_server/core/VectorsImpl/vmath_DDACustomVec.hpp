@@ -36,6 +36,11 @@ namespace GSL::vmath
         return {vec.y, vec.x};
     }
 
+    inline float orientation(const Vector2& vec)
+    {
+        return std::atan2(vec.y, vec.x);
+    }
+
     inline Vector3 WithZ(const Vector2& vec, float z)
     {
         return Vector3(vec.x, vec.y, z);

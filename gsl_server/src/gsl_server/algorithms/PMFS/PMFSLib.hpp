@@ -31,7 +31,7 @@ namespace GSL
 
     public:
         static void InitMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale);
-        
+
         static void InitializeMap(Grid2D<HitProbability> grid,
                                   PMFS_internal::Simulations& simulations,
                                   VisibilityMap& visibilityMap,
@@ -43,16 +43,15 @@ namespace GSL
                                                   IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest));
         static void InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node);
 
-        static void EstimateHitProbabilities(Grid2D<HitProbability>& hitLocalVariable,
+        static void EstimateHitProbabilities(Grid2D<HitProbability>& hitProb,
                                              const VisibilityMap& visibilityMap,
                                              PMFS_internal::HitProbabilitySettings& settings,
-                                             bool hit,
-                                             double windDirection,
-                                             double windSpeed,
+                                             float frequency,
+                                             double downwindDirection, double windSpeed,
                                              Vector2Int robotPosition);
 
         // returns the sum of all auxWeights, for normalization purposes
-        static double PropagateProbabilities(Grid2D<HitProbability>& var,
+        static void PropagateProbabilities(Grid2D<HitProbability>& var,
                                              const PMFS_internal::HitProbabilitySettings& settings,
                                              HashSet& openSet,
                                              HashSet& closedSet,
@@ -71,10 +70,13 @@ namespace GSL
 
         static size_t PruneUnreachableCells(std::vector<Occupancy>& occupancy, Grid2DMetadata metadata, Vector2 startPosition);
 
+        static void EstimatePrior(Grid2D<HitProbability> hitProb, PMFS_internal::Simulations& simulations);
+
     private:
-        static double applyFalloffLogOdds(Vector2 originalVectorScaled,
-                                          const HitProbKernel& kernel,
-                                          const PMFS_internal::HitProbabilitySettings& settings);
+        static float addFrequencyEvidence(PMFS_internal::HitProbability& cell,
+                                           Vector2 originalVectorScaled,
+                                           const HitProbKernel& kernel,
+                                           const PMFS_internal::HitProbabilitySettings& settings);
     };
 
 } // namespace GSL

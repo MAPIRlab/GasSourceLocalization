@@ -136,7 +136,7 @@ namespace GSL
 
         // get the probability of each hit frequency in each cell, according to the current p(h_i) and the confidence value
         constexpr size_t discretizationLevels = PMFS_internal::HitProbability::numBuckets;
-        std::vector<std::array<double, discretizationLevels>> probF(pmfs->hitProbability.size());
+        std::vector<std::array<float, discretizationLevels>> probF(pmfs->hitProbability.size());
         for (size_t i = 0; i < probF.size(); i++)
             probF[i] = pmfs->hitProbability[i].frequencyDistribution();
 
@@ -178,10 +178,11 @@ namespace GSL
                         // current p(s_k | f_i)
                         double probGivenThisCell = pmfs->simulations.probabilityFromSingleCell(pmfs->hitProbability[i], simResult.hitMap[i]);
 
-                        PMFS_internal::HitProbability localCopy = pmfs->hitProbability[i];
-                        localCopy.setProbability(freq);
-                        localCopy.confidence = 1;
-                        double probWithNewFreq = pmfs->simulations.probabilityFromSingleCell(localCopy, simResult.hitMap[i]);
+                        // a version of the cell where we know with complete certainty the correct hit frequency 
+                        PMFS_internal::HitProbability hypothetical;
+                        hypothetical.addFrequencyEvidence(freq, 1);
+                        
+                        double probWithNewFreq = pmfs->simulations.probabilityFromSingleCell(hypothetical, simResult.hitMap[i]);
 
                         // source prob after modifying this cell in the map
                         // we store it in a vector because we need to normalize before calculating the entropy
