@@ -71,7 +71,9 @@ namespace GSL
         };
 
         auto compareEval = [](const PositionEval& a, const PositionEval& b)
-        { return a.evaluation > b.evaluation; };
+        {
+            return a.evaluation > b.evaluation;
+        };
         std::set<PositionEval, decltype(compareEval)> evaluations;
 
         for (size_t i = 0; i < pmfs->sourceProbability.size(); i++)
@@ -279,7 +281,7 @@ namespace GSL
         {
             // double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
             double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(i, j)] * (1 - pmfs->hitProbability[gridMetadata.indexOf(i, j)].confidence);
-            
+
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
             sum += varianceTerm * std::exp(-distance);
             GSL_ASSERT(sum > 0);
@@ -323,8 +325,7 @@ namespace GSL
         if (!currentGoal.has_value())
             return;
 
-        Vector2Int indicesGoal =
-            pmfs->gridMetadata.coordinatesToIndices(currentGoal.value().pose.pose.position.x, currentGoal.value().pose.pose.position.y);
+        Vector2Int indicesGoal = pmfs->gridMetadata.coordinatesToIndices(currentGoal.value().pose.pose);
         openMoveSet.erase(indicesGoal);
         closedMoveSet.insert(indicesGoal);
         MovingState::Fail();
@@ -372,7 +373,6 @@ namespace GSL
                 p.z = pmfs->settings.visualization.markers_height;
 
                 std_msgs::msg::ColorRGBA explorationColor;
-                std_msgs::msg::ColorRGBA advantageColor;
                 std_msgs::msg::ColorRGBA varianceColor;
 
                 if (openMoveSet.find(Vector2Int(a, b)) == openMoveSet.end())
@@ -381,7 +381,6 @@ namespace GSL
                     explorationColor.g = 0;
                     explorationColor.b = 0;
                     explorationColor.a = 1;
-                    advantageColor = explorationColor;
                 }
                 else
                 {

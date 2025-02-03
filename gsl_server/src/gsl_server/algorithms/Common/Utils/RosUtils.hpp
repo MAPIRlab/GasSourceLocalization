@@ -23,7 +23,7 @@ namespace GSL
             Logarithmic
         };
         std_msgs::msg::ColorRGBA valueToColor(double val, double low, double high, valueColorMode mode);
-        std_msgs::msg::ColorRGBA create_color(float r, float g, float b, float a);
+        std_msgs::msg::ColorRGBA create_color(float r, float g, float b, float a = 1.0f);
 
         geometry_msgs::msg::Pose compose(const geometry_msgs::msg::Pose& referenceSystem, const geometry_msgs::msg::Pose& pose);
 
