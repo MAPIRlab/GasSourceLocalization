@@ -70,7 +70,7 @@ Visualization Manager:
       Enabled: true
       Name: Wind_arrow
       Namespaces:
-        {}
+        measured_wind_inverted: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -225,7 +225,7 @@ Visualization Manager:
       Enabled: true
       Name: GMRF
       Namespaces:
-        {}
+        WindVector: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -250,7 +250,7 @@ Visualization Manager:
       Enabled: true
       Name: Hit
       Namespaces:
-        {}
+        cells: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -309,7 +309,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /yolo/segmentedImage
+        Value: /detectron/segmentedImage
       Value: true
     - Class: rviz_default_plugins/Marker
       Enabled: false
@@ -363,19 +363,66 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        RGBD:
+          Value: true
+        body:
+          Value: true
         giraff_anemometer_frame:
           Value: false
         giraff_base_link:
           Value: true
+        giraff_odom:
+          Value: true
         giraff_pid_frame:
           Value: false
+        green_button:
+          Value: true
+        head:
+          Value: true
+        hokuyo_front:
+          Value: true
+        left_wheel:
+          Value: true
+        map:
+          Value: true
+        neck:
+          Value: true
+        red_button:
+          Value: true
+        right_wheel:
+          Value: true
+        screen:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: false
       Show Axes: true
       Show Names: true
       Tree:
-        {}
+        map:
+          giraff_odom:
+            giraff_base_link:
+              body:
+                green_button:
+                  {}
+                neck:
+                  RGBD:
+                    {}
+                  head:
+                    screen:
+                      {}
+                red_button:
+                  {}
+              giraff_anemometer_frame:
+                {}
+              giraff_pid_frame:
+                {}
+              hokuyo_front:
+                {}
+              left_wheel:
+                {}
+              right_wheel:
+                {}
       Update Interval: 0
       Value: true
     - Class: rviz_default_plugins/Marker
@@ -429,7 +476,7 @@ Visualization Manager:
       Enabled: true
       Name: UIMarker
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile

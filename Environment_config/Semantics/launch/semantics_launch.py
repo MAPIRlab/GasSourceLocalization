@@ -19,11 +19,18 @@ class SegmentationNN(Enum):
     YOLO = 1
     DETECTRON = 2
 
+def toName(nnEnum):
+    if nnEnum == SegmentationNN.YOLO:
+        return "yolo"
+    elif nnEnum == SegmentationNN.DETECTRON:
+        return "detectron"
+    
+
 def launch_setup(context, *args, **kwargs):
 
     # Select the segmentation network you want to use here! From here: https://github.com/MAPIRlab/instance_segmentation
     ######################################################
-    segmentation_net = SegmentationNN.YOLO 
+    segmentation_net = SegmentationNN.DETECTRON 
 
 
     voxeland_server = IncludeLaunchDescription(
@@ -55,7 +62,7 @@ def launch_setup(context, *args, **kwargs):
             "robot_frame_id" : "giraff_base_link",
             "camera_frame_id" : "RGBD",
 
-            "service_name": f"/{segmentation_net}/segment",
+            "service_name": f"/{toName(segmentation_net)}/segment",
         }.items()
     )
 
