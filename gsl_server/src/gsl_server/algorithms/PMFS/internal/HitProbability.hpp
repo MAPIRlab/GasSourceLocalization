@@ -14,7 +14,7 @@ namespace GSL::PMFS_internal
         float distanceFromRobot = -1;
         float previousInfluence = -1;
 
-        static constexpr size_t numBuckets = 5;
+        static constexpr size_t numBuckets = 10;
         std::array<float, numBuckets> alphas{};
 
         void addFrequencyEvidence(float freq, float mass)

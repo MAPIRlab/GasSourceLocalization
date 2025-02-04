@@ -278,7 +278,7 @@ namespace GSL
         // uncertainty mass
         for (size_t i = 0; i < hitProb.data.size(); i++)
             for (size_t alpha = 0; alpha < HitProbability::numBuckets; alpha++)
-                hitProb.data[i].alphas[alpha] += 10;
+                hitProb.data[i].alphas[alpha] += 100;
 
 #pragma omp parallel for
         for (Utils::NQA::Node& node : simulations.QTleaves)

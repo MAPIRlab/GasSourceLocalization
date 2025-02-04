@@ -255,8 +255,8 @@ namespace GSL::PMFS_internal
         static std::string queryResult;
 
         queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
-                      fmt::format("alphas:{} \n", fmt::join(grid.dataAt(x,y).alphas, "\n\t")) +
-                      fmt::format("expected value:{} \n", grid.dataAt(x,y).expectedValue());
+                      fmt::format("alphas:\n\t{} \n", fmt::join(grid.dataAt(x,y).alphas, "\n\t")) +
+                      fmt::format("expected value:{:.2f} \n", grid.dataAt(x,y).expectedValue());
 
         return queryResult.c_str();
     }
