@@ -142,7 +142,7 @@ namespace GSL
 
             activePropagationSet.clear();
             // the cells that were in the open set now are removed from it and can no longer receive propagation
-            // therefore, the probabilities for these cells are now locked, and we can update the logodds
+            // therefore, the probabilities for these cells are now locked, and we can update the probabilities
             for (const auto& par : openPropagationSet)
                 activePropagationSet.insert(par);
 
@@ -273,15 +273,30 @@ namespace GSL
 
     void PMFSLib::EstimatePrior(Grid2D<HitProbability> hitProb, PMFS_internal::Simulations& simulations)
     {
+        GSL_INFO("Estimating prior");
+
+        // uncertainty mass
+        for (size_t i = 0; i < hitProb.data.size(); i++)
+            for (size_t alpha = 0; alpha < HitProbability::numBuckets; alpha++)
+                hitProb.data[i].alphas[alpha] += 10;
+
+#pragma omp parallel for
         for (Utils::NQA::Node& node : simulations.QTleaves)
         {
             std::vector<float> freqs = simulations.simulateSourceInRegion(&node);
-            for(size_t i = 0; i<freqs.size(); i++)
+            uint numCellsInRegion = node.size.x * node.size.y;
+            for (size_t i = 0; i < freqs.size(); i++)
             {
-                uint numCellsInRegion = node.size.x * node.size.y;
-                hitProb.data[i].addFrequencyEvidence(freqs[i], numCellsInRegion);
+                if (hitProb.occupancy[i] != Occupancy::Free)
+                    continue;
+
+#pragma omp critical
+                {
+                    hitProb.data[i].addFrequencyEvidence(freqs[i], numCellsInRegion);
+                }
             }
         }
+        GSL_INFO("Prior done!");
     }
 
     void PMFSLib::InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,

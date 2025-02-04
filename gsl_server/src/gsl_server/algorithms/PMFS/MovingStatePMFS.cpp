@@ -20,7 +20,6 @@ namespace GSL
         pmfs = dynamic_cast<PMFS*>(_algorithm);
 
         publishers.explorationValue = pmfs->node->create_publisher<Marker>("explorationValue", 1);
-        publishers.varianceHit = pmfs->node->create_publisher<Marker>("varianceHit", 1);
         publishers.movementSets = pmfs->node->create_publisher<Marker>("movementSets", 1);
     }
 
@@ -71,7 +70,9 @@ namespace GSL
         };
 
         auto compareEval = [](const PositionEval& a, const PositionEval& b)
-        { return a.evaluation > b.evaluation; };
+        {
+            return a.evaluation > b.evaluation;
+        };
         std::set<PositionEval, decltype(compareEval)> evaluations;
 
         for (size_t i = 0; i < pmfs->sourceProbability.size(); i++)
@@ -178,10 +179,10 @@ namespace GSL
                         // current p(s_k | f_i)
                         double probGivenThisCell = pmfs->simulations.probabilityFromSingleCell(pmfs->hitProbability[i], simResult.hitMap[i]);
 
-                        // a version of the cell where we know with complete certainty the correct hit frequency 
+                        // a version of the cell where we know with complete certainty the correct hit frequency
                         PMFS_internal::HitProbability hypothetical;
                         hypothetical.addFrequencyEvidence(freq, 1);
-                        
+
                         double probWithNewFreq = pmfs->simulations.probabilityFromSingleCell(hypothetical, simResult.hitMap[i]);
 
                         // source prob after modifying this cell in the map
@@ -263,7 +264,7 @@ namespace GSL
         for (const auto& p : range)
         {
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
-            sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].confidence) * std::exp(-distance);
+            sum += pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].entropy() * std::exp(-distance);
             GSL_ASSERT(sum > 0);
         }
         return sum;
@@ -276,12 +277,11 @@ namespace GSL
         auto range = pmfs->visibilityMap->at(ij);
 
         double sum = 0;
-        for (const auto& p : range)
+        for (const auto& indices : range)
         {
-            // double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(i, j)] * (1 - pmfs->hitProbability[gridMetadata.indexOf(i, j)].confidence);
-            
-            float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
+            double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
+
+            float distance = vmath::length(Vector2(ij - indices)); // not the navigable distance, but we are close enough that it does not matter
             sum += varianceTerm * std::exp(-distance);
             GSL_ASSERT(sum > 0);
         }
@@ -353,10 +353,7 @@ namespace GSL
                 if (!grid.freeAt(a, b))
                     continue;
                 maxExpl = std::max(maxExpl, explorationValue(a, b));
-                maxVar = std::max(maxVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence));
-
                 minExpl = std::min(minExpl, explorationValue(a, b));
-                minVar = std::min(minVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence));
             }
         }
 
@@ -373,8 +370,6 @@ namespace GSL
                 p.z = pmfs->settings.visualization.markers_height;
 
                 std_msgs::msg::ColorRGBA explorationColor;
-                std_msgs::msg::ColorRGBA advantageColor;
-                std_msgs::msg::ColorRGBA varianceColor;
 
                 if (openMoveSet.find(Vector2Int(a, b)) == openMoveSet.end())
                 {
@@ -382,22 +377,16 @@ namespace GSL
                     explorationColor.g = 0;
                     explorationColor.b = 0;
                     explorationColor.a = 1;
-                    advantageColor = explorationColor;
                 }
                 else
                 {
                     explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::valueColorMode::Linear);
                 }
-                varianceColor =
-                    Utils::valueToColor(pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence),
-                                        minVar, maxVar, Utils::valueColorMode::Linear);
 
                 explorationMarker.points.push_back(p);
                 explorationMarker.colors.push_back(explorationColor);
 
                 p.z = pmfs->settings.visualization.markers_height - 0.1;
-                varianceMarker.points.push_back(p);
-                varianceMarker.colors.push_back(varianceColor);
 
                 movementSetsMarker.points.push_back(p);
                 if (openMoveSet.find({a, b}) != openMoveSet.end())
@@ -409,7 +398,6 @@ namespace GSL
             }
         }
         publishers.explorationValue->publish(explorationMarker);
-        publishers.varianceHit->publish(varianceMarker);
         publishers.movementSets->publish(movementSetsMarker);
     }
 

@@ -91,6 +91,10 @@ namespace GSL
                                                                     pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
                                  PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
                                  PMFSLib::EstimatePrior(AsGrid(hitProbability), simulations);
+
+                                 simulations.updateSourceProbability(settings.simulation.refineFraction);
+                                 std::vector<double> uniform(sourceProbability.size(), 1./gridMetadata.numFreeCells);
+                                 GSL_INFO("{}", Utils::KLD(sourceProbability, uniform, occupancy));
                                  stateMachine.forceSetState(stopAndMeasureState.get());
                              });
     }
@@ -134,7 +138,7 @@ namespace GSL
         number_of_updates++;
         if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
         {
-            float hitFrequency =  static_cast<float>(numberHits) / number_of_updates;
+            float hitFrequency = static_cast<float>(numberHits) / number_of_updates;
             number_of_updates = 0;
             numberHits = 0;
 

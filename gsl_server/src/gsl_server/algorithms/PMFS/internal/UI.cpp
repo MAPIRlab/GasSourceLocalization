@@ -135,7 +135,7 @@ namespace GSL::PMFS_internal
 
         ImGui::Begin("Source Estimation Power");
         {
-            ImGui::InputDouble("Source Power", &pmfs->settings.simulation.sourceDiscriminationPower);
+            ImGui::InputFloat("Source Power", &pmfs->settings.simulation.sourceDiscriminationPower);
         }
         ImGui::End();
 
@@ -255,8 +255,8 @@ namespace GSL::PMFS_internal
         static std::string queryResult;
 
         queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
-                      fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
-                      fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).logOdds));
+                      fmt::format("alphas:{} \n", fmt::join(grid.dataAt(x,y).alphas, "\n\t")) +
+                      fmt::format("expected value:{} \n", grid.dataAt(x,y).expectedValue());
 
         return queryResult.c_str();
     }

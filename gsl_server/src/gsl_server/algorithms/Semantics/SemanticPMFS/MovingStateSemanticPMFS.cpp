@@ -15,7 +15,6 @@ namespace GSL
         pmfs = dynamic_cast<GSL::SemanticPMFS*>(_algorithm);
 
         publishers.explorationValue = pmfs->node->create_publisher<Marker>("explorationValue", 1);
-        publishers.varianceHit = pmfs->node->create_publisher<Marker>("varianceHit", 1);
         publishers.movementSets = pmfs->node->create_publisher<Marker>("movementSets", 1);
     }
 
@@ -111,7 +110,7 @@ namespace GSL
             if (pmfs->navigationOccupancy[pmfs->gridMetadata.indexOf(p)] != Occupancy::Free)
                 continue;
             float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are near enough that it does not matter
-            sum += (1 - pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].confidence) * std::exp(-distance);
+            sum += pmfs->hitProbability[pmfs->gridMetadata.indexOf(p)].entropy() * std::exp(-distance);
             GSL_ASSERT(sum > 0);
         }
         return sum;
@@ -124,12 +123,11 @@ namespace GSL
         auto range = pmfs->visibilityMap->at(ij);
 
         double sum = 0;
-        for (const auto& p : range)
+        for (const auto& indices : range)
         {
-            // double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
-            double varianceTerm = pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf(i, j)] * (1 - pmfs->hitProbability[gridMetadata.indexOf(i, j)].confidence);
+            double varianceTerm = mutualInformationGas[gridMetadata.indexOf(indices)];
             
-            float distance = vmath::length(Vector2(ij - p)); // not the navigable distance, but we are close enough that it does not matter
+            float distance = vmath::length(Vector2(ij - indices)); // not the navigable distance, but we are close enough that it does not matter
             sum += varianceTerm * std::exp(-distance);
             GSL_ASSERT(sum > 0);
         }
@@ -191,8 +189,6 @@ namespace GSL
 
         Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());
 
-        Marker varianceMarker = explorationMarker;
-
         Marker movementSetsMarker = explorationMarker;
 
         double maxExpl = -DBL_MAX;
@@ -206,10 +202,8 @@ namespace GSL
                 if (!grid.freeAt(a, b))
                     continue;
                 maxExpl = std::max(maxExpl, explorationValue(a, b));
-                maxVar = std::max(maxVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence));
 
                 minExpl = std::min(minExpl, explorationValue(a, b));
-                minVar = std::min(minVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence));
             }
         }
 
@@ -226,8 +220,6 @@ namespace GSL
                 p.z = pmfs->settings.visualization.markers_height;
 
                 std_msgs::msg::ColorRGBA explorationColor;
-                std_msgs::msg::ColorRGBA advantageColor;
-                std_msgs::msg::ColorRGBA varianceColor;
 
                 if (openMoveSet.find(Vector2Int(a, b)) == openMoveSet.end())
                 {
@@ -235,21 +227,16 @@ namespace GSL
                     explorationColor.g = 0;
                     explorationColor.b = 0;
                     explorationColor.a = 1;
-                    advantageColor = explorationColor;
                 }
                 else
                 {
                     explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::valueColorMode::Linear);
                 }
-                varianceColor = Utils::valueToColor(pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence), minVar,
-                                                    maxVar, Utils::valueColorMode::Linear);
 
                 explorationMarker.points.push_back(p);
                 explorationMarker.colors.push_back(explorationColor);
 
                 p.z = pmfs->settings.visualization.markers_height - 0.1;
-                varianceMarker.points.push_back(p);
-                varianceMarker.colors.push_back(varianceColor);
 
                 movementSetsMarker.points.push_back(p);
                 if (openMoveSet.find({a, b}) != openMoveSet.end())
@@ -261,7 +248,6 @@ namespace GSL
             }
         }
         publishers.explorationValue->publish(explorationMarker);
-        publishers.varianceHit->publish(varianceMarker);
         publishers.movementSets->publish(movementSetsMarker);
     }
 

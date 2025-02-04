@@ -46,7 +46,6 @@ namespace GSL
         struct Publishers
         {
             rclcpp::Publisher<Marker>::SharedPtr explorationValue;
-            rclcpp::Publisher<Marker>::SharedPtr varianceHit;
             rclcpp::Publisher<Marker>::SharedPtr movementSets;
         } publishers;
     };

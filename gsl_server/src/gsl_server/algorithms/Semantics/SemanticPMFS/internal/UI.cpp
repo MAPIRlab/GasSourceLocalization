@@ -140,7 +140,7 @@ namespace GSL::SemanticPMFS_internal
 
         ImGui::Begin("Source Estimation Power");
         {
-            ImGui::InputDouble("Source Power", &pmfs->settings.simulation.sourceDiscriminationPower);
+            ImGui::InputFloat("Source Power", &pmfs->settings.simulation.sourceDiscriminationPower);
         }
         ImGui::End();
 
@@ -266,8 +266,7 @@ namespace GSL::SemanticPMFS_internal
         if (variable == Variable::HitProb)
         {
             Grid2D<HitProbability> grid(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata);
-            queryResult = fmt::format("Cell {0},{1}:\n", indices.x, indices.y) + fmt::format("free:{} \n", grid.freeAt(indices.x, indices.y)) +
-                          fmt::format("Hit probability:{:.3f} \n", Utils::logOddsToProbability(grid.dataAt(indices.x, indices.y).logOdds));
+            queryResult = fmt::format("Cell {0},{1}:\n", indices.x, indices.y) + fmt::format("free:{} \n", grid.freeAt(indices.x, indices.y));// +
         }
         else if (variable == Variable::SourceProb)
         {

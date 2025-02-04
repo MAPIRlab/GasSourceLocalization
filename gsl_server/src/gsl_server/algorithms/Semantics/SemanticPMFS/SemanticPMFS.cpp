@@ -162,10 +162,6 @@ namespace GSL
             *visibilityMap,
             currentCoordinates());
 
-        // set all variables to the prior probability
-        for (HitProbability& h : hitProbability)
-            h.setProbability(settings.hitProbability.prior);
-
         for (double& p : sourceProbabilityPMFS)
             p = 1.0 / gridMetadata.numFreeCells;
 
@@ -196,6 +192,7 @@ namespace GSL
                                      node,
                                      pubs.pmfsPubs.gmrfWind
                                          IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+                                 PMFSLib::EstimatePrior(AsGrid(hitProbability, simulationOccupancy), simulations);
                                  stateMachine.forceSetState(stopAndMeasureState.get());
                              });
 
@@ -238,40 +235,42 @@ namespace GSL
 
     void SemanticPMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
-        static int number_of_updates = 0;
+        static uint number_of_updates = 0;
+        static uint numberHits = 0;
 
-        Grid<HitProbability> grid(hitProbability, simulationOccupancy, gridMetadata);
         if (concentration > thresholdGas)
         {
-            // Gas & wind
-            PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+            numberHits++;
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
-        {
-            // Nothing
-            PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
-            GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
-        }
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING");
 
+        // If we have already taken enough measurements in this position, process them and get ready to move to the next location
+        // ------------------------------
         number_of_updates++;
-
         if (number_of_updates >= settings.hitProbability.maxUpdatesPerStop)
         {
-            PMFSLib::EstimateWind(
-                settings.simulation.useWindGroundTruth,
-                AsGrid(estimatedWindVectors, simulationOccupancy),
-                node,
-                pubs.pmfsPubs.gmrfWind
-                    IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
-            PMFSViz::PlotWindVectors(
-                AsGrid(estimatedWindVectors, simulationOccupancy),
-                settings.visualization,
-                pubs.pmfsPubs);
-
+            float hitFrequency = static_cast<float>(numberHits) / number_of_updates;
             number_of_updates = 0;
+            numberHits = 0;
+
+            // Update the gas presence map
+            //  ------------------------------
+            Grid2D<HitProbability> grid(hitProbability, simulationOccupancy, gridMetadata);
+            // Gas & wind
+            PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, hitFrequency, windDirection, windSpeed,
+                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+            GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
+
+            // Update the wind estimations
+            //  ------------------------------
+            PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
+                                  AsGrid(estimatedWindVectors, simulationOccupancy),
+                                  node,
+                                  pubs.pmfsPubs.gmrfWind
+                                      IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
+
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
 

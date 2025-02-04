@@ -26,9 +26,11 @@ namespace GSL
                     p.z = settings.markers_height;
 
                     // HIT
-                    std_msgs::msg::ColorRGBA col_hit =
-                        valueToColor(Utils::logOddsToProbability(grid.dataAt(a, b).logOdds), settings.hitLimits.x,
-                                     settings.hitLimits.y, settings.hitMode);
+                    std_msgs::msg::ColorRGBA col_hit = valueToColor(
+                        grid.dataAt(a, b).expectedValue(),
+                        settings.hitLimits.x,
+                        settings.hitLimits.y,
+                        settings.hitMode);
 
                     p.z = settings.markers_height - 0.1;
                     gasProbMarker.points.push_back(p);
@@ -36,7 +38,7 @@ namespace GSL
 
                     // CONFIDENCE
                     std_msgs::msg::ColorRGBA colorConfidence =
-                        valueToColor(grid.dataAt(a, b).confidence, 0, 1, Utils::valueColorMode::Linear);
+                        valueToColor(grid.dataAt(a, b).entropy(), 0, 1, Utils::valueColorMode::Linear);
 
                     p.z = settings.markers_height - 0.1;
                     confidenceMarker.points.push_back(p);
