@@ -9,5 +9,6 @@ namespace GSL::SemanticPMFS_internal
         PMFS_internal::SimulationSettings simulation;
         PMFS_internal::VisualizationSettings visualization;
         PMFS_internal::MovementSettings movement;
+        PMFS_internal::DeclarationSettings declaration;
     };
 }

@@ -37,6 +37,8 @@ namespace GSL
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
+        void saveResultsToFile(GSLResult result) override;
+
         void updateSourceFromSemantics();
 
         void createClassMap2D();

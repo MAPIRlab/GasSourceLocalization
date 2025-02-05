@@ -68,6 +68,7 @@ namespace GSL
 
         static void GetSimulationSettings(Algorithm& algorithm, PMFS_internal::SimulationSettings& settings);
         static void GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings);
+        static void GetDeclarationSettings(Algorithm& algorithm, PMFS_internal::DeclarationSettings& settings);
 
         static size_t PruneUnreachableCells(std::vector<Occupancy>& occupancy, Grid2DMetadata metadata, Vector2 startPosition);
 

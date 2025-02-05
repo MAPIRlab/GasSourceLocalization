@@ -8,6 +8,7 @@
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
+#include <fstream>
 
 namespace GSL
 {
@@ -88,44 +89,12 @@ namespace GSL
 #endif
     }
 
-    GSLResult SemanticPMFS::checkSourceFound()
-    {
-        if (stateMachine.getCurrentState() == waitForMapState.get())
-            return GSLResult::Running;
-
-        rclcpp::Duration time_spent = node->now() - startTime;
-        if (time_spent.seconds() > resultLogging.maxSearchTime)
-        {
-            saveResultsToFile(GSLResult::Failure);
-            return GSLResult::Failure;
-        }
-
-        if (resultLogging.navigationTime == -1)
-        {
-            if (sqrt(pow(currentRobotPose.pose.pose.position.x - resultLogging.sourcePositionGT.x, 2) +
-                     pow(currentRobotPose.pose.pose.position.y - resultLogging.sourcePositionGT.y, 2)) < 0.5)
-            {
-                resultLogging.navigationTime = time_spent.seconds();
-            }
-        }
-
-        double variance = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
-        GSL_INFO("Variance: {:.2f}", variance);
-
-        if (variance < 1.f) // TODO parameter
-        {
-            saveResultsToFile(GSLResult::Success);
-            return GSLResult::Success;
-        }
-
-        return GSLResult::Running;
-    }
-
     void SemanticPMFS::declareParameters()
     {
         Algorithm::declareParameters();
         PMFSLib::GetHitProbabilitySettings(*this, settings.hitProbability);
         PMFSLib::GetSimulationSettings(*this, settings.simulation);
+        PMFSLib::GetDeclarationSettings(*this, settings.declaration);
         settings.visualization.markers_height = getParam<double>("markers_height", 0);
         // number of cells in each direction that we add to the open move set in each step
         settings.movement.openMoveSetExpasion = getParam<int>("openMoveSetExpasion", 5);
@@ -297,6 +266,85 @@ namespace GSL
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             settings.visualization,
             pubs.pmfsPubs);
+    }
+
+
+
+    GSLResult SemanticPMFS::checkSourceFound()
+    {
+        if (stateMachine.getCurrentState() == waitForMapState.get())
+            return GSLResult::Running;
+
+        rclcpp::Duration time_spent = node->now() - startTime;
+        if (time_spent.seconds() > resultLogging.maxSearchTime)
+        {
+            saveResultsToFile(GSLResult::Failure);
+            return GSLResult::Failure;
+        }
+
+        if (resultLogging.navigationTime == -1)
+        {
+            if (sqrt(pow(currentRobotPose.pose.pose.position.x - resultLogging.sourcePositionGT.x, 2) +
+                     pow(currentRobotPose.pose.pose.position.y - resultLogging.sourcePositionGT.y, 2)) < 0.5)
+            {
+                resultLogging.navigationTime = time_spent.seconds();
+            }
+        }
+
+        double variance = Utils::Variance(Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata));
+        GSL_INFO("Variance: {:.2f}", variance);
+
+        if (variance < settings.declaration.threshold)
+        {
+            saveResultsToFile(GSLResult::Success);
+            return GSLResult::Success;
+        }
+
+        return GSLResult::Running;
+    }
+
+    void SemanticPMFS::saveResultsToFile(GSLResult result)
+    {
+        auto grid = AsGrid(combinedSourceProbability, simulationOccupancy);
+        // 1. Search time.
+        rclcpp::Duration time_spent = node->now() - startTime;
+        double search_t = time_spent.seconds();
+
+        Vector2 sourceLocationAll = Utils::ExpectedValue(grid, 1);
+        Vector2 sourceLocation = Utils::ExpectedValue(grid, 0.05);
+
+        double error = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocation.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocation.y, 2));
+        double errorAll = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocationAll.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocationAll.y, 2));
+
+        std::string resultString = fmt::format("RESULT IS: Success={}, Search_t={:.2f}, Error={:.2f}", (int)result, search_t, error);
+        GSL_INFO_COLOR(fmt::terminal_color::blue, "{}", resultString);
+
+        // Save to file
+        if (resultLogging.resultsFile != "")
+        {
+            std::ofstream file;
+            file.open(resultLogging.resultsFile, std::ios_base::app);
+            if (result != GSLResult::Success)
+                file << "FAILED ";
+
+            file << resultLogging.navigationTime << " " << search_t << " " << errorAll << " " << error << " " << iterationsCounter << " "
+                 <<  Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy)) << "\n";
+            file.close();
+        }
+        else
+            GSL_WARN("No file provided for logging result. Skipping it.");
+
+        if (resultLogging.navigationPathFile != "")
+        {
+            std::ofstream file;
+            file.open(resultLogging.navigationPathFile, std::ios_base::app);
+            file << "------------------------\n";
+            for (PoseWithCovarianceStamped p : resultLogging.robotPosesVector)
+                file << p.pose.pose.position.x << ", " << p.pose.pose.position.y << "\n";
+            file.close();
+        }
+        else
+            GSL_WARN("No file provided for logging path. Skipping it.");
     }
 
 } // namespace GSL
