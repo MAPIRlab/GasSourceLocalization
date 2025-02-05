@@ -43,3 +43,5 @@ start_pos_y: -3.5
 start_pos_z: -0.1
 
 targetGas: sewage
+VGRHouse: 2
+

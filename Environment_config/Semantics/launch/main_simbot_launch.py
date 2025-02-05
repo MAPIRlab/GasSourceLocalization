@@ -1,25 +1,35 @@
 import os
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument,SetLaunchConfiguration,IncludeLaunchDescription,SetEnvironmentVariable,OpaqueFunction,GroupAction,Shutdown
+from launch.actions import (DeclareLaunchArgument, SetLaunchConfiguration, IncludeLaunchDescription,
+                            SetEnvironmentVariable, OpaqueFunction, GroupAction, Shutdown, ExecuteProcess)
 from launch.launch_description_sources import FrontendLaunchDescriptionSource, PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, FindExecutable
 from launch_ros.actions import Node, PushRosNamespace
 from ament_index_python.packages import get_package_share_directory
 from launch.frontend.parse_substitution import parse_substitution
 from ros2launch.api import get_share_file_path_from_package
 
-#===========================
+# Internal gaden utilities
+import sys
+sys.path.append(get_package_share_directory('gaden_common'))
+from gaden_internal_py.utils import read_sim_yaml
+
+
+# ===========================
+
+
 def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="B"),
         DeclareLaunchArgument("simulation", default_value="B1"),
         DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
     ]
-#==========================
+# ==========================
+
 
 def launch_setup(context, *args, **kwargs):
-    method = LaunchConfiguration("method").perform(context)
+    read_sim_yaml(context)
     gsl_call = [
         GroupAction(actions=[
             PushRosNamespace(LaunchConfiguration("robot_name")),
@@ -35,9 +45,9 @@ def launch_setup(context, *args, **kwargs):
     ]
 
     scenario_folder = os.path.join(
-                        get_package_share_directory("semantic_gsl_env"), 
-                        "scenarios", 
-                        LaunchConfiguration("scenario").perform(context))
+        get_package_share_directory("semantic_gsl_env"),
+        "scenarios",
+        LaunchConfiguration("scenario").perform(context))
     gsl_node = [
         GroupAction(actions=[
             PushRosNamespace(LaunchConfiguration("robot_name")),
@@ -49,7 +59,7 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e gdb --args",
                 parameters=[
                     # Common
-                    {'use_sim_time': False},	
+                    {'use_sim_time': False},
                     {"maxSearchTime": 300.0},
                     {"robot_location_topic": "ground_truth"},
                     {"stop_and_measure_time": 0.4},
@@ -58,7 +68,7 @@ def launch_setup(context, *args, **kwargs):
                     {"ground_truth_x": parse_substitution("$(var source_x)")},
                     {"ground_truth_y": parse_substitution("$(var source_y)")},
                     {"resultsFile": parse_substitution("Results/$(var simulation)/$(var method).csv")},
-                    
+
                     {"scale": parse_substitution("$(var scale)")},
                     {"markers_height": parse_substitution("$(var markers_height)")},
 
@@ -66,26 +76,26 @@ def launch_setup(context, *args, **kwargs):
                     {"openMoveSetExpasion": 5},
                     {"explorationProbability": 0.05},
                     {"convergence_thr": 1.5},
-                    
-                    #GrGSL
+
+                    # GrGSL
                     {"useDiffusionTerm": True},
                     {"stdevHit": 1.0},
                     {"stdevMiss": 1.2},
                     {"infoTaxis": False},
 
-                    #PMFS
+                    # PMFS
                     {"headless": False},
                     {"distanceWeight": 0.2},
-                        # Hit probabilities
+                    # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 1.5},
                     {"kernelStretchConstant": 1.5},
                     {"hitPriorProbability": 0.3},
                     {"confidenceSigmaSpatial": 1.2},
                     {"confidenceMeasurementWeight": 0.7},
-                    {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
-                        #Filament simulation
-                    {"useWindGroundTruth": False},
+                    {"initialExplorationMoves": parse_substitution("$(var initialExplorationMoves)")},
+                    # Filament simulation
+                    {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
@@ -95,20 +105,20 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"minWarmupIterations": parse_substitution("$(var minWarmupIterations)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
-                    {"blurSigmaX": 1.0},
-                    {"blurSigmaY": 1.0},
+                    {"blurSigmaX": 1.5},
+                    {"blurSigmaY": 1.5},
 
-                    #Semantics
-                    {"semanticsType" : "ClassMapVoxeland"},
-                    {"wallsOccupancyFile": os.path.join(scenario_folder, "_occupancy_walls.pgm" )},
+                    # Semantics
+                    {"semanticsType": "ClassMapVoxeland"},
+                    {"wallsOccupancyFile": os.path.join(scenario_folder, "_occupancy_walls.pgm")},
                     {"detectionsTopic": "/semantic_instances_3D"},
                     {"ontologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ontology.yaml")},
-                    {"targetGas" : parse_substitution("$(var targetGas)")},
-                    {"masksYAMLPath" : os.path.join(scenario_folder, "room_categories", "roomMasks.yaml" )},
-                    {"roomOntologyPath" : os.path.join(get_package_share_directory("gsl_server"), "resources", "ObjectProbByRoom.yaml")},
-                    #ClassMap2D
+                    {"targetGas": parse_substitution("$(var targetGas)")},
+                    {"masksYAMLPath": os.path.join(scenario_folder, "room_categories", "roomMasks.yaml")},
+                    {"roomOntologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ObjectProbByRoom.yaml")},
+                    # ClassMap2D
                     {"zMin": -0.7},
-                    {"zMax": 1.0},                    
+                    {"zMax": 1.0},
                 ],
                 on_exit=Shutdown()
             ),
@@ -135,7 +145,7 @@ def launch_setup(context, *args, **kwargs):
                     "launch",
                     "gaden_player_launch.py",
                 )
-            ]  
+            ]
         ),
         launch_arguments={
             "use_rviz": "False",
@@ -144,17 +154,31 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
-    nav2 = IncludeLaunchDescription(
+    unity = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
+            [
                 os.path.join(
                     get_package_share_directory("semantic_gsl_env"),
-                    "navigation_config/nav2_launch.py",
+                    "launch",
+                    "unity_launch.py",
                 )
-            ),
-            launch_arguments={
-                "scenario": LaunchConfiguration("scenario"),
-                "namespace" : LaunchConfiguration("robot_name")
-            }.items(),
+            ]
+        ),
+        launch_arguments={
+        }.items(),
+    )
+
+    nav2 = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("semantic_gsl_env"),
+                "navigation_config/nav2_launch.py",
+            )
+        ),
+        launch_arguments={
+            "scenario": LaunchConfiguration("scenario"),
+            "namespace": LaunchConfiguration("robot_name")
+        }.items(),
     )
 
     anemometer = [
@@ -165,10 +189,10 @@ def launch_setup(context, *args, **kwargs):
                 executable="simulated_anemometer",
                 name="Anemometer",
                 parameters=[
-                    {"sensor_frame" : parse_substitution("$(var robot_name)_anemometer_frame") },
-                    {"fixed_frame" : "map"},
-                    {"noise_std" : 0.3},
-                    {"use_map_ref_system" : False},
+                    {"sensor_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
+                    {"fixed_frame": "map"},
+                    {"noise_std": 0.3},
+                    {"use_map_ref_system": False},
                     {'use_sim_time': True},
                 ]
             ),
@@ -176,7 +200,7 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='anemometer_tf_pub',
-                arguments = ['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
+                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
         ])
@@ -190,10 +214,10 @@ def launch_setup(context, *args, **kwargs):
                 executable="simulated_gas_sensor",
                 name="PID",
                 parameters=[
-                    {"sensor_model" : 30 },
-                    {"sensor_frame" : parse_substitution("$(var robot_name)_pid_frame") },
-                    {"fixed_frame" : "map"},
-                    {"noise_std" : 20.1},
+                    {"sensor_model": 30},
+                    {"sensor_frame": parse_substitution("$(var robot_name)_pid_frame")},
+                    {"fixed_frame": "map"},
+                    {"noise_std": 20.1},
                     {'use_sim_time': True},
                 ]
             ),
@@ -201,7 +225,7 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='pid_tf_pub',
-                arguments = ['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
+                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
         ])
@@ -211,7 +235,7 @@ def launch_setup(context, *args, **kwargs):
         package="rviz2",
         executable="rviz2",
         name="rviz",
-        #prefix="xterm -e",
+        # prefix="xterm -e",
         arguments=[
             "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "hit.rviz")
         ],
@@ -221,22 +245,12 @@ def launch_setup(context, *args, **kwargs):
         package="rviz2",
         executable="rviz2",
         name="rviz",
-        #prefix="xterm -e",
+        # prefix="xterm -e",
         arguments=[
             "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "source.rviz")
         ],
     )
 
-    send_pose = Node(
-        package="gsl_server",
-        executable="send_pose",
-        parameters=[
-            {"x":parse_substitution("$(var start_pos_x)")},
-            {"y":parse_substitution("$(var start_pos_y)")},
-            {"z":parse_substitution("$(var start_pos_z)")},
-            {"topic":"/giraff/resetPose"}
-        ]
-    )
 
     semantics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="semantics_launch.py"))
@@ -252,7 +266,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_call)
     actions.append(rvizHit)
     actions.append(rvizSource)
-    actions.append(send_pose)
+    actions.append(unity)
     actions.append(semantics)
 
     return actions
@@ -276,7 +290,7 @@ def generate_launch_description():
         ),
 
         SetLaunchConfiguration(
-            name="robot_name", 
+            name="robot_name",
             value="giraff"
         ),
 
@@ -284,59 +298,63 @@ def generate_launch_description():
         # GSL params (overwritable in each YAML)
         ##############################################
         SetLaunchConfiguration(
-            name="th_gas_present", 
+            name="th_gas_present",
             value="0.1"
         ),
         SetLaunchConfiguration(
-            name="th_wind_present", 
+            name="th_wind_present",
             value="0.02"
         ),
 
         SetLaunchConfiguration(
-            name="filament_movement_stdev", 
+            name="filament_movement_stdev",
             value="0.15"
         ),
         SetLaunchConfiguration(
-            name="sourceDiscriminationPower", 
-            value="0.1"
+            name="sourceDiscriminationPower",
+            value="0.15"
         ),
         SetLaunchConfiguration(
-            name="iterationsToRecord", 
+            name="iterationsToRecord",
             value="100"
         ),
         SetLaunchConfiguration(
-            name="minWarmupIterations", 
-            value="200"
+            name="minWarmupIterations",
+            value="500"
         ),
         SetLaunchConfiguration(
-            name="maxWarmupIterations", 
+            name="maxWarmupIterations",
             value="800"
         ),
         SetLaunchConfiguration(
-            name="initialExplorationMoves", 
+            name="initialExplorationMoves",
             value="3"
         ),
         SetLaunchConfiguration(
-            name="filamentDeltaTime", 
+            name="filamentDeltaTime",
             value="0.1"
         ),
 
         SetLaunchConfiguration(
-            name="targetGas", 
+            name="targetGas",
             value="smoke"
         ),
-        
+
         SetLaunchConfiguration(
-            name="scale", 
+            name="scale",
             value="25"
         ),
         SetLaunchConfiguration(
-            name="markers_height", 
+            name="markers_height",
             value="0.1"
         ),
+        SetLaunchConfiguration(
+            name="VGRHouse",
+            value="1"
+        ),
     ]
-    
+
     launch_description.extend(launch_arguments())
     launch_description.append(OpaqueFunction(function=launch_setup))
-    
-    return  LaunchDescription(launch_description)
+
+    return LaunchDescription(launch_description)
