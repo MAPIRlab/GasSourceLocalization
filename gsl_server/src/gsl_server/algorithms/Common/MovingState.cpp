@@ -8,7 +8,7 @@
 
 namespace GSL
 {
-    static constexpr int8_t lethal_cost = 70;
+    static constexpr int8_t lethal_cost = 60;
 #if NAVIGATION_FIXES
     static constexpr int max_navigation_time = 20;
 #endif
