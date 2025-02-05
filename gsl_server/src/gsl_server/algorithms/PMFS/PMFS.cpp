@@ -46,6 +46,7 @@ namespace GSL
         Algorithm::declareParameters();
         PMFSLib::GetHitProbabilitySettings(*this, settings.hitProbability);
         PMFSLib::GetSimulationSettings(*this, settings.simulation);
+        PMFSLib::GetDeclarationSettings(*this, settings.declaration);
 
         // number of cells in each direction that we add to the open move set in each step
         settings.movement.openMoveSetExpasion = getParam<int>("openMoveSetExpasion", 5);
@@ -56,7 +57,6 @@ namespace GSL
         settings.visualization.markers_height = getParam<double>("markers_height", 0);
         IF_GUI(settings.visualization.headless = getParam<bool>("headless", false));
 
-        settings.declaration.threshold = getParam<double>("convergence_thr", 0.5); // threshold for source declaration
     }
 
     void PMFS::onGetMap(OccupancyGrid::SharedPtr msg)

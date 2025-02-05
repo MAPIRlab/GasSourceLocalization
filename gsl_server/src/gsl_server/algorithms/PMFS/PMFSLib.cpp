@@ -415,6 +415,11 @@ namespace GSL
         settings.localEstimationWindowSize = algorithm.getParam<int>("localEstimationWindowSize", 2);
     }
 
+    void PMFSLib::GetDeclarationSettings(Algorithm& algorithm, PMFS_internal::DeclarationSettings& settings)
+    {
+        settings.threshold = algorithm.getParam<double>("convergence_thr", 0.5); // threshold for source declaration
+    }
+
     void PMFSLib::InitializePublishers(PMFS_internal::PublishersAndSubscribers& pubs, rclcpp::Node::SharedPtr node)
     {
         pubs.markers.sourceProbabilityMarkers = node->create_publisher<Marker>("probabilityMarkers", 1);
