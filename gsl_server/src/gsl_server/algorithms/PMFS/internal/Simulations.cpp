@@ -303,7 +303,7 @@ namespace GSL::PMFS_internal
             int iterationCount = 0;
             while (iterationCount < settings.minWarmupIterations || (!stable && iterationCount < settings.maxWarmupIterations))
             {
-                for (int i = 0; i < numFilamentsIteration; i++)
+                for (size_t i = 0; i < numFilamentsIteration; i++)
                 {
                     activeFilamentVec->emplace_back();
                     activeFilamentVec->back().position = source.getPoint();

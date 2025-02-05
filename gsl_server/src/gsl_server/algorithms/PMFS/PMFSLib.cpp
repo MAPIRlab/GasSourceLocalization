@@ -399,6 +399,7 @@ namespace GSL
         settings.noiseSTDev = algorithm.getParam<double>("noiseSTDev", 0.5);
         settings.iterationsToRecord = algorithm.getParam<int>("iterationsToRecord", 200);
         settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
+        settings.minWarmupIterations = algorithm.getParam<int>("minWarmupIterations", 200);
 
         settings.blurSigmaX = algorithm.getParam<double>("blurSigmaX", 0);
         settings.blurSigmaY = algorithm.getParam<double>("blurSigmaY", 0);
