@@ -57,7 +57,7 @@ namespace GSL
 
         functionQueue.run();
 
-#define DEBUG_VISUALIZATION 0
+#define DEBUG_VISUALIZATION 1
 #if DEBUG_VISUALIZATION
         {
             std::vector<ColorRGBA> colors(sourceProbabilityPMFS.size());

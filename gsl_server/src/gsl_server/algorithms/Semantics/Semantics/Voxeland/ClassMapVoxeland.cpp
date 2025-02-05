@@ -109,6 +109,7 @@ namespace GSL
 
     void ClassMapVoxeland::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
     {
+#define ADD_VERTICAL_PROBS 0
 #pragma omp parallel for collapse(2)
         for (size_t i = 0; i < sourceProb.size(); i++)
         {
@@ -116,7 +117,11 @@ namespace GSL
             {
                 size_t index = i + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
                 if (wallsOccupancy[index] == Occupancy::Free)
+#if ADD_VERTICAL_PROBS
                     sourceProb[i] += classMap.ComputeSourceProbability(index);
+#else
+                    sourceProb[i] = std::max(sourceProb[i], classMap.ComputeSourceProbability(index));
+#endif
             }
         }
 
