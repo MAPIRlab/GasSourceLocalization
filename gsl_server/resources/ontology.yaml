@@ -9,7 +9,7 @@ Gases:
 
   - gas: sewage
     probs:
-      toilet: 0.5
-      sink: 0.5
+      toilet: 0.7
+      sink: 0.7
       potted plant: 0.05
       other: 0.001
