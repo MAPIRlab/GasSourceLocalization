@@ -1,4 +1,4 @@
-image: _occupancy.pgm
+image: _occupancy_navigation.pgm
 resolution: 0.01
 origin: [-7.55, -7.88, 0]
 occupied_thresh: 0.9

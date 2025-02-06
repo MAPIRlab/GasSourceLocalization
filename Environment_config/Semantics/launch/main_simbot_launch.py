@@ -13,7 +13,7 @@ from ros2launch.api import get_share_file_path_from_package
 # Internal gaden utilities
 import sys
 sys.path.append(get_package_share_directory('gaden_common'))
-from gaden_internal_py.utils import read_sim_yaml
+from gaden_internal_py.utils import read_sim_yaml # type: ignore
 
 
 # ===========================
@@ -75,7 +75,7 @@ def launch_setup(context, *args, **kwargs):
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
                     {"openMoveSetExpasion": 5},
                     {"explorationProbability": 0.05},
-                    {"convergence_thr": 1.5},
+                    {"convergence_thr": 2.0},
 
                     # GrGSL
                     {"useDiffusionTerm": True},
@@ -85,7 +85,7 @@ def launch_setup(context, *args, **kwargs):
 
                     # PMFS
                     {"headless": False},
-                    {"distanceWeight": 0.2},
+                    {"distanceWeight": 0.25},
                     # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 1.5},
@@ -95,7 +95,7 @@ def launch_setup(context, *args, **kwargs):
                     {"confidenceMeasurementWeight": 0.7},
                     {"initialExplorationMoves": parse_substitution("$(var initialExplorationMoves)")},
                     # Filament simulation
-                    {"useWindGroundTruth": True},
+                    {"useWindGroundTruth": False},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
@@ -105,10 +105,11 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"minWarmupIterations": parse_substitution("$(var minWarmupIterations)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
-                    {"blurSigmaX": 1.5},
-                    {"blurSigmaY": 1.5},
+                    {"blurSigmaX": 1.0},
+                    {"blurSigmaY": 1.0},
 
                     # Semantics
+                    {"progressionFileName": parse_substitution("progression_$(var simulation).csv")},
                     {"semanticsType": "ClassMapVoxeland"},
                     {"wallsOccupancyFile": os.path.join(scenario_folder, "_occupancy_walls.pgm")},
                     {"detectionsTopic": "/semantic_instances_3D"},
@@ -116,7 +117,7 @@ def launch_setup(context, *args, **kwargs):
                     {"targetGas": parse_substitution("$(var targetGas)")},
                     {"masksYAMLPath": os.path.join(scenario_folder, "room_categories", "roomMasks.yaml")},
                     {"roomOntologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ObjectProbByRoom.yaml")},
-                    # ClassMap2D
+                    # ClassMap2D 
                     {"zMin": -0.7},
                     {"zMax": 1.0},
                 ],
@@ -129,11 +130,13 @@ def launch_setup(context, *args, **kwargs):
         package="gmrf_wind_mapping",
         executable="gmrf_wind_mapping_node",
         name="gmrf",
+        prefix="xterm -hold -T GMRF -e",
         parameters=[
             {"sensor_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
             {"map_topic": parse_substitution("$(var robot_name)/map")},
             {"cell_size": 0.25},
             {"exec_freq": 5.0},
+            {"map_file" : os.path.join(scenario_folder, "_occupancy_gmrf.pgm")}
         ]
     )
 
@@ -168,17 +171,16 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
-    nav2 = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(
-                get_package_share_directory("semantic_gsl_env"),
-                "navigation_config/nav2_launch.py",
-            )
-        ),
-        launch_arguments={
-            "scenario": LaunchConfiguration("scenario"),
-            "namespace": LaunchConfiguration("robot_name")
-        }.items(),
+    nav2 = ExecuteProcess(
+        cmd=[[
+            FindExecutable(name='ros2'),
+            ' launch',
+            ' semantic_gsl_env',
+            ' nav2_launch.py',
+            ' scenario:='+LaunchConfiguration("scenario").perform(context),
+            ' namespace:=giraff',
+        ]],
+        prefix="xterm -hold -T nav2 -e",
     )
 
     anemometer = [
@@ -264,8 +266,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(gmrf_wind)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.append(rvizHit)
-    actions.append(rvizSource)
+    # actions.append(rvizHit)
+    # actions.append(rvizSource)
     actions.append(unity)
     actions.append(semantics)
 
@@ -312,7 +314,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="sourceDiscriminationPower",
-            value="0.15"
+            value="0.1"
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord",
@@ -320,11 +322,11 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="minWarmupIterations",
-            value="500"
+            value="700"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations",
-            value="800"
+            value="1000"
         ),
         SetLaunchConfiguration(
             name="initialExplorationMoves",
@@ -332,7 +334,7 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="filamentDeltaTime",
-            value="0.1"
+            value="0.2"
         ),
 
         SetLaunchConfiguration(

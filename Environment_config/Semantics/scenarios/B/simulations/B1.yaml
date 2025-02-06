@@ -34,7 +34,7 @@ start_pos_y: 2.0
 start_pos_z: -0.33
 
 # simulation playback params
-filament_movement_stdev: 0.4
+filament_movement_stdev: 0.35
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
