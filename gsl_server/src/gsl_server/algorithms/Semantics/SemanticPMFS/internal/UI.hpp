@@ -6,6 +6,7 @@
 
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <rclcpp/subscription.hpp>
+#include <rclcpp/node.hpp>
 
 #include <string>
 #include <thread>
@@ -43,6 +44,7 @@ namespace GSL::SemanticPMFS_internal
         double last_concentration_reading = 0;
         Vector3 selectedCoordinates;
         Vector2 goalCoordinates;
+        rclcpp::Node::SharedPtr uiNode;
     };
 } // namespace GSL::PMFS_internal
 

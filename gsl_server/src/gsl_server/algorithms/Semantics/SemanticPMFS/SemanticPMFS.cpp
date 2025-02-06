@@ -12,7 +12,7 @@
 
 namespace GSL
 {
-
+    static std::ofstream progressionFile;
     SemanticPMFS::SemanticPMFS(std::shared_ptr<rclcpp::Node> _node)
         : Algorithm(_node),
           simulations(Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
@@ -41,6 +41,12 @@ namespace GSL
         if (!settings.visualization.headless)
             ui.run();
 #endif
+        std::string progresionFileName = getParam<std::string>("progressionFileName", "progression.csv");
+        progressionFile.open(progresionFileName, std::ios_base::app);
+        progressionFile << "New run\n";
+        progressionFile << "===============================\n";
+        progressionFile << "errorOlfOnly; varianceOlfOnly; errorBoth; varianceBoth\n";
+        progressionFile << "-------------------------------\n";
     }
 
     void SemanticPMFS::OnUpdate()
@@ -68,7 +74,6 @@ namespace GSL
                                                 settings.visualization.sourceMode);
             Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, simulationOccupancy, gridMetadata), "sourceOlfactionOnly");
 
-            std::ofstream outf("progression.csv", std::ios_base::app);
             Vector2 expecOlfOnly = Utils::ExpectedValue(AsGrid(sourceProbabilityPMFS, simulationOccupancy), 1);
             double varianceOlfOnly = Utils::Variance(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
             double errorOlfOnly = vmath::length(expecOlfOnly - resultLogging.sourcePositionGT);
@@ -76,8 +81,7 @@ namespace GSL
             Vector2 expecBoth = Utils::ExpectedValue(AsGrid(combinedSourceProbability, simulationOccupancy), 1);
             double varianceBoth = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
             double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
-            outf << fmt::format("{};{};  {};{};\n", errorOlfOnly, varianceOlfOnly, errorBoth, varianceBoth);
-            outf.close();
+            progressionFile << fmt::format("{};{};  {};{};\n", errorOlfOnly, varianceOlfOnly, errorBoth, varianceBoth);
 
             Utils::publishDebugSingleMarker(vmath::WithZ(expecOlfOnly, 0.0),
                                             Utils::create_color(1, 0, 0, 1),
@@ -143,7 +147,13 @@ namespace GSL
 
         // initialize the navigation occupancy
         //----------------------------------
+        
+        // create the navigation map from the OccupancyGrid published by map_server
         GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
+        
+        // read a version of the map that is specifically for navigation, rather than using whatever the map server published (which may be modified for GMRF)
+        // navigationOccupancy = Utils::parseMapImage(getParam<std::string>("navigationOccupancyFile", "?"), gridMetadata); 
+        
         PMFSLib::PruneUnreachableCells(
             navigationOccupancy,
             gridMetadata,
@@ -305,6 +315,8 @@ namespace GSL
 
     void SemanticPMFS::saveResultsToFile(GSLResult result)
     {
+        progressionFile.close();
+
         auto grid = AsGrid(combinedSourceProbability, simulationOccupancy);
         // 1. Search time.
         rclcpp::Duration time_spent = node->now() - startTime;

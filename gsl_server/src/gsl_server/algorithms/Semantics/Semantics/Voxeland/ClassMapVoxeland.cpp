@@ -96,8 +96,21 @@ namespace GSL
         {
             return "ERROR!";
         }
+        size_t indexCell = gridMetadata.indexOf(gridMetadata.coordinatesToIndices(point));
+        std::string classMapInfo =  classMap.GetDebugInfo(indexCell);
 
-        return classMap.GetDebugInfo(gridMetadata.indexOf(gridMetadata.coordinatesToIndices(point)));
+        Vector3 floorPoint = point;
+        floorPoint.z = gridMetadata.origin.z;
+
+        size_t indexFloor = gridMetadata.indexOf(gridMetadata.coordinatesToIndices(floorPoint));
+        double max = 0;
+        for (size_t z = 0; z < gridMetadata.dimensions.z; z++)
+        {
+            size_t index = indexFloor + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
+            max = std::max(max, classMap.ComputeSourceProbability(index));
+        }
+
+        return fmt::format("{}\nBest cell: {:.3f}", classMapInfo, max);
     }
 
     std::vector<double> ClassMapVoxeland::GetSourceProbability()

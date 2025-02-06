@@ -22,7 +22,8 @@ namespace GSL::SemanticPMFS_internal
     UI::UI(SemanticPMFS* _pmfs)
         : pmfs(_pmfs)
     {
-        clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>(
+        uiNode = std::make_shared<rclcpp::Node>("UI");
+        clickedPointSub = uiNode->create_subscription<geometry_msgs::msg::PointStamped>(
             "/clicked_point", 1,
             [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
             {
@@ -55,6 +56,7 @@ namespace GSL::SemanticPMFS_internal
 
         while (rclcpp::ok() && !pmfs->HasEnded())
         {
+            rclcpp::spin_some(uiNode);
             AmentImgui::StartFrame();
             createUI();
             createPlots();
@@ -286,10 +288,10 @@ namespace GSL::SemanticPMFS_internal
 
     void UI::visualizeQueryPoint()
     {
-        static rclcpp::Publisher<Marker>::SharedPtr pub = pmfs->node->create_publisher<Marker>("UIQueryPoint", 1);
+        static rclcpp::Publisher<Marker>::SharedPtr pub = uiNode->create_publisher<Marker>("UIQueryPoint", 1);
         Marker marker;
         marker.header.frame_id = "map";
-        marker.header.stamp = pmfs->node->now();
+        marker.header.stamp = uiNode->now();
         marker.pose.position.x = selectedCoordinates.x;
         marker.pose.position.y = selectedCoordinates.y;
         marker.pose.position.z = selectedCoordinates.z;
