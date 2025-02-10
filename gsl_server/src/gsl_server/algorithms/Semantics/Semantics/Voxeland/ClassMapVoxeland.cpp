@@ -97,7 +97,7 @@ namespace GSL
             return "ERROR!";
         }
         size_t indexCell = gridMetadata.indexOf(gridMetadata.coordinatesToIndices(point));
-        std::string classMapInfo =  classMap.GetDebugInfo(indexCell);
+        std::string classMapInfo = classMap.GetDebugInfo(indexCell);
 
         Vector3 floorPoint = point;
         floorPoint.z = gridMetadata.origin.z;
@@ -123,22 +123,25 @@ namespace GSL
     void ClassMapVoxeland::GetSourceProbabilityInPlace(std::vector<double>& sourceProb)
     {
 #define ADD_VERTICAL_PROBS 0
-#pragma omp parallel for collapse(2)
-        for (size_t i = 0; i < sourceProb.size(); i++)
+#pragma omp parallel for
+        for (size_t floorIndex = 0; floorIndex < sourceProb.size(); floorIndex++)
         {
             for (size_t z = 0; z < gridMetadata.dimensions.z; z++)
             {
-                size_t index = i + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
-                if (wallsOccupancy[index] == Occupancy::Free)
+                size_t voxelIndex = floorIndex + z * gridMetadata.dimensions.x * gridMetadata.dimensions.y;
+                if (wallsOccupancy.at(floorIndex) == Occupancy::Free)
+                {
 #if ADD_VERTICAL_PROBS
-                    sourceProb[i] += classMap.ComputeSourceProbability(index);
+                    sourceProb[i] += classMap.ComputeSourceProbability(voxelIndex);
 #else
-                    sourceProb[i] = std::max(sourceProb[i], classMap.ComputeSourceProbability(index));
+                    double prob = classMap.ComputeSourceProbability(voxelIndex);
+                    sourceProb.at(floorIndex) = std::max(sourceProb[floorIndex], prob);
 #endif
+                }
             }
         }
 
-        Utils::NormalizeDistribution(sourceProb, wallsOccupancy);
+        // Utils::NormalizeDistribution(sourceProb, wallsOccupancy);
     }
 
     double ClassMapVoxeland::GetSourceProbabilityAt(const Vector3& point)

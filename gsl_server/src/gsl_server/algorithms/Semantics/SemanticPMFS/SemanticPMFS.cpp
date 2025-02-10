@@ -3,13 +3,14 @@
 #include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
+#include <fstream>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
-#include <fstream>
 
+#define DEBUG_VISUALIZATION 1
 namespace GSL
 {
     static std::ofstream progressionFile;
@@ -44,9 +45,10 @@ namespace GSL
         std::string progresionFileName = getParam<std::string>("progressionFileName", "progression.csv");
         progressionFile.open(progresionFileName, std::ios_base::app);
         progressionFile << "New run\n";
-        progressionFile << "===============================\n";
+        progressionFile << "...............................\n";
         progressionFile << "errorOlfOnly; varianceOlfOnly; errorBoth; varianceBoth\n";
         progressionFile << "-------------------------------\n";
+        progressionFile.flush();
     }
 
     void SemanticPMFS::OnUpdate()
@@ -62,35 +64,6 @@ namespace GSL
         }
 
         functionQueue.run();
-
-#define DEBUG_VISUALIZATION 1
-#if DEBUG_VISUALIZATION
-        {
-            std::vector<ColorRGBA> colors(sourceProbabilityPMFS.size());
-            for (int i = 0; i < sourceProbabilityPMFS.size(); i++)
-                colors[i] = Utils::valueToColor(sourceProbabilityPMFS[i],
-                                                settings.visualization.sourceLimits.x,
-                                                settings.visualization.sourceLimits.y,
-                                                settings.visualization.sourceMode);
-            Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, simulationOccupancy, gridMetadata), "sourceOlfactionOnly");
-
-            Vector2 expecOlfOnly = Utils::ExpectedValue(AsGrid(sourceProbabilityPMFS, simulationOccupancy), 1);
-            double varianceOlfOnly = Utils::Variance(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
-            double errorOlfOnly = vmath::length(expecOlfOnly - resultLogging.sourcePositionGT);
-
-            Vector2 expecBoth = Utils::ExpectedValue(AsGrid(combinedSourceProbability, simulationOccupancy), 1);
-            double varianceBoth = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
-            double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
-            progressionFile << fmt::format("{};{};  {};{};\n", errorOlfOnly, varianceOlfOnly, errorBoth, varianceBoth);
-
-            Utils::publishDebugSingleMarker(vmath::WithZ(expecOlfOnly, 0.0),
-                                            Utils::create_color(1, 0, 0, 1),
-                                            "EXPECTED_OLFACTION");
-            Utils::publishDebugSingleMarker(vmath::WithZ(expecBoth, 0.0),
-                                            Utils::create_color(1, 0, 1, 1),
-                                            "EXPECTED_BOTH");
-        }
-#endif
     }
 
     void SemanticPMFS::declareParameters()
@@ -147,13 +120,13 @@ namespace GSL
 
         // initialize the navigation occupancy
         //----------------------------------
-        
+
         // create the navigation map from the OccupancyGrid published by map_server
         GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
-        
+
         // read a version of the map that is specifically for navigation, rather than using whatever the map server published (which may be modified for GMRF)
-        // navigationOccupancy = Utils::parseMapImage(getParam<std::string>("navigationOccupancyFile", "?"), gridMetadata); 
-        
+        // navigationOccupancy = Utils::parseMapImage(getParam<std::string>("navigationOccupancyFile", "?"), gridMetadata);
+
         PMFSLib::PruneUnreachableCells(
             navigationOccupancy,
             gridMetadata,
@@ -176,6 +149,9 @@ namespace GSL
                                      pubs.pmfsPubs.gmrfWind
                                          IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
                                  stateMachine.forceSetState(stopAndMeasureState.get());
+#if DEBUG_VISUALIZATION
+                                 logProgressionAndVisualize();
+#endif
                              });
 
         // SEMANTICS
@@ -201,7 +177,11 @@ namespace GSL
             return;
         cd.Restart(0.5);
 
+        for (size_t i = 0; i < sourceProbSemantics.size(); i++)
+            sourceProbSemantics[i] = 0;
+
         semantics->GetSourceProbabilityInPlace(sourceProbSemantics);
+
 #pragma omp parallel for
         for (size_t i = 0; i < sourceProbSemantics.size(); i++)
         {
@@ -213,6 +193,35 @@ namespace GSL
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             settings.visualization,
             pubs.pmfsPubs);
+    }
+
+    void SemanticPMFS::logProgressionAndVisualize()
+    {
+        GSL_INFO("Logging progression to file '{}'", getParam<std::string>("progressionFileName", "progression.csv"));
+        std::vector<ColorRGBA> colors(sourceProbabilityPMFS.size());
+        for (int i = 0; i < sourceProbabilityPMFS.size(); i++)
+            colors[i] = Utils::valueToColor(sourceProbabilityPMFS[i],
+                                            settings.visualization.sourceLimits.x,
+                                            settings.visualization.sourceLimits.y,
+                                            settings.visualization.sourceMode);
+        Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, simulationOccupancy, gridMetadata), "sourceOlfactionOnly");
+
+        Vector2 expecOlfOnly = Utils::ExpectedValue(AsGrid(sourceProbabilityPMFS, simulationOccupancy), 1);
+        double varianceOlfOnly = Utils::Variance(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
+        double errorOlfOnly = vmath::length(expecOlfOnly - resultLogging.sourcePositionGT);
+
+        Vector2 expecBoth = Utils::ExpectedValue(AsGrid(combinedSourceProbability, simulationOccupancy), 1);
+        double varianceBoth = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
+        double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
+        progressionFile << fmt::format("{};{};  {};{};\n", errorOlfOnly, varianceOlfOnly, errorBoth, varianceBoth);
+        progressionFile.flush();
+
+        Utils::publishDebugSingleMarker(vmath::WithZ(expecOlfOnly, 0.0),
+                                        Utils::create_color(1, 0, 0, 1),
+                                        "EXPECTED_OLFACTION");
+        Utils::publishDebugSingleMarker(vmath::WithZ(expecBoth, 0.0),
+                                        Utils::create_color(1, 0, 1, 1),
+                                        "EXPECTED_BOTH");
     }
 
     void SemanticPMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -255,15 +264,21 @@ namespace GSL
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
 
             if (timeToSimulate)
+            {
                 simulations.updateSourceProbability(settings.simulation.refineFraction);
+#if DEBUG_VISUALIZATION
+                logProgressionAndVisualize();
+#endif
+            }
 
-            auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
-            if (iterationsCounter > settings.movement.initialExplorationMoves)
-                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
-            else
-                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
-            movingStatePMFS->chooseGoalAndMove();
-            movingStatePMFS->publishMarkers();
+            stateMachine.forceResetState(stopAndMeasureState.get());
+            // auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
+            // if (iterationsCounter > settings.movement.initialExplorationMoves)
+            //     movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
+            // else
+            //     movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
+            // movingStatePMFS->chooseGoalAndMove();
+            // movingStatePMFS->publishMarkers();
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
@@ -277,8 +292,6 @@ namespace GSL
             settings.visualization,
             pubs.pmfsPubs);
     }
-
-
 
     GSLResult SemanticPMFS::checkSourceFound()
     {
@@ -340,7 +353,7 @@ namespace GSL
                 file << "FAILED ";
 
             file << resultLogging.navigationTime << " " << search_t << " " << errorAll << " " << error << " " << iterationsCounter << " "
-                 <<  Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy)) << "\n";
+                 << Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy)) << "\n";
             file.close();
         }
         else

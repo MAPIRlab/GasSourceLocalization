@@ -43,6 +43,7 @@ namespace GSL
 
         void createClassMap2D();
         void createClassMapVoxeland();
+        void logProgressionAndVisualize();
 
         template <typename T>
         Grid2D<T> AsGrid(std::vector<T>& vec, std::vector<Occupancy>& occupancy)

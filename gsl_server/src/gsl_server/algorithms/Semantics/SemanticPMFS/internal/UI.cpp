@@ -153,6 +153,7 @@ namespace GSL::SemanticPMFS_internal
                 pmfs->functionQueue.submit([this]()
                                            {
                                                pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
+                                               pmfs->logProgressionAndVisualize();
                                                PMFSViz::ShowSourceProb(
                                                    Grid2D<double>(pmfs->combinedSourceProbability, pmfs->simulationOccupancy, pmfs->gridMetadata),
                                                    pmfs->settings.visualization,
@@ -274,9 +275,9 @@ namespace GSL::SemanticPMFS_internal
         else if (variable == Variable::SourceProb)
         {
             queryResult = fmt::format("Cell {0},{1}: \n", indices.x, indices.y) +
-                          fmt::format("Total probability: {}\n", pmfs->combinedSourceProbability[index]) +
-                          fmt::format("Olfaction probability: {}\n", pmfs->sourceProbabilityPMFS[index]) +
-                          fmt::format("Semantics probability: {}", pmfs->sourceProbSemantics[index]);
+                          fmt::format("Total probability: {:.4f}\n", pmfs->combinedSourceProbability[index]) +
+                          fmt::format("Olfaction probability: {:.4f}\n", pmfs->sourceProbabilityPMFS[index]) +
+                          fmt::format("Semantics probability: {:.4f}", pmfs->sourceProbSemantics[index]);
         }
         else if (variable == Variable::Semantics)
         {

@@ -9,6 +9,7 @@
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
+    GSL_INFO("Starting GSL server");
 
     // arbitrary wait to let the simulation start. Not strictly required, but avoids some annoying problems
     rclcpp::sleep_for(std::chrono::seconds(5));
@@ -39,6 +40,7 @@ int main(int argc, char** argv)
 #endif
 
             rclcpp::sleep_for(std::chrono::seconds(1));
+            GSL_INFO_COLOR(fmt::terminal_color::blue, "DONE, CLOSING");
             rclcpp::shutdown();
         }
     }
