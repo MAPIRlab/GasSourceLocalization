@@ -30,7 +30,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Select the segmentation network you want to use here! From here: https://github.com/MAPIRlab/instance_segmentation
     ######################################################
-    segmentation_net = SegmentationNN.DETECTRON 
+    segmentation_net = SegmentationNN.YOLO 
 
 
     voxeland_server = IncludeLaunchDescription(
@@ -90,6 +90,7 @@ def launch_setup(context, *args, **kwargs):
 
     yolo = Node(
             package="yolo_ros",
+            name="yolo",
             executable="yolo_ros.py",
             prefix = "xterm -hold -e",
             parameters=[

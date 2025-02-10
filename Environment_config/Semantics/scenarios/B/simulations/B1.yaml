@@ -1,5 +1,5 @@
 source_x: -1.5
-source_y: 3.05
+source_y: 2.9
 source_z: 0.3
 
 wind_sim_path: "1,3-4,5_fast/1,3-4,5_fast" # _i.csv automatically appended
@@ -31,7 +31,7 @@ outlets_models:
 
 start_pos_x: -6.0
 start_pos_y: 2.0
-start_pos_z: -0.33
+start_pos_z: -0.2
 
 # simulation playback params
 filament_movement_stdev: 0.35

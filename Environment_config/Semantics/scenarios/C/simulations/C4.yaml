@@ -32,3 +32,4 @@ allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
 VGRHouse: 2
+markers_height: -0.6

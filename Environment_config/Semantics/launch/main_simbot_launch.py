@@ -57,6 +57,7 @@ def launch_setup(context, *args, **kwargs):
                 name="GSL",
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e gdb --args",
+                prefix="xterm -hold -e",
                 parameters=[
                     # Common
                     {'use_sim_time': False},
@@ -258,6 +259,18 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="semantics_launch.py"))
     )
 
+
+    keyboard_control = Node(
+        package="keyboard_control",
+        executable="keyboard_control_plus",
+        prefix="xterm -e",
+        parameters=[
+                {"linear_v_inc": 0.1},
+                {"angular_v_inc": 0.1},
+                {"publish_topic": "/giraff/cmd_vel"}
+        ],
+    )
+
     actions = []
     actions.append(gaden_player)
     actions.extend(anemometer)
@@ -266,10 +279,11 @@ def launch_setup(context, *args, **kwargs):
     actions.append(gmrf_wind)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    # actions.append(rvizHit)
-    # actions.append(rvizSource)
+    actions.append(rvizHit)
+    actions.append(rvizSource)
     actions.append(unity)
     actions.append(semantics)
+    actions.append(keyboard_control)
 
     return actions
 

@@ -151,11 +151,12 @@ $(var namespace):
         plugin: "nav2_rotation_shim_controller::RotationShimController"
         primary_controller: "dwb_core::DWBLocalPlanner"
       # RotationShim params
-        angular_dist_threshold: 0.7
+        angular_dist_threshold: 0.1
         forward_sampling_distance: 0.5
         rotate_to_heading_angular_vel: 1.5
         max_angular_accel: 3.2
         simulate_ahead_time: 1.0
+        closed_loop: true
       #DWB
         min_vel_x: 0.0
         min_vel_y: 0.0

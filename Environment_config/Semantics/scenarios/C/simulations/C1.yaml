@@ -31,6 +31,7 @@ outlets_models:
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
+markers_height: -0.6
 
 #GSL params
 filament_movement_stdev: 0.25
@@ -40,7 +41,7 @@ initialExplorationMoves: 5
 
 start_pos_x: -3.4 
 start_pos_y: -3.5 
-start_pos_z: -0.1
+start_pos_z: -0.6
 
 targetGas: sewage
 VGRHouse: 2

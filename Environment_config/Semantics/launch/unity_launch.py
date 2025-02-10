@@ -43,6 +43,7 @@ def launch_setup(context, *args, **kwargs):
     # send command to unity so that the correct house model is loaded
     loadEnvironment = ExecuteProcess(
         cmd=[[
+            " sleep 3;",
             FindExecutable(name='ros2'),
             ' topic pub ',
             ' /load_environment',
@@ -53,16 +54,31 @@ def launch_setup(context, *args, **kwargs):
         shell=True
     )
 
-    send_pose = Node(
-        package="gsl_server",
-        executable="send_pose",
-        parameters=[
-            {"x": parse_substitution("$(var start_pos_x)")},
-            {"y": parse_substitution("$(var start_pos_y)")},
-            {"z": parse_substitution("$(var start_pos_z)")},
-            {"topic": "/giraff/resetPose"}
-        ]
+    send_pose = ExecuteProcess(
+        cmd=[[
+            " sleep 10;"
+            " ros2 topic pub /giraff/resetPose  geometry_msgs/msg/PoseStamped", 
+            ' "{ ',
+            '    header: ',
+            '    { ',
+            '        frame_id: "map", ',
+            '        stamp: now ',
+            '    }, ',
+            '    pose: ',
+            '    { ',
+            '        position: ',
+            '        { ',
+            '            x: '+ LaunchConfiguration("start_pos_x").perform(context) +',',
+            '            y: '+ LaunchConfiguration("start_pos_y").perform(context) +',',
+            '            z: '+ LaunchConfiguration("start_pos_z").perform(context) +',',
+            '        } ',
+            '    }    ',
+            '}"',
+            ' -1'
+        ]],
+        shell=True
     )
+
     return [
         tcp_endpoint,
         send_pose,
