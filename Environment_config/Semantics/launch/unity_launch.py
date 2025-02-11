@@ -43,7 +43,7 @@ def launch_setup(context, *args, **kwargs):
     # send command to unity so that the correct house model is loaded
     loadEnvironment = ExecuteProcess(
         cmd=[[
-            " sleep 3;",
+            " sleep 1;",
             FindExecutable(name='ros2'),
             ' topic pub ',
             ' /load_environment',
@@ -56,7 +56,7 @@ def launch_setup(context, *args, **kwargs):
 
     send_pose = ExecuteProcess(
         cmd=[[
-            " sleep 10;"
+            " sleep 3;"
             " ros2 topic pub /giraff/resetPose  geometry_msgs/msg/PoseStamped", 
             ' "{ ',
             '    header: ',

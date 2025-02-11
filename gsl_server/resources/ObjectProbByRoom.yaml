@@ -4,11 +4,11 @@ room_categories:
     oven: 0.3
     refrigerator: 0.2
     microwave: 0.05
-    sink: 0.05
+    sink: 0.1
   
   Bathroom:
-    toilet: 0.3
-    sink: 0.2
+    toilet: 0.2
+    sink: 0.1
 
   Bedroom:
     bed: 0.6

@@ -198,6 +198,7 @@ namespace GSL
     void SemanticPMFS::logProgressionAndVisualize()
     {
         GSL_INFO("Logging progression to file '{}'", getParam<std::string>("progressionFileName", "progression.csv"));
+        updateSourceFromSemantics();
         std::vector<ColorRGBA> colors(sourceProbabilityPMFS.size());
         for (int i = 0; i < sourceProbabilityPMFS.size(); i++)
             colors[i] = Utils::valueToColor(sourceProbabilityPMFS[i],
@@ -271,14 +272,18 @@ namespace GSL
 #endif
             }
 
+#define MANUAL_DRIVING 0
+#if MANUAL_DRIVING
             stateMachine.forceResetState(stopAndMeasureState.get());
-            // auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
-            // if (iterationsCounter > settings.movement.initialExplorationMoves)
-            //     movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
-            // else
-            //     movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
-            // movingStatePMFS->chooseGoalAndMove();
-            // movingStatePMFS->publishMarkers();
+#else
+            auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
+            if (iterationsCounter > settings.movement.initialExplorationMoves)
+                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
+            else
+                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
+            movingStatePMFS->chooseGoalAndMove();
+            movingStatePMFS->publishMarkers();
+#endif
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());

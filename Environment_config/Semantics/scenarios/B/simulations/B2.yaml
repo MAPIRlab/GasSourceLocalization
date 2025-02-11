@@ -38,7 +38,7 @@ start_pos_z: -0.33
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
-filament_movement_stdev: 0.35
+filament_movement_stdev: 0.25
 targetGas: sewage
 markers_height: -0.6
 VGRHouse: 1

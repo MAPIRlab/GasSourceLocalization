@@ -124,7 +124,7 @@ def launch_setup(context, *args, **kwargs):
 	
 	actions = [PushRosNamespace(namespace)]
 	actions.extend(navigation_nodes)
-	#actions.extend(visualization_nodes)
+	actions.extend(visualization_nodes)
 	return [GroupAction(actions=actions)]
 
 
