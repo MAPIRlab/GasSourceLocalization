@@ -1,5 +1,5 @@
 
-file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp") 
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 
 # Create the library
 add_library(SemanticGrGSL ${SOURCES})

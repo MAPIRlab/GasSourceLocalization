@@ -3,6 +3,7 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp"
 #include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>
+#include "MovingStateSemanticGrGSL.hpp"
 
 namespace GSL
 {
@@ -37,7 +38,7 @@ namespace GSL
         waitForMapState = std::make_unique<WaitForMapState>(this);
         waitForGasState = std::make_unique<WaitForGasState>(this);
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
-        // TODO movingState = std::make_unique<MovingStateGrGSL>(this);
+        movingState = std::make_unique<MovingStateSemanticGrGSL>(this);
         stateMachine.forceSetState(waitForMapState.get());
     }
 
@@ -89,16 +90,16 @@ namespace GSL
         else
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING");
 
-        // GrGSLLib::estimateProbabilitiesfromGasAndWind(
-        //     Grid2D<Cell>(cells, simulationOccupancy, gridMetadata),
-        //     settings,
-        //     gasHit,
-        //     gasHit ? significantWind : true,
-        //     windDirection,
-        //     positionOfLastHit,
-        //     gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+        GrGSLLib::estimateProbabilitiesfromGasAndWind(
+            Grid2D<Cell>(cells, simulationOccupancy, gridMetadata),
+            settings,
+            gasHit,
+            gasHit ? significantWind : true,
+            windDirection,
+            positionOfLastHit,
+            gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
 
-        // dynamic_cast<MovingStateGrGSL*>(movingState.get())->chooseGoalAndMove();
+        dynamic_cast<MovingStateSemanticGrGSL*>(movingState.get())->chooseGoalAndMove();
     }
 
     void SemanticGrGSL::updateSourceFromSemantics()

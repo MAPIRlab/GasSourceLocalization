@@ -10,6 +10,7 @@ namespace GSL
 {
     class SemanticGrGSL : public Algorithm
     {
+        friend class MovingStateSemanticGrGSL;
     public:
         SemanticGrGSL(std::shared_ptr<rclcpp::Node> _node)
             : Algorithm(_node)

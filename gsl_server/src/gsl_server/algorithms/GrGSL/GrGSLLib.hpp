@@ -1,4 +1,5 @@
 #pragma once
+#include <gmrf_msgs/srv/wind_estimation.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
