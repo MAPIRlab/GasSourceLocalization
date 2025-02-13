@@ -452,7 +452,7 @@ namespace GSL::PMFS_internal
         displayImage(hitMap);
     }
 
-    void Simulations::displayImage(const std::vector<float>& hitMap)
+    void Simulations::displayImage(const std::vector<float>& hitMap, const std::string& imageName)
     {
         cv::Mat asImage(hitMap);
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
@@ -473,22 +473,15 @@ namespace GSL::PMFS_internal
             }
         }
 
-#if 0
-        image *= 255;
-        std::string filename;
-        if (source.mode == SimulationSource::Mode::Quadtree)
-            filename = fmt::format("leaf_{}.png", source.nqaNode->origin);
-        else
-            filename = fmt::format("point_{}.png", source.point);
-
-        cv::imwrite(filename, image);
-
+#if 1
+        inColor *= 255;
+        cv::imwrite(imageName, inColor);
         GSL_WARN("hitMap image saved");
 #else
         cv::flip(inColor, inColor, 0);
         cv::Mat resized;
         cv::resize(inColor, resized, cv::Size(inColor.size[1] * 10, inColor.size[0] * 10), 0, 0, cv::INTER_NEAREST);
-        cv::imshow("result", resized);
+        cv::imshow(imageName, resized);
         cv::waitKey();
         cv::destroyAllWindows();
 #endif

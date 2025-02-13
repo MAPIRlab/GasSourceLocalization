@@ -96,6 +96,6 @@ namespace GSL::PMFS_internal
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
 
         void blurHitMap(cv::Mat& asImage);
-        void displayImage(const std::vector<float>& hitMap);
+        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult");
     };
 } // namespace GSL::PMFS_internal
