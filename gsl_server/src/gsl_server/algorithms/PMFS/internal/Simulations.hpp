@@ -95,7 +95,7 @@ namespace GSL::PMFS_internal
         bool filamentIsOutside(const Filament& filament) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
 
-        void blurHitMap(cv::Mat& asImage);
-        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult");
+        void blurHitMap(cv::Mat& asImage) const;
+        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult") const;
     };
 } // namespace GSL::PMFS_internal

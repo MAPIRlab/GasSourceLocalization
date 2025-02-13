@@ -452,12 +452,12 @@ namespace GSL::PMFS_internal
         displayImage(hitMap);
     }
 
-    void Simulations::displayImage(const std::vector<float>& hitMap, const std::string& imageName)
+    void Simulations::displayImage(const std::vector<float>& hitMap, const std::string& imageName) const
     {
         cv::Mat asImage(hitMap);
+        asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
         {
-            asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
             blurHitMap(asImage);
         }
 
@@ -473,9 +473,10 @@ namespace GSL::PMFS_internal
             }
         }
 
-#if 1
+#if 0
+        cv::flip(inColor, inColor, 0);
         inColor *= 255;
-        cv::imwrite(imageName, inColor);
+        cv::imwrite(fmt::format("{}.png", imageName), inColor);
         GSL_WARN("hitMap image saved");
 #else
         cv::flip(inColor, inColor, 0);
@@ -487,7 +488,7 @@ namespace GSL::PMFS_internal
 #endif
     }
 
-    void Simulations::blurHitMap(cv::Mat& asImage)
+    void Simulations::blurHitMap(cv::Mat& asImage) const
     {
         cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
         // divide by the blurred mask to correct the edges always getting lower
