@@ -56,7 +56,6 @@ namespace GSL
 
         settings.visualization.markers_height = getParam<double>("markers_height", 0);
         IF_GUI(settings.visualization.headless = getParam<bool>("headless", false));
-
     }
 
     void PMFS::onGetMap(OccupancyGrid::SharedPtr msg)

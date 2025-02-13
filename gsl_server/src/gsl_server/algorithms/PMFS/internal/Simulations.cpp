@@ -444,12 +444,16 @@ namespace GSL::PMFS_internal
 #endif
     }
 
-    void Simulations::printImage(const SimulationSource& source)
+    void Simulations::makeSimulationImage(const SimulationSource& source)
     {
         std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
         simulateSourceInPosition(source, hitMap, true, settings.iterationsToRecord, settings.deltaTime,
                                  settings.noiseSTDev);
+        displayImage(hitMap);
+    }
 
+    void Simulations::displayImage(const std::vector<float>& hitMap)
+    {
         cv::Mat asImage(hitMap);
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
         {

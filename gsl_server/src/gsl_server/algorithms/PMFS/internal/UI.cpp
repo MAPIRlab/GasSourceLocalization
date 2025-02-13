@@ -98,11 +98,11 @@ namespace GSL::PMFS_internal
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else
-                    pmfs->simulations.printImage(SimulationSource(leaf, pmfs->gridMetadata));
+                    pmfs->simulations.makeSimulationImage(SimulationSource(leaf, pmfs->gridMetadata));
             }
             else if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
-                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(x, y), pmfs->gridMetadata));
+                pmfs->simulations.makeSimulationImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(x, y), pmfs->gridMetadata));
             }
 
             ImGui::Text("%s", result.c_str());

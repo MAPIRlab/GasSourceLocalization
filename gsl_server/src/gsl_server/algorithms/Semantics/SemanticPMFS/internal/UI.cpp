@@ -104,11 +104,11 @@ namespace GSL::SemanticPMFS_internal
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else
-                    pmfs->simulations.printImage(SimulationSource(leaf, pmfs->gridMetadata));
+                    pmfs->simulations.makeSimulationImage(SimulationSource(leaf, pmfs->gridMetadata));
             }
             if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({xInd, yInd}))
             {
-                pmfs->simulations.printImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(xInd, yInd), pmfs->gridMetadata));
+                pmfs->simulations.makeSimulationImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(xInd, yInd), pmfs->gridMetadata));
             }
 
             ImGui::Text("%s", result.c_str());

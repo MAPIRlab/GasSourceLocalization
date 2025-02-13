@@ -61,7 +61,7 @@ namespace GSL::PMFS_internal
 
         void initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap);
         void updateSourceProbability(float refineFraction);
-        void printImage(const SimulationSource& source);
+        void makeSimulationImage(const SimulationSource& source);
         double probabilitySingleFrequency(double measured, double simulated) const;
         double probabilityFromSingleCell(HitProbability measured, double simulated) const;
         long double sourceProbFromMaps(const Grid2D<HitProbability>& hitRandomVariable, const std::vector<float>& hitMap) const;
@@ -96,5 +96,6 @@ namespace GSL::PMFS_internal
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
 
         void blurHitMap(cv::Mat& asImage);
+        void displayImage(const std::vector<float>& hitMap);
     };
 } // namespace GSL::PMFS_internal
