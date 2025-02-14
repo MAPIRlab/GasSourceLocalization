@@ -110,6 +110,7 @@ namespace GSL
             gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
 
         movingState->chooseGoalAndMove();
+        exploredCells++;
     }
 
     void SemanticGrGSL::updateSourceFromSemantics()

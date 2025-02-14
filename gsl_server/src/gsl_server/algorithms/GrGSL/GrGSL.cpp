@@ -106,6 +106,7 @@ namespace GSL
             gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
 
         dynamic_cast<MovingStateGrGSL*>(movingState.get())->chooseGoalAndMove();
+        exploredCells++;
         GrGSLLib::VisualizeMarkers(
             Grid2D<Cell>(cells, occupancy, gridMetadata),
             markers,
