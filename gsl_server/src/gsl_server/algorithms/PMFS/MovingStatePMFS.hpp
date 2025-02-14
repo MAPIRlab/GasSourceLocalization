@@ -19,7 +19,7 @@ namespace GSL
         } currentMovement = MovementType::Exploration;
 
         // apply the movement strategy to choose a goal and send it to the action server
-        void chooseGoalAndMove();
+        void chooseGoalAndMove() override;
 
         // Get the information value of cell (i,j) for the initial exploration phase
         double explorationValue(int i, int j);

@@ -95,7 +95,11 @@ namespace GSL
         std::unique_ptr<MovingState> movingState;
 
         rclcpp::Time startTime;
+        
+        //the robot position is stored both as a msg with covariance and as a more convenient vector2
         PoseWithCovarianceStamped currentRobotPose;
+        Vector2 currentRobotPosition;
+
         OccupancyGrid map;
         OccupancyGrid costmap;
 

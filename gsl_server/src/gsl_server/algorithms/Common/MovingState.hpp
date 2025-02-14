@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gsl_server/core/Logging.hpp"
 #include <gsl_server/algorithms/Common/GSLState.hpp>
 #include <gsl_server/core/Navigation.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
@@ -14,6 +15,7 @@ namespace GSL
     public:
         MovingState(Algorithm* _algorithm);
         std::optional<nav_msgs::msg::Path> GetPlan(const PoseStamped& start, const PoseStamped& target); //get a valid path from start to target
+        virtual void chooseGoalAndMove(){GSL_ERROR("chooseGoalAndMove() not implemented in base class!");}
         bool checkGoal(const NavigateToPose::Goal& goal); //returns true if we can reach the goal
         void sendGoal(const NavigateToPose::Goal& goal);
         void OnEnterState(State* previous) override;

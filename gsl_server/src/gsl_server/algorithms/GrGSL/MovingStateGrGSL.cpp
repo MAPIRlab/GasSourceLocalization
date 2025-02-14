@@ -6,28 +6,27 @@
 namespace GSL
 {
     using namespace GrGSL_internal;
-    MovingStateGrGSL::MovingStateGrGSL(Algorithm* _algorithm)
-        : MovingState(_algorithm)
+    MovingStateGrGSL::MovingStateGrGSL(Algorithm* _algorithm, const GrGSLData& data)
+        : MovingState(_algorithm), grgsl(data)
     {
-        grgsl = dynamic_cast<GrGSL*>(algorithm);
-        clientWind = grgsl->node->create_client<GrGSL::WindEstimation>("/WindEstimation");
+        clientWind = grgsl.node->create_client<WindEstimation>("/WindEstimation");
     }
 
     void MovingStateGrGSL::chooseGoalAndMove()
     {
-        const auto& settings = grgsl->settings;
-        const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
+        const auto& settings = grgsl.settings;
+        const Grid2D<Cell> grid(grgsl.cells, grgsl.occupancy, grgsl.gridMetadata);
 
         // update sets
         {
-            Vector2Int currentPosition = grgsl->gridMetadata.coordinatesToIndices(grgsl->currentRobotPose.pose.pose);
+            Vector2Int currentPosition = grgsl.gridMetadata.coordinatesToIndices(grgsl.currentRobotPosition);
             int expansionSize = 5;
 
             // loop limits
             size_t startC = std::max(0, currentPosition.x - expansionSize);
-            size_t endC = std::min(grgsl->gridMetadata.dimensions.x - 1, currentPosition.x + expansionSize);
+            size_t endC = std::min(grgsl.gridMetadata.dimensions.x - 1, currentPosition.x + expansionSize);
             size_t startR = std::max(0, currentPosition.y - expansionSize);
-            size_t endR = std::min(grgsl->gridMetadata.dimensions.y - 1, currentPosition.y + expansionSize);
+            size_t endR = std::min(grgsl.gridMetadata.dimensions.y - 1, currentPosition.y + expansionSize);
 
             for (int row = startR; row <= endR; row++)
             {
@@ -55,8 +54,6 @@ namespace GSL
             return;
         }
 
-        grgsl->exploredCells++;
-
         Vector2Int indices = grid.metadata.coordinatesToIndices(goal->pose.pose.position.x, goal->pose.pose.position.y);
         closedMoveSet.insert(indices);
         openMoveSet.erase(indices);
@@ -71,9 +68,9 @@ namespace GSL
 
             // loop limits
             size_t startC = std::max(0, goalIndices.x - 1);
-            size_t endC = std::min(grgsl->gridMetadata.dimensions.x - 1, goalIndices.x + 1);
+            size_t endC = std::min(grgsl.gridMetadata.dimensions.x - 1, goalIndices.x + 1);
             size_t startR = std::max(0, goalIndices.y - 1);
-            size_t endR = std::min(grgsl->gridMetadata.dimensions.y - 1, goalIndices.y + 1);
+            size_t endR = std::min(grgsl.gridMetadata.dimensions.y - 1, goalIndices.y + 1);
 
             for (int row = startR; row <= endR; row++)
             {
@@ -92,8 +89,8 @@ namespace GSL
 
     std::optional<NavigateToPose::Goal> MovingStateGrGSL::getNormalGoal()
     {
-        const auto& settings = grgsl->settings;
-        const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
+        const auto& settings = grgsl.settings;
+        const Grid2D<Cell> grid(grgsl.cells, grgsl.occupancy, grgsl.gridMetadata);
 
         // Graph exploration
         std::optional<NavigateToPose::Goal> goal = std::nullopt;
@@ -104,12 +101,12 @@ namespace GSL
             double maxDist = 0;
             for (auto& p : openMoveSet)
             {
-                if (grgsl->probability(p) > max || (grgsl->probability(p) == max && grid.dataAt(p).distance > maxDist))
+                if (grgsl.probability(p) > max || (grgsl.probability(p) == max && grid.dataAt(p).distance > maxDist))
                 {
                     NavigateToPose::Goal tempGoal = indexToGoal(p.x, p.y);
                     if (checkGoal(tempGoal))
                     {
-                        max = grgsl->probability(p);
+                        max = grgsl.probability(p);
                         maxDist = grid.dataAt(p).distance;
                         goal = tempGoal;
                     }
@@ -124,8 +121,8 @@ namespace GSL
 
     std::optional<NavigateToPose::Goal> MovingStateGrGSL::getInfotaxisGoal()
     {
-        const auto& settings = grgsl->settings;
-        const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
+        const auto& settings = grgsl.settings;
+        const Grid2D<Cell> grid(grgsl.cells, grgsl.occupancy, grgsl.gridMetadata);
 
         // it is never helpful to stop the propagation for each of the considered movement positions, so temporarily turn debug mode off while we do this
         bool wasDebugging = GrGSLLib::debuggingPropagation;
@@ -137,7 +134,7 @@ namespace GSL
         std::mutex mtx;
         double ent = -DBL_MAX;
         double maxDist = 0;
-        rclcpp::Time tstart = grgsl->node->now();
+        rclcpp::Time tstart = grgsl.node->now();
         if (!wind.empty())
         {
 #pragma omp parallel for
@@ -146,7 +143,7 @@ namespace GSL
                 int col = wind[index].col;
                 int row = wind[index].row;
 
-                double entAux = GrGSLLib::informationGain(wind[index], grid, grgsl->settings, grgsl->positionOfLastHit);
+                double entAux = GrGSLLib::informationGain(wind[index], grid, grgsl.settings, grgsl.positionOfLastHit);
                 mtx.lock();
                 if (entAux > ent || (ent == entAux && grid.dataAt(col, row).distance > maxDist))
                 {
@@ -165,7 +162,7 @@ namespace GSL
         else
             GSL_ERROR("Set of open nodes is empty! Are you certain the source is reachable?");
 
-        double timeInfotaxis = (grgsl->node->now() - tstart).seconds();
+        double timeInfotaxis = (grgsl.node->now() - tstart).seconds();
         GSL_INFO("Time infotaxis: {}", timeInfotaxis);
         GSL_INFO("Number of considered cells: {}", wind.size());
 
@@ -177,10 +174,10 @@ namespace GSL
     {
         NavigateToPose::Goal goal;
         goal.pose.header.frame_id = "map";
-        goal.pose.header.stamp = grgsl->node->now();
+        goal.pose.header.stamp = grgsl.node->now();
 
-        Vector2 pos = grgsl->gridMetadata.indicesToCoordinates(i, j);
-        Vector2 coordR = Vector2(grgsl->currentRobotPose.pose.pose.position.x, grgsl->currentRobotPose.pose.pose.position.y);
+        Vector2 pos = grgsl.gridMetadata.indicesToCoordinates(i, j);
+        Vector2 coordR = Vector2(grgsl.currentRobotPosition.x, grgsl.currentRobotPosition.y);
 
         double move_angle = (atan2(pos.y - coordR.y, pos.x - coordR.x));
         goal.pose.pose.position.x = pos.x;
@@ -194,7 +191,7 @@ namespace GSL
 
     std::vector<WindVector> MovingStateGrGSL::estimateWind()
     {
-        const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
+        const Grid2D<Cell> grid(grgsl.cells, grgsl.occupancy, grgsl.gridMetadata);
 
         std::vector<Vector2Int> indices;
         for (auto& p : openMoveSet)
@@ -211,8 +208,8 @@ namespace GSL
 
     std::vector<GrGSL_internal::WindVector> MovingStateGrGSL::getWindVectors(const std::vector<Vector2Int>& indices)
     {
-        const Grid2D<Cell> grid(grgsl->cells, grgsl->occupancy, grgsl->gridMetadata);
-        auto request = std::make_shared<GrGSL::WindEstimation::Request>();
+        const Grid2D<Cell> grid(grgsl.cells, grgsl.occupancy, grgsl.gridMetadata);
+        auto request = std::make_shared<WindEstimation::Request>();
         for (const auto index : indices)
         {
             Vector2 coords = grid.metadata.indicesToCoordinates(index.x, index.y);
@@ -222,7 +219,7 @@ namespace GSL
 
         std::vector<WindVector> result(indices.size());
         auto future = clientWind->async_send_request(request);
-        auto future_result = rclcpp::spin_until_future_complete(grgsl->node, future, std::chrono::seconds(1));
+        auto future_result = rclcpp::spin_until_future_complete(grgsl.node, future, std::chrono::seconds(1));
         if (future_result == rclcpp::FutureReturnCode::SUCCESS)
         {
             auto response = future.get();

@@ -8,7 +8,7 @@ Panels:
         - /RobotModel1/Description Topic1
         - /Object classes1
       Splitter Ratio: 0.5199999809265137
-    Tree Height: 888
+    Tree Height: 440
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -422,7 +422,7 @@ Visualization Manager:
       Enabled: true
       Name: UIMarker
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -551,5 +551,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 956
-  X: 2880
+  X: 960
   Y: 0

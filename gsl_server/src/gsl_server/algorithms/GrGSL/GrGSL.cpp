@@ -32,7 +32,15 @@ namespace GSL
         waitForMapState = std::make_unique<WaitForMapState>(this);
         waitForGasState = std::make_unique<WaitForGasState>(this);
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
-        movingState = std::make_unique<MovingStateGrGSL>(this);
+        movingState = std::make_unique<MovingStateGrGSL>(this,
+                                                         GrGSLData{
+                                                             .node = node,
+                                                             .settings = settings,
+                                                             .cells = cells,
+                                                             .occupancy = occupancy,
+                                                             .gridMetadata = gridMetadata,
+                                                             .currentRobotPosition = currentRobotPosition,
+                                                             .positionOfLastHit = positionOfLastHit});
         stateMachine.forceSetState(waitForMapState.get());
     }
 

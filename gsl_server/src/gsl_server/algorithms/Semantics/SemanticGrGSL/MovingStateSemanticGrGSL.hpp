@@ -18,7 +18,7 @@ namespace GSL
     public:
         MovingStateSemanticGrGSL(Algorithm* _algorithm);
 
-        void chooseGoalAndMove();
+        void chooseGoalAndMove() override;
 
     protected:
         SemanticGrGSL* grgsl;

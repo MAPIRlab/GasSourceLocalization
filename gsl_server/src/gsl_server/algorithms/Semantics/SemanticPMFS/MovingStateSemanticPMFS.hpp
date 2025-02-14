@@ -27,7 +27,7 @@ namespace GSL
             Search
         } currentMovement = MovementType::Exploration;
 
-        void chooseGoalAndMove();
+        void chooseGoalAndMove() override;
         double explorationValue(int i, int j);
 
         // Get the information value of cell (i,j) for the main phase

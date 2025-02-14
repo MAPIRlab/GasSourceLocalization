@@ -41,5 +41,7 @@ namespace GSL
 
         void createClassMap2D();
         void createClassMapVoxeland();
+        GSLResult checkSourceFound() override;
+        void saveResultsToFile(GSLResult result) override;
     };
 } // namespace GSL
