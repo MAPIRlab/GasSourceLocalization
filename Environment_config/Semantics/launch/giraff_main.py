@@ -22,7 +22,6 @@ from gaden_internal_py.utils import read_sim_yaml # type: ignore
 def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="B"),
-        DeclareLaunchArgument("simulation", default_value="B1"),
         DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
     ]
 # ==========================
@@ -259,6 +258,10 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="semantics_launch.py"))
     )
 
+    sockets = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="robot_communication.launch.py"))
+    )
+
 
     keyboard_control = Node(
         package="keyboard_control",
@@ -276,13 +279,14 @@ def launch_setup(context, *args, **kwargs):
     # actions.extend(anemometer)
     # actions.extend(PID)
     # actions.append(nav2)
-    # actions.append(gmrf_wind)
-    # actions.extend(gsl_node)
-    # actions.extend(gsl_call)
-    # actions.append(rvizHit)
-    # actions.append(rvizSource)
+    actions.append(gmrf_wind)
+    actions.extend(gsl_node)
+    actions.extend(gsl_call)
+    actions.append(rvizHit)
+    actions.append(rvizSource)
     actions.append(unity)
-    # actions.append(semantics)
+    actions.append(semantics)
+    actions.append(sockets)
     # actions.append(keyboard_control)
 
     return actions

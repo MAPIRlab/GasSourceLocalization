@@ -46,7 +46,7 @@ def launch_setup(context, *args, **kwargs):
         }.items()
     )
 
-    voxeland_robot = IncludeLaunchDescription(
+    voxeland_robot_simulation = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             get_share_file_path_from_package(package_name="voxeland_robot_perception", file_name="semantic_mapping.launch.py")
         ),
@@ -61,6 +61,26 @@ def launch_setup(context, *args, **kwargs):
             "map_frame_id" : "map",
             "robot_frame_id" : "giraff_base_link",
             "camera_frame_id" : "RGBD",
+
+            "service_name": f"/{toName(segmentation_net)}/segment",
+        }.items()
+    )
+
+    voxeland_robot_real = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            get_share_file_path_from_package(package_name="voxeland_robot_perception", file_name="semantic_mapping.launch.py")
+        ),
+        launch_arguments={
+            "dataset" : "ROS-Unity", #TODO
+
+            "topic_camera_info" : "/giraff/camera/color/camera_info",
+            "topic_rgb_image" : "/giraff/camera/color/image_compressed",
+            "topic_depth_image" : "/giraff/camera/depth/image_compressed",
+            "topic_localization" : "/giraff/amcl_pose",
+            
+            "map_frame_id" : "map",
+            "robot_frame_id" : "giraff_base_link",
+            "camera_frame_id" : "camera_link",
 
             "service_name": f"/{toName(segmentation_net)}/segment",
         }.items()
@@ -106,7 +126,7 @@ def launch_setup(context, *args, **kwargs):
 
     return [
         voxeland_server,
-        voxeland_robot,
+        voxeland_robot_simulation,
         segmentationNode
     ]
 
