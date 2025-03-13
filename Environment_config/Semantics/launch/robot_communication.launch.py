@@ -37,7 +37,7 @@ def launch_setup(context, *args, **kwargs):
         prefix="xterm -hold -e",
         parameters=[
             {"protocol": "TCP"},
-            {"port": 15770},
+            {"port": 15761},
             {"topic": "/giraff/map"},
             {"isServerSocket": True},
         ],
@@ -49,7 +49,7 @@ def launch_setup(context, *args, **kwargs):
         prefix="xterm -hold -e",
         parameters=[
             {"protocol": "TCP"},
-            {"port": 15780},
+            {"port": 15762},
             {"actionServer": "/giraff/navigate_to_pose"},
             {"isServerSocket": True},
         ],
@@ -71,7 +71,7 @@ def launch_setup(context, *args, **kwargs):
         prefix="xterm -hold -e ",
         parameters=[
             {"protocol": "TCP"},
-            {"port": 15790},
+            {"port": 15763},
             {"topic": "/giraff/initialpose"},
             {"isServerSocket": True},
         ],
@@ -83,7 +83,7 @@ def launch_setup(context, *args, **kwargs):
         prefix="xterm -hold -T laser -e",
         parameters=[
             {"protocol": "UDP"},
-            {"port": 15800},
+            {"port": 15764},
             {"topic": "/giraff/laser_scan"},
             {"isServerSocket": True},
         ],
@@ -96,7 +96,7 @@ def launch_setup(context, *args, **kwargs):
             prefix="xterm -hold -T cameraInfo -e",
             parameters=[
                 {"protocol": "UDP"},
-                {"port": 15801},
+                {"port": 15765},
                 {"topic": "/giraff/camera/color/camera_info"},
                 {"isServerSocket": True},
             ],
@@ -107,7 +107,7 @@ def launch_setup(context, *args, **kwargs):
             prefix="xterm -hold -T rgb -e",
             parameters=[
                 {"protocol": "UDP"},
-                {"port": 15802},
+                {"port": 15766},
                 {"topic": "/giraff/camera/color/image_compressed"},
                 {"isServerSocket": True},
             ],
@@ -118,7 +118,7 @@ def launch_setup(context, *args, **kwargs):
             prefix="xterm -hold -T depth -e",
             parameters=[
                 {"protocol": "UDP"},
-                {"port": 15803},
+                {"port": 15767},
                 {"topic": "/giraff/camera/depth/image_compressed"},
                 {"isServerSocket": True},
             ],
@@ -131,11 +131,80 @@ def launch_setup(context, *args, **kwargs):
         prefix="xterm -hold -T amcl -e ",
         parameters=[
             {"protocol": "TCP"},
-            {"port": 15791},
+            {"port": 15768},
             {"topic": "/giraff/amcl_pose"},
             {"isServerSocket": True},
         ],
     )
+
+    cmd_vel = Node(
+        package="nav2_transfer",
+        executable="twistClient",
+        prefix="xterm -hold -e ",
+        parameters=[
+            {"protocol": "UDP"},
+            {"port": 15769},
+            {"topic": "/giraff/cmd_vel"},
+            {"isServerSocket": True},
+        ],
+    )
+
+    rvizHit = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        # prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "hit.rviz")
+        ],
+    )
+
+    rvizSource = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        # prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("semantic_gsl_env"), "launch", "source.rviz")
+        ],
+    )
+
+    pose_publisher = Node(
+        package="pose_from_tf",
+        executable="pose_with_covariance",
+        prefix="xterm -hold -e ",
+        parameters=[
+                {"frame_id": "giraff_base_link"},
+                {"topic": "/giraff/pose"},
+                {"frequency": 20.0},
+        ],
+    )
+
+    olfaction_sensors = [
+        Node(
+            package="olfaction_msgs_transfer",
+            executable="gas_sensor_server",
+            prefix="xterm -hold -T pid -e ",
+            parameters=[
+                {"protocol": "UDP"},
+                {"port": 15770},
+                {"topic": "/giraff/PID/Sensor_reading"},
+                {"isServerSocket": True},
+            ],
+        ),
+        Node(
+            package="olfaction_msgs_transfer",
+            executable="anemometer_server",
+            prefix="xterm -hold -T anemometer -e ",
+            parameters=[
+                {"protocol": "UDP"},
+                {"port": 15771},
+                {"topic": "/giraff/Anemometer/WindSensor_reading"},
+                {"isServerSocket": True},
+            ],
+        )
+    ]
+
 
 
     nodes = []
@@ -147,6 +216,11 @@ def launch_setup(context, *args, **kwargs):
     nodes.append(laser)
     nodes.extend(camera)
     nodes.append(amcl)
+    nodes.append(cmd_vel)
+    nodes.append(rvizHit)
+    nodes.append(pose_publisher)
+    nodes.extend(olfaction_sensors)
+    # nodes.append(rvizSource)
 
     return nodes
 

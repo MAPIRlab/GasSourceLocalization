@@ -1,0 +1,8 @@
+source_x: -1.5
+source_y: 2.9
+source_z: 0.3
+
+filament_movement_stdev: 0.1
+
+targetGas: sewage
+markers_height: -0.6

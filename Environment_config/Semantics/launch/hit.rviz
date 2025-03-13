@@ -6,9 +6,9 @@ Panels:
       Expanded:
         - /LocalCostMap1/Topic1
         - /RobotModel1/Description Topic1
-        - /Image1
+        - /Map1/Topic1
       Splitter Ratio: 0.5199999809265137
-    Tree Height: 440
+    Tree Height: 868
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -31,7 +31,7 @@ Visualization Manager:
       Enabled: true
       Name: Source
       Namespaces:
-        gas_source_visualization: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -99,10 +99,10 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz_default_plugins/LaserScan
-      Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color: 224; 27; 36
+      Color Transformer: FlatColor
       Decay Time: 0
-      Enabled: false
+      Enabled: true
       Invert Rainbow: false
       Max Color: 255; 255; 255
       Max Intensity: 0
@@ -112,7 +112,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.029999999329447746
       Style: Flat Squares
       Topic:
         Depth: 5
@@ -123,7 +123,7 @@ Visualization Manager:
         Value: /giraff/laser_scan
       Use Fixed Frame: true
       Use rainbow: true
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz_default_plugins/Path
@@ -212,56 +212,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        giraff_base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_body:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_green_button:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_head:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_hokuyo_front:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_left_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_neck:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_red_button:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_right_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        giraff_screen:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Mass Properties:
         Inertia: false
         Mass: false
@@ -309,7 +259,7 @@ Visualization Manager:
         Value: /giraff/hitProbabilityMarkers
       Value: true
     - Class: rviz_default_plugins/Image
-      Enabled: true
+      Enabled: false
       Max Value: 1
       Median window: 5
       Min Value: 0
@@ -321,7 +271,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /yolo/segmentedImage
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: false
       Name: ObjectBB
@@ -418,7 +368,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.25
+      Size (m): 0.10000000149011612
       Style: Boxes
       Topic:
         Depth: 5
@@ -448,7 +398,7 @@ Visualization Manager:
       Axes Radius: 0.10000000149011612
       Class: rviz_default_plugins/Pose
       Color: 255; 25; 0
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: Goal
@@ -462,7 +412,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /giraff/goal_pose
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: false
       Name: Marker
@@ -476,6 +426,62 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /giraff/EXPECTED_OLFACTION
       Value: false
+    - Alpha: 0.699999988079071
+      Class: rviz_default_plugins/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic:
+        Depth: 5
+        Durability Policy: Transient Local
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /giraff/map
+      Update Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /giraff/map_updates
+      Use Timestamp: false
+      Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/PoseWithCovariance
+      Color: 255; 25; 0
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: PoseWithCovariance
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /giraff/pose
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -525,43 +531,43 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 14.346439361572266
+      Distance: 9.77669620513916
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -3.0056588649749756
-        Y: -2.413846731185913
-        Z: 2.1989221572875977
+        X: 0.9281836748123169
+        Y: 0.03428180143237114
+        Z: 2.2451231479644775
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5697963237762451
+      Pitch: 1.3097965717315674
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.710465908050537
+      Yaw: 4.725470542907715
     Saved: ~
 Window Geometry:
   Displays:
-    collapsed: true
-  Height: 1009
-  Hide Left Dock: true
+    collapsed: false
+  Height: 1013
+  Hide Left Dock: false
   Hide Right Dock: true
   Image:
     collapsed: false
   Navigation 2:
     collapsed: false
-  QMainWindow State: 000000ff00000000fd000000040000000000000192000003b6fc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000100044006900730070006c006100790073000000003e000003b6000000ca00fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000277000000be0000005c00fffffffb00000018004e0061007600690067006100740069006f006e002000320000000277000001340000014400fffffffb0000000a0049006d006100670065030000079100000285000001fc000001b2000000010000010f0000039ffc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b0000039f000000a600fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d00650100000000000004500000000000000000000003bc0000039500000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001920000039ffc020000000afb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb000000100044006900730070006c006100790073010000003b0000039f000000c700fffffffb0000001e0054006f006f006c002000500072006f00700065007200740069006500730000000277000000be0000005c00fffffffb00000018004e0061007600690067006100740069006f006e002000320000000277000001340000012300fffffffb0000000a0049006d006100670065020000079100000285000001fc000001b2000000010000010f0000039ffc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000003b0000039f000000a000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004420000003efc0100000002fb0000000800540069006d00650100000000000004420000000000000000fb0000000800540069006d00650100000000000004500000000000000000000005e80000039f00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Tool Properties:
     collapsed: false
   Views:
     collapsed: true
-  Width: 956
+  Width: 1920
   X: 0
   Y: 0

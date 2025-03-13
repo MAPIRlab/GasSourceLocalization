@@ -30,7 +30,7 @@ def launch_setup(context, *args, **kwargs):
 
     # Select the segmentation network you want to use here! From here: https://github.com/MAPIRlab/instance_segmentation
     ######################################################
-    segmentation_net = SegmentationNN.YOLO 
+    segmentation_net = SegmentationNN.DETECTRON 
 
 
     voxeland_server = IncludeLaunchDescription(
@@ -38,7 +38,7 @@ def launch_setup(context, *args, **kwargs):
             get_share_file_path_from_package(package_name="voxeland", file_name="voxeland_server.launch.py")
         ),
         launch_arguments= {
-            "resolution" : "0.25",
+            "resolution" : "0.02",
             "pHit" : "0.6",
             "pMiss" : "0.4",
             "clampOccupancyMax" : "0.97",
@@ -71,12 +71,12 @@ def launch_setup(context, *args, **kwargs):
             get_share_file_path_from_package(package_name="voxeland_robot_perception", file_name="semantic_mapping.launch.py")
         ),
         launch_arguments={
-            "dataset" : "ROS-Unity", #TODO
+            "dataset" : "MAPIRlab_olfaction",
 
             "topic_camera_info" : "/giraff/camera/color/camera_info",
             "topic_rgb_image" : "/giraff/camera/color/image_compressed",
             "topic_depth_image" : "/giraff/camera/depth/image_compressed",
-            "topic_localization" : "/giraff/amcl_pose",
+            "topic_localization" : "/giraff/pose",
             
             "map_frame_id" : "map",
             "robot_frame_id" : "giraff_base_link",
@@ -126,7 +126,8 @@ def launch_setup(context, *args, **kwargs):
 
     return [
         voxeland_server,
-        voxeland_robot_simulation,
+        # voxeland_robot_simulation,
+        voxeland_robot_real,
         segmentationNode
     ]
 
