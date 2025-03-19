@@ -1,7 +1,6 @@
 #include <chrono>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <random>
-#include <xxHash/xxhash32.h>
 
 namespace GSL::Utils
 {
@@ -64,21 +63,8 @@ namespace GSL::Utils
 
     template <typename T> T uniformRandomT(T min, T max)
     {
-#if 0
-        // xxHash-based RNG. It's supposed to be faster 
-        // !!!! the range is [0,1] inclusive!
-        static thread_local uint32_t seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-        static thread_local uint32_t state = 0xFFFF;
-        state = XXHash32::hash(&state, sizeof(state), seed);
-        state = std::min(state, std::numeric_limits<uint32_t>::max() - 1); // make it so the return interval does not include 1
-
-        constexpr T reciprocalMax = 1. / (T)std::numeric_limits<uint32_t>::max();
-        T rndVal01 = state * reciprocalMax;
-        return min + rndVal01 * (max - min);
-#else
         static thread_local std::uniform_real_distribution<T> distribution{0.0, 0.999};
         return min + distribution(RNGengine) * (max - min);
-#endif
     }
 
     float uniformRandomF(float min, float max)
