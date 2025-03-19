@@ -272,18 +272,18 @@ def launch_setup(context, *args, **kwargs):
     )
 
     actions = []
-    # actions.append(gaden_player)
-    # actions.extend(anemometer)
-    # actions.extend(PID)
-    # actions.append(nav2)
-    # actions.append(gmrf_wind)
-    # actions.extend(gsl_node)
-    # actions.extend(gsl_call)
-    # actions.append(rvizHit)
-    # actions.append(rvizSource)
+    actions.append(gaden_player)
+    actions.extend(anemometer)
+    actions.extend(PID)
+    actions.append(nav2)
+    actions.append(gmrf_wind)
+    actions.extend(gsl_node)
+    actions.extend(gsl_call)
+    actions.append(rvizHit)
+    actions.append(rvizSource)
     actions.append(unity)
-    # actions.append(semantics)
-    # actions.append(keyboard_control)
+    actions.append(semantics)
+    actions.append(keyboard_control)
 
     return actions
 
