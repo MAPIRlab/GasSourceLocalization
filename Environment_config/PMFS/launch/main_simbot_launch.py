@@ -1,14 +1,17 @@
 import os
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument,SetLaunchConfiguration,IncludeLaunchDescription,SetEnvironmentVariable,OpaqueFunction,GroupAction,Shutdown
+from launch.actions import (DeclareLaunchArgument, SetLaunchConfiguration, IncludeLaunchDescription,
+                            SetEnvironmentVariable, OpaqueFunction, GroupAction, Shutdown, ExecuteProcess)
 from launch.launch_description_sources import FrontendLaunchDescriptionSource, PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, FindExecutable
 from launch_ros.actions import Node, PushRosNamespace
 from ament_index_python.packages import get_package_share_directory
 from launch.frontend.parse_substitution import parse_substitution
 
-#===========================
+# ===========================
+
+
 def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="A"),
@@ -16,7 +19,8 @@ def launch_arguments():
         DeclareLaunchArgument("method",	default_value=["PMFS"]),
         DeclareLaunchArgument("use_infotaxis", default_value=["True"]),
     ]
-#==========================
+# ==========================
+
 
 def launch_setup(context, *args, **kwargs):
     method = LaunchConfiguration("method").perform(context)
@@ -39,47 +43,50 @@ def launch_setup(context, *args, **kwargs):
             Node(
                 package="gsl_server",
                 executable="gsl_actionserver_node",
-                name="gsl_node",
-                #prefix="xterm -e gdb --args",
+                name="GSL",
+                # prefix="xterm -hold -e gdb -ex run --args",
+                # prefix="xterm -hold -e gdb --args",
+                prefix="xterm -hold -e",
                 parameters=[
                     # Common
-                    {'use_sim_time': False},	
-                    {"max_search_time": 300.0},
+                    {'use_sim_time': False},
+                    {"maxSearchTime": 300.0},
                     {"robot_location_topic": "ground_truth"},
-                    {"stop_and_measure_time": 0.4 if method == "PMFS" else 2.0},
+                    {"stop_and_measure_time": 0.4},
                     {"th_gas_present": parse_substitution("$(var th_gas_present)")},
                     {"th_wind_present": parse_substitution("$(var th_wind_present)")},
                     {"ground_truth_x": parse_substitution("$(var source_x)")},
                     {"ground_truth_y": parse_substitution("$(var source_y)")},
-                    {"results_file": parse_substitution("Results/$(var simulation)/$(var method).csv")},
-                    
+                    {"resultsFile": parse_substitution("Results/$(var simulation)/$(var method).csv")},
+
                     {"scale": 25},
                     {"markers_height": 0.2},
 
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
                     {"openMoveSetExpasion": 5},
                     {"explorationProbability": 0.05},
-                    {"convergence_thr": 1.5 if method == "PMFS" else 1.0},
-                    
-                    #GrGSL
+                    {"convergence_thr": 1.5},
+
+                    # GrGSL
                     {"useDiffusionTerm": True},
-                    {"stdev_hit": 1.0},
-                    {"stdev_miss": 1.2},
+                    {"stdevHit": 1.0},
+                    {"stdevMiss": 1.2},
                     {"infoTaxis": parse_substitution("$(var use_infotaxis)")},
                     {"allowMovementRepetition": parse_substitution("$(var use_infotaxis)")},
 
-                    #PMFS
-                        # Hit probabilities
+                    # PMFS
                     {"headless": False},
-                    {"max_updates_per_stop": 5},
-                    {"kernel_sigma": 1.5},
-                    {"kernel_stretch_constant": 1.5},
+                    {"distanceWeight": 0.15},
+                    # Hit probabilities
+                    {"maxUpdatesPerStop": 5},
+                    {"kernelSigma": 1.5},
+                    {"kernelStretchConstant": 1.5},
                     {"hitPriorProbability": 0.3},
-                    {"confidence_sigma_spatial": 1.0},
-                    {"confidence_measurement_weight": 1.0},
-                    {"initialExplorationMoves" : parse_substitution("$(var initialExplorationMoves)")},
-                        #Filament simulation
-                    {"useWindGroundTruth": False},
+                    {"confidenceSigmaSpatial": 1.0},
+                    {"confidenceMeasurementWeight": 1.0},
+                    {"initialExplorationMoves": parse_substitution("$(var initialExplorationMoves)")},
+                    # Filament simulation
+                    {"useWindGroundTruth": True},
                     {"stepsSourceUpdate": 3},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
@@ -88,11 +95,13 @@ def launch_setup(context, *args, **kwargs):
                     {"noiseSTDev": parse_substitution("$(var filament_movement_stdev)")},
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
+                    {"blurSigmaX": 1.5},
+                    {"blurSigmaY": 1.5},
 
-                    #Surge-Cast
+                    # Surge-Cast
                     {"step": 0.5},
 
-                    
+
                 ],
                 on_exit=Shutdown()
             ),
@@ -107,6 +116,7 @@ def launch_setup(context, *args, **kwargs):
             {"sensor_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
             {"map_topic": parse_substitution("$(var robot_name)/map")},
             {"cell_size": 0.25},
+            {"exec_freq": 10.0},
         ]
     )
 
@@ -117,7 +127,7 @@ def launch_setup(context, *args, **kwargs):
             {"deltaTime": 0.1},
             {"speed": 5.0},
             {"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/scenarios/$(var scenario)/basicSim/$(var simulation).yaml")}
-            ],
+        ],
     )
 
     gaden_player = IncludeLaunchDescription(
@@ -139,15 +149,15 @@ def launch_setup(context, *args, **kwargs):
 
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-                os.path.join(
-                    get_package_share_directory("pmfs_env"),
-                    "navigation_config/nav2_launch.py",
-                )
-            ),
-            launch_arguments={
-                "scenario": LaunchConfiguration("scenario"),
-                "namespace" : LaunchConfiguration("robot_name")
-            }.items(),
+            os.path.join(
+                get_package_share_directory("pmfs_env"),
+                "navigation_config/nav2_launch.py",
+            )
+        ),
+        launch_arguments={
+            "scenario": LaunchConfiguration("scenario"),
+            "namespace": LaunchConfiguration("robot_name")
+        }.items(),
     )
 
     anemometer = [
@@ -158,10 +168,10 @@ def launch_setup(context, *args, **kwargs):
                 executable="simulated_anemometer",
                 name="Anemometer",
                 parameters=[
-                    {"sensor_frame" : parse_substitution("$(var robot_name)_anemometer_frame") },
-                    {"fixed_frame" : "map"},
-                    {"noise_std" : 0.3},
-                    {"use_map_ref_system" : False},
+                    {"sensor_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
+                    {"fixed_frame": "map"},
+                    {"noise_std": 0.3},
+                    {"use_map_ref_system": False},
                     {'use_sim_time': True},
                 ]
             ),
@@ -169,7 +179,7 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='anemometer_tf_pub',
-                arguments = ['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
+                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
         ])
@@ -183,10 +193,10 @@ def launch_setup(context, *args, **kwargs):
                 executable="simulated_gas_sensor",
                 name="PID",
                 parameters=[
-                    {"sensor_model" : 30 },
-                    {"sensor_frame" : parse_substitution("$(var robot_name)_pid_frame") },
-                    {"fixed_frame" : "map"},
-                    {"noise_std" : 20.1},
+                    {"sensor_model": 30},
+                    {"sensor_frame": parse_substitution("$(var robot_name)_pid_frame")},
+                    {"fixed_frame": "map"},
+                    {"noise_std": 20.1},
                     {'use_sim_time': True},
                 ]
             ),
@@ -194,19 +204,29 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='pid_tf_pub',
-                arguments = ['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
+                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
         ])
     ]
 
-    rviz = Node(
+    rvizHit = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz",
-        #prefix="xterm -e",
+        # prefix="xterm -e",
         arguments=[
-            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "gaden.rviz")
+            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "hit.rviz")
+        ],
+    )
+
+    rvizSource = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        # prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("pmfs_env"), "launch", "source.rviz")
         ],
     )
 
@@ -219,7 +239,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.append(rviz)
+    actions.append(rvizHit)
+    actions.append(rvizSource)
 
     return actions
 
@@ -242,7 +263,7 @@ def generate_launch_description():
         ),
 
         SetLaunchConfiguration(
-            name="robot_name", 
+            name="robot_name",
             value="PioneerP3DX"
         ),
 
@@ -250,41 +271,46 @@ def generate_launch_description():
         # GSL params (overwritable in each YAML)
         ##############################################
         SetLaunchConfiguration(
-            name="th_gas_present", 
+            name="th_gas_present",
             value="0.1"
         ),
         SetLaunchConfiguration(
-            name="th_wind_present", 
+            name="th_wind_present",
             value="0.02"
         ),
 
         SetLaunchConfiguration(
-            name="filament_movement_stdev", 
+            name="filament_movement_stdev",
             value="0.5"
         ),
         SetLaunchConfiguration(
-            name="sourceDiscriminationPower", 
-            value="0.2"
+            name="sourceDiscriminationPower",
+            value="0.3"
         ),
         SetLaunchConfiguration(
-            name="iterationsToRecord", 
+            name="iterationsToRecord",
             value="200"
         ),
+
         SetLaunchConfiguration(
-            name="maxWarmupIterations", 
+            name="minWarmupIterations",
+            value="0"
+        ),
+        SetLaunchConfiguration(
+            name="maxWarmupIterations",
             value="500"
         ),
         SetLaunchConfiguration(
-            name="initialExplorationMoves", 
-            value="5"
+            name="initialExplorationMoves",
+            value="2"
         ),
         SetLaunchConfiguration(
-            name="filamentDeltaTime", 
+            name="filamentDeltaTime",
             value="0.1"
         ),
     ]
-    
+
     launch_description.extend(launch_arguments())
     launch_description.append(OpaqueFunction(function=launch_setup))
-    
-    return  LaunchDescription(launch_description)
+
+    return LaunchDescription(launch_description)
