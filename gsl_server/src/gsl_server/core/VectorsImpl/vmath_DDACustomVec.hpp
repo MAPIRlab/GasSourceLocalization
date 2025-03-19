@@ -1,7 +1,7 @@
 #pragma once
 
-
 #include <DDA/Vectors.h>
+#include <tf2/LinearMath/Vector3.hpp>
 
 namespace GSL
 {
@@ -41,4 +41,14 @@ namespace GSL::vmath
         return Vector3(vec.x, vec.y, z);
     }
 
+
+    inline Vector3 fromTF2(const tf2::Vector3& v)
+    {
+        return Vector3(v.x(), v.y(), v.z());
+    }
+
+    inline tf2::Vector3 toTF2(const Vector3& v)
+    {
+        return tf2::Vector3(v.x, v.y, v.z);
+    }
 } // namespace GSL::vmath

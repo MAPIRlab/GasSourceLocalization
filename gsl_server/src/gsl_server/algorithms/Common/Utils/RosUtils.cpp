@@ -1,4 +1,3 @@
-#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <filesystem>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
@@ -10,6 +9,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <rclcpp/publisher.hpp>
 #include <string>
+#include <tf2/LinearMath/Vector3.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 namespace GSL::Utils
@@ -252,6 +252,16 @@ namespace GSL::Utils
         marker.points.push_back(endP);
 
         pub->publish(marker);
+    }
+
+    void publishDebugSingleArrow(Vector3 start, geometry_msgs::msg::Quaternion rotation, float length, std_msgs::msg::ColorRGBA color, const std::string& topic)
+    {
+        tf2::Quaternion tf2Quat;
+        tf2::fromMsg(rotation, tf2Quat);
+        tf2::Vector3 rotated = tf2::quatRotate(tf2Quat, tf2::Vector3(length,0,0));
+        Vector3 end = start + vmath::FromTF2(rotated);
+
+        publishDebugSingleArrow(start, end, color, topic);
     }
 
 } // namespace GSL::Utils

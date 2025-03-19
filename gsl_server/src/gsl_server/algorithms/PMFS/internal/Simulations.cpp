@@ -138,6 +138,7 @@ namespace GSL::PMFS_internal
                 varianceOfHitProb[cellI] = varianceCalculationData[cellI].variance / varianceCalculationData[cellI].weight_sum;
         }
 
+        GSL_TRACE("First simulation level done");
         // now, finer simulation where it is deemed relevant
         //------------------------------------------------------
         //------------------------------------------------------
@@ -174,6 +175,8 @@ namespace GSL::PMFS_internal
 #pragma omp parallel for schedule(dynamic)
             for (int leafIndex = 0; leafIndex < scores.size(); leafIndex++)
                 SimulationResult result = runSimulation(scores, leafIndex);
+
+            GSL_TRACE("Simulation level {} done", numberOfLevelsSimulated);
         }
 
         GSL_INFO("Number of levels in the simulation: {0}", numberOfLevelsSimulated);

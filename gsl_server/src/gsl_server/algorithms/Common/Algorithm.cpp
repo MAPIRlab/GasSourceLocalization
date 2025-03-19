@@ -1,4 +1,4 @@
-#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp" // IWYU pragma: keep
 #include <angles/angles.h>
 #include <fstream>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
@@ -35,8 +35,10 @@ namespace GSL
         gasSub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
                                                                            std::bind(&Algorithm::gasCallback, this, _1));
 
+        GSL_INFO("Gas sensor topic: '{}'", gasSub->get_topic_name());
         windSub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
             getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
+        GSL_INFO("Wind sensor topic: '{}'", windSub->get_topic_name());
 
         // extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
         static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), // extra time to make sure this only happens if the node is deadlocked
@@ -48,6 +50,7 @@ namespace GSL
                                                          });
 
         startTime = node->now();
+
         GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
     }
 
@@ -116,7 +119,11 @@ namespace GSL
             GSL_ERROR("{} - Error: {}", __FUNCTION__, ex.what());
             return PoseStamped();
         }
-
+        // Utils::publishDebugSingleArrow(vmath::WithZ(currentRobotPosition, 0),
+        //                                map_downWind_pose.pose.orientation,
+        //                                -msg->wind_speed,
+        //                                Utils::create_color(0, 1, 0),
+        //                                "wind_arrow");
         stopAndMeasureState->addWindReading(msg->wind_speed, Utils::getYaw(map_downWind_pose.pose.orientation));
         return map_downWind_pose;
     }
