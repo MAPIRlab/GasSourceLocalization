@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_server) 
-set(CMAKE_CXX_FLAGS "-g -Wpedantic ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-g -glldb -Wpedantic ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log file
 
@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log fi
 #OPTIONS
 #########################
 # enabling debug mode disables optimizations and activates a bunch of assertions in the code.
-set(GSL_DEBUG OFF)
+set(GSL_DEBUG ON)
 
 # extra logging to tell you what is being executed
 set(GSL_TRACING ON) 
@@ -29,6 +29,8 @@ set(USE_GUI ON)
 set(USE_TRACY OFF) 
 # disable to do sampling-only profiling
 set(USE_TRACY_INSTRUMENTATION OFF) 
+
+set(DISABLE_NAVIGATION ON) # Disables navigation decisions and lets you control the robot directly. For testing, mostly
 ##############################################################################
 
 
