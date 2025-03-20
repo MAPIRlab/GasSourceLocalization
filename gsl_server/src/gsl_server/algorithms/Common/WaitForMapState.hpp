@@ -1,7 +1,7 @@
 #pragma once
 #include <gsl_server/algorithms/Common/GSLState.hpp>
-#include <rclcpp/rclcpp.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 namespace GSL
 {
@@ -10,22 +10,25 @@ namespace GSL
     class WaitForMapState : public State
     {
     public:
-        WaitForMapState(Algorithm* _algorithm) : State(_algorithm)
+        WaitForMapState(Algorithm* _algorithm)
+            : State(_algorithm)
         {}
 
+        bool shouldWaitForGas = true;
+
+    protected:
         void OnEnterState(State* previous) override;
         void OnExitState(State* previous) override;
 
-        bool shouldWaitForGas = true;
+    private:
+        void mapCallback(OccupancyGrid::SharedPtr msg);
+        void costmapCallback(OccupancyGrid::SharedPtr msg);
+
+        void setNextState();
 
     private:
         bool hasMap = false, hasCostmap = false;
         rclcpp::Subscription<OccupancyGrid>::SharedPtr mapSub;
         rclcpp::Subscription<OccupancyGrid>::SharedPtr costmapSub;
-
-        void mapCallback(OccupancyGrid::SharedPtr msg);
-        void costmapCallback(OccupancyGrid::SharedPtr msg);
-
-        void setNextState();
     };
 } // namespace GSL

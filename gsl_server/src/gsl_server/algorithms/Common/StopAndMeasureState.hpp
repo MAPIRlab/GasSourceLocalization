@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gsl_server/algorithms/Common/GSLState.hpp>
-#include <vector>
 #include <rclcpp/time.hpp>
+#include <vector>
 
 namespace GSL
 {
@@ -10,15 +10,17 @@ namespace GSL
     {
     public:
         StopAndMeasureState(Algorithm* _algorithm);
-        virtual void OnEnterState(State* previousState) override;
-        virtual void OnExitState(State* nextState) override;
+
+        double average_concentration();                              // average of all the readings since we entered the state
+        double average_windDirection();                              // average of all the readings since we entered the state
+        double average_windSpeed();                                  // average of all the readings since we entered the state
+        virtual void addGasReading(double concentration);            // called from the sensor callback
+        virtual void addWindReading(double speed, double direction); // called from the sensor callback
         virtual void OnUpdate() override;
 
-        double average_concentration(); //average of all the readings since we entered the state
-        double average_windDirection(); //average of all the readings since we entered the state
-        double average_windSpeed(); //average of all the readings since we entered the state
-        virtual void addGasReading(double concentration); //called from the sensor callback
-        virtual void addWindReading(double speed, double direction); //called from the sensor callback
+    protected:
+        virtual void OnEnterState(State* previousState) override;
+        virtual void OnExitState(State* nextState) override;
 
     protected:
         double measure_time; // how long to measure for, in seconds

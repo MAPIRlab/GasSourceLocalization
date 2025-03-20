@@ -14,7 +14,7 @@ ament_target_dependencies(GSL_common
 )
 
 # Link other dependencies
-target_link_libraries(GSL_common  
+target_link_libraries(GSL_common 
     ${OpenCV_LIBS}
     OpenMP::OpenMP_CXX
     fmt

@@ -105,7 +105,7 @@ namespace GSL
             positionOfLastHit,
             gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
 
-        dynamic_cast<MovingStateGrGSL*>(movingState.get())->chooseGoalAndMove();
+        movingState->chooseGoalAndMove();
         exploredCells++;
         GrGSLLib::VisualizeMarkers(
             Grid2D<Cell>(cells, occupancy, gridMetadata),

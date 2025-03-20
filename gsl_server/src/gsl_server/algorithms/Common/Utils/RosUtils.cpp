@@ -258,10 +258,18 @@ namespace GSL::Utils
     {
         tf2::Quaternion tf2Quat;
         tf2::fromMsg(rotation, tf2Quat);
-        tf2::Vector3 rotated = tf2::quatRotate(tf2Quat, tf2::Vector3(length,0,0));
+        tf2::Vector3 rotated = tf2::quatRotate(tf2Quat, tf2::Vector3(length, 0, 0));
         Vector3 end = start + vmath::FromTF2(rotated);
 
         publishDebugSingleArrow(start, end, color, topic);
     }
 
+    rclcpp::executors::SingleThreadedExecutor::SharedPtr createExecutor(rclcpp::Node::SharedPtr node)
+    {
+        rclcpp::ExecutorOptions options;
+        options.context = node->get_node_base_interface()->get_context();
+        auto exec = std::make_shared<rclcpp::executors::SingleThreadedExecutor>(options);
+        exec->add_node(node);
+        return exec;
+    }
 } // namespace GSL::Utils

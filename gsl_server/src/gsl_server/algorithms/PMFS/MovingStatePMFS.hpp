@@ -37,6 +37,8 @@ namespace GSL
         std::vector<double> mutualInformationGas;
         HashSet closedMoveSet;
         HashSet openMoveSet;
+        uint movesCounter = 0;
+        
         NavigateToPose::Goal indexToGoal(int i, int j);
         void Fail() override;
         void calculateMutualInformationGas();

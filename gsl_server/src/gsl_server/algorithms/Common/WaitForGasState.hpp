@@ -9,10 +9,12 @@ namespace GSL
     {
     public:
         WaitForGasState(Algorithm* _algorithm);
-        void OnEnterState(State* previous) override;
-        void OnUpdate() override;
 
         void addMeasurement(double concentration);
+        void OnUpdate() override;
+
+    protected:
+        void OnEnterState(State* previous) override;
 
     protected:
         float maxWaitTime;

@@ -24,6 +24,7 @@ namespace GSL
         friend class WaitForGasState;
         friend class StopAndMeasureState;
         friend class MovingState;
+        friend class ManualNavigationState;
         friend class PMFSLib;
         friend class GrGSLLib;
 

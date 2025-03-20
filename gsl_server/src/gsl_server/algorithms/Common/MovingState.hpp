@@ -14,25 +14,33 @@ namespace GSL
     {
     public:
         MovingState(Algorithm* _algorithm);
-        std::optional<nav_msgs::msg::Path> GetPlan(const PoseStamped& start, const PoseStamped& target); //get a valid path from start to target
-        virtual void chooseGoalAndMove(){GSL_ERROR("chooseGoalAndMove() not implemented in base class!");}
-        bool checkGoal(const NavigateToPose::Goal& goal); //returns true if we can reach the goal
+        virtual void chooseGoalAndMove()
+        {
+            GSL_ERROR("chooseGoalAndMove() not implemented in base class!");
+        }
+
+        std::optional<nav_msgs::msg::Path> GetPlan(const PoseStamped& start, const PoseStamped& target); // get a valid path from start to target
+        bool checkGoal(const NavigateToPose::Goal& goal);                                                // returns true if we can reach the goal
         void sendGoal(const NavigateToPose::Goal& goal);
+        void OnUpdate() override;
+
+    protected:
         void OnEnterState(State* previous) override;
         void OnExitState(State* next) override;
-        void OnUpdate() override;
+
+    protected:
+        MovingState(Algorithm* _algorithm, bool initialize); // internal that lets you choose whether to run initialization or not. Exists mostly to allow manual driving
+        void Initialize();
+        // called by the actionServer automatically
+        void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result);
+        // Cancel the navigation and call OnCompleteNavigaton
+        virtual void Fail();
 
     protected:
         rclcpp::Time startTime;
         State* previousState;
         NavigationClient nav_client;
         std::optional<NavigateToPose::Goal> currentGoal = std::nullopt;
-
-        // called by the actionServer automatically
-        void goalDoneCallback(const rclcpp_action::ClientGoalHandle<NavigateToPose>::WrappedResult& result);
-
-        // Cancel the navigation and call OnCompleteNavigaton
-        virtual void Fail();
 
 #ifdef USE_NAV_ASSISTANT
         rclcpp::Client<MakePlan>::SharedPtr make_plan_client;

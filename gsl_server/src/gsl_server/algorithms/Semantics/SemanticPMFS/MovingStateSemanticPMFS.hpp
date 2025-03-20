@@ -41,11 +41,12 @@ namespace GSL
         std::vector<double> semanticsEntropy;
         HashSet closedMoveSet;
         HashSet openMoveSet;
+        uint movesCounter = 0;
+        SemanticPMFS* pmfs;
+
         NavigateToPose::Goal indexToGoal(int i, int j);
         void Fail() override;
         void calculateMutualInformationGas();
-
-        SemanticPMFS* pmfs;
 
         struct Publishers
         {

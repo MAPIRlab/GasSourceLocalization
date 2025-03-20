@@ -9,27 +9,29 @@ namespace GSL
     class State : public StateMachines::State<State>
     {
     public:
+        virtual void OnUpdate()
+        {
+        }
+        virtual bool CanEnterState(const State* previousState) const override
+        {
+            return true;
+        }
+        virtual bool CanExitState(const State* nextState) const override
+        {
+            return true;
+        }
+
+    protected:
         State() = delete;
         State(Algorithm* _algorithm)
         {
             algorithm = _algorithm;
         }
 
-        virtual bool CanEnterState(const State* previousState) const
-        {
-            return true;
-        }
-        virtual bool CanExitState(const State* nextState) const
-        {
-            return true;
-        }
-        virtual void OnEnterState(State* previousState)
+        virtual void OnEnterState(State* previousState) override
         {
         }
-        virtual void OnExitState(State* nextState)
-        {
-        }
-        virtual void OnUpdate()
+        virtual void OnExitState(State* nextState) override
         {
         }
 

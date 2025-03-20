@@ -26,6 +26,7 @@ namespace GSL
             double windSpeed = average_windSpeed();
             double windDirection = average_windDirection();
 
+            GSL_INFO("{} gas measurements, {} wind measurements", gas_v.size(), windSpeed_v.size());
             GSL_INFO("avg_gas={:.2};  avg_windSpeed={:.2};  avg_wind_dir={:.2}", concentration, windSpeed, windDirection);
             algorithm->processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         }

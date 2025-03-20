@@ -1,14 +1,15 @@
-#include "gsl_server/algorithms/Common/Grid2D.hpp"
-#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
-#include "gsl_server/algorithms/Common/Utils/Time.hpp"
-#include "gsl_server/core/Logging.hpp"
-#include "gsl_server/core/ros_typedefs.hpp"
 #include <fstream>
+#include <gsl_server/algorithms/Common/Grid2D.hpp>
+#include <gsl_server/algorithms/Common/ManualNavigation.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
+#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <gsl_server/algorithms/Common/Utils/Time.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp>
+#include <gsl_server/core/Logging.hpp>
+#include <gsl_server/core/ros_typedefs.hpp>
 
 #define DEBUG_VISUALIZATION 1
 namespace GSL
@@ -34,8 +35,11 @@ namespace GSL
         waitForMapState->shouldWaitForGas = false;
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
-        // TODO
+#if DISABLE_NAVIGATION
+        movingState = std::make_unique<ManualNavigationState>(this);
+#else
         movingState = std::make_unique<MovingStateSemanticPMFS>(this);
+#endif
         stateMachine.forceSetState(waitForMapState.get());
 
 #if USE_GUI
@@ -272,18 +276,7 @@ namespace GSL
 #endif
             }
 
-#define MANUAL_DRIVING 0
-#if MANUAL_DRIVING
-            stateMachine.forceResetState(stopAndMeasureState.get());
-#else
-            auto movingStatePMFS = dynamic_cast<MovingStateSemanticPMFS*>(movingState.get());
-            if (iterationsCounter > settings.movement.initialExplorationMoves)
-                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Search;
-            else
-                movingStatePMFS->currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
-            movingStatePMFS->chooseGoalAndMove();
-            movingStatePMFS->publishMarkers();
-#endif
+            movingState->chooseGoalAndMove();
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
@@ -296,6 +289,8 @@ namespace GSL
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             settings.visualization,
             pubs.pmfsPubs);
+
+        iterationsCounter++;
     }
 
     GSLResult SemanticPMFS::checkSourceFound()

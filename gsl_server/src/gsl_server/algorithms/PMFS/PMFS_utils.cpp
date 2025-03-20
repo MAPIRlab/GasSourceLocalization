@@ -11,8 +11,10 @@ namespace GSL
             stateMachine.forceSetState(stopAndMeasureState.get());
         else
         {
-            auto m = dynamic_cast<MovingStatePMFS*>(movingState.get());
-            functionQueue.submit(std::bind(&MovingStatePMFS::chooseGoalAndMove, m));
+            functionQueue.submit([&]()
+                                 {
+                                     movingState->chooseGoalAndMove();
+                                 });
         }
     }
 
@@ -73,7 +75,7 @@ namespace GSL
                 file << "FAILED ";
 
             file << resultLogging.navigationTime << " " << search_t << " " << errorAll << " " << error << " " << iterationsCounter << " "
-                 <<  Utils::Variance(Grid2D<double>(sourceProbability, occupancy, gridMetadata)) << "\n";
+                 << Utils::Variance(Grid2D<double>(sourceProbability, occupancy, gridMetadata)) << "\n";
             file.close();
         }
         else

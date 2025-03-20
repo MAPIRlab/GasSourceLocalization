@@ -3,18 +3,24 @@
 #include <gsl_server/core/GSLResult.hpp>
 #include <gsl_server/core/Logging.hpp>
 
-#define NAVIGATION_FIXES 0 // enables some navigation checks that should be handled by nav2 directly, but can cause problems if it is not correcly configured
-// honestly, don't use this, just configure nav2 properly
-
 namespace GSL
 {
     static constexpr int8_t lethal_cost = 60;
-#if NAVIGATION_FIXES
-    static constexpr int max_navigation_time = 20;
-#endif
 
     MovingState::MovingState(Algorithm* _algorithm)
         : State(_algorithm)
+    {
+        Initialize();
+    }
+
+    MovingState::MovingState(Algorithm* _algorithm, bool _initialize)
+        : State(_algorithm)
+    {
+        if (_initialize)
+            Initialize();
+    }
+
+    void MovingState::Initialize()
     {
 #ifdef USE_NAV_ASSISTANT
         make_plan_client = algorithm->node->create_client<MakePlan>("navigation_assistant/make_plan");
@@ -39,16 +45,7 @@ namespace GSL
     }
 
     void MovingState::OnUpdate()
-    {
-#if NAVIGATION_FIXES
-        if ((algorithm->node->now() - startTime).seconds() > max_navigation_time)
-        {
-            GSL_ERROR("Timed out trying to reach target. Cancelling navigation");
-            nav_client->async_cancel_all_goals();
-            Fail();
-        }
-#endif
-    }
+    {}
 
     void MovingState::OnExitState(State* next)
     {
