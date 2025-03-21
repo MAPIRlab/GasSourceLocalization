@@ -22,11 +22,12 @@ void GSL::ManualNavigationState::OnEnterState(State* previous)
                             });
 
     GSL_INFO("Entering Manual Driving, press [enter] to resume algorithm execution");
-    std::cin.get();
-    
+    std::string aux;
+    std::getline(std::cin, aux);
+
     exec->cancel();
     spinThread.join();
-    
+
     GSL_INFO("Resuming execution");
     algorithm->OnCompleteNavigation(GSLResult::Success, previousState);
 }
