@@ -1,4 +1,4 @@
-#include <gsl_server/algorithms/Common/WaitForMapState.hpp>
+#include <gsl_server/algorithms/Common/States/WaitForMapState.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 
 namespace GSL

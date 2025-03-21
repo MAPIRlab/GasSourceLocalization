@@ -42,6 +42,11 @@ namespace GSL
             return indicesToCoordinates(indices.x, indices.y, centerOfCell);
         }
 
+        Vector2 indexToCoordinates(size_t index, bool centerOfCell = true) const
+        {
+            return indicesToCoordinates(indices2D(index), centerOfCell);
+        }
+
         size_t indexOf(size_t x, size_t y) const
         {
             return x +  y * dimensions.x;

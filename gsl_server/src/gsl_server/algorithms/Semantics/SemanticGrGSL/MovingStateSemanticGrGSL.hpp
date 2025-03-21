@@ -1,6 +1,6 @@
 #pragma once
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
-#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/algorithms/Common/States//MovingState.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include "SemanticGrGSL.hpp"
 #include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>

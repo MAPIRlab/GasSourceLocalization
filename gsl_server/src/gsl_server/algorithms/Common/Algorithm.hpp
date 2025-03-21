@@ -5,14 +5,14 @@
 #include <gsl_server/algorithms/Common/Utils/BufferWrapper.hpp>
 #include <olfaction_msgs/msg/anemometer.hpp>
 #include <olfaction_msgs/msg/gas_sensor.hpp>
-#include <gsl_server/algorithms/Common/GSLState.hpp>
+#include <gsl_server/algorithms/Common/States/GSLState.hpp>
 #include <gsl_server/core/GSLResult.hpp>
 #include <gsl_server/core/Macros.hpp>
 
-#include <gsl_server/algorithms/Common/WaitForMapState.hpp>
-#include <gsl_server/algorithms/Common/WaitForGasState.hpp>
-#include <gsl_server/algorithms/Common/StopAndMeasureState.hpp>
-#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/algorithms/Common/States/WaitForMapState.hpp>
+#include <gsl_server/algorithms/Common/States/WaitForGasState.hpp>
+#include <gsl_server/algorithms/Common/States/StopAndMeasureState.hpp>
+#include <gsl_server/algorithms/Common/States/MovingState.hpp>
 #include <gsl_server/core/Vectors.hpp>
 
 namespace GSL
@@ -25,6 +25,7 @@ namespace GSL
         friend class StopAndMeasureState;
         friend class MovingState;
         friend class ManualNavigationState;
+        friend class NoNavigationState;
         friend class PMFSLib;
         friend class GrGSLLib;
 

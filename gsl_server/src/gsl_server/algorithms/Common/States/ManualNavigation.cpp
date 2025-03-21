@@ -1,5 +1,5 @@
 #include "ManualNavigation.hpp"
-#include "Algorithm.hpp"
+#include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <iostream>
 
@@ -23,9 +23,10 @@ void GSL::ManualNavigationState::OnEnterState(State* previous)
 
     GSL_INFO("Entering Manual Driving, press [enter] to resume algorithm execution");
     std::cin.get();
-
+    
     exec->cancel();
     spinThread.join();
-
+    
+    GSL_INFO("Resuming execution");
     algorithm->OnCompleteNavigation(GSLResult::Success, previousState);
 }

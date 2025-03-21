@@ -1,4 +1,4 @@
-#include "gsl_server/algorithms/Common/ManualNavigation.hpp"
+#include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/Pointers.hpp>
@@ -98,8 +98,11 @@ namespace GSL
         functionQueue.submit([this]()
                              {
                                  Grid2D<Vector2> windGrid(estimatedWindVectors, occupancy, gridMetadata);
-                                 PMFSLib::InitializeWindPredictions(*this, windGrid,
-                                                                    pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
+                                 PMFSLib::InitializeWindPredictions(*this,
+                                                                    settings.simulation,
+                                                                    windGrid,
+                                                                    pubs.gmrfWind.request
+                                                                        IF_GADEN(, pubs.groundTruthWind.request));
                                  PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
                                  stateMachine.forceSetState(stopAndMeasureState.get());
                              });

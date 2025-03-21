@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/Common/GSLState.hpp>
+#include <gsl_server/algorithms/Common/States/GSLState.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <rclcpp/rclcpp.hpp>
 

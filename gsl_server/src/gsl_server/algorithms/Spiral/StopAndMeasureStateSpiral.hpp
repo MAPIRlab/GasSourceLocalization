@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/Common/StopAndMeasureState.hpp>
+#include <gsl_server/algorithms/Common/States/StopAndMeasureState.hpp>
 
 namespace GSL
 {

@@ -1,4 +1,4 @@
-#include <gsl_server/algorithms/Common/StopAndMeasureState.hpp>
+#include <gsl_server/algorithms/Common/States/StopAndMeasureState.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 

@@ -1,5 +1,5 @@
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
-#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/algorithms/Common/States/MovingState.hpp>
 #include <gsl_server/core/GSLResult.hpp>
 #include <gsl_server/core/Logging.hpp>
 

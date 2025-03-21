@@ -1,4 +1,4 @@
-#include <gsl_server/algorithms/Common/WaitForGasState.hpp>
+#include <gsl_server/algorithms/Common/States/WaitForGasState.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/core/Logging.hpp>
 

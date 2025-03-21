@@ -1,6 +1,7 @@
 #include <fstream>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
-#include <gsl_server/algorithms/Common/ManualNavigation.hpp>
+#include <gsl_server/algorithms/Common/States/ManualNavigation.hpp>
+#include <gsl_server/algorithms/Common/States/NoNavigation.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/algorithms/Common/Utils/Time.hpp>
@@ -36,7 +37,7 @@ namespace GSL
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
 #if DISABLE_NAVIGATION
-        movingState = std::make_unique<ManualNavigationState>(this);
+        movingState = std::make_unique<NoNavigationState>(this);
 #else
         movingState = std::make_unique<MovingStateSemanticPMFS>(this);
 #endif
@@ -143,6 +144,7 @@ namespace GSL
                                  Grid<Vector2> windGrid(estimatedWindVectors, simulationOccupancy, gridMetadata);
                                  PMFSLib::InitializeWindPredictions(
                                      *this,
+                                     settings.simulation,
                                      windGrid,
                                      pubs.pmfsPubs.gmrfWind.request
                                          IF_GADEN(, pubs.pmfsPubs.groundTruthWind.request));
@@ -268,13 +270,13 @@ namespace GSL
             bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
 
-            if (timeToSimulate)
-            {
-                simulations.updateSourceProbability(settings.simulation.refineFraction);
-#if DEBUG_VISUALIZATION
-                logProgressionAndVisualize();
-#endif
-            }
+            //             if (timeToSimulate)
+            //             {
+            //                 simulations.updateSourceProbability(settings.simulation.refineFraction);
+            // #if DEBUG_VISUALIZATION
+            //                 logProgressionAndVisualize();
+            // #endif
+            //             }
 
             movingState->chooseGoalAndMove();
         }
