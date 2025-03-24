@@ -183,6 +183,18 @@ namespace GSL
         if (!currentGoal.has_value())
             return;
         currentGoal = std::nullopt;
+        nav_client->async_cancel_all_goals();
         algorithm->OnCompleteNavigation(GSLResult::Failure, previousState);
     }
+
 } // namespace GSL
+
+#if USE_GUI
+#include <imgui.h>
+void GSL::MovingState::RenderUI()
+{
+    ImGui::Text("Moving State");
+    if(ImGui::Button("Cancel goal"))
+        Fail();
+}
+#endif

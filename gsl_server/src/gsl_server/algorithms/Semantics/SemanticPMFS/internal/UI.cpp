@@ -1,7 +1,6 @@
 #ifdef USE_GUI
 #include "UI.hpp"
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
-#include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
 #include "gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFS.hpp"
@@ -181,13 +180,6 @@ namespace GSL::SemanticPMFS_internal
 
             if (ImGui::Button(buttonText.c_str()))
                 pmfs->paused = !pmfs->paused;
-
-            if (ImGui::Button("Cancel goal"))
-            {
-                auto state = As<MovingStateSemanticPMFS>(pmfs->stateMachine.getCurrentState());
-                if (state)
-                    state->Fail();
-            }
         }
         ImGui::End();
 

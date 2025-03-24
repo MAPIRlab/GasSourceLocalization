@@ -177,7 +177,7 @@ namespace GSL
             watch.restart();
             voxeland_msgs::srv::GetClassDistributions::Response::SharedPtr response = future.get();
 
-// #pragma omp parallel for
+#pragma omp parallel for
             for (size_t i = 0; i < classMap.classProbabilityZ.size(); i++)
                 classMap.FromMsg(i, response->distributions.at(i).probabilities);
             // GSL_TRACE("Done parsing msg in {:.3f}s", watch.ellapsed());

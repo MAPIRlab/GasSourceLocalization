@@ -12,7 +12,6 @@
 #include <gsl_server/core/Logging.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
-#define DEBUG_VISUALIZATION 1
 namespace GSL
 {
     static std::ofstream progressionFile;
@@ -37,7 +36,7 @@ namespace GSL
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
 #if DISABLE_NAVIGATION
-        movingState = std::make_unique<ManualNavigationState>(this);
+        movingState = std::make_unique<NoNavigationState>(this);
 #else
         movingState = std::make_unique<MovingStateSemanticPMFS>(this);
 #endif
@@ -155,9 +154,7 @@ namespace GSL
                                      pubs.pmfsPubs.gmrfWind
                                          IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
                                  stateMachine.forceSetState(stopAndMeasureState.get());
-#if DEBUG_VISUALIZATION
                                  logProgressionAndVisualize();
-#endif
                              });
 
         // SEMANTICS
@@ -220,7 +217,7 @@ namespace GSL
         Vector2 expecBoth = Utils::ExpectedValue(AsGrid(combinedSourceProbability, simulationOccupancy), 1);
         Utils::CovarianceMatrix varBoth = Utils::Covariance(AsGrid(combinedSourceProbability, simulationOccupancy));
         double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
-        progressionFile << fmt::format("{:.2f}; ({:.2f}, {:.2f}, {:.2f});  {:.2f}; ({:.2f}, {:.2f}, {:.2f});\n",
+        progressionFile << fmt::format("{:.2f};\t({:.2f}, {:.2f},\t{:.2f});\t{:.2f};\t({:.2f}, {:.2f}, {:.2f});\n",
                                        errorOlfOnly, varOlfOnly.x, varOlfOnly.y, varOlfOnly.covariance,
                                        errorBoth, varBoth.x, varBoth.y, varBoth.covariance);
         progressionFile.flush();
@@ -269,16 +266,15 @@ namespace GSL
                 pubs.pmfsPubs);
 
             number_of_updates = 0;
-            bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
+            bool timeToSimulate = settings.simulation.stepsBetweenSourceUpdates >= 0 &&
+                                  iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
 
-            //             if (timeToSimulate)
-            //             {
-            //                 simulations.updateSourceProbability(settings.simulation.refineFraction);
-            // #if DEBUG_VISUALIZATION
-            //                 logProgressionAndVisualize();
-            // #endif
-            //             }
+            if (timeToSimulate)
+            {
+                simulations.updateSourceProbability(settings.simulation.refineFraction);
+                logProgressionAndVisualize();
+            }
 
             movingState->chooseGoalAndMove();
         }

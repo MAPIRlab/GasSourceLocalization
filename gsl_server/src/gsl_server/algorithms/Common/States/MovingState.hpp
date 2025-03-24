@@ -36,6 +36,7 @@ namespace GSL
         // Cancel the navigation and call OnCompleteNavigaton
         virtual void Fail();
 
+        void RenderUI() override;
     protected:
         rclcpp::Time startTime;
         State* previousState;

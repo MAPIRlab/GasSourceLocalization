@@ -30,7 +30,7 @@ namespace GSL::PMFS_internal
     {
         bool useWindGroundTruth = false;
         int maxRegionSize = 10;
-        int stepsBetweenSourceUpdates = 3;
+        int stepsBetweenSourceUpdates = 3;      // make negative to disable updates. Useful if you want to always trigger them manually from UI
         double sourceDiscriminationPower = 0.2; // higher values here will lead to a larger difference in the estimated source probability from one cell to another
         double refineFraction = 0.25;           // proportion of the cells that will be subdivided for the finer simulation
 

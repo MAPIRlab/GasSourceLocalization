@@ -167,7 +167,8 @@ namespace GSL
 
             // Simulations are slow, so we only run them every few positions, when the map has had time to meaningfully change
             //----------------------------------------
-            bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
+            bool timeToSimulate = settings.simulation.stepsBetweenSourceUpdates >= 0 &&
+                                  iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
             if (timeToSimulate)
             {
