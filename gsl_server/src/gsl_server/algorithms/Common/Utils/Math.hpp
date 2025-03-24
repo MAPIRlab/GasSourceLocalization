@@ -1,9 +1,9 @@
 #pragma once
-#include <vector>
-#include <gsl_server/core/Vectors.hpp>
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include <cfloat>
 #include <gsl_server/algorithms/Common/Occupancy.hpp>
-#include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include <gsl_server/core/Vectors.hpp>
+#include <vector>
 
 namespace GSL::Utils
 {
@@ -18,7 +18,7 @@ namespace GSL::Utils
     template <typename CollectionIterator>
     float getAverageDirection(const CollectionIterator startIt, const CollectionIterator endIt);
 
-    bool approx(double v1, double v2, double epsilon=1e-5);
+    bool approx(double v1, double v2, double epsilon = 1e-5);
 
     double lerp(double start, double end, double proportion);
     double remapRange(double value, double low1, double high1, double low2, double high2);
@@ -29,18 +29,17 @@ namespace GSL::Utils
     double logOddsToProbability(double l);
 
     double randomFromGaussian(double mean, double stdev);
-    double uniformRandom(double min, double max);    
+    double uniformRandom(double min, double max);
     float uniformRandomF(float min, float max);
 
-
-    template<typename T>
+    template <typename T>
     double KLD(
         const std::vector<T>& a,
         const std::vector<T>& b,
         const std::vector<Occupancy>& occupancy,
         std::function<double(const T&)> accessor);
 
-    template<typename T>
+    template <typename T>
     void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy);
     void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy);
     void NormalizeDistributionLong(std::vector<long double>& variable, std::vector<Occupancy>& occupancy);
@@ -49,11 +48,17 @@ namespace GSL::Utils
 
     Vector2 ExpectedValue(const Grid2D<double> grid, double proportionBest);
     double Variance(const Grid2D<double> grid);
+    struct CovarianceMatrix
+    {
+        float x;
+        float y;
+        float covariance;
+    };
+    CovarianceMatrix Covariance(Grid2D<double> grid);
 
-
-    //holds a long list of N(0,1) values, and returns them one at a time, scaled as requested.
-    //obviously not as good as generating them on the fly, but it's not like we are doing cryptography here
-    template<int Size>
+    // holds a long list of N(0,1) values, and returns them one at a time, scaled as requested.
+    // obviously not as good as generating them on the fly, but it's not like we are doing cryptography here
+    template <int Size>
     class PrecalculatedGaussian
     {
     public:
@@ -69,6 +74,7 @@ namespace GSL::Utils
             m_index = (m_index + 1) % Size;
             return mean + stdev * m_precalculatedTable[m_index];
         }
+
     private:
         uint16_t m_index;
         std::array<float, Size> m_precalculatedTable;
@@ -76,8 +82,7 @@ namespace GSL::Utils
 
 } // namespace GSL::Utils
 
-
-//Definitions
+// Definitions
 //--------------
 template <typename CollectionIterator>
 inline float GSL::Utils::getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
@@ -112,12 +117,12 @@ inline float GSL::Utils::getAverageDirection(const CollectionIterator startIt, c
 }
 
 // Kullback-Leibler Divergence
-template<typename T>
+template <typename T>
 inline double GSL::Utils::KLD(
-        const std::vector<T>& a,
-        const std::vector<T>& b,
-        const std::vector<Occupancy>& occupancy,
-        std::function<double(const T&)> accessor)
+    const std::vector<T>& a,
+    const std::vector<T>& b,
+    const std::vector<Occupancy>& occupancy,
+    std::function<double(const T&)> accessor)
 {
     double total = 0;
     for (int index = 0; index < a.size(); index++)
@@ -125,14 +130,13 @@ inline double GSL::Utils::KLD(
         {
             double aVal = accessor(a[index]);
             double bVal = accessor(b[index]);
-            double aux = aVal * std::log(aVal / bVal)
-                         + (1 - aVal) * std::log((1 - aVal) / (1 - bVal));
+            double aux = aVal * std::log(aVal / bVal) + (1 - aVal) * std::log((1 - aVal) / (1 - bVal));
             total += std::isnan(aux) ? 0 : aux;
         }
     return total;
 }
 
-template<typename T>
+template <typename T>
 inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy)
 {
     double total = 0;
@@ -142,7 +146,7 @@ inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::fun
             total += accessor(variable[i]);
     }
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < variable.size(); i++)
     {
         if (occupancy[i] == Occupancy::Free)

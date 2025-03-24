@@ -1,10 +1,11 @@
-#include <gsl_server/algorithms/Common/States/StopAndMeasureState.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
+#include <gsl_server/algorithms/Common/States/StopAndMeasureState.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 
 namespace GSL
 {
-    StopAndMeasureState::StopAndMeasureState(Algorithm* _algorithm) : State(_algorithm)
+    StopAndMeasureState::StopAndMeasureState(Algorithm* _algorithm)
+        : State(_algorithm)
     {
         measure_time = algorithm->getParam<double>("stop_and_measure_time", 2.0);
     }
@@ -22,6 +23,13 @@ namespace GSL
     {
         if ((algorithm->node->now() - time_stopped).seconds() >= measure_time)
         {
+            if (gas_v.size() == 0 || windDirection_v.size() == 0)
+            {
+                GSL_WARN("Resetting stop and measure, no readings exist!");
+                algorithm->stateMachine.forceResetState(this);
+                return;
+            }
+
             double concentration = average_concentration();
             double windSpeed = average_windSpeed();
             double windDirection = average_windDirection();

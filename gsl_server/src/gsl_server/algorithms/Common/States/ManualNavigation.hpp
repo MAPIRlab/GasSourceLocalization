@@ -8,7 +8,10 @@ namespace GSL
     public:
         ManualNavigationState(Algorithm* _algorithm);
         void chooseGoalAndMove() override;
-        protected:
+
+    protected:
         void OnEnterState(State* previous) override;
+        void RenderUI() override;
+        bool paused;
     };
 } // namespace GSL

@@ -37,7 +37,7 @@ namespace GSL
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
 #if DISABLE_NAVIGATION
-        movingState = std::make_unique<NoNavigationState>(this);
+        movingState = std::make_unique<ManualNavigationState>(this);
 #else
         movingState = std::make_unique<MovingStateSemanticPMFS>(this);
 #endif
@@ -214,13 +214,15 @@ namespace GSL
         Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, simulationOccupancy, gridMetadata), "sourceOlfactionOnly");
 
         Vector2 expecOlfOnly = Utils::ExpectedValue(AsGrid(sourceProbabilityPMFS, simulationOccupancy), 1);
-        double varianceOlfOnly = Utils::Variance(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
+        Utils::CovarianceMatrix varOlfOnly = Utils::Covariance(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
         double errorOlfOnly = vmath::length(expecOlfOnly - resultLogging.sourcePositionGT);
 
         Vector2 expecBoth = Utils::ExpectedValue(AsGrid(combinedSourceProbability, simulationOccupancy), 1);
-        double varianceBoth = Utils::Variance(AsGrid(combinedSourceProbability, simulationOccupancy));
+        Utils::CovarianceMatrix varBoth = Utils::Covariance(AsGrid(combinedSourceProbability, simulationOccupancy));
         double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
-        progressionFile << fmt::format("{};{};  {};{};\n", errorOlfOnly, varianceOlfOnly, errorBoth, varianceBoth);
+        progressionFile << fmt::format("{:.2f}; ({:.2f}, {:.2f}, {:.2f});  {:.2f}; ({:.2f}, {:.2f}, {:.2f});\n",
+                                       errorOlfOnly, varOlfOnly.x, varOlfOnly.y, varOlfOnly.covariance,
+                                       errorBoth, varBoth.x, varBoth.y, varBoth.covariance);
         progressionFile.flush();
 
         Utils::publishDebugSingleMarker(vmath::WithZ(expecOlfOnly, 0.0),

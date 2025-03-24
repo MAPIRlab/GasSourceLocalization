@@ -1,4 +1,3 @@
-#include <chrono>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <random>
 
@@ -145,7 +144,9 @@ namespace GSL::Utils
         }
 
         std::sort(data.begin(), data.end(), [](const CellData& a, const CellData& b)
-                  { return a.probability > b.probability; });
+                  {
+                      return a.probability > b.probability;
+                  });
 
         double averageX = 0, averageY = 0;
         double sum = 0;
@@ -169,7 +170,7 @@ namespace GSL::Utils
         {
             for (int col = 0; col < grid.metadata.dimensions.x; col++)
             {
-                if (grid.occupancy[grid.metadata.indexOf({col,row})] == Occupancy::Free)
+                if (grid.occupancy[grid.metadata.indexOf({col, row})] == Occupancy::Free)
                 {
                     Vector2 coords = grid.metadata.indicesToCoordinates(col, row);
                     double p = grid.data[grid.metadata.indexOf({col, row})];
@@ -179,5 +180,31 @@ namespace GSL::Utils
             }
         }
         return x + y;
+    }
+
+    CovarianceMatrix Covariance(Grid2D<double> grid)
+    {
+        Vector2 expectedValue = ExpectedValue(grid, 1);
+        float sum = 0;
+        float varX = 0;
+        float varY = 0;
+        float covar = 0;
+        for (int i = 0; i < grid.data.size(); i++)
+        {
+            if (grid.occupancy.at(i) == Occupancy::Free)
+            {
+                Vector2 center = grid.metadata.indexToCoordinates(i);
+
+                float xDiff = (center.x - expectedValue.x);
+                float yDiff = (center.y - expectedValue.y);
+
+                float prob = grid.data.at(i);
+                varX += prob * xDiff * xDiff;
+                varY += prob * yDiff * yDiff;
+                covar += prob * xDiff * yDiff;
+                sum += prob;
+            }
+        }
+        return {.x = varX / sum, .y = varY / sum, .covariance = covar / sum};
     }
 } // namespace GSL::Utils

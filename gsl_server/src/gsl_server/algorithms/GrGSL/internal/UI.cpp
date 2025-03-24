@@ -151,6 +151,13 @@ namespace GSL::GrGSL_internal
             settings.colorScaleLimits.y = sourceLimits[1];
         }
         ImGui::End();
+
+
+        ImGui::Begin("Current State");
+        {
+            grgsl->stateMachine.getCurrentState()->RenderUI();
+        }
+        ImGui::End();
     }
 
     void UI::createPlots()

@@ -21,6 +21,9 @@ namespace GSL
             return true;
         }
 
+        virtual void RenderUI()
+        {}
+
     protected:
         State() = delete;
         State(Algorithm* _algorithm)
