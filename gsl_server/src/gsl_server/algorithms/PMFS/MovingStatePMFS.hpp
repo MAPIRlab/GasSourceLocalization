@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/algorithms/Common/States//MovingState.hpp>
 #include <gsl_server/core/Vectors.hpp>
 
 namespace GSL
@@ -37,6 +37,8 @@ namespace GSL
         std::vector<double> mutualInformationGas;
         HashSet closedMoveSet;
         HashSet openMoveSet;
+        uint movesCounter = 0;
+        
         NavigateToPose::Goal indexToGoal(int i, int j);
         void Fail() override;
         void calculateMutualInformationGas();

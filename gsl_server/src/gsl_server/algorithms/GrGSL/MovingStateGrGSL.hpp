@@ -5,7 +5,7 @@
 #include "gsl_server/algorithms/GrGSL/internal/UI.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <gmrf_msgs/srv/detail/wind_estimation__struct.hpp>
-#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/algorithms/Common/States/MovingState.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <gsl_server/core/ConditionalMacros.hpp>
 #include <vector>

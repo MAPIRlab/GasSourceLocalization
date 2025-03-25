@@ -1,6 +1,6 @@
 #pragma once
 #include "gsl_server/core/ConditionalMacros.hpp"
-#include <gsl_server/algorithms/Common/MovingState.hpp>
+#include <gsl_server/algorithms/Common/States/MovingState.hpp>
 #include <gsl_server/core/Vectors.hpp>
 
 #if USE_GUI
@@ -41,11 +41,12 @@ namespace GSL
         std::vector<double> semanticsEntropy;
         HashSet closedMoveSet;
         HashSet openMoveSet;
+        uint movesCounter = 0;
+        SemanticPMFS* pmfs;
+
         NavigateToPose::Goal indexToGoal(int i, int j);
         void Fail() override;
         void calculateMutualInformationGas();
-
-        SemanticPMFS* pmfs;
 
         struct Publishers
         {

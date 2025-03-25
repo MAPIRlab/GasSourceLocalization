@@ -1,18 +1,20 @@
 #pragma once
-#include <gsl_server/algorithms/Common/StopAndMeasureState.hpp>
+#include <gsl_server/algorithms/Common/States/StopAndMeasureState.hpp>
 
 namespace GSL
 {
     class StopAndMeasureStateSpiral : public StopAndMeasureState
     {
     public:
-        void OnEnterState(State* previous) override;
         StopAndMeasureStateSpiral(Algorithm* _algorithm);
 
         void addGasReading(double concentration) override;
         double getSumOfLocalMaxima();
 
         double intervalLength;
+
+    protected:
+        void OnEnterState(State* previous) override;
 
     private:
         class Spiral* spiral;

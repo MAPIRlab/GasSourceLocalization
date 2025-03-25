@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_server) 
-set(CMAKE_CXX_FLAGS "-g -Wpedantic ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-g -glldb -Wpedantic ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log file
 
@@ -15,7 +15,7 @@ set(GSL_TRACING ON)
  
 # if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. 
 # If you dont have gaden in this workspace, you need to set this to OFF or it wont compile
-set(USE_GADEN ON)
+set(USE_GADEN OFF)
 
 # if ON uses the nav_assistant package rather than directly communicating with nav_2. 
 # It adds some extra features, but currently it has a relatively high performance cost due to async inter-process communication  
@@ -29,6 +29,8 @@ set(USE_GUI ON)
 set(USE_TRACY OFF) 
 # disable to do sampling-only profiling
 set(USE_TRACY_INSTRUMENTATION OFF) 
+
+set(DISABLE_NAVIGATION ON) # Disables navigation decisions and lets you control the robot directly. For testing, mostly
 ##############################################################################
 
 

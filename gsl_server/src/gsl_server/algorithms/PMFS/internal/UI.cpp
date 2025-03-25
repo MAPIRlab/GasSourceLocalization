@@ -195,6 +195,12 @@ namespace GSL::PMFS_internal
             settings.visualization.sourceLimits.y = sourceLimits[1];
         }
         ImGui::End();
+
+        ImGui::Begin("Current State");
+        {
+            pmfs->stateMachine.getCurrentState()->RenderUI();
+        }
+        ImGui::End();
     }
 
     void UI::createPlots()

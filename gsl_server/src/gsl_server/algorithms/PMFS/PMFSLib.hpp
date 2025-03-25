@@ -31,13 +31,14 @@ namespace GSL
 
     public:
         static void InitMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale);
-        
+
         static void InitializeMap(Grid2D<HitProbability> grid,
                                   PMFS_internal::Simulations& simulations,
                                   VisibilityMap& visibilityMap,
                                   Vector2 startingPosition);
 
         static void InitializeWindPredictions(Algorithm& algorithm,
+                                              const PMFS_internal::SimulationSettings& settings,
                                               Grid2D<Vector2> grid,
                                               WindEstimation::Request::SharedPtr& GMRFRequest
                                                   IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest));

@@ -23,6 +23,14 @@ namespace GSL
     {
         // ScopedStopwatch watch("movement");
 
+
+        if (movesCounter > pmfs->settings.movement.initialExplorationMoves)
+            currentMovement = MovingStateSemanticPMFS::MovementType::Search;
+        else
+            currentMovement = MovingStateSemanticPMFS::MovementType::Exploration;
+
+
+
         auto& gridMetadata = pmfs->gridMetadata;
 
         // Add nearby cells to the open set
@@ -100,7 +108,8 @@ namespace GSL
         if (closedMoveSet.find(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose)) == closedMoveSet.end())
             openMoveSet.insert(pmfs->gridMetadata.coordinatesToIndices(pmfs->currentRobotPose.pose.pose));
 
-        pmfs->iterationsCounter++;
+        movesCounter++;
+        publishMarkers();
         sendGoal(goal);
     }
 

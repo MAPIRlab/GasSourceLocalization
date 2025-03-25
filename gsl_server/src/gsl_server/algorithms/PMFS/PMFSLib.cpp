@@ -292,58 +292,68 @@ namespace GSL
         return numFreeCells;
     }
 
-    void PMFSLib::InitializeWindPredictions(Algorithm& algorithm, Grid2D<Vector2> grid,
+    void PMFSLib::InitializeWindPredictions(Algorithm& algorithm,
+                                            const PMFS_internal::SimulationSettings& settings,
+                                            Grid2D<Vector2> grid,
                                             WindEstimation::Request::SharedPtr& GMRFRequest
                                                 IF_GADEN(, gaden_msgs::srv::WindPosition::Request::SharedPtr& groundTruthWindRequest))
     {
         grid.data.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y);
 
 #ifdef USE_GADEN
-        std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
-        geometry_msgs::msg::TransformStamped tfm;
-        bool has_tf = false;
-        do
+        if (settings.useWindGroundTruth)
         {
-            try
+            std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
+            geometry_msgs::msg::TransformStamped tfm;
+            bool has_tf = false;
+            do
             {
-                tfm = algorithm.tfBuffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
-                has_tf = true;
-            }
-            catch (std::exception& e)
-            {
-                GSL_ERROR("TF error when looking up map -> anemometer:\n{}", e.what());
-                rclcpp::spin_some(algorithm.node);
-            }
-        } while (!has_tf && rclcpp::ok());
+                try
+                {
+                    tfm = algorithm.tfBuffer.buffer.lookupTransform("map", anemometer_frame, rclcpp::Time(0));
+                    has_tf = true;
+                }
+                catch (std::exception& e)
+                {
+                    GSL_ERROR("TF error when looking up map -> anemometer:\n{}", e.what());
+                    rclcpp::spin_some(algorithm.node);
+                }
+            } while (!has_tf && rclcpp::ok());
 
-        float anemometer_Z = tfm.transform.translation.z;
-        GSL_INFO("anemometer z is {}", anemometer_Z);
-        groundTruthWindRequest = std::make_shared<gaden_msgs::srv::WindPosition::Request>();
+            float anemometer_Z = tfm.transform.translation.z;
+            GSL_INFO("anemometer z is {}", anemometer_Z);
+            groundTruthWindRequest = std::make_shared<gaden_msgs::srv::WindPosition::Request>();
+
+            for (int i = 0; i < grid.data.size(); i++)
+            {
+                if (grid.occupancy.at(i) == Occupancy::Free)
+                {
+                    Vector2 coords = grid.metadata.indexToCoordinates(i);
+                    groundTruthWindRequest->x.push_back(coords.x);
+                    groundTruthWindRequest->y.push_back(coords.y);
+                    groundTruthWindRequest->z.push_back(anemometer_Z);
+                }
+            }
+        }
 #endif
 
         GMRFRequest = std::make_shared<WindEstimation::Request>();
 
-        for (int i = 0; i < grid.metadata.dimensions.x; i++)
+        for (int i = 0; i < grid.data.size(); i++)
         {
-            for (int j = 0; j < grid.metadata.dimensions.y; j++)
+            if (grid.occupancy.at(i) == Occupancy::Free)
             {
-                if (grid.freeAt(i, j))
-                {
-                    Vector2 coords = grid.metadata.indicesToCoordinates(i, j);
-                    GMRFRequest->x.push_back(coords.x);
-                    GMRFRequest->y.push_back(coords.y);
-#ifdef USE_GADEN
-                    groundTruthWindRequest->x.push_back(coords.x);
-                    groundTruthWindRequest->y.push_back(coords.y);
-                    groundTruthWindRequest->z.push_back(anemometer_Z);
-#endif
-                }
+                Vector2 coords = grid.metadata.indexToCoordinates(i);
+                GMRFRequest->x.push_back(coords.x);
+                GMRFRequest->y.push_back(coords.y);
             }
         }
     }
 
-    void PMFSLib::EstimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind, rclcpp::Node::SharedPtr node,
-                               PMFS_internal::GMRFWind& gmrf IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth))
+    void PMFSLib::EstimateWind(bool useGroundTruth, Grid2D<Vector2> estimatedWind,
+                               rclcpp::Node::SharedPtr node,
+                               PMFS_internal::GMRFWind& gmrf
+                                   IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth))
     {
         // if not compiled with gaden support, you have no choice but to use GMRF :)
 #ifdef USE_GADEN
@@ -360,7 +370,7 @@ namespace GSL
                 for (int ind = 0; ind < gmrf.request->x.size(); ind++)
                 {
                     Vector2Int pair = estimatedWind.metadata.coordinatesToIndices(gmrf.request->x[ind], gmrf.request->y[ind]);
-                    estimatedWind.dataAt(pair.x, pair.y) = Vector2(std::cos(response->v[ind]), std::sin(response->v[ind])) * (float)response->u[ind];
+                    estimatedWind.dataAt(pair.x, pair.y) = Vector2(response->u.at(ind), response->v.at(ind));
                 }
             }
             else

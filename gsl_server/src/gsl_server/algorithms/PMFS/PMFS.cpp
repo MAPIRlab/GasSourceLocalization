@@ -1,3 +1,4 @@
+#include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/Pointers.hpp>
@@ -37,7 +38,11 @@ namespace GSL
         waitForMapState->shouldWaitForGas = false;
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
+#if DISABLE_NAVIGATION
+        movingState = std::make_unique<ManualNavigationState>(this);
+#else
         movingState = std::make_unique<MovingStatePMFS>(this);
+#endif
         stateMachine.forceSetState(waitForMapState.get());
     }
 
@@ -93,8 +98,11 @@ namespace GSL
         functionQueue.submit([this]()
                              {
                                  Grid2D<Vector2> windGrid(estimatedWindVectors, occupancy, gridMetadata);
-                                 PMFSLib::InitializeWindPredictions(*this, windGrid,
-                                                                    pubs.gmrfWind.request IF_GADEN(, pubs.groundTruthWind.request));
+                                 PMFSLib::InitializeWindPredictions(*this,
+                                                                    settings.simulation,
+                                                                    windGrid,
+                                                                    pubs.gmrfWind.request
+                                                                        IF_GADEN(, pubs.groundTruthWind.request));
                                  PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
                                  stateMachine.forceSetState(stopAndMeasureState.get());
                              });
@@ -116,7 +124,6 @@ namespace GSL
         functionQueue.run();
 
         // Update visualization
-        dynamic_cast<MovingStatePMFS*>(movingState.get())->publishMarkers();
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);
         PMFSViz::ShowSourceProb(Grid2D<double>(sourceProbability, occupancy, gridMetadata), settings.visualization, pubs);
     }
@@ -132,14 +139,14 @@ namespace GSL
         {
             // Gas & wind
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, true, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+                                              gridMetadata.coordinatesToIndices(currentRobotPosition));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "GAS HIT");
         }
         else
         {
             // Nothing
             PMFSLib::EstimateHitProbabilities(grid, *visibilityMap, settings.hitProbability, false, windDirection, windSpeed,
-                                              gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
+                                              gridMetadata.coordinatesToIndices(currentRobotPosition));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
 
@@ -160,7 +167,8 @@ namespace GSL
 
             // Simulations are slow, so we only run them every few positions, when the map has had time to meaningfully change
             //----------------------------------------
-            bool timeToSimulate = iterationsCounter >= settings.movement.initialExplorationMoves &&
+            bool timeToSimulate = settings.simulation.stepsBetweenSourceUpdates >= 0 &&
+                                  iterationsCounter >= settings.movement.initialExplorationMoves &&
                                   iterationsCounter % settings.simulation.stepsBetweenSourceUpdates == 0;
             if (timeToSimulate)
             {
@@ -169,14 +177,9 @@ namespace GSL
             }
 
             // Movement
-            auto movingStatePMFS = As<MovingStatePMFS>(movingState);
-            if (iterationsCounter > settings.movement.initialExplorationMoves)
-                movingStatePMFS->currentMovement = MovingStatePMFS::MovementType::Search;
-            else
-                movingStatePMFS->currentMovement = MovingStatePMFS::MovementType::Exploration;
+            movingState->chooseGoalAndMove();
 
-            movingStatePMFS->chooseGoalAndMove();
-            movingStatePMFS->publishMarkers();
+            iterationsCounter++;
         }
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
