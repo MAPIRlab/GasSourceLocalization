@@ -118,6 +118,21 @@ namespace GSL::Utils
         return fmod(current, 1);
     }
 
+    Vector2 Mode(const Grid2D<double> grid)
+    {
+        double best = 0;
+        Vector2 position{0, 0};
+        for (size_t i = 0; i < grid.data.size(); i++)
+        {
+            if (grid.data.at(i) > best)
+            {
+                best = grid.data.at(i);
+                position = grid.metadata.indexToCoordinates(i);
+            }
+        }
+        return position;
+    }
+
     Vector2 ExpectedValue(const Grid2D<double> grid, double proportionBest)
     {
         struct CellData

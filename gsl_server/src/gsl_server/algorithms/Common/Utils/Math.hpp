@@ -46,6 +46,8 @@ namespace GSL::Utils
 
     float EquallyDistributed01F();
 
+    Vector2 Mode(const Grid2D<double> grid);
+
     Vector2 ExpectedValue(const Grid2D<double> grid, double proportionBest);
     double Variance(const Grid2D<double> grid);
     struct CovarianceMatrix

@@ -13,7 +13,7 @@ from ros2launch.api import get_share_file_path_from_package
 # Internal gaden utilities
 import sys
 sys.path.append(get_package_share_directory('gaden_common'))
-from gaden_internal_py.utils import read_sim_yaml # type: ignore
+from gaden_internal_py.utils import read_sim_yaml  # NOQA # type: ignore
 
 
 # ===========================
@@ -57,12 +57,15 @@ def launch_setup(context, *args, **kwargs):
                 name="GSL",
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e gdb --args",
-                # prefix="xterm -hold -e",
+                prefix="xterm -hold -e",
                 parameters=[
                     # Common
+                    {'robot_location_topic': '/giraff/pose'},
+                    {'enose_topic': '/giraff/pid'},
+                    {'anemometer_topic': '/giraff/anemometer'},
+
                     {'use_sim_time': False},
-                    {"maxSearchTime": 300.0},
-                    {"robot_location_topic": "ground_truth"},
+                    {"maxSearchTime": 1000.0},
                     {"stop_and_measure_time": 0.4},
                     {"th_gas_present": parse_substitution("$(var th_gas_present)")},
                     {"th_wind_present": parse_substitution("$(var th_wind_present)")},
@@ -76,17 +79,20 @@ def launch_setup(context, *args, **kwargs):
                     {"anemometer_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
                     {"openMoveSetExpasion": 5},
                     {"explorationProbability": 0.05},
-                    {"convergence_thr": 2.0},
+                    {"convergence_thr": 0.0},
 
                     # GrGSL
+                    # -----------------------------
                     {"useDiffusionTerm": True},
                     {"stdevHit": 1.0},
                     {"stdevMiss": 1.2},
                     {"infoTaxis": False},
 
                     # PMFS
+                    # -----------------------------
                     {"headless": False},
                     {"distanceWeight": 0.25},
+
                     # Hit probabilities
                     {"maxUpdatesPerStop": 5},
                     {"kernelSigma": 1.5},
@@ -95,9 +101,10 @@ def launch_setup(context, *args, **kwargs):
                     {"confidenceSigmaSpatial": 1.2},
                     {"confidenceMeasurementWeight": 0.7},
                     {"initialExplorationMoves": parse_substitution("$(var initialExplorationMoves)")},
+
                     # Filament simulation
                     {"useWindGroundTruth": False},
-                    {"stepsSourceUpdate": 3},
+                    {"stepsSourceUpdate": -1},
                     {"maxRegionSize": 5},
                     {"sourceDiscriminationPower": parse_substitution("$(var sourceDiscriminationPower)")},
                     {"refineFraction": 0.2},
@@ -106,10 +113,11 @@ def launch_setup(context, *args, **kwargs):
                     {"iterationsToRecord": parse_substitution("$(var iterationsToRecord)")},
                     {"minWarmupIterations": parse_substitution("$(var minWarmupIterations)")},
                     {"maxWarmupIterations": parse_substitution("$(var maxWarmupIterations)")},
-                    {"blurSigmaX": 1.0},
-                    {"blurSigmaY": 1.0},
+                    {"blurSigmaX": 0.7},
+                    {"blurSigmaY": 0.7},
 
                     # Semantics
+                    # -----------------------------
                     {"progressionFileName": parse_substitution("progression_$(var simulation).csv")},
                     {"semanticsType": "ClassMapVoxeland"},
                     {"wallsOccupancyFile": os.path.join(scenario_folder, "_occupancy_walls.pgm")},
@@ -118,7 +126,8 @@ def launch_setup(context, *args, **kwargs):
                     {"targetGas": parse_substitution("$(var targetGas)")},
                     {"masksYAMLPath": os.path.join(scenario_folder, "room_categories", "roomMasks.yaml")},
                     {"roomOntologyPath": os.path.join(get_package_share_directory("gsl_server"), "resources", "ObjectProbByRoom.yaml")},
-                    # ClassMap2D 
+
+                    # ClassMap2D
                     {"zMin": -0.7},
                     {"zMax": 1.0},
                 ],
@@ -133,11 +142,11 @@ def launch_setup(context, *args, **kwargs):
         name="gmrf",
         prefix="xterm -hold -T GMRF -e",
         parameters=[
-            {"sensor_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
+            {"sensor_topic": parse_substitution("$(var robot_name)/anemometer")},
             {"map_topic": parse_substitution("$(var robot_name)/map")},
             {"cell_size": 0.25},
             {"exec_freq": 5.0},
-            {"map_file" : os.path.join(scenario_folder, "_occupancy_gmrf.pgm")}
+            {"map_file": os.path.join(scenario_folder, "_occupancy_gmrf.pgm")}
         ]
     )
 
@@ -197,6 +206,7 @@ def launch_setup(context, *args, **kwargs):
                     {"noise_std": 0.3},
                     {"use_map_ref_system": False},
                     {'use_sim_time': True},
+                    {'topic': '/giraff/anemometer'}
                 ]
             ),
             Node(
@@ -222,6 +232,7 @@ def launch_setup(context, *args, **kwargs):
                     {"fixed_frame": "map"},
                     {"noise_std": 20.1},
                     {'use_sim_time': True},
+                    {'topic': '/giraff/pid'}
                 ]
             ),
             Node(
@@ -254,11 +265,12 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-
     semantics = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="semantics_launch.py"))
+        PythonLaunchDescriptionSource(get_share_file_path_from_package(package_name="semantic_gsl_env", file_name="semantics_launch.py")),
+        launch_arguments={
+            "Mode": "Sim",
+        }.items()
     )
-
 
     keyboard_control = Node(
         package="keyboard_control",
@@ -271,19 +283,93 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
+    map_server = Node(
+        package="mapir_map_server",
+        executable="mapir_map_server",
+        parameters=[
+            {"topic": "/giraff/map"},
+            {"yaml_filename": os.path.join(scenario_folder, "_occupancy_walls.yaml")},
+        ]
+    )
+
+    rosbag = ExecuteProcess(
+        cmd=[[
+            'xterm -T rosbag -e ',
+            FindExecutable(name='ros2'),
+            ' bag play ',
+            ' /mnt/HDD/rosbags/',
+            'attempt3',
+            ' --start-offset 30',
+            ' --rate 2'
+        ]],
+        shell=True
+    )
+
+    wind_map_creator = Node(
+        package="wind_map_creator",
+        executable="gui_pub",
+        name="windMap",
+        # prefix="xterm -T windMapCreator -hold -e ",
+        parameters=[
+            {"listenTopic": "/giraff/initialpose"},
+            {"publishTopic": "/giraff/Anemometer/WindSensor_reading"}
+        ]
+    )
+
+    fakeSensors = [
+        Node(
+            package="fake_sensors",
+            executable="anemometer",
+            name="fake_anemometer",
+            prefix="xterm -hold -e",
+            parameters=[
+                {"mapTopic": "/giraff/map"},
+                {"poseTopic": "/giraff/pose"},
+                {"pubTopic": "/giraff/anemometer"},
+                {"frequency": 5.0},
+                {"mapScale": 0.2},
+                {"noiseScale": 0.05},
+                {"windImagePath": os.path.join(
+                    scenario_folder, "simulations", "Pepe1A.png")},
+            ]
+        ),
+        Node(
+            package="fake_sensors",
+            executable="gasSensor",
+            name="fake_gasSensor",
+            prefix="xterm -hold -e",
+            parameters=[
+                {"mapTopic": "/giraff/map"},
+                {"poseTopic": "/giraff/pose"},
+                {"pubTopic": "/giraff/pid"},
+                {"frequency": 5.0},
+                {"gasImagePath": os.path.join(
+                    scenario_folder, "simulations", LaunchConfiguration("gasImage").perform(context))},
+            ]
+        )
+    ]
+
     actions = []
     actions.append(gaden_player)
     actions.extend(anemometer)
     actions.extend(PID)
+    actions.append(unity)
     actions.append(nav2)
+    actions.append(keyboard_control)
+
+    # actions.append(wind_map_creator)
+    # actions.extend(fakeSensors)
+
+    # actions.append(map_server)
+    # actions.append(rosbag)
+
     actions.append(gmrf_wind)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
+    actions.append(semantics)
+
     actions.append(rvizHit)
     actions.append(rvizSource)
-    actions.append(unity)
-    actions.append(semantics)
-    actions.append(keyboard_control)
 
     return actions
 
@@ -310,7 +396,6 @@ def generate_launch_description():
             value="giraff"
         ),
 
-
         # GSL params (overwritable in each YAML)
         ##############################################
         SetLaunchConfiguration(
@@ -332,15 +417,15 @@ def generate_launch_description():
         ),
         SetLaunchConfiguration(
             name="iterationsToRecord",
-            value="100"
+            value="200"
         ),
         SetLaunchConfiguration(
             name="minWarmupIterations",
-            value="700"
+            value="500"
         ),
         SetLaunchConfiguration(
             name="maxWarmupIterations",
-            value="1000"
+            value="800"
         ),
         SetLaunchConfiguration(
             name="initialExplorationMoves",
@@ -367,6 +452,10 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="VGRHouse",
             value="1"
+        ),
+        SetLaunchConfiguration(
+            name="gasImage",
+            value=""
         ),
     ]
 

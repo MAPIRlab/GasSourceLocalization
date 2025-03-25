@@ -33,7 +33,7 @@ template <> struct fmt::formatter<GSL::Vector2> : formatter<std::string>
 {
     auto format(GSL::Vector2 const& v, format_context& ctx)
     {
-        return fmt::format_to(ctx.out(), "({},{})", v.x, v.y);
+        return fmt::format_to(ctx.out(), "({:.2f},{:.2f})", v.x, v.y);
     }
 };
 
@@ -41,7 +41,7 @@ template <> struct fmt::formatter<GSL::Vector3> : formatter<std::string>
 {
     auto format(GSL::Vector3 const& v, format_context& ctx)
     {
-        return fmt::format_to(ctx.out(), "({},{},{})", v.x, v.y, v.z);
+        return fmt::format_to(ctx.out(), "({:.2f},{:.2f},{:.2f})", v.x, v.y, v.z);
     }
 };
 

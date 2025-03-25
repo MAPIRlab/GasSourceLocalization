@@ -11,7 +11,7 @@ from ros2launch.api import get_share_file_path_from_package
 #===========================
 def launch_arguments():
     return [
-        #DeclareLaunchArgument("", default_value=""),
+        DeclareLaunchArgument("Mode", default_value="Sim"),
    ]
 #==========================
 
@@ -38,7 +38,7 @@ def launch_setup(context, *args, **kwargs):
             get_share_file_path_from_package(package_name="voxeland", file_name="voxeland_server.launch.py")
         ),
         launch_arguments= {
-            "resolution" : "0.02",
+            "resolution" : "0.1",
             "pHit" : "0.6",
             "pMiss" : "0.4",
             "clampOccupancyMax" : "0.97",
@@ -54,9 +54,9 @@ def launch_setup(context, *args, **kwargs):
             "dataset" : "ROS-Unity",
 
             "topic_camera_info" : "/rgbd/info",
-            "topic_rgb_image" : "/rgbd/color/raw",
-            "topic_depth_image" : "/rgbd/depth/raw",
-            "topic_localization" : "/giraff/ground_truth",
+            "topic_rgb_image" : "/rgbd/color/compressed",
+            "topic_depth_image" : "/rgbd/depth/compressed",
+            "topic_localization" : "/giraff/pose",
             
             "map_frame_id" : "map",
             "robot_frame_id" : "giraff_base_link",
@@ -124,10 +124,16 @@ def launch_setup(context, *args, **kwargs):
     elif segmentation_net == SegmentationNN.DETECTRON:
         segmentationNode = detectron
 
+    mode = str(LaunchConfiguration("Mode").perform(context))
+    robot_perception = None
+    if mode == "Sim":
+        robot_perception = voxeland_robot_simulation
+    elif mode == "Real":
+        robot_perception = voxeland_robot_real
+    
     return [
         voxeland_server,
-        # voxeland_robot_simulation,
-        voxeland_robot_real,
+        robot_perception,
         segmentationNode
     ]
 

@@ -48,9 +48,9 @@ namespace GSL
 #endif
         std::string progresionFileName = getParam<std::string>("progressionFileName", "progression.csv");
         progressionFile.open(progresionFileName, std::ios_base::app);
-        progressionFile << "New run\n";
+        progressionFile << fmt::format("\nNew run. Source at {}\n", resultLogging.sourcePositionGT);
         progressionFile << "...............................\n";
-        progressionFile << "errorOlfOnly; varianceOlfOnly; errorBoth; varianceBoth\n";
+        progressionFile << "expectedOlfOnly; modeOlfOnly; errorOlfOnly; varianceOlfOnly; expectedBoth; modeBoth; errorBoth; varianceBoth\n";
         progressionFile << "-------------------------------\n";
         progressionFile.flush();
     }
@@ -211,15 +211,18 @@ namespace GSL
         Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, simulationOccupancy, gridMetadata), "sourceOlfactionOnly");
 
         Vector2 expecOlfOnly = Utils::ExpectedValue(AsGrid(sourceProbabilityPMFS, simulationOccupancy), 1);
+        Vector2 modeOlfOnly = Utils::Mode(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
         Utils::CovarianceMatrix varOlfOnly = Utils::Covariance(AsGrid(sourceProbabilityPMFS, simulationOccupancy));
         double errorOlfOnly = vmath::length(expecOlfOnly - resultLogging.sourcePositionGT);
 
         Vector2 expecBoth = Utils::ExpectedValue(AsGrid(combinedSourceProbability, simulationOccupancy), 1);
+        Vector2 modeBoth = Utils::Mode(AsGrid(combinedSourceProbability, simulationOccupancy));
         Utils::CovarianceMatrix varBoth = Utils::Covariance(AsGrid(combinedSourceProbability, simulationOccupancy));
         double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
-        progressionFile << fmt::format("{:.2f};\t({:.2f}, {:.2f},\t{:.2f});\t{:.2f};\t({:.2f}, {:.2f}, {:.2f});\n",
-                                       errorOlfOnly, varOlfOnly.x, varOlfOnly.y, varOlfOnly.covariance,
-                                       errorBoth, varBoth.x, varBoth.y, varBoth.covariance);
+        progressionFile << fmt::format("({:.2f},\t{:.2f});\t({:.2f},\t{:.2f});\t{:.2f};\t({:.2f},\t{:.2f},\t{:.2f});\t",
+                                       expecOlfOnly.x, expecOlfOnly.y, modeOlfOnly.x, modeOlfOnly.y, errorOlfOnly, varOlfOnly.x, varOlfOnly.y, varOlfOnly.covariance);
+        progressionFile << fmt::format("({:.2f},\t{:.2f});\t({:.2f},\t{:.2f});\t{:.2f};\t({:.2f},\t{:.2f},\t{:.2f});\n",
+                                       expecBoth.x, expecBoth.y, modeBoth.x, modeBoth.y, errorBoth, varBoth.x, varBoth.y, varBoth.covariance);
         progressionFile.flush();
 
         Utils::publishDebugSingleMarker(vmath::WithZ(expecOlfOnly, 0.0),
