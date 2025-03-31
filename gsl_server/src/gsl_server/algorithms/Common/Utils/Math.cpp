@@ -200,7 +200,6 @@ namespace GSL::Utils
     CovarianceMatrix Covariance(Grid2D<double> grid)
     {
         Vector2 expectedValue = ExpectedValue(grid, 1);
-        float sum = 0;
         float varX = 0;
         float varY = 0;
         float covar = 0;
@@ -217,9 +216,8 @@ namespace GSL::Utils
                 varX += prob * xDiff * xDiff;
                 varY += prob * yDiff * yDiff;
                 covar += prob * xDiff * yDiff;
-                sum += prob;
             }
         }
-        return {.x = varX / sum, .y = varY / sum, .covariance = covar / sum};
+        return {.x = varX, .y = varY, .covariance = covar};
     }
 } // namespace GSL::Utils

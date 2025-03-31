@@ -48,10 +48,10 @@ namespace GSL
 #endif
         std::string progresionFileName = getParam<std::string>("progressionFileName", "progression.csv");
         progressionFile.open(progresionFileName, std::ios_base::app);
-        progressionFile << fmt::format("\nNew run. Source at {}\n", resultLogging.sourcePositionGT);
-        progressionFile << "...............................\n";
-        progressionFile << "expectedOlfOnly; modeOlfOnly; errorOlfOnly; varianceOlfOnly; expectedBoth; modeBoth; errorBoth; varianceBoth\n";
-        progressionFile << "-------------------------------\n";
+        progressionFile << fmt::format("\n!{} {}\n", resultLogging.sourcePositionGT.x, resultLogging.sourcePositionGT.y);
+        progressionFile << "#...............................\n";
+        progressionFile << "#expectedOlfOnly; modeOlfOnly; errorOlfOnly; varianceOlfOnly; expectedBoth; modeBoth; errorBoth; varianceBoth\n";
+        progressionFile << "#-------------------------------\n";
         progressionFile.flush();
     }
 
@@ -168,6 +168,13 @@ namespace GSL
             createClassMapVoxeland();
     }
 
+    float SemanticPMFS::gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg)
+    {
+        float ppm = Algorithm::gasCallback(msg);
+        IF_GUI(ui.addConcentrationReading(ppm));
+        return ppm;
+    }
+
     void SemanticPMFS::updateSourceFromSemantics()
     {
         // wait until we have received the map and initialized everything
@@ -219,9 +226,9 @@ namespace GSL
         Vector2 modeBoth = Utils::Mode(AsGrid(combinedSourceProbability, simulationOccupancy));
         Utils::CovarianceMatrix varBoth = Utils::Covariance(AsGrid(combinedSourceProbability, simulationOccupancy));
         double errorBoth = vmath::length(expecBoth - resultLogging.sourcePositionGT);
-        progressionFile << fmt::format("({:.2f},\t{:.2f});\t({:.2f},\t{:.2f});\t{:.2f};\t({:.2f},\t{:.2f},\t{:.2f});\t",
+        progressionFile << fmt::format("{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t",
                                        expecOlfOnly.x, expecOlfOnly.y, modeOlfOnly.x, modeOlfOnly.y, errorOlfOnly, varOlfOnly.x, varOlfOnly.y, varOlfOnly.covariance);
-        progressionFile << fmt::format("({:.2f},\t{:.2f});\t({:.2f},\t{:.2f});\t{:.2f};\t({:.2f},\t{:.2f},\t{:.2f});\n",
+        progressionFile << fmt::format("{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\n",
                                        expecBoth.x, expecBoth.y, modeBoth.x, modeBoth.y, errorBoth, varBoth.x, varBoth.y, varBoth.covariance);
         progressionFile.flush();
 

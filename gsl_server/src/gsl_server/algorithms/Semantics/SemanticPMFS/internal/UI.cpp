@@ -139,14 +139,10 @@ namespace GSL::SemanticPMFS_internal
         //  }
         //  ImGui::End();
 
-        ImGui::Begin("Source Estimation Power");
-        {
-            ImGui::InputDouble("Source Power", &pmfs->settings.simulation.sourceDiscriminationPower);
-        }
-        ImGui::End();
-
         ImGui::Begin("Update Source");
         {
+            ImGui::InputDouble("Source Power", &pmfs->settings.simulation.sourceDiscriminationPower);
+            ImGui::InputDouble("filament noise", &pmfs->settings.simulation.noiseSTDev);
             if (ImGui::Button("Update Source Probability"))
             {
                 pmfs->functionQueue.submit([this]()

@@ -21,8 +21,10 @@ namespace GSL
 
     void StopAndMeasureState::OnUpdate()
     {
-        if ((algorithm->node->now() - time_stopped).seconds() >= measure_time)
+        double timeSoFar = (algorithm->node->now() - time_stopped).seconds();
+        if (timeSoFar >= measure_time)
         {
+            GSL_INFO("{} gas measurements, {} wind measurements over {:.2f} seconds", gas_v.size(), windSpeed_v.size(), timeSoFar);
             if (gas_v.size() == 0 || windDirection_v.size() == 0)
             {
                 GSL_WARN("Resetting stop and measure, no readings exist!");
@@ -34,7 +36,6 @@ namespace GSL
             double windSpeed = average_windSpeed();
             double windDirection = average_windDirection();
 
-            GSL_INFO("{} gas measurements, {} wind measurements", gas_v.size(), windSpeed_v.size());
             GSL_INFO("avg_gas={:.2};  avg_windSpeed={:.2};  avg_wind_dir={:.2}", concentration, windSpeed, windDirection);
             algorithm->processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         }

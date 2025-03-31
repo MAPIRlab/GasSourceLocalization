@@ -31,13 +31,13 @@ namespace GSL
         void Initialize() override;
         void OnUpdate() override;
 
-
     private:
         GSLResult checkSourceFound() override;
         void declareParameters() override;
         void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) override;
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override;
         void saveResultsToFile(GSLResult result) override;
+        float gasCallback(olfaction_msgs::msg::GasSensor::SharedPtr msg) override;
 
         void updateSourceFromSemantics();
 

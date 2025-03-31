@@ -69,10 +69,14 @@ namespace GSL::PMFS_internal
             CV_32F,
             cv::Scalar(0, 0, 0));
 
-        for (int i = 0; i < measuredHitProb.metadata.dimensions.y; i++)
-            for (int j = 0; j < measuredHitProb.metadata.dimensions.x; j++)
+        for (int j = 0; j < measuredHitProb.metadata.dimensions.y; j++)
+        {
+            for (int i = 0; i < measuredHitProb.metadata.dimensions.x; i++)
+            {
                 if (measuredHitProb.freeAt(i, j))
-                    freeSpaceMask.at<float>(i, j) = 1;
+                    freeSpaceMask.at<float>(j, i) = 1;
+            }
+        }
     }
 
     void Simulations::updateSourceProbability(float refineFraction)
@@ -455,6 +459,15 @@ namespace GSL::PMFS_internal
         displayImage(hitMap);
     }
 
+    static void show(const cv::Mat& mat, std::string name)
+    {
+        cv::Mat resized;
+        cv::resize(mat, resized, cv::Size(mat.size[1] * 10, mat.size[0] * 10), 0, 0, cv::INTER_NEAREST);
+        cv::imshow(name, resized);
+        cv::waitKey();
+        cv::destroyAllWindows();
+    }
+
     void Simulations::displayImage(const std::vector<float>& hitMap, const std::string& imageName) const
     {
         cv::Mat asImage(hitMap);
@@ -483,11 +496,7 @@ namespace GSL::PMFS_internal
         GSL_WARN("hitMap image saved");
 #else
         cv::flip(inColor, inColor, 0);
-        cv::Mat resized;
-        cv::resize(inColor, resized, cv::Size(inColor.size[1] * 10, inColor.size[0] * 10), 0, 0, cv::INTER_NEAREST);
-        cv::imshow(imageName, resized);
-        cv::waitKey();
-        cv::destroyAllWindows();
+        show(inColor, imageName);
 #endif
     }
 
