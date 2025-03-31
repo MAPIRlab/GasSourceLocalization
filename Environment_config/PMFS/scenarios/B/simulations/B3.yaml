@@ -2,7 +2,7 @@ source_x: -3.70
 source_y: -1.10
 source_z: -0.30
 
-wind_sim_path: "1,3-2,4_fast/1,3-2,4_fast" # _i.csv automatically appended
+wind_sim_path: "1,3-4,5_fast/1,3-4,5_fast" # _i.csv automatically appended
 
 # filament simulation params
 sim_time: 1000.0                 
@@ -19,7 +19,6 @@ temperature: 298.0
 
 models: 
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01-main.stl"
-  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet005.stl"
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet006.stl"
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet007.stl"
 
@@ -28,6 +27,7 @@ outlets_models:
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet002.stl"
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet003.stl"
   - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet004.stl"
+  - "$(var pkg_dir)/scenarios/$(var scenario)/cad_models/House01Outlet005.stl"
 
 
 # simulation playback params

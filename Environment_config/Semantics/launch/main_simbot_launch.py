@@ -57,7 +57,7 @@ def launch_setup(context, *args, **kwargs):
                 name="GSL",
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e gdb --args",
-                prefix="xterm -hold -e",
+                prefix="xterm -geometry 93x30+3500+0 -hold -e",
                 parameters=[
                     # Common
                     {'robot_location_topic': '/giraff/pose'},
@@ -275,7 +275,7 @@ def launch_setup(context, *args, **kwargs):
     keyboard_control = Node(
         package="keyboard_control",
         executable="keyboard_control_plus",
-        prefix="xterm -e",
+        prefix="xterm -geometry 93x25+3500+800 -e",
         parameters=[
                 {"linear_v_inc": 0.1},
                 {"angular_v_inc": 0.1},
@@ -443,7 +443,7 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="scale",
-            value="25"
+            value="20"
         ),
         SetLaunchConfiguration(
             name="markers_height",

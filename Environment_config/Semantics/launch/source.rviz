@@ -32,7 +32,7 @@ Visualization Manager:
       Enabled: true
       Name: Source
       Namespaces:
-        {}
+        gas_source_visualization: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -237,7 +237,7 @@ Visualization Manager:
       Enabled: true
       Name: Source
       Namespaces:
-        cells: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -423,7 +423,7 @@ Visualization Manager:
       Enabled: true
       Name: UIMarker
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -456,7 +456,7 @@ Visualization Manager:
       Enabled: true
       Name: ExpectedBoth
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -469,7 +469,7 @@ Visualization Manager:
       Enabled: true
       Name: ExpectedOlfaction
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -534,9 +534,9 @@ Visualization Manager:
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.3877501487731934
-        Y: -2.5884315967559814
-        Z: 2.1987857818603516
+        X: -2.90090012550354
+        Y: -1.981503963470459
+        Z: 2.199414014816284
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false

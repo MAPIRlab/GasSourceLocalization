@@ -1,5 +1,5 @@
-source_x: -0.8
-source_y: -3.1
+source_x: -2.7
+source_y: 0.8
 source_z: -0.1
 
 wind_sim_path: "3,5-1_fast/3,5-1_fast" # _i.csv automatically appended
@@ -31,12 +31,13 @@ outlets_models:
 allow_looping: False
 loop_from_iteration: 800
 loop_to_iteration: 900
+
 markers_height: -0.6
 
 #GSL
-filament_movement_stdev: 0.25
+filament_movement_stdev: 0.07
 
 start_pos_x: -1.4
 start_pos_y: -6.2 
-start_pos_z: -0.1
+start_pos_z: -0.6
 VGRHouse: 2

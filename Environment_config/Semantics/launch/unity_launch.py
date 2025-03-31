@@ -56,7 +56,7 @@ def launch_setup(context, *args, **kwargs):
 
     send_pose = ExecuteProcess(
         cmd=[[
-            " sleep 3;"
+            " sleep 5;"
             " ros2 topic pub /giraff/resetPose  geometry_msgs/msg/PoseStamped", 
             ' "{ ',
             '    header: ',
