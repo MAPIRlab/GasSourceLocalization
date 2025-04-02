@@ -36,7 +36,7 @@ namespace GSL
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
 #if DISABLE_NAVIGATION
-        movingState = std::make_unique<NoNavigationState>(this);
+        movingState = std::make_unique<ManualNavigationState>(this);
 #else
         movingState = std::make_unique<MovingStateSemanticPMFS>(this);
 #endif
@@ -66,8 +66,6 @@ namespace GSL
                 updateSourceFromSemantics();
             }
         }
-
-        functionQueue.run();
     }
 
     void SemanticPMFS::declareParameters()
@@ -259,6 +257,10 @@ namespace GSL
                                               gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
             GSL_INFO_COLOR(fmt::terminal_color::yellow, "NOTHING ");
         }
+        PMFSViz::ShowHitProb(
+            Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
+            settings.visualization,
+            pubs.pmfsPubs);
 
         number_of_updates++;
 
@@ -291,10 +293,6 @@ namespace GSL
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
 
-        PMFSViz::ShowHitProb(
-            Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
-            settings.visualization,
-            pubs.pmfsPubs);
         PMFSViz::ShowSourceProb(
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             settings.visualization,

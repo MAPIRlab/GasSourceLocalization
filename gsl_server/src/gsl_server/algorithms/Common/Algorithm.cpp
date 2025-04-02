@@ -71,6 +71,8 @@ namespace GSL
     {
         rclcpp::spin_some(node);
         stateMachine.getCurrentState()->OnUpdate();
+        // Run anything that was submitted to main thread from the UI or a callback
+        functionQueue.run();
     }
 
     bool Algorithm::HasEnded()

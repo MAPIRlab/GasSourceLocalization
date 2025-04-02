@@ -10,7 +10,6 @@
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
 #include <gsl_server/algorithms/Semantics/Semantics/Common/ISemantics.hpp>
-#include <gsl_server/core/FunctionQueue.hpp>
 #include <vector>
 
 namespace GSL
@@ -72,7 +71,6 @@ namespace GSL
 
         //-------------Utils-------------
         std::optional<VisibilityMap> visibilityMap;
-        FunctionQueue functionQueue;
         uint iterationsCounter = 0;
         bool paused = false;
         IF_GUI(SemanticPMFS_internal::UI ui);

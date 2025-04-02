@@ -63,7 +63,6 @@ namespace GSL
         }
 
         Algorithm::OnUpdate();
-        functionQueue.run();
     }
 
     void GrGSL::onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)

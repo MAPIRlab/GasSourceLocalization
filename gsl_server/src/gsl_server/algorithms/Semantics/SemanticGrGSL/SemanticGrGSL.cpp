@@ -13,7 +13,6 @@ namespace GSL
     void SemanticGrGSL::OnUpdate()
     {
         Algorithm::OnUpdate();
-        functionQueue.run();
 
         if (semantics) // TODO allow this to run slower that the update loop? kinda messes up the callback-based one
         {

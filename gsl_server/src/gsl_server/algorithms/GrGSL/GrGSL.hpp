@@ -4,7 +4,6 @@
 #include <gmrf_msgs/srv/wind_estimation.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
-#include <gsl_server/core/FunctionQueue.hpp>
 
 #if USE_GUI
 #include "internal/UI.hpp"
@@ -44,7 +43,6 @@ namespace GSL
 
         int exploredCells = 0;
         Vector2 positionOfLastHit;
-        FunctionQueue functionQueue;
         
         bool paused = false;
         IF_GUI(GrGSL_internal::UI ui;)

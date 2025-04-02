@@ -24,7 +24,7 @@ void GSL::ManualNavigationState::OnEnterState(State* previous)
     GSL_INFO("Entering Manual Driving, use the 'Continue' button to resume algorithm execution");
     paused = true;
     while (paused)
-        ;
+        algorithm->functionQueue.run();
 #else
     GSL_INFO("Entering Manual Driving, press [enter] to resume algorithm execution");
     std::cin.get();

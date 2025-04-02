@@ -1,4 +1,5 @@
 #pragma once
+#include "gsl_server/core/FunctionQueue.hpp"
 #include <rclcpp/rclcpp.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/core/Navigation.hpp>
@@ -76,6 +77,7 @@ namespace GSL
         int8_t sampleCostmap(const Vector2& point);
         void updateProximityResults(bool forceUpdate = false); //record how close we are to the source for later logging. By default it only adds a new point if the distance has changed a bit since the last write, but you can force it to always write the current
 
+        FunctionQueue functionQueue;
 
         // Subscriptions
         //-------

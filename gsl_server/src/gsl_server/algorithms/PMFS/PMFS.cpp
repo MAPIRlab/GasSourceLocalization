@@ -120,8 +120,6 @@ namespace GSL
         if (!paused)
             Algorithm::OnUpdate();
 
-        // Run anything that was submitted to main thread from the UI or a callback
-        functionQueue.run();
 
         // Update visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);

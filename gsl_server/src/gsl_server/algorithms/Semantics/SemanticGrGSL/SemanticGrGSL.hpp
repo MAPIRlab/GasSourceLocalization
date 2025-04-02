@@ -3,7 +3,6 @@
 #include "gsl_server/algorithms/Common/Algorithm.hpp"
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/GrGSL/GrGSL_internal.hpp"
-#include "gsl_server/core/FunctionQueue.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/ISemantics.hpp"
 
 namespace GSL
@@ -31,7 +30,6 @@ namespace GSL
 
         int exploredCells = 0;
         Vector2 positionOfLastHit;
-        FunctionQueue functionQueue;
 
         void Initialize() override;
         void declareParameters() override;

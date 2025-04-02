@@ -35,6 +35,11 @@ namespace GSL
             mutex.unlock();
         }
 
+        size_t size()
+        {
+            return queue.size();
+        }
+
     private:
         std::mutex mutex;
         std::vector<std::function<void()>> queue;

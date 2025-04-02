@@ -10,7 +10,6 @@
 #include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 
-#include <gsl_server/core/FunctionQueue.hpp>
 #include <gsl_server/core/ConditionalMacros.hpp>
 
 namespace GSL
@@ -64,7 +63,6 @@ namespace GSL
         //-------------Utils-------------
         bool paused = false;
         std::optional<VisibilityMap> visibilityMap;
-        FunctionQueue functionQueue;
         uint iterationsCounter;
 
         IF_GUI(PMFS_internal::UI ui);
