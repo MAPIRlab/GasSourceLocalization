@@ -19,5 +19,6 @@ namespace GSL
     protected:
         float maxWaitTime;
         rclcpp::Time startTime;
+        void RenderUI() override;
     };
 } // namespace GSL

@@ -21,6 +21,7 @@ namespace GSL
     protected:
         virtual void OnEnterState(State* previousState) override;
         virtual void OnExitState(State* nextState) override;
+        void RenderUI() override;
 
     protected:
         double measure_time; // how long to measure for, in seconds

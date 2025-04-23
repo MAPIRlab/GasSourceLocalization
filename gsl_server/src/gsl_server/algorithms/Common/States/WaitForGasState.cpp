@@ -1,10 +1,11 @@
-#include <gsl_server/algorithms/Common/States/WaitForGasState.hpp>
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
+#include <gsl_server/algorithms/Common/States/WaitForGasState.hpp>
 #include <gsl_server/core/Logging.hpp>
 
 namespace GSL
 {
-    WaitForGasState::WaitForGasState(Algorithm* _algorithm) : State(_algorithm)
+    WaitForGasState::WaitForGasState(Algorithm* _algorithm)
+        : State(_algorithm)
     {
         maxWaitTime = algorithm->getParam<float>("maxWaitForGasTime", 10.0);
     }
@@ -36,5 +37,12 @@ namespace GSL
             algorithm->stateMachine.forceSetState(algorithm->stopAndMeasureState.get());
         }
     }
-
 } // namespace GSL
+
+#if USE_GUI
+#include "imgui.h"
+void GSL::WaitForGasState::RenderUI()
+{
+    ImGui::Text("WaitForGasState");
+}
+#endif

@@ -1,8 +1,10 @@
 #include "SemanticGrGSL.hpp"
 #include "MovingStateSemanticGrGSL.hpp"
+#include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
+#include "gsl_server/algorithms/Common/States/NoNavigation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
-#include "gsl_server/algorithms/GrGSL/MovingStateGrGSL.hpp"
+#include "gsl_server/algorithms/Semantics/Semantics/Common/ResultsLogging.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/SemanticsType.hpp"
 #include <fstream>
 #include <gsl_server/algorithms/GrGSL/GrGSLLib.hpp>
@@ -39,6 +41,10 @@ namespace GSL
         waitForMapState = std::make_unique<WaitForMapState>(this);
         waitForGasState = std::make_unique<WaitForGasState>(this);
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
+
+#if DISABLE_NAVIGATION
+        movingState = std::make_unique<NoNavigationState>(this);
+#else
         movingState = std::make_unique<MovingStateGrGSL>(this,
                                                          GrGSLData{
                                                              .node = node,
@@ -48,7 +54,12 @@ namespace GSL
                                                              .gridMetadata = gridMetadata,
                                                              .currentRobotPosition = currentRobotPosition,
                                                              .positionOfLastHit = positionOfLastHit});
+#endif
         stateMachine.forceSetState(waitForMapState.get());
+
+        std::string progresionFileName = getParam<std::string>("progressionFileName", "progression.csv");
+        SemanticsResults::InitFile(progresionFileName, resultLogging.sourcePositionGT);
+        IF_GUI(ui.run());
     }
 
     void SemanticGrGSL::declareParameters()
@@ -80,6 +91,8 @@ namespace GSL
             createClassMap2D();
         else if (semanticsType == SemanticsType::ClassMapVoxeland)
             createClassMapVoxeland();
+
+        stateMachine.forceSetState(stopAndMeasureState.get());
     }
 
     void SemanticGrGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -109,7 +122,22 @@ namespace GSL
             gridMetadata.coordinatesToIndices(currentRobotPose.pose.pose));
 
         movingState->chooseGoalAndMove();
+        logProgressionAndVisualize();
         exploredCells++;
+    }
+
+    void SemanticGrGSL::logProgressionAndVisualize()
+    {
+        GSL_INFO("Logging progression to file '{}'", getParam<std::string>("progressionFileName", "progression.csv"));
+        updateSourceFromSemantics();
+        std::vector<double> sourceProbabilityGrGSL(cells.size());
+        std::transform(cells.begin(),  cells.end(), sourceProbabilityGrGSL.begin(), [](const Cell& cell){return cell.sourceProb;});
+
+        
+        SemanticsResults::LogResult(AsGrid(sourceProbabilityGrGSL, simulationOccupancy),
+                                    AsGrid(combinedSourceProbability, simulationOccupancy),
+                                    resultLogging.sourcePositionGT,
+                                    settings.colorScaleLimits);
     }
 
     void SemanticGrGSL::updateSourceFromSemantics()

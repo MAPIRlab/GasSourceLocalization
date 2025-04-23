@@ -11,7 +11,7 @@ namespace GSL
 
     class MovingStateSemanticGrGSL : public MovingState
     {
-        // IF_GUI(friend class GrGSL_internal::UI);
+        IF_GUI(friend class SemanticGrGSL_internal::UI);
         typedef std::unordered_set<Vector2Int> HashSet;
         using WindEstimation = gmrf_msgs::srv::WindEstimation;
 

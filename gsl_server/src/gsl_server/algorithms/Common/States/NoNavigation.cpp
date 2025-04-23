@@ -14,5 +14,6 @@ void GSL::NoNavigationState::chooseGoalAndMove()
 
 void GSL::NoNavigationState::OnEnterState(State* previous)
 {
+    rclcpp::sleep_for(std::chrono::seconds(1));
     algorithm->OnCompleteNavigation(GSLResult::Success, previousState);
 }

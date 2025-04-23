@@ -19,6 +19,7 @@ namespace GSL
     protected:
         void OnEnterState(State* previous) override;
         void OnExitState(State* previous) override;
+        void RenderUI() override;
 
     private:
         void mapCallback(OccupancyGrid::SharedPtr msg);

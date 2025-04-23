@@ -90,3 +90,12 @@ namespace GSL
         return average;
     }
 } // namespace GSL
+
+
+#if USE_GUI
+#include "imgui.h"
+void GSL::StopAndMeasureState::RenderUI()
+{
+    ImGui::Text("StopAndMeasureState");
+}
+#endif
