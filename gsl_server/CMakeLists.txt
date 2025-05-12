@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_server) 
-set(CMAKE_CXX_FLAGS "-g -glldb -Wpedantic ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "-g -glldb -Wpedantic -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log file
 
@@ -30,7 +30,7 @@ set(USE_TRACY OFF)
 # disable to do sampling-only profiling
 set(USE_TRACY_INSTRUMENTATION OFF) 
 
-set(DISABLE_NAVIGATION ON) # Disables navigation decisions and lets you control the robot directly. For testing, mostly
+set(DISABLE_NAVIGATION OFF) # Disables navigation decisions and lets you control the robot directly. For testing, mostly
 ##############################################################################
 
 

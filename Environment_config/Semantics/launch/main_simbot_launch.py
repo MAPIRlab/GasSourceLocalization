@@ -23,7 +23,7 @@ def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="B"),
         DeclareLaunchArgument("simulation", default_value="B1"),
-        DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
+        DeclareLaunchArgument("method",	default_value=["SemanticGrGSL"]),
     ]
 # ==========================
 
@@ -63,10 +63,12 @@ def launch_setup(context, *args, **kwargs):
                     {'robot_location_topic': '/giraff/pose'},
                     {'enose_topic': '/giraff/pid'},
                     {'anemometer_topic': '/giraff/anemometer'},
+                    {"map_topic": "map"},
+                    {"costmap_topic": "global_costmap/costmap"},
 
                     {'use_sim_time': False},
                     {"maxSearchTime": 1000.0},
-                    {"stop_and_measure_time": 0.4},
+                    {"stop_and_measure_time": 1.0},
                     {"th_gas_present": parse_substitution("$(var th_gas_present)")},
                     {"th_wind_present": parse_substitution("$(var th_wind_present)")},
                     {"ground_truth_x": parse_substitution("$(var source_x)")},

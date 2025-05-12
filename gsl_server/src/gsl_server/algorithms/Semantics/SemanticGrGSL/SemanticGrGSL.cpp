@@ -1,5 +1,5 @@
 #include "SemanticGrGSL.hpp"
-#include "MovingStateSemanticGrGSL.hpp"
+#include "gsl_server/algorithms/GrGSL/MovingStateGrGSL.hpp"
 #include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
 #include "gsl_server/algorithms/Common/States/NoNavigation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
