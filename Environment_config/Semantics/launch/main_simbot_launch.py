@@ -23,7 +23,7 @@ def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="B"),
         DeclareLaunchArgument("simulation", default_value="B1"),
-        DeclareLaunchArgument("method",	default_value=["SemanticGrGSL"]),
+        DeclareLaunchArgument("method",	default_value=["SemanticPMFS"]),
     ]
 # ==========================
 
@@ -285,72 +285,6 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    map_server = Node(
-        package="mapir_map_server",
-        executable="mapir_map_server",
-        parameters=[
-            {"topic": "/giraff/map"},
-            {"yaml_filename": os.path.join(scenario_folder, "_occupancy_walls.yaml")},
-        ]
-    )
-
-    rosbag = ExecuteProcess(
-        cmd=[[
-            'xterm -T rosbag -e ',
-            FindExecutable(name='ros2'),
-            ' bag play ',
-            ' /mnt/HDD/rosbags/',
-            'attempt3',
-            ' --start-offset 30',
-            ' --rate 2'
-        ]],
-        shell=True
-    )
-
-    wind_map_creator = Node(
-        package="wind_map_creator",
-        executable="gui_pub",
-        name="windMap",
-        # prefix="xterm -T windMapCreator -hold -e ",
-        parameters=[
-            {"listenTopic": "/giraff/initialpose"},
-            {"publishTopic": "/giraff/Anemometer/WindSensor_reading"}
-        ]
-    )
-
-    fakeSensors = [
-        Node(
-            package="fake_sensors",
-            executable="anemometer",
-            name="fake_anemometer",
-            prefix="xterm -hold -e",
-            parameters=[
-                {"mapTopic": "/giraff/map"},
-                {"poseTopic": "/giraff/pose"},
-                {"pubTopic": "/giraff/anemometer"},
-                {"frequency": 5.0},
-                {"mapScale": 0.2},
-                {"noiseScale": 0.05},
-                {"windImagePath": os.path.join(
-                    scenario_folder, "simulations", "Pepe1A.png")},
-            ]
-        ),
-        Node(
-            package="fake_sensors",
-            executable="gasSensor",
-            name="fake_gasSensor",
-            prefix="xterm -hold -e",
-            parameters=[
-                {"mapTopic": "/giraff/map"},
-                {"poseTopic": "/giraff/pose"},
-                {"pubTopic": "/giraff/pid"},
-                {"frequency": 5.0},
-                {"gasImagePath": os.path.join(
-                    scenario_folder, "simulations", LaunchConfiguration("gasImage").perform(context))},
-            ]
-        )
-    ]
-
     actions = []
     actions.append(gaden_player)
     actions.extend(anemometer)
@@ -358,12 +292,6 @@ def launch_setup(context, *args, **kwargs):
     actions.append(unity)
     actions.append(nav2)
     actions.append(keyboard_control)
-
-    # actions.append(wind_map_creator)
-    # actions.extend(fakeSensors)
-
-    # actions.append(map_server)
-    # actions.append(rosbag)
 
     actions.append(gmrf_wind)
     actions.extend(gsl_node)
