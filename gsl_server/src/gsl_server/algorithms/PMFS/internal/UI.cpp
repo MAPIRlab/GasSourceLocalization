@@ -34,7 +34,7 @@ namespace GSL::PMFS_internal
 
     void UI::renderImgui()
     {
-        AmentImgui::Setup(
+        imgui.Setup(
             fmt::format("{}/resources/PMFS_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
             "PMFS",
             900,
@@ -45,16 +45,16 @@ namespace GSL::PMFS_internal
 
         while (rclcpp::ok() && !pmfs->HasEnded())
         {
-            AmentImgui::StartFrame();
+            imgui.StartFrame();
             createUI();
             createPlots();
 
-            AmentImgui::Render();
+            imgui.Render();
             rate.sleep();
         }
 
         ImPlot::DestroyContext();
-        AmentImgui::Close();
+        imgui.Close();
     }
 
     void UI::createUI()

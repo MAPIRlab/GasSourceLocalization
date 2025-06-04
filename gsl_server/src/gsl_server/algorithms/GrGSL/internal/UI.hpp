@@ -37,6 +37,7 @@ namespace GSL::GrGSL_internal
         void simulateInfotaxis(const Vector2Int& selectedCell);
     
     private:
+        AmentImgui imgui;
         rclcpp::Node::SharedPtr uiNode;
         std::jthread renderThread;
         GrGSL* grgsl;

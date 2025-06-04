@@ -6,8 +6,8 @@
 #include <implot/implot.h>
 
 #include <geometry_msgs/msg/point_stamped.hpp>
-#include <rclcpp/subscription.hpp>
 #include <rclcpp/node.hpp>
+#include <rclcpp/subscription.hpp>
 
 #include <string>
 #include <thread>
@@ -35,8 +35,9 @@ namespace GSL::SemanticGrGSL_internal
         bool useCoordinates();
         std::string printCell(const Grid2D<GrGSL_internal::Cell>& grid, const int& x, const int& y);
         void simulateInfotaxis(const Vector2Int& selectedCell);
-    
+
     private:
+        AmentImgui imgui;
         rclcpp::Node::SharedPtr uiNode;
         std::jthread renderThread;
         SemanticGrGSL* grgsl;
@@ -46,6 +47,6 @@ namespace GSL::SemanticGrGSL_internal
         Vector2 goalCoordinates;
     };
 
-} // namespace GSL::GrGSL_internal
+} // namespace GSL::SemanticGrGSL_internal
 
 #endif

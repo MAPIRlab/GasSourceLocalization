@@ -38,7 +38,7 @@ namespace GSL::SemanticGrGSL_internal
 
     void UI::renderImgui()
     {
-        AmentImgui::Setup(
+        imgui.Setup(
             fmt::format("{}/resources/GrGSL_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
             "GrGSL",
             900,
@@ -50,16 +50,16 @@ namespace GSL::SemanticGrGSL_internal
         while (rclcpp::ok() && !grgsl->HasEnded())
         {
             rclcpp::spin_some(uiNode);
-            AmentImgui::StartFrame();
+            imgui.StartFrame();
             createUI();
             createPlots();
 
-            AmentImgui::Render();
+            imgui.Render();
             rate.sleep();
         }
 
         ImPlot::DestroyContext();
-        AmentImgui::Close();
+        imgui.Close();
     }
 
     void UI::createUI()

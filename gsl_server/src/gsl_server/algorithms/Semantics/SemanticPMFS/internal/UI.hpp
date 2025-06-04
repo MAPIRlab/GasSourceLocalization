@@ -38,7 +38,7 @@ namespace GSL::SemanticPMFS_internal
         void visualizeQueryPoint();
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         
-        
+        AmentImgui imgui;
         std::jthread renderThread;
         SemanticPMFS* pmfs;
         double last_concentration_reading = 0;

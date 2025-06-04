@@ -44,7 +44,7 @@ namespace GSL::SemanticPMFS_internal
 
     void UI::renderImgui()
     {
-        AmentImgui::Setup(
+        imgui.Setup(
             fmt::format("{}/resources/SemanticPMFS_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
             "SemanticPMFS",
             900,
@@ -56,16 +56,16 @@ namespace GSL::SemanticPMFS_internal
         while (rclcpp::ok() && !pmfs->HasEnded())
         {
             rclcpp::spin_some(uiNode);
-            AmentImgui::StartFrame();
+            imgui.StartFrame();
             createUI();
             createPlots();
             visualizeQueryPoint();
-            AmentImgui::Render();
+            imgui.Render();
             rate.sleep();
         }
 
         ImPlot::DestroyContext();
-        AmentImgui::Close();
+        imgui.Close();
     }
 
     void UI::createUI()

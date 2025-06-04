@@ -28,14 +28,16 @@ namespace GSL::PMFS_internal
         void addConcentrationReading(double ppm);
     protected:
         void renderImgui();
-        std::jthread renderThread;
-        PMFS* pmfs;
-        double last_concentration_reading = 0;
         void createUI();
         void createPlots();
         bool useCoordinates();
         int selectVariable();
         std::string printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y);
+        
+        AmentImgui imgui;
+        std::jthread renderThread;
+        PMFS* pmfs;
+        double last_concentration_reading = 0;
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         Vector2 selectedCoordinates;
         Vector2 goalCoordinates;
