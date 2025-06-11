@@ -1,7 +1,7 @@
 #pragma once
 #ifdef USE_GUI
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
-#include <ament_imgui/ament_imgui.h>
+#include <imgui_gl/imgui_gl.h>
 #include <implot/implot.h>
 
 #include <geometry_msgs/msg/point_stamped.hpp>
@@ -38,7 +38,7 @@ namespace GSL::SemanticPMFS_internal
         void visualizeQueryPoint();
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         
-        AmentImgui imgui;
+        ImguiGL imgui;
         std::jthread renderThread;
         SemanticPMFS* pmfs;
         double last_concentration_reading = 0;

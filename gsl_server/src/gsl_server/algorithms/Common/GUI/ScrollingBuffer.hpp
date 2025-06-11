@@ -1,7 +1,7 @@
 #pragma once
 #if USE_GUI
 
-#include <ament_imgui/ament_imgui.h>
+#include <imgui_gl/imgui_gl.h>
 
 namespace GSL::GUI
 {
