@@ -1,14 +1,19 @@
 cmake_minimum_required(VERSION 3.11)
 project(gsl_server) 
+
+# enabling debug mode disables optimizations and activates a bunch of assertions in the code.
+set(CMAKE_BUILD_TYPE "Release")
+
 set(CMAKE_CXX_FLAGS "-g -glldb -Wpedantic -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_STANDARD 20)
+
 set(CMAKE_VERBOSE_MAKEFILE ON) #Outputs the compiler command to the build log file
 
 #########################
 #OPTIONS
 #########################
-# enabling debug mode disables optimizations and activates a bunch of assertions in the code.
-set(GSL_DEBUG OFF)
 
 # extra logging to tell you what is being executed
 set(GSL_TRACING ON) 
@@ -45,7 +50,6 @@ include(CMake/CommonDependencies.cmake)
 
 include_directories(
   src
-  third_party/xxHash/include
   third_party/DDA/include
   third_party/DDA/third_party/glm
   third_party/StateMachine/include

@@ -28,7 +28,6 @@ namespace GSL
     {
         // ScopedStopwatch watch("movement");
 
-
         if (movesCounter > pmfs->settings.movement.initialExplorationMoves)
             currentMovement = MovingStatePMFS::MovementType::Search;
         else
@@ -93,9 +92,10 @@ namespace GSL
                                   ? explorationTerm
                                   : informationValue(indices.x, indices.y);
 
+            // this is to include the navigation distance in the evaluation
             double evaluation = interest / std::pow(pmfs->hitProbability[i].distanceFromRobot + 0.1f, pmfs->settings.movement.distanceWeight);
 
-            evaluations.insert({.indices = indices, .evaluation = evaluation});
+            evaluations.insert({.indices = indices, .evaluation = interest});
         }
 
         for (const PositionEval& eval : evaluations)
