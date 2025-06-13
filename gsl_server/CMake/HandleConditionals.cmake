@@ -1,15 +1,6 @@
 # Check the options and apply them
 
-
-if(GSL_DEBUG)
-  set(CMAKE_BUILD_TYPE "Debug")
-  add_compile_definitions(GSL_DEBUG=1)
-  set(CMAKE_CXX_FLAGS "-O0 ${CMAKE_CXX_FLAGS}")
-else()
-  set(CMAKE_BUILD_TYPE "Release")
-  set(CMAKE_CXX_FLAGS "-O3 ${CMAKE_CXX_FLAGS}")
-endif(GSL_DEBUG)
-
+add_compile_definitions("GSL_DEBUG=$<CONFIG:Debug>")
 
 if(GSL_TRACING)
     add_compile_definitions(GSL_TRACING=1)

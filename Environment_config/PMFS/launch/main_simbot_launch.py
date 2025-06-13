@@ -46,7 +46,7 @@ def launch_setup(context, *args, **kwargs):
                 name="GSL",
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e gdb --args",
-                prefix="xterm -hold -e",
+                # prefix="xterm -hold -e",
                 parameters=[
                     # Common
                     {'use_sim_time': False},

@@ -28,12 +28,12 @@ def launch_arguments():
     return [
         DeclareLaunchArgument(
             "scenario",
-            default_value=["B"],
+            default_value=["A"],
             description="scenario to simulate",
         ),
         DeclareLaunchArgument(
             "simulation",
-            default_value=["B1"],
+            default_value=["A2"],
             description="name of the simulation yaml file",
         ),
     ]

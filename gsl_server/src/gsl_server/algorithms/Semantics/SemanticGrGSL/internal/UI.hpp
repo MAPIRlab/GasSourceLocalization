@@ -1,7 +1,7 @@
 #pragma once
 #ifdef USE_GUI
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
-#include <ament_imgui/ament_imgui.h>
+#include <imgui_gl/imgui_gl.h>
 #include <gsl_server/algorithms/GrGSL/GrGSL_internal.hpp>
 #include <implot/implot.h>
 
@@ -37,7 +37,7 @@ namespace GSL::SemanticGrGSL_internal
         void simulateInfotaxis(const Vector2Int& selectedCell);
 
     private:
-        AmentImgui imgui;
+        ImguiGL imgui;
         rclcpp::Node::SharedPtr uiNode;
         std::jthread renderThread;
         SemanticGrGSL* grgsl;

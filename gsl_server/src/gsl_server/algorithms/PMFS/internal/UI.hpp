@@ -1,7 +1,7 @@
 #pragma once
 #ifdef USE_GUI
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
-#include <ament_imgui/ament_imgui.h>
+#include <imgui_gl/imgui_gl.h>
 #include <implot/implot.h>
 
 #include <geometry_msgs/msg/point_stamped.hpp>
@@ -34,7 +34,7 @@ namespace GSL::PMFS_internal
         int selectVariable();
         std::string printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y);
         
-        AmentImgui imgui;
+        ImguiGL imgui;
         std::jthread renderThread;
         PMFS* pmfs;
         double last_concentration_reading = 0;
