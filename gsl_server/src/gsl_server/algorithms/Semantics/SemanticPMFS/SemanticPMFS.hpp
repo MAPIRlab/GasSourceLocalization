@@ -73,6 +73,6 @@ namespace GSL
         std::optional<VisibilityMap> visibilityMap;
         uint iterationsCounter = 0;
         bool paused = false;
-        IF_GUI(SemanticPMFS_internal::UI ui);
+        IF_GUI(SemanticPMFS_internal::UI ui;)
     };
 } // namespace GSL

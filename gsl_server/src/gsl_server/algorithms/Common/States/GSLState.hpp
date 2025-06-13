@@ -21,8 +21,7 @@ namespace GSL
             return true;
         }
 
-        virtual void RenderUI()
-        {}
+        virtual void RenderUI(){}
 
     protected:
         State() = delete;

@@ -6,6 +6,7 @@
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <optional>
 #include <rclcpp_action/rclcpp_action.hpp>
+#include "gsl_server/core/ConditionalMacros.hpp"
 
 namespace GSL
 {
@@ -36,7 +37,7 @@ namespace GSL
         // Cancel the navigation and call OnCompleteNavigaton
         virtual void Fail();
 
-        void RenderUI() override;
+        IF_GUI(void RenderUI() override;)
     protected:
         rclcpp::Time startTime;
         State* previousState;

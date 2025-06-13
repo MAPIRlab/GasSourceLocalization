@@ -15,7 +15,7 @@ namespace GSL
     class GrGSL : public Algorithm
     {
         friend class MovingStateGrGSL;
-        IF_GUI(friend class GrGSL_internal::UI);
+        IF_GUI(friend class GrGSL_internal::UI;)
         using WindEstimation = gmrf_msgs::srv::WindEstimation;
         using HashSet = std::unordered_set<Vector2Int>;
 

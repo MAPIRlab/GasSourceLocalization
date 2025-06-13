@@ -1,6 +1,7 @@
 #pragma once
 #include <gsl_server/algorithms/Common/States/GSLState.hpp>
 #include <rclcpp/time.hpp>
+#include "gsl_server/core/ConditionalMacros.hpp"
 
 namespace GSL
 {
@@ -19,6 +20,6 @@ namespace GSL
     protected:
         float maxWaitTime;
         rclcpp::Time startTime;
-        void RenderUI() override;
+        IF_GUI(void RenderUI() override;)
     };
 } // namespace GSL

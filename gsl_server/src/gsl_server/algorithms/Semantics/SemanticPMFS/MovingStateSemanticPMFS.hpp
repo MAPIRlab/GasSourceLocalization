@@ -16,7 +16,7 @@ namespace GSL
     class MovingStateSemanticPMFS : public MovingState
     {
         using HashSet = std::unordered_set<Vector2Int>;
-        IF_GUI(friend class SemanticPMFS_internal::UI);
+        IF_GUI(friend class SemanticPMFS_internal::UI;)
 
     public:
         MovingStateSemanticPMFS(Algorithm* _algorithm);

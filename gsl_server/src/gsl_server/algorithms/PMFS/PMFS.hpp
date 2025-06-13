@@ -65,6 +65,6 @@ namespace GSL
         std::optional<VisibilityMap> visibilityMap;
         uint iterationsCounter;
 
-        IF_GUI(PMFS_internal::UI ui);
+        IF_GUI(PMFS_internal::UI ui;)
     };
 } // namespace GSL

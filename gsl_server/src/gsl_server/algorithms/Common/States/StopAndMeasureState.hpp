@@ -3,6 +3,7 @@
 #include <gsl_server/algorithms/Common/States/GSLState.hpp>
 #include <rclcpp/time.hpp>
 #include <vector>
+#include "gsl_server/core/ConditionalMacros.hpp"
 
 namespace GSL
 {
@@ -21,7 +22,7 @@ namespace GSL
     protected:
         virtual void OnEnterState(State* previousState) override;
         virtual void OnExitState(State* nextState) override;
-        void RenderUI() override;
+        IF_GUI(void RenderUI() override;)
 
     protected:
         double measure_time; // how long to measure for, in seconds

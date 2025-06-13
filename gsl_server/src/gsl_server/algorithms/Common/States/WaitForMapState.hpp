@@ -2,6 +2,7 @@
 #include <gsl_server/algorithms/Common/States/GSLState.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include "gsl_server/core/ConditionalMacros.hpp"
 
 namespace GSL
 {
@@ -19,7 +20,7 @@ namespace GSL
     protected:
         void OnEnterState(State* previous) override;
         void OnExitState(State* previous) override;
-        void RenderUI() override;
+        IF_GUI(void RenderUI() override;)
 
     private:
         void mapCallback(OccupancyGrid::SharedPtr msg);

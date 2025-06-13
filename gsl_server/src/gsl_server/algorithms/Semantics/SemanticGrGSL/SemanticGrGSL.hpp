@@ -14,8 +14,8 @@ namespace GSL
         IF_GUI(friend class SemanticGrGSL_internal::UI;)
     public:
         SemanticGrGSL(std::shared_ptr<rclcpp::Node> _node)
-            : Algorithm(_node),
-            IF_GUI(ui(this))
+            : Algorithm(_node)
+            IF_GUI(,ui(this))
         {}
 
         void OnUpdate() override;

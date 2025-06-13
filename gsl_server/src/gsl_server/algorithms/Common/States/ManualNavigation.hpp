@@ -1,5 +1,6 @@
 #pragma once
 #include "MovingState.hpp"
+#include "gsl_server/core/ConditionalMacros.hpp"
 
 namespace GSL
 {
@@ -11,7 +12,7 @@ namespace GSL
 
     protected:
         void OnEnterState(State* previous) override;
-        void RenderUI() override;
+        IF_GUI(void RenderUI() override;)
         bool paused;
     };
 } // namespace GSL
