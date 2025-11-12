@@ -32,8 +32,7 @@ namespace GSL
 
         // Client
         std::string serviceName = Utils::getParam<std::string>(node, "semanticsService", "/voxeland/get_class_distributions");
-        rmw_qos_profile_t qos{.reliability = RMW_QOS_POLICY_RELIABILITY_RELIABLE};
-        client = node->create_client<voxeland_msgs::srv::GetClassDistributions>(serviceName, qos);
+        client = node->create_client<voxeland_msgs::srv::GetClassDistributions>(serviceName, rclcpp::QoS(1).reliable());
         while (!client->wait_for_service(std::chrono::seconds(2)) && rclcpp::ok())
             GSL_INFO("Waiting for voxeland service: {}", client->get_service_name());
         initializeRequestPoints();
