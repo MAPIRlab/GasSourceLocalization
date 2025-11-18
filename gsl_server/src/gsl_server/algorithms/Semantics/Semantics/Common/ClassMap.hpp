@@ -27,7 +27,7 @@ namespace GSL
         using MapToPixel = std::function<Vector2Int(size_t)>; // turn a cell index into a pixel in an image for parsing room info
 
     public:
-        static constexpr const std::string otherClassName = "other";
+        static inline const std::string otherClassName = "other";
 
         // values read directly from the ontology
         std::map<std::string, float> sourceProbByClass;
