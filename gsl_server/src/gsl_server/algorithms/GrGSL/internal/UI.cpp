@@ -37,7 +37,7 @@ namespace GSL::GrGSL_internal
 
     void UI::renderImgui()
     {
-        imgui.Setup(
+        ImguiGL::Setup(
             fmt::format("{}/resources/GrGSL_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
             "GrGSL",
             900,
@@ -49,16 +49,16 @@ namespace GSL::GrGSL_internal
         while (rclcpp::ok() && !grgsl->HasEnded())
         {
             rclcpp::spin_some(uiNode);
-            imgui.StartFrame();
+            ImguiGL::StartFrame();
             createUI();
             createPlots();
 
-            imgui.Render();
+            ImguiGL::Render();
             rate.sleep();
         }
 
         ImPlot::DestroyContext();
-        imgui.Close();
+        ImguiGL::Close();
     }
 
     void UI::createUI()
