@@ -25,7 +25,6 @@ There are also some additional, optional dependecies that you might not need, de
 
 - (Optional) [Nav-assistant](https://github.com/MAPIRlab/navigation-assistant)
 - (Optional) [Gaden](https://github.com/MAPIRlab/gaden)
-- (Optional) [ament_imgui](https://github.com/PepeOjeda/ament_imgui)
 - (Optional) [Voxeland](https://github.com/MAPIRlab/Voxeland)
 
 ## Compiling specific algorithms
@@ -37,5 +36,5 @@ Even if you are compiling all algorithms, there are some dependencies that can j
 
 If you don't want to use Gaden for your experiments you can omit it and set the `USE_GADEN` option in the [CMakeLists.txt](gsl_server/CMakeLists.txt) file to `OFF` to compile without the corresponding dependency.
 
-Similarly, the dependency with `ament_imgui` can be disabled using the `USE_GUI` option, and the dependency with `Nav-Assistant` can be disabled with `USE_NAV_ASSISTANT` in the [CMakeLists.txt](gsl_server/CMakeLists.txt).
+Similarly, the dependency with `Nav-Assistant` can be disabled with `USE_NAV_ASSISTANT` in the [CMakeLists.txt](gsl_server/CMakeLists.txt).
 

@@ -37,7 +37,6 @@ namespace GSL::SemanticGrGSL_internal
         void simulateInfotaxis(const Vector2Int& selectedCell);
 
     private:
-        ImguiGL imgui;
         rclcpp::Node::SharedPtr uiNode;
         std::jthread renderThread;
         SemanticGrGSL* grgsl;

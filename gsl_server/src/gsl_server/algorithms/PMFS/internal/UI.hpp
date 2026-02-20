@@ -34,7 +34,6 @@ namespace GSL::PMFS_internal
         int selectVariable();
         std::string printCell(const Grid2D<HitProbability>& grid, const int& x, const int& y);
         
-        ImguiGL imgui;
         std::jthread renderThread;
         PMFS* pmfs;
         double last_concentration_reading = 0;

@@ -12,6 +12,7 @@ set(COMMON_AMENT_DEPENDENCIES
     std_msgs
     nav2_msgs
     gsl_actions
+    ament_index_cpp
 )
 
 foreach(Dependency IN ITEMS ${COMMON_AMENT_DEPENDENCIES})

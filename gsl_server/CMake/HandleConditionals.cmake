@@ -27,8 +27,8 @@ endif(USE_TRACY)
 
 if(USE_GUI)
 	add_compile_definitions(USE_GUI=1)
-    find_package(ament_imgui REQUIRED)
-    set(CONDITIONAL_IMGUI "ament_imgui")
+    include(CMake/ament_imgui.cmake)
+    set(CONDITIONAL_IMGUI "imgui_gl")
 endif(USE_GUI)
 
 if(USE_GADEN)
