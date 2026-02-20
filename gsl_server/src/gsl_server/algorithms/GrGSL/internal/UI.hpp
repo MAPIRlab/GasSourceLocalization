@@ -19,7 +19,6 @@ namespace GSL
 
 namespace GSL::GrGSL_internal
 {
-
     class UI
     {
     public:
@@ -37,7 +36,6 @@ namespace GSL::GrGSL_internal
         void simulateInfotaxis(const Vector2Int& selectedCell);
     
     private:
-        ImguiGL imgui;
         rclcpp::Node::SharedPtr uiNode;
         std::jthread renderThread;
         GrGSL* grgsl;

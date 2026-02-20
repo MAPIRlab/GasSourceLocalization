@@ -8,15 +8,15 @@ add_library(GSL_common ${SOURCES})
 target_include_directories(GSL_common PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 # Link ament dependencies
-ament_target_dependencies(GSL_common
+ament_target_dependencies(GSL_common PUBLIC
     ${COMMON_AMENT_DEPENDENCIES}
-    ${CONDITIONAL_IMGUI}
 )
 
 # Link other dependencies
-target_link_libraries(GSL_common 
+target_link_libraries(GSL_common PUBLIC
     ${OpenCV_LIBS}
     OpenMP::OpenMP_CXX
     fmt
     ${CONDITIONAL_TRACY}
+    ${CONDITIONAL_IMGUI}
 )

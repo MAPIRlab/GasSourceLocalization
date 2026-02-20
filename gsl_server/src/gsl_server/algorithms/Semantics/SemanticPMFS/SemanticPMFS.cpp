@@ -95,7 +95,6 @@ namespace GSL
 
         visibilityMap.emplace(gridMetadata.dimensions.x, gridMetadata.dimensions.y,
                               std::max(settings.hitProbability.localEstimationWindowSize, settings.movement.openMoveSetExpasion));
-        // visibilityMap.range = std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize);
 
         // initialize the hit probability and the simulationOccupancy maps
         //----------------------------------
