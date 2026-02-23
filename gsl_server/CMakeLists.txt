@@ -99,6 +99,7 @@ include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
 include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
 include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
 include(src/gsl_server/algorithms/Semantics/CMakeLists.txt) # There is further modularity inside of this file!
+include(src/gsl_server/algorithms/GraphGSL/CMakeLists.txt)
 
 
 
