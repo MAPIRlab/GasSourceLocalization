@@ -26,6 +26,7 @@
   
   <!-- Optionals -->
   <build_depend>gaden_msgs</build_depend>
+  <build_depend>gmrf_wind_mapping</build_depend>
   <build_depend>gmrf_msgs</build_depend>
   <build_depend>voxeland_msgs</build_depend>
   <build_depend>ament_imgui</build_depend>
