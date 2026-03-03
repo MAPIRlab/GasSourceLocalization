@@ -1,8 +1,8 @@
 #pragma once
-#include <gmrf_wind_core/gmrf_map.h>
-#include <gsl_server/core/Vectors.hpp>
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
+#include <gmrf_wind_core/gmrf_map.h>
+#include <gsl_server/core/Vectors.hpp>
 
 namespace GSL
 {
@@ -13,18 +13,28 @@ namespace GSL
         AABB2D aabb;
         Vector2 spawnPoint;
     };
-    
-    struct Node
+
+    class Node
     {
-        Node(const Grid2DMetadata& metadata,
-             const std::vector<Occupancy>& occupancy,
-             gmrfw::CGMRF_map::Parameters gmrf_params);
+    public:
+        virtual Vector2 GetPosition() = 0;
+    };
+
+    class RealNode : public Node
+    {
+    public:
+        RealNode(const Grid2DMetadata& metadata,
+                 const std::vector<Occupancy>& occupancy,
+                 gmrfw::CGMRF_map::Parameters gmrf_params);
 
         void SetOccupancy(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy);
         void AddObservation(Vector2 location, Vector2 windVector);
         void AddObservation(Vector2 location, float gasObs);
         const Grid2D<Vector2> GetWindMap();
-        Vector2 GetCentroid() {return centroid;}
+        Vector2 GetPosition() override
+        {
+            return centroid;
+        }
 
         std::vector<Arc> arcs;
 
@@ -40,5 +50,19 @@ namespace GSL
         Grid2DMetadata gridMetadata;
         gmrfw::CGMRF_map::Parameters gmrf_parameters;
         Vector2 centroid;
+    };
+
+    class EmptyNode : public Node
+    {
+    public:
+        EmptyNode(Vector2 pos) : position(pos)
+        {}
+        Vector2 GetPosition() override
+        {
+            return position;
+        }
+
+    private:
+        Vector2 position;
     };
 } // namespace GSL

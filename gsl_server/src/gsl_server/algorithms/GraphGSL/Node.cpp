@@ -3,13 +3,13 @@
 namespace GSL
 {
 
-    Node::Node(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy, gmrfw::CGMRF_map::Parameters gmrf_params)
+    RealNode::RealNode(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy, gmrfw::CGMRF_map::Parameters gmrf_params)
         : gmrf_parameters(gmrf_params)
     {
         SetOccupancy(metadata, _occupancy);
     }
 
-    gmrfw::TOccupancyMap Node::ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata)
+    gmrfw::TOccupancyMap RealNode::ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata)
     {
         gmrfw::TOccupancyMap occMap;
 
@@ -27,7 +27,7 @@ namespace GSL
         return occMap;
     }
 
-    void Node::SetOccupancy(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy)
+    void RealNode::SetOccupancy(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy)
     {
         gridMetadata = metadata;
         occupancy = _occupancy;
@@ -56,7 +56,7 @@ namespace GSL
             gmrf->setObservations_GMRF(observations);
     }
 
-    void Node::AddObservation(Vector2 location, Vector2 windVector)
+    void RealNode::AddObservation(Vector2 location, Vector2 windVector)
     {
         constexpr float variance = 0.001; // TODO
         gmrf->insertObservation_GMRF(
@@ -67,12 +67,12 @@ namespace GSL
         windDirty = true;
     }
 
-    void Node::AddObservation(Vector2 location, float gasObs)
+    void RealNode::AddObservation(Vector2 location, float gasObs)
     {
         // TODO
     }
 
-    const Grid2D<Vector2> Node::GetWindMap()
+    const Grid2D<Vector2> RealNode::GetWindMap()
     {
         if (windDirty)
         {
@@ -91,7 +91,7 @@ namespace GSL
         return AsGrid();
     }
 
-    Grid2D<Vector2> Node::AsGrid()
+    Grid2D<Vector2> RealNode::AsGrid()
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);
     }

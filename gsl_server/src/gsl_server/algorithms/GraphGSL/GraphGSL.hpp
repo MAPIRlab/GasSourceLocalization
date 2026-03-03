@@ -9,7 +9,10 @@ namespace GSL
     {
     public:
         GraphGSL(std::shared_ptr<rclcpp::Node> _node);
-        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection); // called from StopAndMeasure once we have enough data for this position
+        void Initialize() override;
+        void OnUpdate() override;
+
+        void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override; // called from StopAndMeasure once we have enough data for this position
     private:
         Graph graph;
 

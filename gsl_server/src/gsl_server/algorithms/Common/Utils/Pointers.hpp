@@ -60,9 +60,9 @@ bool Is(const std::unique_ptr<Baseclass>& p)
 
 template <typename Subclass, typename Baseclass>
     requires(std::derived_from<Subclass, Baseclass>)
-Subclass* As(const std::shared_ptr<Baseclass>& p)
+std::shared_ptr<Subclass> As(const std::shared_ptr<Baseclass>& p)
 {
-    return dynamic_cast<Subclass*>(p.get());
+    return std::dynamic_pointer_cast<Subclass>(p);
 }
 
 template <typename Subclass, typename Baseclass>

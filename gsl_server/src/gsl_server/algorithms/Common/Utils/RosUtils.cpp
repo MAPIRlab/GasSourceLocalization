@@ -185,6 +185,10 @@ namespace GSL::Utils
         outMetadata.dimensions.y = mapImage.size().height;
 
         outOccupancy = parseMapImage(imagePath, outMetadata);
+
+        for (size_t i = 0; i < outOccupancy.size(); i++)
+            if (outOccupancy.at(i) == Occupancy::Free)
+                outMetadata.numFreeCells++;
     }
 
     void publishDebugSingleMarker(Vector3 position, ColorRGBA color, const std::string& topic)
