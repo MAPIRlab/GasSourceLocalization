@@ -57,3 +57,11 @@
 #else
     #define SEMANTIC_GrGSL_NAME "(NOT COMPILED) SemanticGrGSL"
 #endif
+
+
+#if ENABLE_GraphGSL
+    #define GRAPH_GSL_NAME "GraphGSL"
+    #include <gsl_server/algorithms/GraphGSL/Create.hpp>
+#else
+    #define GRAPH_GSL_NAME "(NOT COMPILED) GraphGSL"
+#endif

@@ -1,5 +1,5 @@
 
-file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp") 
+file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 
 find_package(gmrf_wind_mapping REQUIRED)
 

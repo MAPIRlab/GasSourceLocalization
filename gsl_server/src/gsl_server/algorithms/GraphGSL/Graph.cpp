@@ -1,78 +1,66 @@
 #include "Graph.hpp"
+#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <yaml-cpp/yaml.h>
+#include "Node.hpp"
 
 namespace GSL
 {
-
-    Node::Node(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy, gmrfw::CGMRF_map::Parameters gmrf_params)
-        : gmrf_parameters(gmrf_params)
+    Graph Graph::ReadFromDisk(const std::filesystem::path& folder)
     {
-        SetOccupancy(metadata, _occupancy);
-    }
+        Graph graph;
+        gmrfw::CGMRF_map::Parameters gmrfParams{}; // TODO
+        std::map<std::string, std::weak_ptr<Node>> byName;
 
-    gmrfw::TOccupancyMap Node::ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata)
-    {
-        gmrfw::TOccupancyMap occMap;
-
-        std::transform(_occ.begin(), _occ.end(), std::back_inserter(occMap.data), [](const Occupancy value)
-                       {
-                           return static_cast<int8_t>(value);
-                       });
-
-        occMap.width = metadata.dimensions.x;
-        occMap.height = metadata.dimensions.y;
-        occMap.resolution = metadata.cellSize;
-        occMap.origin_x = metadata.origin.x;
-        occMap.origin_y = metadata.origin.y;
-
-        return occMap;
-    }
-
-    void Node::SetOccupancy(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy)
-    {
-        gridMetadata = metadata;
-        occupancy = _occupancy;
-
-        // re-create the gmrf map, keeping the history of observations
-        std::vector<gmrfw::TobservationGMRF> observations;
-        if (gmrf)
-            observations = gmrf->getObservations_GMRF();
-
-        gmrf.emplace(ToGMRFOcc(occupancy, metadata), gmrf_parameters, false, false);
-        wind.resize(metadata.dimensions.x * metadata.dimensions.y);
-
-        if (observations.size() > 0)
-            gmrf->setObservations_GMRF(observations);
-    }
-
-    void Node::AddObservation(Vector2 location, Vector2 windVector)
-    {
-        constexpr float variance = 0.001;
-        gmrf->insertObservation_GMRF(
-            vmath::length(windVector),
-            std::atan2(windVector.y, windVector.x),
-            variance, variance,
-            location.x, location.y);
-    }
-
-    const Grid2D<Vector2> Node::GetWindMap()
-    {
-        // TODO caching
-        gmrf->MAP_estimation_GMRF();
-
-#pragma omp parallel for
-        for (size_t i = 0; i < wind.size(); i++)
+        // create the nodes
+        for (std::filesystem::path subfolder : folder)
         {
-            Vector2 coords = gridMetadata.indexToCoordinates(i);
-            gmrfw::WindVector vec = gmrf->getEstimation(coords.x, coords.y);
-            wind.at(i).x = vec.x;
-            wind.at(i).y = vec.y;
-        }
-        return AsGrid();
-    }
+            if (!std::filesystem::is_directory(subfolder))
+                continue;
 
-    Grid2D<Vector2> Node::AsGrid()
-    {
-        return Grid2D<Vector2>(wind, occupancy, gridMetadata);
+            Grid2DMetadata gridMetadata;
+            std::vector<Occupancy> occupancy;
+            Utils::parseMapData(subfolder / "occupancy.yaml", gridMetadata, occupancy);
+
+            std::shared_ptr<Node> node = std::make_shared<Node>(gridMetadata, occupancy, gmrfParams);
+
+            graph.nodes.push_back(node);
+            byName[subfolder.stem()] = node;
+        }
+
+        // connect them to each other
+        for (std::filesystem::path subfolder : folder)
+        {
+            if (!std::filesystem::is_directory(subfolder))
+                continue;
+            std::weak_ptr<Node> thisNode = byName.at(subfolder.stem());
+
+            std::filesystem::path linksFolder = subfolder / "links";
+            for (std::filesystem::path linkFile : linksFolder)
+            {
+                std::string name = linkFile.stem();
+                std::weak_ptr<Node> otherNode = byName.at(name);
+
+                const YAML::Node yaml = YAML::LoadFile(linkFile);
+                AABB2D aabb;
+                aabb.min.x = yaml["min_x"].as<float>();
+                aabb.min.y = yaml["min_y"].as<float>();
+                aabb.max.x = yaml["max_x"].as<float>();
+                aabb.max.y = yaml["max_y"].as<float>();
+
+                Vector2 spawnPoint;
+                spawnPoint.x = yaml["spawn_point_x"].as<float>();
+                spawnPoint.y = yaml["spawn_point_y"].as<float>();
+
+                thisNode.lock()->arcs.push_back(Arc{
+                    .to = otherNode,
+                    .weight = 1,
+                    .aabb = aabb,
+                    .spawnPoint= spawnPoint
+                });
+            }
+        }
+
+        return graph;
     }
 
 } // namespace GSL
