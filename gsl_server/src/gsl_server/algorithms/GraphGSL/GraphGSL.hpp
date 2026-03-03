@@ -15,7 +15,8 @@ namespace GSL
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override; // called from StopAndMeasure once we have enough data for this position
     private:
         Graph graph;
-
+        gmrfw::CGMRF_map::Parameters gmrfParams;
+        
 #if USE_GUI
         friend class GraphUI;
         GraphUI gui;

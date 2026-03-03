@@ -161,7 +161,7 @@ namespace GSL::Utils
         return msg;
     }
 
-    void parseMapData(const std::string& yamlPath, Grid2DMetadata& outMetadata, std::vector<Occupancy>& outOccupancy)
+    void parseMapData(const std::string& yamlPath, float desiredCellSize, Grid2DMetadata& outMetadata, std::vector<Occupancy>& outOccupancy)
     {
         if (!std::filesystem::exists(yamlPath))
         {
@@ -170,19 +170,20 @@ namespace GSL::Utils
         }
 
         const YAML::Node yaml = YAML::LoadFile(yamlPath);
+        float originalCellSize = yaml["resolution"].as<float>();
+        outMetadata.scale = desiredCellSize / originalCellSize;
         outMetadata.origin.x = yaml["origin"][0].as<float>();
         outMetadata.origin.y = yaml["origin"][1].as<float>();
-        outMetadata.cellSize = yaml["resolution"].as<float>();
+        outMetadata.cellSize = originalCellSize * outMetadata.scale;
         outMetadata.numFreeCells = 0;
-        outMetadata.scale = 1;
 
         std::filesystem::path imagePath(yaml["image"].as<std::string>());
         if (imagePath.is_relative())
             imagePath = std::filesystem::path(yamlPath).parent_path() / imagePath;
 
         cv::Mat mapImage = cv::imread(imagePath, cv::IMREAD_GRAYSCALE);
-        outMetadata.dimensions.x = mapImage.size().width;
-        outMetadata.dimensions.y = mapImage.size().height;
+        outMetadata.dimensions.x = mapImage.size().width / outMetadata.scale;
+        outMetadata.dimensions.y = mapImage.size().height / outMetadata.scale;
 
         outOccupancy = parseMapImage(imagePath, outMetadata);
 

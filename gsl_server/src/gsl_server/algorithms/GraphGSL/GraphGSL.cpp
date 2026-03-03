@@ -15,7 +15,10 @@ namespace GSL
         startTime = node->now();
         declareParameters();
 
-        graph = Graph::ReadFromDisk(std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "test_graph");
+        float cellSize = 0.25; // TODO scale
+        gmrfParams.cell_size = cellSize;
+        std::filesystem::path path = std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "test_graph";
+        graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
         IF_GUI(gui.Run());
     }
 

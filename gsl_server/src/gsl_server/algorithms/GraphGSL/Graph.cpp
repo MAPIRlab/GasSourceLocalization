@@ -6,7 +6,7 @@
 
 namespace GSL
 {
-    Graph Graph::ReadFromDisk(const std::filesystem::path& folder)
+    Graph Graph::ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams)
     {
         if (!std::filesystem::exists(folder))
         {
@@ -15,7 +15,6 @@ namespace GSL
         }
 
         Graph graph;
-        gmrfw::CGMRF_map::Parameters gmrfParams{}; // TODO
         std::map<std::string, std::weak_ptr<Node>> byName;
 
         // create the nodes
@@ -37,7 +36,7 @@ namespace GSL
             {
                 Grid2DMetadata gridMetadata;
                 std::vector<Occupancy> occupancy;
-                Utils::parseMapData(subfolder / "occupancy.yaml", gridMetadata, occupancy);
+                Utils::parseMapData(subfolder / "occupancy.yaml", cellSize, gridMetadata, occupancy);
 
                 node = std::make_shared<RealNode>(gridMetadata, occupancy, gmrfParams);
             }
