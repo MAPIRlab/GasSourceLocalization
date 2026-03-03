@@ -11,6 +11,7 @@
 #include <string>
 #include <tf2/LinearMath/Vector3.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include <yaml-cpp/yaml.h>
 
 namespace GSL::Utils
 {
@@ -121,7 +122,7 @@ namespace GSL::Utils
         return Vector3(v.x, v.y, v.z);
     }
 
-    std::vector<Occupancy> parseMapImage(const std::string& path, Grid2DMetadata& metadata)
+    std::vector<Occupancy> parseMapImage(const std::string& path, const Grid2DMetadata& metadata)
     {
         if (!std::filesystem::exists(path))
         {
@@ -141,6 +142,49 @@ namespace GSL::Utils
         GridUtils::reduceOccupancyMap(imageAsVec, width, occupancyGrid, metadata);
 
         return occupancyGrid;
+    }
+
+    OccupancyGrid toOccupancyGrid(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata)
+    {
+        OccupancyGrid msg;
+        msg.header.frame_id = "map";
+        msg.info.resolution = metadata.cellSize;
+        msg.info.origin.position.x = metadata.origin.x;
+        msg.info.origin.position.y = metadata.origin.y;
+        msg.info.width = metadata.dimensions.x;
+        msg.info.height = metadata.dimensions.y;
+
+        std::transform(occupancy.begin(), occupancy.end(), std::back_inserter(msg.data), [](const Occupancy value) -> int8_t
+                       {
+                           return static_cast<int8_t>(value);
+                       });
+        return msg;
+    }
+
+    void parseMapData(const std::string& yamlPath, Grid2DMetadata& outMetadata, std::vector<Occupancy>& outOccupancy)
+    {
+        if (!std::filesystem::exists(yamlPath))
+        {
+            GSL_ERROR("Tried to parse map image at path {}, but it does not exist", yamlPath);
+            CLOSE_PROGRAM;
+        }
+
+        const YAML::Node yaml = YAML::LoadFile(yamlPath);
+        outMetadata.origin.x = yaml["origin"][0].as<float>();
+        outMetadata.origin.y = yaml["origin"][1].as<float>();
+        outMetadata.cellSize = yaml["resolution"].as<float>();
+        outMetadata.numFreeCells = 0;
+        outMetadata.scale = 1;
+
+        std::filesystem::path imagePath(yaml["image"].as<std::string>());
+        if (imagePath.is_relative())
+            imagePath = std::filesystem::path(yamlPath).parent_path() / imagePath;
+
+        cv::Mat mapImage = cv::imread(imagePath, cv::IMREAD_GRAYSCALE);
+        outMetadata.dimensions.x = mapImage.size().width;
+        outMetadata.dimensions.y = mapImage.size().height;
+
+        outOccupancy = parseMapImage(imagePath, outMetadata);
     }
 
     void publishDebugSingleMarker(Vector3 position, ColorRGBA color, const std::string& topic)

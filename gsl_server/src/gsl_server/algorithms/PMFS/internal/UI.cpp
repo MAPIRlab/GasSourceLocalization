@@ -7,6 +7,8 @@
 #include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
+#include <imgui_gl/imgui_gl.h>
+#include <implot/implot.h>
 
 namespace GSL::PMFS_internal
 {

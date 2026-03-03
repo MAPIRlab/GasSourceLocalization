@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gsl_server/core/ros_typedefs.hpp"
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
@@ -44,7 +45,9 @@ namespace GSL
         Vector3 fromMsg(const geometry_msgs::msg::Vector3& v);
         Vector3 fromMsg(const geometry_msgs::msg::Point& v);
 
-        std::vector<Occupancy> parseMapImage(const std::string& path, Grid2DMetadata& metadata);
+        std::vector<Occupancy> parseMapImage(const std::string& imagePath, const Grid2DMetadata& metadata);
+        void parseMapData(const std::string& yamlPath, Grid2DMetadata& outMetadata, std::vector<Occupancy>& outOccupancy);
+        OccupancyGrid toOccupancyGrid(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata);
 
         void publishDebugSingleMarker(Vector3 position, std_msgs::msg::ColorRGBA color, const std::string& topic);
         void publishDebugSingleArrow(Vector3 start, Vector3 end, std_msgs::msg::ColorRGBA color, const std::string& topic);

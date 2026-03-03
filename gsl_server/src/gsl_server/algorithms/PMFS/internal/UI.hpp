@@ -1,8 +1,6 @@
 #pragma once
 #ifdef USE_GUI
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
-#include <imgui_gl/imgui_gl.h>
-#include <implot/implot.h>
 
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <rclcpp/subscription.hpp>

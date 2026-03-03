@@ -13,7 +13,7 @@ namespace GSL
         Vector2 origin;
         float cellSize; // in meters
         Vector2Int dimensions;
-        uint16_t scale; // with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
+        uint16_t scale = 1; // with respect to the original occupancy map. Scale=5 means each cell in the grid is a 5x5 square in the ROS map
         size_t numFreeCells;
 
         Vector2Int coordinatesToIndices(float x, float y) const

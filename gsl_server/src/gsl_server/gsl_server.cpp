@@ -104,6 +104,7 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
                   " '" PMFS_NAME "'\n"
                   " '" SEMANTIC_PMFS_NAME "'\n",
                   " '" SEMANTIC_GrGSL_NAME "'\n",
+                  " '" GRAPH_GSL_NAME "'\n",
                   goal_handle->get_goal()->gsl_method.c_str());
         actionResult->success = false;
         goal_handle->abort(actionResult);
@@ -130,39 +131,45 @@ std::shared_ptr<GSL::Algorithm> GSLServer::createAlgorithm(const std::string nam
     {}
 #if ENABLE_PLUME_TRACKING
     else if (name == SURGE_CAST_NAME)
-        return std::make_shared<GSL::SurgeCast>(shared_from_this());
+        return GSL::CreateSurgeCast(shared_from_this());
     else if (name == SURGE_SPIRAL_NAME)
-        return std::make_shared<GSL::SurgeSpiral>(shared_from_this());
+        return GSL::CreateSurgeSpiral(shared_from_this());
 #endif
 
 #if ENABLE_SPIRAL
     else if (name == SPIRAL_NAME)
-        return std::make_shared<GSL::Spiral>(shared_from_this());
+        return GSL::CreateSpiral(shared_from_this());
 #endif
 
 #if ENABLE_PARTICLE_FILTER
     else if (name == PARTICLE_FILTER_NAME)
-        return std::make_shared<GSL::ParticleFilter>(shared_from_this());
+        return GSL::CreateParticleFilter(shared_from_this());
 #endif
 
 #if ENABLE_GrGSL
     else if (name == GRGSL_NAME)
-        return std::make_shared<GSL::GrGSL>(shared_from_this());
+        return GSL::CreateGrGSL(shared_from_this());
 #endif
 
 #if ENABLE_PMFS
     else if (name == PMFS_NAME)
-        return std::make_shared<GSL::PMFS>(shared_from_this());
+        return GSL::CreatePMFS(shared_from_this());
 #endif
 
 #if ENABLE_SEMANTIC_PMFS
     else if (name == SEMANTIC_PMFS_NAME)
-        return std::make_shared<GSL::SemanticPMFS>(shared_from_this());
+        return GSL::CreateSemanticPMFS(shared_from_this());
 #endif
 
 #if ENABLE_SEMANTIC_GrGSL
     else if (name == SEMANTIC_GrGSL_NAME)
-        return std::make_shared<GSL::SemanticGrGSL>(shared_from_this());
+        return GSL::CreateSemanticGrGSL(shared_from_this());
 #endif
+
+#if ENABLE_GraphGSL
+    else if (name == GRAPH_GSL_NAME)
+        return GSL::CreateGraphGSL(shared_from_this());
+#endif
+
     return nullptr;
 }
