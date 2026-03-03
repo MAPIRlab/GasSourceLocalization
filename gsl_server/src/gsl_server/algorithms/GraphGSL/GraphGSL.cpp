@@ -1,4 +1,5 @@
 #include "GraphGSL.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 namespace GSL
 {
@@ -14,8 +15,8 @@ namespace GSL
         startTime = node->now();
         declareParameters();
 
-        graph = Graph::ReadFromDisk("/home/pepe/Desktop/test_graph");
-        IF_GUI(gui.run());
+        graph = Graph::ReadFromDisk(std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "test_graph");
+        IF_GUI(gui.Run());
     }
 
     void GraphGSL::OnUpdate()

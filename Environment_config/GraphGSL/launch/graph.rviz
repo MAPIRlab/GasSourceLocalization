@@ -34,6 +34,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /PioneerP3DX/gsl_graph
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Occupancy_nodes
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/gsl_occupancy
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217

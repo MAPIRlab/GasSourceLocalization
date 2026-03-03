@@ -15,15 +15,20 @@ namespace GSL
         GraphUI(GraphGSL* _gsl);
         ~GraphUI();
 
-        void run();
-        void renderImgui();
-
-        void createUI();
+        void Run();
+        void RenderImgui();
 
     private:
+        void CreateUI();
+        void DrawGraph();
+        void DrawOccupancyMaps();
+
         GraphGSL* gsl;
         std::jthread renderThread;
         rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;
+        rclcpp::Publisher<MarkerArray>::SharedPtr occupancyPub;
+
+        std::map<std::string, bool> selectedOccupancy;
     };
 } // namespace GSL
 

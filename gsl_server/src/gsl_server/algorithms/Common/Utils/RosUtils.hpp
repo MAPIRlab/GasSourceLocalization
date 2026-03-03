@@ -53,6 +53,8 @@ namespace GSL
         void publishDebugSingleArrow(Vector3 start, Vector3 end, std_msgs::msg::ColorRGBA color, const std::string& topic);
         void publishDebugSingleArrow(Vector3 start, geometry_msgs::msg::Quaternion rotation, float length, std_msgs::msg::ColorRGBA color, const std::string& topic);
         rclcpp::executors::SingleThreadedExecutor::SharedPtr createExecutor(rclcpp::Node::SharedPtr node);
+        Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid);
+        Marker createPointsOccupancyMarker(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata);
         void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic);
     }; // namespace Utils
 }; // namespace GSL

@@ -219,27 +219,13 @@ namespace GSL::Utils
         pub->publish(marker);
     }
 
-    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic)
+    Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid)
     {
-        if (!debugNode)
-            debugNode = std::make_shared<rclcpp::Node>("debugNode");
-
-        static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
-
-        if (!publisherMap.contains(topic))
-            publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
-        auto pub = publisherMap[topic];
-
         Marker points;
         points.header.frame_id = "map";
-        points.header.stamp = debugNode->now();
         points.type = Marker::POINTS;
         points.action = Marker::ADD;
 
-        points.color.r = 1.0;
-        points.color.g = 0.0;
-        points.color.b = 1.0;
-        points.color.a = 1.0;
         points.scale.x = grid.metadata.cellSize * 0.95;
         points.scale.y = grid.metadata.cellSize * 0.95;
 
@@ -260,7 +246,54 @@ namespace GSL::Utils
                 }
             }
         }
+        return points;
+    }
 
+    Marker createPointsOccupancyMarker(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata)
+    {
+        Marker points;
+        points.header.frame_id = "map";
+        points.type = Marker::POINTS;
+        points.action = Marker::ADD;
+
+        points.scale.x = metadata.cellSize * 0.95;
+        points.scale.y = metadata.cellSize * 0.95;
+
+        for (int row = 0; row < metadata.dimensions.y; row++)
+        {
+            for (int col = 0; col < metadata.dimensions.x; col++)
+            {
+                auto coords = metadata.indicesToCoordinates(col, row);
+                Point p;
+                p.x = coords.x;
+                p.y = coords.y;
+                p.z = 0;
+
+                points.points.push_back(p);
+
+                Occupancy occ = occupancy.at(metadata.indexOf(col, row));
+                if (occ == Occupancy::Free)
+                    points.colors.push_back(create_color(1, 1, 1));
+                else if (occ == Occupancy::Unknown)
+                    points.colors.push_back(create_color(0.3, 0.3, 0.3));
+                else
+                    points.colors.push_back(create_color(0, 0, 0));
+            }
+        }
+        return points;
+    }
+
+    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic)
+    {
+        if (!debugNode)
+            debugNode = std::make_shared<rclcpp::Node>("debugNode");
+
+        static std::map<std::string, std::shared_ptr<rclcpp::Publisher<Marker>>> publisherMap;
+
+        if (!publisherMap.contains(topic))
+            publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
+        auto pub = publisherMap[topic];
+        Marker points = createPointsMarker(grid);
         // GSL_INFO("Publishing debug markers at {}", pub->get_topic_name());
         pub->publish(points);
 

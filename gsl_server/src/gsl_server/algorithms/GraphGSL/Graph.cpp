@@ -1,6 +1,5 @@
 #include "Graph.hpp"
 #include "Node.hpp"
-#include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/core/Macros.hpp"
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <yaml-cpp/yaml.h>
@@ -9,6 +8,12 @@ namespace GSL
 {
     Graph Graph::ReadFromDisk(const std::filesystem::path& folder)
     {
+        if (!std::filesystem::exists(folder))
+        {
+            GSL_ERROR("Graph folder '{}' does not exist!", folder.c_str());
+            CLOSE_PROGRAM;
+        }
+
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams{}; // TODO
         std::map<std::string, std::weak_ptr<Node>> byName;
@@ -19,14 +24,28 @@ namespace GSL
             if (!std::filesystem::is_directory(subfolder))
                 continue;
 
-            Grid2DMetadata gridMetadata;
-            std::vector<Occupancy> occupancy;
-            Utils::parseMapData(subfolder / "occupancy.yaml", gridMetadata, occupancy);
+            std::shared_ptr<Node> node;
+            if (std::filesystem::exists(subfolder / "out.yaml"))
+            {
+                const YAML::Node yaml = YAML::LoadFile(subfolder / "out.yaml");
+                Vector2 position;
+                position.x = yaml["pos_x"].as<float>();
+                position.y = yaml["pos_y"].as<float>();
+                node = std::make_shared<EmptyNode>(position);
+            }
+            else
+            {
+                Grid2DMetadata gridMetadata;
+                std::vector<Occupancy> occupancy;
+                Utils::parseMapData(subfolder / "occupancy.yaml", gridMetadata, occupancy);
 
-            std::shared_ptr<Node> node = std::make_shared<RealNode>(gridMetadata, occupancy, gmrfParams);
+                node = std::make_shared<RealNode>(gridMetadata, occupancy, gmrfParams);
+            }
 
             graph.nodes.push_back(node);
-            byName[subfolder.stem()] = node;
+            std::string name = subfolder.stem();
+            byName[name] = node;
+            node->id = name;
         }
 
         // connect them to each other
@@ -34,7 +53,7 @@ namespace GSL
         {
             if (!std::filesystem::is_directory(subfolder))
                 continue;
-            auto thisNode = As<RealNode>(byName.at(subfolder.stem()).lock());
+            std::shared_ptr<Node> thisNode = byName.at(subfolder.stem()).lock();
 
             std::filesystem::path linksFolder = subfolder / "links";
             for (std::filesystem::path linkFile : std::filesystem::directory_iterator(linksFolder))
@@ -52,21 +71,12 @@ namespace GSL
 
                 std::string name = linkFile.stem();
                 std::weak_ptr<Node> otherNode;
-                if (name == "out")
+                if (!byName.contains(name))
                 {
-                    auto outNode = std::make_shared<EmptyNode>(spawnPoint);
-                    graph.nodes.push_back(outNode);
-                    otherNode = outNode;
+                    GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", subfolder.stem().c_str(), name, name);
+                    CLOSE_PROGRAM;
                 }
-                else
-                {
-                    if (!byName.contains(name))
-                    {
-                        GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", subfolder.stem().c_str(), name, name);
-                        CLOSE_PROGRAM;
-                    }
-                    otherNode = byName.at(name);
-                }
+                otherNode = byName.at(name);
 
                 thisNode->arcs.push_back(Arc{
                     .to = otherNode,

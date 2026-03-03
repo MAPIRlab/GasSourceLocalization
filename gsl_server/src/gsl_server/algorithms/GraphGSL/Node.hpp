@@ -18,6 +18,9 @@ namespace GSL
     {
     public:
         virtual Vector2 GetPosition() = 0;
+        
+        std::vector<Arc> arcs;
+        std::string id;
     };
 
     class RealNode : public Node
@@ -35,8 +38,6 @@ namespace GSL
         {
             return centroid;
         }
-
-        std::vector<Arc> arcs;
 
     private:
         static gmrfw::TOccupancyMap ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata);
