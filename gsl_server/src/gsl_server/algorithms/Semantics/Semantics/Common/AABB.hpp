@@ -7,23 +7,28 @@ namespace GSL
     {
         Vector2 min;
         Vector2 max;
+
+        Vector2 center() const { return min + 0.5f * size(); }
+        Vector2 size() const { return max - min; }
     };
 
     struct AABB3D
     {
         Vector3 min;
         Vector3 max;
+
+        Vector3 center() const { return min + 0.5f * size(); }
+        Vector3 size() const { return max - min; }
     };
 
-
-    //AABB expressed as the minimum and maximum indices. Implements iterator to traverse the box, x first, y later
+    // AABB expressed as the minimum and maximum indices. Implements iterator to traverse the box, x first, y later
     struct AABB2DInt
     {
         Vector2Int min;
         Vector2Int max;
 
         AABB2DInt() {}
-        AABB2DInt(const Vector2Int& _min, const Vector2Int& _max): min(_min), max(_max)
+        AABB2DInt(const Vector2Int& _min, const Vector2Int& _max) : min(_min), max(_max)
         {}
 
         bool operator==(const AABB2DInt& other) const
@@ -31,12 +36,11 @@ namespace GSL
             return min == other.min && max == other.max;
         }
 
-
         class Iterator
         {
         public:
-            Iterator(AABB2DInt& _aabb, Vector2Int start): aabb(_aabb), current(start) {}
-            Iterator(AABB2DInt& _aabb): aabb(_aabb), current(_aabb.min) {}
+            Iterator(AABB2DInt& _aabb, Vector2Int start) : aabb(_aabb), current(start) {}
+            Iterator(AABB2DInt& _aabb) : aabb(_aabb), current(_aabb.min) {}
 
             Vector2Int operator*() const
             {
@@ -63,14 +67,15 @@ namespace GSL
                 return tmp;
             }
 
-            friend bool operator== (const Iterator& a, const Iterator& b)
+            friend bool operator==(const Iterator& a, const Iterator& b)
             {
                 return a.aabb == b.aabb && a.current == b.current;
             };
-            friend bool operator!= (const Iterator& a, const Iterator& b)
+            friend bool operator!=(const Iterator& a, const Iterator& b)
             {
                 return !(a == b);
             };
+
         private:
             AABB2DInt& aabb;
             Vector2Int current;
@@ -86,4 +91,4 @@ namespace GSL
             return ++Iterator(*this, max);
         }
     };
-}
+} // namespace GSL

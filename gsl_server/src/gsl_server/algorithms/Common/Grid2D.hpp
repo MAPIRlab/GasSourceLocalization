@@ -1,6 +1,7 @@
 #pragma once
 #include "DDA/2D/RayCast.h"
 #include "Occupancy.hpp"
+#include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
@@ -113,6 +114,16 @@ namespace GSL
         }
     };
 
+    // unlike a Grid, a Map is an owning struct
+    // it only contains occupancy information, no additional data
+    // can be used conveniently through the AsGrid() method
+    struct Map2D
+    {
+        std::vector<Occupancy> occupancy;
+        Grid2DMetadata metadata;
+        Grid2D<Occupancy> AsGrid() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
+    };
+
     class GridUtils
     {
     public:
@@ -166,16 +177,34 @@ namespace GSL
 
             return !raycastInfo.hitSomething;
         }
-    };
 
-    // unlike a Grid, a Map is an owning struct
-    // it only contains occupancy information, no additional data
-    // can be used conveniently through the AsGrid() method
-    struct Map2D
-    {
-        std::vector<Occupancy> occupancy;
-        Grid2DMetadata metadata;
-        Grid2D<Occupancy> AsGrid() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
+        static Map2D CropMap(Grid2D<Occupancy> grid, AABB2D bounds)
+        {
+            //ensure the aabb is within the bounds of the original map
+            Vector2 maxCoords = grid.metadata.indicesToCoordinates(grid.metadata.dimensions);
+            bounds.min.x = std::clamp(bounds.min.x, grid.metadata.origin.x, maxCoords.x);
+            bounds.min.y = std::clamp(bounds.min.y, grid.metadata.origin.y, maxCoords.y);
+
+            // get croppin'
+            Map2D cropped;
+            cropped.metadata.cellSize = grid.metadata.cellSize;
+            cropped.metadata.origin = bounds.min;
+            cropped.metadata.dimensions = vmath::ceil(bounds.size() / grid.metadata.cellSize);
+            cropped.metadata.numFreeCells = 0;
+
+            cropped.occupancy.resize(cropped.metadata.dimensions.x * cropped.metadata.dimensions.y);
+
+            Vector2Int offset = grid.metadata.coordinatesToIndices(cropped.metadata.origin);
+            for (size_t i = 0; i < cropped.metadata.dimensions.x; i++)
+                for (size_t j = 0; j < cropped.metadata.dimensions.y; j++)
+                {
+                    cropped.AsGrid().occupancyAt(i, j) = grid.occupancyAt(Vector2Int(i, j) + offset);
+                    if (cropped.AsGrid().freeAt(i, j))
+                        cropped.metadata.numFreeCells++;
+                }
+
+            return cropped;
+        }
     };
 
 } // namespace GSL

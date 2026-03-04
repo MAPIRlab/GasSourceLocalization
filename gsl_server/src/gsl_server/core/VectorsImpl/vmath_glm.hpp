@@ -48,6 +48,15 @@ namespace GSL::vmath
         return Vector3(vec.x, vec.y, z);
     }
 
+    inline Vector2Int ceil(const Vector2& vec)
+    {
+        return Vector2Int(std::ceil(vec.x), std::ceil(vec.y));
+    }
+
+    inline Vector3Int ceil(const Vector3& vec)
+    {
+        return Vector3Int(std::ceil(vec.x), std::ceil(vec.y), std::ceil(vec.z));
+    }
 
     inline Vector3 fromTF2(const tf2::Vector3& v)
     {
