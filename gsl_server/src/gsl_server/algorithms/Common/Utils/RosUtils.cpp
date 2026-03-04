@@ -138,7 +138,7 @@ namespace GSL::Utils
         for (int i = 0; i < width * height; i++)
             imageAsVec[i] = (int8_t)std::clamp(100 - (int)mapImage.data[i], 0, 100);
 
-        std::vector<Occupancy> occupancyGrid(width * height / metadata.scale);
+        std::vector<Occupancy> occupancyGrid(metadata.dimensions.x * metadata.dimensions.y);
         GridUtils::reduceOccupancyMap(imageAsVec, width, occupancyGrid, metadata);
 
         return occupancyGrid;
