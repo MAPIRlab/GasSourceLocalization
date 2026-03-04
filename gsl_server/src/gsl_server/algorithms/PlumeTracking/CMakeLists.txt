@@ -12,9 +12,6 @@ ament_target_dependencies(PlumeTracking
 
 # Link other dependencies
 target_link_libraries(PlumeTracking  
-    OpenMP::OpenMP_CXX
-    fmt
-    ${CONDITIONAL_TRACY}
     GSL_common
 )
 

@@ -15,9 +15,6 @@ ament_target_dependencies(GraphGSL
 
 # Link other dependencies
 target_link_libraries(GraphGSL  
-    OpenMP::OpenMP_CXX
-    fmt
-    ${CONDITIONAL_TRACY}
     GSL_common
 )
 add_compile_definitions(ENABLE_GraphGSL=1)

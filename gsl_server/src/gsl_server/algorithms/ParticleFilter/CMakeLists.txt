@@ -12,9 +12,6 @@ ament_target_dependencies(ParticleFilter
 
 # Link other dependencies
 target_link_libraries(ParticleFilter  
-    OpenMP::OpenMP_CXX
-    fmt
-    ${CONDITIONAL_TRACY}
     GSL_common
 )
 add_compile_definitions(ENABLE_PARTICLE_FILTER=1)

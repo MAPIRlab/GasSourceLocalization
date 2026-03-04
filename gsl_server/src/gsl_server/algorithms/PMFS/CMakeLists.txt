@@ -15,10 +15,6 @@ ament_target_dependencies(PMFS
 
 # Link other dependencies
 target_link_libraries(PMFS  
-    ${OpenCV_LIBS}
-    OpenMP::OpenMP_CXX
-    fmt
-    ${CONDITIONAL_TRACY}
     GSL_common
 )
 add_compile_definitions(ENABLE_PMFS=1)
