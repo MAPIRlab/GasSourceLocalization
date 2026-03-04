@@ -44,6 +44,7 @@ set(DISABLE_NAVIGATION OFF) # Disables navigation decisions and lets you control
 include(CMake/SanitizationOptions.cmake)
 include(CMake/HandleConditionals.cmake)
 include(CMake/CommonDependencies.cmake)
+include(src/gsl_server/algorithms/Common/CMakeLists.txt)
 
 
 #########################
@@ -85,11 +86,18 @@ ament_target_dependencies( send_pose
     geometry_msgs
 )
 
+if(USE_GUI)
+    #### Graph creator tool
+    add_executable(graph_creator src/aux_nodes/graph_creator.cpp)
+    ament_target_dependencies( graph_creator
+        rclcpp
+    )
+    target_link_libraries(graph_creator GSL_common)
+endif()
+
 ##########################
 # ALGORITHMS
 ##########################
-
-include(src/gsl_server/algorithms/Common/CMakeLists.txt) # Required
 
 # You can disable the compilation of any of these algorithms by commenting them out here (useful if you don't want to install their dependencies)
 ###############################################################################################################################################
@@ -107,7 +115,7 @@ include(src/gsl_server/algorithms/GraphGSL/CMakeLists.txt)
 # INSTALLATION
 ##########################
 install(
-  TARGETS gsl_actionserver_node  gsl_actionserver_call send_pose
+  TARGETS gsl_actionserver_node  gsl_actionserver_call send_pose graph_creator
   DESTINATION lib/${PROJECT_NAME}
 )
 

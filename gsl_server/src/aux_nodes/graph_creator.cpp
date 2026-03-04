@@ -1,0 +1,367 @@
+#include "geometry_msgs/msg/point_stamped.hpp"
+#include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
+#include <filesystem>
+#include <fstream>
+#include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <gsl_server/core/Logging.hpp>
+#include <imgui_gl/imgui_gl.h>
+#include <imgui_gl/utils.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <yaml-cpp/yaml.h>
+
+using namespace GSL;
+using namespace std::placeholders;
+using geometry_msgs::msg::PointStamped;
+
+enum class CreateType : int
+{
+    Node = 0,
+    Link
+};
+
+enum class SelectionMode : int
+{
+    None = -1,
+    New,
+    Min,
+    Max,
+    SpawnPoint
+};
+
+class GraphCreator : public rclcpp::Node
+{
+public:
+    GraphCreator();
+    ~GraphCreator();
+
+private:
+    void Render();
+    void CreateNodeWindow();
+    void CreateLinkWindow();
+    void AABBTable();
+    void DrawAABB(std_msgs::msg::ColorRGBA color);
+    void DrawSpawnPoint();
+
+    Map2D completeMap;
+    CreateType currentType = CreateType::Node;
+    SelectionMode selectionMode = SelectionMode::New;
+
+    std::string rootDirectory;
+    AABB2D currentAABB;
+
+    // node creation
+    uint id_number = 0;
+    std::string node_id = "";
+
+    // link creation
+    Vector2 spawnPoint;
+
+private:
+    void OnClick(const PointStamped::SharedPtr msg);
+
+    rclcpp::TimerBase::SharedPtr renderTimer;
+    rclcpp::Subscription<PointStamped>::SharedPtr clickSub;
+};
+
+int main(int argc, char** argv)
+{
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<GraphCreator>();
+    rclcpp::spin(node);
+}
+
+//--------------------------------------
+//--------------------------------------
+//--------------------------------------
+
+GraphCreator::GraphCreator()
+    : Node("graph_creator")
+{
+    ImguiGL::Setup(
+        nullptr,
+        "Graph Creator Tool",
+        500,
+        400,
+        ImguiGL::FlagsFixedLayout());
+
+    renderTimer = create_timer(std::chrono::milliseconds(30), std::bind(&GraphCreator::Render, this));
+    clickSub = create_subscription<PointStamped>("/clicked_point", 1, std::bind(&GraphCreator::OnClick, this, _1));
+    rootDirectory = declare_parameter<std::string>("root_directory", fmt::format("{}/my_graph", std::filesystem::current_path().c_str()));
+
+    // load the map from a file and publish it to rviz
+    auto yamlPath = declare_parameter<std::string>("map_yaml", "?");
+    completeMap = Utils::parseMapData(yamlPath, std::nullopt);
+    OccupancyGrid msg = Utils::toOccupancyGrid(completeMap.AsGrid());
+
+    static auto mapPub = create_publisher<OccupancyGrid>("map", rclcpp::QoS(1).transient_local());
+    mapPub->publish(msg);
+}
+
+GraphCreator::~GraphCreator()
+{
+    ImguiGL::Close();
+}
+
+void GraphCreator::Render()
+{
+    ImguiGL::StartFrame();
+    ImguiGL::SetNextWindowFullscreen();
+    ImGui::Begin("Main");
+    {
+        ImGui::RadioButton("Create Node", (int*)&currentType, (int)CreateType::Node);
+        ImGui::SameLine();
+        ImGui::RadioButton("Create Link", (int*)&currentType, (int)CreateType::Link);
+
+        if (currentType == CreateType::Node)
+            CreateNodeWindow();
+        else
+            CreateLinkWindow();
+    }
+    ImGui::End();
+    ImguiGL::Render();
+}
+
+void GraphCreator::CreateNodeWindow()
+{
+    // spawn point is not a valid option while in node creation, only for link creation
+    if (selectionMode == SelectionMode::SpawnPoint)
+        selectionMode = SelectionMode::New;
+
+    ImGui::BeginChild("Node Window", ImVec2(0, 0), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
+    ImGui::Text("Node creation");
+    ImGui::Separator();
+    AABBTable();
+
+    ImGui::InputText("Root directory", &rootDirectory);
+    ImGui::InputText("Node id", &node_id);
+    ImGui::SameLine();
+    if (ImGui::Button("Save"))
+    {
+        if (!std::filesystem::exists(rootDirectory) && !std::filesystem::create_directories(rootDirectory))
+            GSL_ERROR("Folder '{}' does not exist and could not be created! Not saving the node.", rootDirectory.c_str());
+        else
+        {
+            // ensure the file structure is correct
+            std::filesystem::path rootPath(rootDirectory);
+            std::filesystem::create_directories(rootPath / node_id);
+            std::filesystem::create_directories(rootPath / node_id / "links");
+
+            // create the occupancy files
+
+            // YAML
+            {
+                std::ofstream yamlFile(rootPath / node_id / "occupancy.yaml");
+                YAML::Emitter emitter(yamlFile);
+                emitter.SetFloatPrecision(2);
+                emitter << YAML::BeginMap;
+                emitter << YAML::Key << "image" << YAML::Value << "occupancy.pgm";
+                emitter << YAML::Key << "resolution" << YAML::Value << completeMap.metadata.cellSize;
+                emitter << YAML::Key << "origin" << YAML::Value << YAML::Flow << YAML::BeginSeq << currentAABB.min.x << currentAABB.min.y << 0 << YAML::EndSeq;
+                emitter << YAML::Key << "occupied_thresh" << YAML::Value << 0.9;
+                emitter << YAML::Key << "free_thresh" << YAML::Value << 0.1;
+                emitter << YAML::Key << "negate" << YAML::Value << 0;
+                emitter << YAML::EndMap;
+                yamlFile.close();
+            }
+
+            // PGM
+            {
+                Map2D cropped = GridUtils::CropMap(completeMap.AsGrid(), currentAABB);
+                std::ofstream file(rootPath / node_id / "occupancy.pgm");
+                file << "P2\n"
+                     << cropped.metadata.dimensions.x << " " << cropped.metadata.dimensions.y << "\n"
+                     << "1\n";
+
+                for (int row = cropped.metadata.dimensions.y - 1; row >= 0; row--)
+                {
+                    for (int col = 0; col < cropped.metadata.dimensions.x; col++)
+                        file << (cropped.AsGrid().freeAt(col, row) ? 1 : 0) << " ";
+                    file << "\n";
+                }
+                file.close();
+            }
+
+            GSL_INFO("Created node '{}' at '{}'", node_id, std::filesystem::canonical(rootPath).c_str());
+        }
+    }
+
+    DrawAABB(Utils::create_color(0, 1, 0, 0.3));
+    ImGui::EndChild();
+}
+
+void GraphCreator::CreateLinkWindow()
+{
+    ImGui::BeginChild("Link Window", ImVec2(0, 0), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
+
+    ImGui::Text("Node creation");
+    ImGui::Separator();
+    AABBTable();
+
+    // create two lists of nodes
+    std::vector<std::string> node_names;
+    for (std::filesystem::path path : std::filesystem::directory_iterator(rootDirectory))
+        if (std::filesystem::is_directory(path))
+            node_names.push_back(path.stem().c_str());
+
+    auto selectNode = [&](int& idx, const char* ID)
+    {
+        ImGui::PushID(ID);
+        if (ImGui::BeginCombo("Selected Instance", node_names.at(idx).c_str()))
+        {
+            for (size_t i = 0; i < node_names.size(); i++)
+                if (ImGui::Selectable(node_names.at(i).c_str()))
+                    idx = i;
+
+            ImGui::EndCombo();
+        }
+        ImGui::PopID();
+    };
+
+    static int firstNode = 0;
+    static int secondNode = 0;
+
+    if (ImGui::BeginTable("table1", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        selectNode(firstNode, "firstNode");
+        ImGui::TableSetColumnIndex(1);
+        selectNode(secondNode, "secondNode");
+
+        ImGui::EndTable();
+    }
+
+    std::string firstID = node_names.at(firstNode);
+    std::string secondID = node_names.at(secondNode);
+
+    if (ImGui::Button("Save"))
+    {
+        // ensure the file structure is correct
+        std::filesystem::path rootPath(rootDirectory);
+        std::filesystem::create_directories(rootPath / firstID / "links");
+
+        {
+            std::ofstream yamlFile(rootPath / firstID / "links" / fmt::format("{}.yaml", secondID));
+            YAML::Emitter emitter(yamlFile);
+            emitter.SetFloatPrecision(2);
+            emitter << YAML::BeginMap;
+            emitter << YAML::Key << "min_x" << YAML::Value << currentAABB.min.x;
+            emitter << YAML::Key << "min_y" << YAML::Value << currentAABB.min.y;
+            emitter << YAML::Key << "max_x" << YAML::Value << currentAABB.max.x;
+            emitter << YAML::Key << "max_y" << YAML::Value << currentAABB.max.y;
+
+            emitter << YAML::Key << "spawn_point_x" << YAML::Value << spawnPoint.x;
+            emitter << YAML::Key << "spawn_point_y" << YAML::Value << spawnPoint.y;
+
+            emitter << YAML::EndMap;
+            yamlFile.close();
+        }
+    }
+
+    DrawAABB(Utils::create_color(1, 0, 0, 0.3));
+    DrawSpawnPoint();
+
+    ImGui::EndChild();
+}
+
+void GraphCreator::AABBTable()
+{
+    if (ImGui::BeginTable("table1", 2))
+    {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::DragFloat2("Min", &currentAABB.min.x);
+        ImGui::TableSetColumnIndex(1);
+        ImGui::RadioButton("##Minradio", (int*)&selectionMode, (int)SelectionMode::Min);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::DragFloat2("Max", &currentAABB.max.x);
+        ImGui::TableSetColumnIndex(1);
+        ImGui::RadioButton("##Maxradio", (int*)&selectionMode, (int)SelectionMode::Max);
+
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(1);
+        ImGui::RadioButton("New", (int*)&selectionMode, (int)SelectionMode::New);
+
+        if (currentType == CreateType::Link)
+        {
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(1);
+            ImGui::RadioButton("SpawnPoint", (int*)&selectionMode, (int)SelectionMode::SpawnPoint);
+        }
+
+        ImGui::EndTable();
+    }
+}
+
+void GraphCreator::DrawAABB(std_msgs::msg::ColorRGBA color)
+{
+    static auto pub = create_publisher<Marker>("/currentAABB", 1);
+    Marker marker;
+    marker.header.frame_id = "map";
+    marker.type = Marker::CUBE;
+    marker.color = color;
+
+    Vector2 pos = currentAABB.center();
+    marker.pose.position.x = pos.x;
+    marker.pose.position.y = pos.y;
+
+    Vector2 size = currentAABB.size();
+    marker.scale.x = size.x;
+    marker.scale.y = size.y;
+    marker.scale.z = 0.2;
+
+    pub->publish(marker);
+}
+
+void GraphCreator::DrawSpawnPoint()
+{
+    static auto pub = create_publisher<Marker>("/spawnPoint", 1);
+    Marker marker;
+    marker.header.frame_id = "map";
+    marker.type = Marker::SPHERE;
+    marker.color = Utils::create_color(1, 0, 0, 0.3);
+
+    Vector2 pos = spawnPoint;
+    marker.pose.position.x = pos.x;
+    marker.pose.position.y = pos.y;
+
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
+    marker.scale.z = 0.1;
+
+    pub->publish(marker);
+}
+
+void GraphCreator::OnClick(const PointStamped::SharedPtr msg)
+{
+    if (selectionMode == SelectionMode::New)
+    {
+        currentAABB.min.x = msg->point.x;
+        currentAABB.min.y = msg->point.y;
+        currentAABB.max.x = msg->point.x;
+        currentAABB.max.y = msg->point.y;
+        selectionMode = SelectionMode::Max;
+    }
+    else if (selectionMode == SelectionMode::Min)
+    {
+        currentAABB.min.x = msg->point.x;
+        currentAABB.min.y = msg->point.y;
+        selectionMode = SelectionMode::Max;
+    }
+    else if (selectionMode == SelectionMode::Max)
+    {
+        currentAABB.max.x = msg->point.x;
+        currentAABB.max.y = msg->point.y;
+        selectionMode = currentType == CreateType::Node ? SelectionMode::New : SelectionMode::SpawnPoint;
+        id_number++;
+        node_id = fmt::format("room_{}", id_number);
+    }
+    else if (selectionMode == SelectionMode::SpawnPoint)
+    {
+        spawnPoint.x = msg->point.x;
+        spawnPoint.y = msg->point.y;
+        selectionMode = SelectionMode::New;
+    }
+}

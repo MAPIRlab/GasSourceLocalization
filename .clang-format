@@ -17,3 +17,4 @@ AlwaysBreakTemplateDeclarations: No
 AllowShortLoopsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLambdasOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Inline
