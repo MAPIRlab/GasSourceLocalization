@@ -34,11 +34,8 @@ namespace GSL
             }
             else
             {
-                Grid2DMetadata gridMetadata;
-                std::vector<Occupancy> occupancy;
-                Utils::parseMapData(subfolder / "occupancy.yaml", cellSize, gridMetadata, occupancy);
-
-                node = std::make_shared<RealNode>(gridMetadata, occupancy, gmrfParams);
+                Map2D map = Utils::parseMapData(subfolder / "occupancy.yaml", cellSize);
+                node = std::make_shared<RealNode>(map.metadata, map.occupancy, gmrfParams);
             }
 
             graph.nodes.push_back(node);

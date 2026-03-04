@@ -46,8 +46,8 @@ namespace GSL
         Vector3 fromMsg(const geometry_msgs::msg::Point& v);
 
         std::vector<Occupancy> parseMapImage(const std::string& imagePath, const Grid2DMetadata& metadata);
-        void parseMapData(const std::string& yamlPath, float cellSize, Grid2DMetadata& outMetadata, std::vector<Occupancy>& outOccupancy);
-        OccupancyGrid toOccupancyGrid(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata);
+        Map2D parseMapData(const std::string& yamlPath, std::optional<float> desiredCellSize);
+        OccupancyGrid toOccupancyGrid(const Grid2D<Occupancy> grid);
 
         void publishDebugSingleMarker(Vector3 position, std_msgs::msg::ColorRGBA color, const std::string& topic);
         void publishDebugSingleArrow(Vector3 start, Vector3 end, std_msgs::msg::ColorRGBA color, const std::string& topic);

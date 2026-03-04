@@ -49,7 +49,7 @@ namespace GSL
 
         size_t indexOf(size_t x, size_t y) const
         {
-            return x +  y * dimensions.x;
+            return x + y * dimensions.x;
         }
 
         size_t indexOf(const Vector2Int& v) const
@@ -68,7 +68,9 @@ namespace GSL
         }
     };
 
+    // Important: Grid is a non-owning struct (contains only references) to make accessing data easier. For an owning alternative, see Map2D below
     // A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa
+    // If you want to represent an occupancy map without additional data, you can use a Grid2D<Occupancy> and have both .occupancy and .data point to the same vector
     template <typename T>
     struct Grid2D
     {
@@ -142,7 +144,6 @@ namespace GSL
             }
         }
 
-
         // run the DDA algorithm to check if a straight line from origin to end intersects any obstacles
         static bool PathFree(Grid2DMetadata metadata, const std::vector<Occupancy>& occupancy, const Vector2& origin, const Vector2& end)
         {
@@ -165,6 +166,16 @@ namespace GSL
 
             return !raycastInfo.hitSomething;
         }
+    };
+
+    // unlike a Grid, a Map is an owning struct
+    // it only contains occupancy information, no additional data
+    // can be used conveniently through the AsGrid() method
+    struct Map2D
+    {
+        std::vector<Occupancy> occupancy;
+        Grid2DMetadata metadata;
+        Grid2D<Occupancy> AsGrid() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
     };
 
 } // namespace GSL

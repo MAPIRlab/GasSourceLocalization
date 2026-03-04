@@ -144,24 +144,24 @@ namespace GSL::Utils
         return occupancyGrid;
     }
 
-    OccupancyGrid toOccupancyGrid(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata)
+    OccupancyGrid toOccupancyGrid(const Grid2D<Occupancy> grid)
     {
         OccupancyGrid msg;
         msg.header.frame_id = "map";
-        msg.info.resolution = metadata.cellSize;
-        msg.info.origin.position.x = metadata.origin.x;
-        msg.info.origin.position.y = metadata.origin.y;
-        msg.info.width = metadata.dimensions.x;
-        msg.info.height = metadata.dimensions.y;
+        msg.info.resolution = grid.metadata.cellSize;
+        msg.info.origin.position.x = grid.metadata.origin.x;
+        msg.info.origin.position.y = grid.metadata.origin.y;
+        msg.info.width = grid.metadata.dimensions.x;
+        msg.info.height = grid.metadata.dimensions.y;
 
-        std::transform(occupancy.begin(), occupancy.end(), std::back_inserter(msg.data), [](const Occupancy value) -> int8_t
+        std::transform(grid.occupancy.begin(), grid.occupancy.end(), std::back_inserter(msg.data), [](const Occupancy value) -> int8_t
                        {
                            return static_cast<int8_t>(value);
                        });
         return msg;
     }
 
-    void parseMapData(const std::string& yamlPath, float desiredCellSize, Grid2DMetadata& outMetadata, std::vector<Occupancy>& outOccupancy)
+    Map2D parseMapData(const std::string& yamlPath, std::optional<float> desiredCellSize)
     {
         if (!std::filesystem::exists(yamlPath))
         {
@@ -169,27 +169,33 @@ namespace GSL::Utils
             CLOSE_PROGRAM;
         }
 
+        Map2D map;
+
         const YAML::Node yaml = YAML::LoadFile(yamlPath);
         float originalCellSize = yaml["resolution"].as<float>();
-        outMetadata.scale = desiredCellSize / originalCellSize;
-        outMetadata.origin.x = yaml["origin"][0].as<float>();
-        outMetadata.origin.y = yaml["origin"][1].as<float>();
-        outMetadata.cellSize = originalCellSize * outMetadata.scale;
-        outMetadata.numFreeCells = 0;
+        if (!desiredCellSize)
+            desiredCellSize = originalCellSize;
+
+        map.metadata.scale = *desiredCellSize / originalCellSize;
+        map.metadata.origin.x = yaml["origin"][0].as<float>();
+        map.metadata.origin.y = yaml["origin"][1].as<float>();
+        map.metadata.cellSize = originalCellSize * map.metadata.scale;
+        map.metadata.numFreeCells = 0;
 
         std::filesystem::path imagePath(yaml["image"].as<std::string>());
         if (imagePath.is_relative())
             imagePath = std::filesystem::path(yamlPath).parent_path() / imagePath;
 
         cv::Mat mapImage = cv::imread(imagePath, cv::IMREAD_GRAYSCALE);
-        outMetadata.dimensions.x = std::ceil(mapImage.size().width / (float)outMetadata.scale);
-        outMetadata.dimensions.y = std::ceil(mapImage.size().height / (float)outMetadata.scale);
+        map.metadata.dimensions.x = std::ceil(mapImage.size().width / (float)map.metadata.scale);
+        map.metadata.dimensions.y = std::ceil(mapImage.size().height / (float)map.metadata.scale);
 
-        outOccupancy = parseMapImage(imagePath, outMetadata);
+        map.occupancy = parseMapImage(imagePath, map.metadata);
 
-        for (size_t i = 0; i < outOccupancy.size(); i++)
-            if (outOccupancy.at(i) == Occupancy::Free)
-                outMetadata.numFreeCells++;
+        for (size_t i = 0; i < map.occupancy.size(); i++)
+            if (map.occupancy.at(i) == Occupancy::Free)
+                map.metadata.numFreeCells++;
+        return map;
     }
 
     void publishDebugSingleMarker(Vector3 position, ColorRGBA color, const std::string& topic)

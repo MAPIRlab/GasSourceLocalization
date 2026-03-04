@@ -3,7 +3,6 @@ file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 
 find_package(magic_enum REQUIRED)
 find_package(vision_msgs REQUIRED)
-find_package(yaml-cpp)
 
 # Create the library
 add_library(SemanticsCommon ${SOURCES})
@@ -21,5 +20,4 @@ target_link_libraries(SemanticsCommon
     ${CONDITIONAL_TRACY}
     magic_enum::magic_enum
     GSL_common
-    yaml-cpp
     )
