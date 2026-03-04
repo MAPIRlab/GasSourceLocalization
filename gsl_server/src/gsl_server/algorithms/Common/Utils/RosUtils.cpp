@@ -182,8 +182,8 @@ namespace GSL::Utils
             imagePath = std::filesystem::path(yamlPath).parent_path() / imagePath;
 
         cv::Mat mapImage = cv::imread(imagePath, cv::IMREAD_GRAYSCALE);
-        outMetadata.dimensions.x = mapImage.size().width / outMetadata.scale;
-        outMetadata.dimensions.y = mapImage.size().height / outMetadata.scale;
+        outMetadata.dimensions.x = std::ceil(mapImage.size().width / (float)outMetadata.scale);
+        outMetadata.dimensions.y = std::ceil(mapImage.size().height / (float)outMetadata.scale);
 
         outOccupancy = parseMapImage(imagePath, outMetadata);
 

@@ -63,17 +63,10 @@ namespace GSL
 
     void GraphUI::DrawGraph()
     {
-        if (ImGui::Button("Draw graph"))
+        Clear(graphPub);
+        ImGui::Checkbox("Draw graph", &drawGraph);
+        if (drawGraph)
         {
-            // clear old data
-            {
-                Marker clear;
-                clear.action = Marker::DELETEALL;
-                MarkerArray array;
-                array.markers.push_back(clear);
-                graphPub->publish(array);
-            }
-
             MarkerArray array;
             size_t id = 0;
             for (auto node : gsl->graph.nodes)
@@ -138,14 +131,7 @@ namespace GSL
 
         if (somethingChanged)
         {
-            // clear old data
-            {
-                Marker clear;
-                clear.action = Marker::DELETEALL;
-                MarkerArray array;
-                array.markers.push_back(clear);
-                occupancyPub->publish(array);
-            }
+            Clear(occupancyPub);
 
             MarkerArray array;
             size_t id = 0;
@@ -164,6 +150,16 @@ namespace GSL
             }
             occupancyPub->publish(array);
         }
+    }
+
+    void GraphUI::Clear(rclcpp::Publisher<MarkerArray>::SharedPtr pub)
+    {
+        // clear old data
+        Marker clear;
+        clear.action = Marker::DELETEALL;
+        MarkerArray array;
+        array.markers.push_back(clear);
+        pub->publish(array);
     }
 } // namespace GSL
 

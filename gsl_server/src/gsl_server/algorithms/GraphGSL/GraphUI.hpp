@@ -23,12 +23,15 @@ namespace GSL
         void DrawGraph();
         void DrawOccupancyMaps();
 
+        void Clear(rclcpp::Publisher<MarkerArray>::SharedPtr pub);
+
         GraphGSL* gsl;
         std::jthread renderThread;
         rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;
         rclcpp::Publisher<MarkerArray>::SharedPtr occupancyPub;
 
         std::map<std::string, bool> selectedOccupancy;
+        bool drawGraph = true;
     };
 } // namespace GSL
 
