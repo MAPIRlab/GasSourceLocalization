@@ -5,7 +5,7 @@ namespace GSL
     enum class Occupancy
     {
         Unknown = -1,
-        Obstacle = 0,
-        Free = 100
+        Obstacle = 100,
+        Free = 0
     };
 }
