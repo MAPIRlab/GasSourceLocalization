@@ -35,7 +35,7 @@ namespace GSL
             else
             {
                 Map2D map = Utils::parseMapData(subfolder / "occupancy.yaml", cellSize);
-                node = std::make_shared<RealNode>(map.metadata, map.occupancy, gmrfParams);
+                node = std::make_shared<RealNode>(map.AsGrid(), gmrfParams);
             }
 
             graph.nodes.push_back(node);

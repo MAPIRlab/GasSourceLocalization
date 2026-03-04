@@ -3,10 +3,10 @@
 namespace GSL
 {
 
-    RealNode::RealNode(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy, gmrfw::CGMRF_map::Parameters gmrf_params)
+    RealNode::RealNode(Grid2D<Occupancy> grid, gmrfw::CGMRF_map::Parameters gmrf_params)
         : gmrf_parameters(gmrf_params)
     {
-        SetOccupancy(metadata, _occupancy);
+        SetOccupancy(grid);
     }
 
     gmrfw::TOccupancyMap RealNode::ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata)
@@ -27,10 +27,10 @@ namespace GSL
         return occMap;
     }
 
-    void RealNode::SetOccupancy(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy)
+    void RealNode::SetOccupancy(Grid2D<Occupancy> grid)
     {
-        gridMetadata = metadata;
-        occupancy = _occupancy;
+        gridMetadata = grid.metadata;
+        occupancy = grid.occupancy;
 
         // recompute centroid
         {
@@ -39,7 +39,7 @@ namespace GSL
                 if (occupancy.at(i) == Occupancy::Free)
                     coordinatesSum += gridMetadata.indexToCoordinates(i);
 
-            centroid = coordinatesSum / metadata.numFreeCells;
+            centroid = coordinatesSum / gridMetadata.numFreeCells;
         }
 
         // re-create the gmrf map, keeping the history of observations
@@ -47,9 +47,9 @@ namespace GSL
         if (gmrf)
             observations = gmrf->getObservations_GMRF();
 
-        gmrf.emplace(ToGMRFOcc(occupancy, metadata), gmrf_parameters, false, false);
-        gas.resize(metadata.dimensions.x * metadata.dimensions.y);  // TODO what happens to the gas map on resize?
-        wind.resize(metadata.dimensions.x * metadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
+        gmrf.emplace(ToGMRFOcc(occupancy, gridMetadata), gmrf_parameters, false, false);
+        gas.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);  // TODO what happens to the gas map on resize?
+        wind.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
         windDirty = true;
 
         if (observations.size() > 0)

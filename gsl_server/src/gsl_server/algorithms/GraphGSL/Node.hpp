@@ -26,11 +26,9 @@ namespace GSL
     class RealNode : public Node
     {
     public:
-        RealNode(const Grid2DMetadata& metadata,
-                 const std::vector<Occupancy>& occupancy,
-                 gmrfw::CGMRF_map::Parameters gmrf_params);
+        RealNode(Grid2D<Occupancy> grid, gmrfw::CGMRF_map::Parameters gmrf_params);
 
-        void SetOccupancy(const Grid2DMetadata& metadata, const std::vector<Occupancy>& _occupancy);
+        void SetOccupancy(Grid2D<Occupancy> grid);
         void AddObservation(Vector2 location, Vector2 windVector);
         void AddObservation(Vector2 location, float gasObs);
         const Grid2D<Vector2> GetWindMap();
