@@ -114,6 +114,14 @@ namespace GSL
     void GraphUI::DrawOccupancyMaps()
     {
         bool somethingChanged = false;
+        if (ImGui::Button("Toggle All"))
+        {
+            occupancyToggleState = !occupancyToggleState;
+            for (auto& entry : selectedOccupancy)
+                entry.second = occupancyToggleState;
+            somethingChanged = true;
+        }
+
         for (auto node : gsl->graph.nodes)
         {
             if (!Is<RealNode>(node))

@@ -30,6 +30,7 @@ namespace GSL
         rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;
         rclcpp::Publisher<MarkerArray>::SharedPtr occupancyPub;
 
+        bool occupancyToggleState = false;
         std::map<std::string, bool> selectedOccupancy;
         bool drawGraph = true;
     };
