@@ -71,6 +71,11 @@ namespace GSL::Utils
         return uniformRandomT(min, max);
     }
 
+    Vector2 polarToCartesian(float r, float theta)
+    {
+        return r * Vector2(cos(theta), sin(theta));
+    }
+
     double uniformRandom(double min, double max)
     {
         return uniformRandomT(min, max);

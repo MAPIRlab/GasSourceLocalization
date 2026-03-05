@@ -57,8 +57,21 @@ namespace GSL
 
     void GraphUI::CreateUI()
     {
-        DrawGraph();
-        DrawOccupancyMaps();
+        ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+        {
+            DrawGraph();
+            DrawOccupancyMaps();
+
+            ImGui::Begin("Current State");
+            {
+                if (gsl->stateMachine.getCurrentState())
+                    gsl->stateMachine.getCurrentState()->RenderUI();
+                else
+                    ImGui::Text("Null state");
+            }
+            ImGui::End();
+        }
+        ImGui::End();
     }
 
     void GraphUI::DrawGraph()
@@ -67,46 +80,7 @@ namespace GSL
         ImGui::Checkbox("Draw graph", &drawGraph);
         if (drawGraph)
         {
-            MarkerArray array;
-            size_t id = 0;
-            for (auto node : gsl->graph.nodes)
-            {
-                Vector2 position = node->GetPosition();
-                ColorRGBA color;
-                if (Is<RealNode>(node))
-                    color = Utils::create_color(0, 1, 0);
-                else
-                    color = Utils::create_color(1, 0, 0);
-
-                Marker marker;
-                marker.header.frame_id = "map";
-                marker.type = Marker::SPHERE;
-                marker.scale.x = 0.3;
-                marker.scale.y = 0.3;
-                marker.scale.z = 0.3;
-                marker.color = color;
-                marker.pose.position.x = position.x;
-                marker.pose.position.y = position.y;
-                marker.id = id;
-                id++;
-                array.markers.push_back(marker);
-
-                // draw the arcs
-                for (size_t i = 0; i < node->arcs.size(); i++)
-                {
-                    Vector2 otherPos = node->arcs.at(i).to.lock()->GetPosition();
-                    Marker marker;
-                    marker.header.frame_id = "map";
-                    marker.type = Marker::LINE_STRIP;
-                    marker.scale.x = 0.1;
-                    marker.color = Utils::create_color(0, 0, 1);
-                    marker.points.push_back(Point{}.set__x(position.x).set__y(position.y));
-                    marker.points.push_back(Point{}.set__x(otherPos.x).set__y(otherPos.y));
-                    marker.id = id;
-                    id++;
-                    array.markers.push_back(marker);
-                }
-            }
+            MarkerArray array = gsl->graph.VisualizeGraph();
             graphPub->publish(array);
         }
     }

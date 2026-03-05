@@ -25,12 +25,10 @@ namespace GSL
         if (timeSoFar >= measure_time)
         {
             GSL_INFO("{} gas measurements, {} wind measurements over {:.2f} seconds", gas_v.size(), windSpeed_v.size(), timeSoFar);
-            if (gas_v.size() == 0 || windDirection_v.size() == 0)
-            {
-                GSL_WARN("Resetting stop and measure, no readings exist!");
-                algorithm->stateMachine.forceResetState(this);
-                return;
-            }
+            if (gas_v.size() == 0)
+                GSL_WARN("Did not receive any gas readings during StopAndMeasure!");
+            if (windDirection_v.size() == 0)
+                GSL_WARN("Did not receive any wind readings during StopAndMeasure!");
 
             double concentration = average_concentration();
             double windSpeed = average_windSpeed();
@@ -90,7 +88,6 @@ namespace GSL
         return average;
     }
 } // namespace GSL
-
 
 #if USE_GUI
 #include "imgui.h"

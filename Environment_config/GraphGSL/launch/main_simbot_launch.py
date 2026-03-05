@@ -43,10 +43,9 @@ def launch_setup(context, *args, **kwargs):
                 executable="gsl_actionserver_node",
                 name="GSL",
                 # prefix="xterm -hold -e gdb -ex run --args",
-                # prefix="xterm -hold -e gdb --args",
                 # prefix="xterm -hold -e",
                 parameters=[
-                    
+
                 ],
                 on_exit=Shutdown()
             ),
@@ -143,6 +142,17 @@ def launch_setup(context, *args, **kwargs):
         ])
     ]
 
+    windMapCreator = Node(
+        package="wind_map_creator",
+        executable="gui_pub",
+        prefix="xterm -hold -e",
+        parameters=[
+                {"listenTopic": parse_substitution("$(var robot_name)/initialpose")},
+                {"publishTopic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
+                {"poseTopic": parse_substitution("$(var robot_name)/amcl_pose")}
+        ],
+    )
+
     rviz = Node(
         package="rviz2",
         executable="rviz2",
@@ -162,6 +172,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_node)
     actions.extend(gsl_call)
     actions.append(rviz)
+    actions.append(windMapCreator)
 
     return actions
 

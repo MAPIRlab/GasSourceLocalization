@@ -28,7 +28,7 @@ Visualization Manager:
       Cell Size: 0.5
       Class: rviz_default_plugins/Grid
       Color: 160; 160; 164
-      Enabled: true
+      Enabled: false
       Line Style:
         Line Width: 0.10000000149011612
         Value: Lines
@@ -41,7 +41,7 @@ Visualization Manager:
       Plane: XY
       Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
-      Value: true
+      Value: false
     - Alpha: 0.699999988079071
       Binary representation: false
       Binary threshold: 100
@@ -69,7 +69,7 @@ Visualization Manager:
       Enabled: true
       Name: selectedAABB
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -95,7 +95,7 @@ Visualization Manager:
       Enabled: true
       Name: Graph
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -107,7 +107,7 @@ Visualization Manager:
       Enabled: true
       Name: Occupancy_nodes
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -173,11 +173,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 105.62091827392578
+      Scale: 124.74679565429688
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 4.491398334503174
-      Y: 2.31156587600708
+      X: 4.788334369659424
+      Y: 2.2816414833068848
     Saved: ~
 Window Geometry:
   Displays:

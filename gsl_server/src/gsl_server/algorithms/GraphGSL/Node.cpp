@@ -56,20 +56,23 @@ namespace GSL
             gmrf->setObservations_GMRF(observations);
     }
 
-    void RealNode::AddObservation(Vector2 location, Vector2 windVector)
+    bool RealNode::AddObservation(Vector2 location, Vector2 windVector)
     {
         constexpr float variance = 0.001; // TODO
-        gmrf->insertObservation_GMRF(
+        bool accepted = gmrf->insertObservation_GMRF(
             vmath::length(windVector),
             std::atan2(windVector.y, windVector.x),
             variance, variance,
             location.x, location.y);
-        windDirty = true;
+        if (accepted)
+            windDirty = true;
+        return accepted;
     }
 
-    void RealNode::AddObservation(Vector2 location, float gasObs)
+    bool RealNode::AddObservation(Vector2 location, float gasObs)
     {
         // TODO
+        return false;
     }
 
     const Grid2D<Vector2> RealNode::GetWindMap()

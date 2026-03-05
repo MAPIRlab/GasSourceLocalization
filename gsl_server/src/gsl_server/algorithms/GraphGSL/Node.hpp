@@ -18,6 +18,8 @@ namespace GSL
     {
     public:
         virtual Vector2 GetPosition() = 0;
+        virtual bool AddObservation(Vector2 location, Vector2 windVector) = 0;
+        virtual bool AddObservation(Vector2 location, float gasObs) = 0;
 
         std::vector<Arc> arcs;
         std::string id;
@@ -29,8 +31,8 @@ namespace GSL
         RealNode(Grid2D<Occupancy> grid, gmrfw::CGMRF_map::Parameters gmrf_params);
 
         void SetOccupancy(Grid2D<Occupancy> grid);
-        void AddObservation(Vector2 location, Vector2 windVector);
-        void AddObservation(Vector2 location, float gasObs);
+        bool AddObservation(Vector2 location, Vector2 windVector) override;
+        bool AddObservation(Vector2 location, float gasObs) override;
         const Grid2D<Occupancy> GetOccupancy();
         const Grid2D<Vector2> GetWindMap();
         Vector2 GetPosition() override { return centroid; }
@@ -55,6 +57,8 @@ namespace GSL
         EmptyNode(Vector2 pos) : position(pos)
         {}
         Vector2 GetPosition() override { return position; }
+        bool AddObservation(Vector2 location, Vector2 windVector) override { return false; }
+        bool AddObservation(Vector2 location, float gasObs) override { return false; }
 
     private:
         Vector2 position;

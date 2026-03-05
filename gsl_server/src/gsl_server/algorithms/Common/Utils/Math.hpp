@@ -31,6 +31,7 @@ namespace GSL::Utils
     double randomFromGaussian(double mean, double stdev);
     double uniformRandom(double min, double max);
     float uniformRandomF(float min, float max);
+    Vector2 polarToCartesian(float r, float theta);
 
     template <typename T>
     double KLD(

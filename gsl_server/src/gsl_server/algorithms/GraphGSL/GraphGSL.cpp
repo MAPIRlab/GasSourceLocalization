@@ -1,4 +1,6 @@
 #include "GraphGSL.hpp"
+#include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
+#include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
 namespace GSL
@@ -11,24 +13,32 @@ namespace GSL
 
     void GraphGSL::Initialize()
     {
-        // Algorithm::Initialize();
-        startTime = node->now();
-        declareParameters();
+        Algorithm::Initialize();
 
         float cellSize = 0.25; // TODO scale
         gmrfParams.cell_size = cellSize;
         std::filesystem::path path = std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph";
         graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
         IF_GUI(gui.Run());
+
+        waitForGasState = std::make_unique<WaitForGasState>(this);
+        waitForMapState = std::make_unique<WaitForMapState>(this);
+        waitForMapState->shouldWaitForGas = false;
+
+        stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
+        movingState = std::make_unique<ManualNavigationState>(this);
+        stateMachine.forceSetState(stopAndMeasureState.get());
     }
 
     void GraphGSL::OnUpdate()
     {
-        // Algorithm::OnUpdate();
+        Algorithm::OnUpdate();
     }
 
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
+        graph.AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
+        stateMachine.forceResetState(stopAndMeasureState.get());
     }
 
 } // namespace GSL

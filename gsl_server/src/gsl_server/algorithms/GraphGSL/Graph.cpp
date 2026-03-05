@@ -1,5 +1,6 @@
 #include "Graph.hpp"
 #include "Node.hpp"
+#include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/core/Macros.hpp"
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <yaml-cpp/yaml.h>
@@ -83,6 +84,61 @@ namespace GSL
         }
 
         return graph;
+    }
+
+    void Graph::AddObservation(Vector2 position, Vector2 wind, float gasConcentration)
+    {
+        for (auto node : nodes)
+        {
+            node->AddObservation(position, wind);
+            node->AddObservation(position, gasConcentration);
+        }
+    }
+
+    MarkerArray Graph::VisualizeGraph()
+    {
+        MarkerArray array;
+        size_t id = 0;
+        for (auto node : nodes)
+        {
+            Vector2 position = node->GetPosition();
+            ColorRGBA color;
+            if (Is<RealNode>(node))
+                color = Utils::create_color(0, 1, 0);
+            else
+                color = Utils::create_color(1, 0, 0);
+
+            Marker marker;
+            marker.header.frame_id = "map";
+            marker.type = Marker::SPHERE;
+            marker.scale.x = 0.3;
+            marker.scale.y = 0.3;
+            marker.scale.z = 0.3;
+            marker.color = color;
+            marker.pose.position.x = position.x;
+            marker.pose.position.y = position.y;
+            marker.id = id;
+            id++;
+            array.markers.push_back(marker);
+
+            // draw the arcs
+            for (size_t i = 0; i < node->arcs.size(); i++)
+            {
+                Vector2 otherPos = node->arcs.at(i).to.lock()->GetPosition();
+                Marker marker;
+                marker.header.frame_id = "map";
+                marker.type = Marker::ARROW;
+                marker.scale.x = 0.02; // shaft diameter
+                marker.scale.y = 0.05; // head diameter
+                marker.color = Utils::create_color(0, 0, 1);
+                marker.points.push_back(Point{}.set__x(position.x).set__y(position.y));
+                marker.points.push_back(Point{}.set__x(otherPos.x).set__y(otherPos.y));
+                marker.id = id;
+                id++;
+                array.markers.push_back(marker);
+            }
+        }
+        return array;
     }
 
 } // namespace GSL
