@@ -13,6 +13,7 @@ namespace GSL
         void OnUpdate() override;
 
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override; // called from StopAndMeasure once we have enough data for this position
+        Vector2 windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
     private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;

@@ -18,6 +18,7 @@ namespace GSL
     {
         graphPub = gsl->node->create_publisher<MarkerArray>("gsl_graph", 1);
         occupancyPub = gsl->node->create_publisher<MarkerArray>("gsl_occupancy", 1);
+        windPub = gsl->node->create_publisher<MarkerArray>("gsl_wind", 1);
     }
 
     GraphUI::~GraphUI()
@@ -60,7 +61,7 @@ namespace GSL
         ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
         {
             DrawGraph();
-            DrawOccupancyMaps();
+            DrawMaps();
 
             ImGui::Begin("Current State");
             {
@@ -85,7 +86,7 @@ namespace GSL
         }
     }
 
-    void GraphUI::DrawOccupancyMaps()
+    void GraphUI::DrawMaps()
     {
         bool somethingChanged = false;
         if (ImGui::Button("Toggle All"))
@@ -102,7 +103,7 @@ namespace GSL
                 continue;
 
             if (!selectedOccupancy.contains(node->id))
-                selectedOccupancy[node->id] = false;
+                selectedOccupancy[node->id] = true;
 
             bool oldValue = selectedOccupancy.at(node->id);
             ImGui::Checkbox(node->id.c_str(), &selectedOccupancy.at(node->id));
@@ -111,12 +112,13 @@ namespace GSL
                 somethingChanged = true;
         }
 
-        if (somethingChanged)
+        // if (somethingChanged)
         {
             Clear(occupancyPub);
 
-            MarkerArray array;
-            size_t id = 0;
+            MarkerArray occArray;
+            MarkerArray windArray;
+            size_t occID = 0;
             for (auto node : gsl->graph.nodes)
             {
                 if (!Is<RealNode>(node) || !selectedOccupancy.at(node->id))
@@ -124,13 +126,16 @@ namespace GSL
 
                 auto realNode = As<RealNode>(node);
                 Grid2D<Occupancy> occupancy = realNode->GetOccupancy();
-                Marker marker = Utils::createPointsOccupancyMarker(occupancy.occupancy, occupancy.metadata);
-                marker.id = id;
-                id++;
+                Marker occMarker = Utils::createPointsOccupancyMarker(occupancy.occupancy, occupancy.metadata);
+                occMarker.id = occID;
+                occID++;
 
-                array.markers.push_back(marker);
+                MarkerArray windMarker = Utils::createArrowsMarkers(realNode->GetWindMap());
+                MergeWindMarkers(windArray, windMarker);
+                occArray.markers.push_back(occMarker);
             }
-            occupancyPub->publish(array);
+            occupancyPub->publish(occArray);
+            windPub->publish(windArray);
         }
     }
 
@@ -142,6 +147,16 @@ namespace GSL
         MarkerArray array;
         array.markers.push_back(clear);
         pub->publish(array);
+    }
+
+    void GraphUI::MergeWindMarkers(MarkerArray& all, const MarkerArray& _new)
+    {
+        size_t startingID = all.markers.size() > 0 ? all.markers.back().id + 1 : 0;
+        for (Marker marker : _new.markers)
+        {
+            marker.id += startingID;
+            all.markers.push_back(marker);
+        }
     }
 } // namespace GSL
 

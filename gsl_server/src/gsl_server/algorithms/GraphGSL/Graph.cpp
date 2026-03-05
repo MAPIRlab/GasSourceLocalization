@@ -88,11 +88,18 @@ namespace GSL
 
     void Graph::AddObservation(Vector2 position, Vector2 wind, float gasConcentration)
     {
+        bool accepted = false;
         for (auto node : nodes)
         {
-            node->AddObservation(position, wind);
+            if (node->AddObservation(position, wind))
+            {
+                GSL_INFO("Observation accepted into node {}", node->id);
+                accepted = true;
+            }
             node->AddObservation(position, gasConcentration);
         }
+        if (!accepted)
+            GSL_INFO("Observation not accepted by any nodes!");
     }
 
     MarkerArray Graph::VisualizeGraph()

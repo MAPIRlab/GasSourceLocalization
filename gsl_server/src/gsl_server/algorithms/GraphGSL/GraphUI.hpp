@@ -21,16 +21,19 @@ namespace GSL
     private:
         void CreateUI();
         void DrawGraph();
-        void DrawOccupancyMaps();
+        void DrawMaps();
 
         void Clear(rclcpp::Publisher<MarkerArray>::SharedPtr pub);
+
+        void MergeWindMarkers(MarkerArray& all, const MarkerArray& _new);
 
         GraphGSL* gsl;
         std::jthread renderThread;
         rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;
         rclcpp::Publisher<MarkerArray>::SharedPtr occupancyPub;
+        rclcpp::Publisher<MarkerArray>::SharedPtr windPub;
 
-        bool occupancyToggleState = false;
+        bool occupancyToggleState = true;
         std::map<std::string, bool> selectedOccupancy;
         bool drawGraph = true;
     };

@@ -57,7 +57,7 @@ namespace GSL
         virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) = 0; //called from StopAndMeasure once we have enough data for this position
 
         virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
-        virtual PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
+        virtual Vector2 windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
 
         virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
         virtual void OnCompleteNavigation(GSLResult result, State* previousState);

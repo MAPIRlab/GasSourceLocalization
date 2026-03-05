@@ -4,7 +4,6 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /Grid1
         - /Grid1/Line Style1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 725
@@ -115,6 +114,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /PioneerP3DX/gsl_occupancy
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: WindMaps
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/gsl_wind
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -173,7 +184,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 124.74679565429688
+      Scale: 85.01144409179688
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
       X: 4.788334369659424

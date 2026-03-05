@@ -101,7 +101,7 @@ namespace GSL
         return ppm;
     }
 
-    PoseStamped Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
+    Vector2 Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
     {
         float downWind_direction = angles::normalize_angle(msg->wind_direction);
         // Transform from anemometer ref_system to map ref_system using TF
@@ -119,15 +119,16 @@ namespace GSL
         catch (tf2::TransformException& ex)
         {
             GSL_ERROR("{} - Error: {}", __FUNCTION__, ex.what());
-            return PoseStamped();
+            return Vector2{};
         }
         // Utils::publishDebugSingleArrow(vmath::WithZ(currentRobotPosition, 0),
         //                                map_downWind_pose.pose.orientation,
         //                                -msg->wind_speed,
         //                                Utils::create_color(0, 1, 0),
         //                                "wind_arrow");
-        stopAndMeasureState->addWindReading(msg->wind_speed, Utils::getYaw(map_downWind_pose.pose.orientation));
-        return map_downWind_pose;
+        float angle = Utils::getYaw(map_downWind_pose.pose.orientation);
+        stopAndMeasureState->addWindReading(msg->wind_speed, angle);
+        return Utils::polarToCartesian(msg->wind_speed, angle);
     }
 
     void Algorithm::localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg)

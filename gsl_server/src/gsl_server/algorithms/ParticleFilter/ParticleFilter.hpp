@@ -18,7 +18,7 @@ namespace GSL
         void declareParameters() override;
 
     protected:
-        PoseStamped windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
+        Vector2 windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
 
     private:
         struct Particle

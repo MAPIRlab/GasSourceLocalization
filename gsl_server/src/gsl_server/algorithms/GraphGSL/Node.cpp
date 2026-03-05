@@ -59,9 +59,12 @@ namespace GSL
     bool RealNode::AddObservation(Vector2 location, Vector2 windVector)
     {
         constexpr float variance = 0.001; // TODO
+
+        float speed = vmath::length(windVector);
+        float direction = std::atan2(windVector.y, windVector.x);
         bool accepted = gmrf->insertObservation_GMRF(
-            vmath::length(windVector),
-            std::atan2(windVector.y, windVector.x),
+            speed,
+            direction,
             variance, variance,
             location.x, location.y);
         if (accepted)

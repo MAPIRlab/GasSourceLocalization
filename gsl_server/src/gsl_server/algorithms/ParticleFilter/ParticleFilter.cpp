@@ -28,15 +28,15 @@ namespace GSL
         Rconv = getParam<double>("Rconv", 0.5);
     }
 
-    PoseStamped ParticleFilter::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
+    Vector2 ParticleFilter::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
     {
         static rclcpp::Time lastWindObservation(0);
         static std::vector<float> windSpeed_v;
         static std::vector<float> windDirection_v;
 
-        PoseStamped downwind_map = SurgeSpiral::windCallback(msg);
+        Vector2 downwind_map = SurgeSpiral::windCallback(msg);
         windSpeed_v.push_back(msg->wind_speed);
-        windDirection_v.push_back(Utils::getYaw(downwind_map.pose.orientation));
+        windDirection_v.push_back(std::atan2(downwind_map.y, downwind_map.x));
 
         if (node->now().seconds() - lastWindObservation.seconds() >= deltaT)
         {
