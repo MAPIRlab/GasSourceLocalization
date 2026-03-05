@@ -203,7 +203,7 @@ void GraphCreator::CreateEmptyNodeWindow()
     ImGui::BeginChild("Empty Node Window", ImVec2(0, 0), ImGuiChildFlags_Border, ImGuiWindowFlags_None);
     ImGui::Text("Empty node creation");
     ImGui::Separator();
-    ImGui::DragFloat2("Position", &emptyPosition.x, 0.05f);
+    ImGui::DragFloat2("Position", &emptyPosition.x, 0.02f);
 
     DrawPoint(emptyPosition, Utils::create_color(0, 1, 0, 0.3));
 
@@ -331,13 +331,13 @@ void GraphCreator::AABBTable()
     {
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        ImGui::DragFloat2("Min", &currentAABB.min.x, 0.05f);
+        ImGui::DragFloat2("Min", &currentAABB.min.x, 0.02f);
         ImGui::TableSetColumnIndex(1);
         ImGui::RadioButton("##Minradio", (int*)&selectionMode, (int)SelectionMode::Min);
 
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
-        ImGui::DragFloat2("Max", &currentAABB.max.x, 0.05f);
+        ImGui::DragFloat2("Max", &currentAABB.max.x, 0.02f);
         ImGui::TableSetColumnIndex(1);
         ImGui::RadioButton("##Maxradio", (int*)&selectionMode, (int)SelectionMode::Max);
 
@@ -349,7 +349,7 @@ void GraphCreator::AABBTable()
         {
             ImGui::TableNextRow();
             ImGui::TableSetColumnIndex(0);
-            ImGui::DragFloat2("SpawnPoint", &spawnPoint.x, 0.05f);
+            ImGui::DragFloat2("SpawnPoint", &spawnPoint.x, 0.02f);
             ImGui::TableSetColumnIndex(1);
             ImGui::RadioButton("##SpawnPointRadio", (int*)&selectionMode, (int)SelectionMode::SpawnPoint);
         }

@@ -139,18 +139,25 @@ namespace GSL
                 for (int i = 0; i < metadata.dimensions.x; i++)
                 {
                     bool squareIsFree = true;
+                    bool squareIsObstacle = false;
 
                     for (int row = j * scale; row < (j + 1) * scale && row < mapHeight; row++)
                     {
                         for (int col = i * scale; col < (i + 1) * scale && col < mapWidth; col++)
                         {
-                            if (map.at(col + row * mapWidth) != 0)
+                            int value = map.at(col + row * mapWidth);
+                            if (value != (int)Occupancy::Free)
                                 squareIsFree = false;
+                            if (value == (int)Occupancy::Obstacle)
+                                squareIsObstacle = true;
                         }
                     }
                     if (squareIsFree)
                         occupancy[metadata.indexOf({i, j})] = Occupancy::Free;
-                    occupancy[metadata.indexOf({i, j})] = squareIsFree ? Occupancy::Free : Occupancy::Obstacle;
+                    else if (squareIsObstacle)
+                        occupancy[metadata.indexOf({i, j})] = Occupancy::Obstacle;
+                    else
+                        occupancy[metadata.indexOf({i, j})] = Occupancy::Unknown;
                 }
             }
         }
@@ -180,7 +187,7 @@ namespace GSL
 
         static Map2D CropMap(Grid2D<Occupancy> grid, AABB2D bounds)
         {
-            //ensure the aabb is within the bounds of the original map
+            // ensure the aabb is within the bounds of the original map
             Vector2 maxCoords = grid.metadata.indicesToCoordinates(grid.metadata.dimensions);
             bounds.min.x = std::clamp(bounds.min.x, grid.metadata.origin.x, maxCoords.x);
             bounds.min.y = std::clamp(bounds.min.y, grid.metadata.origin.y, maxCoords.y);
