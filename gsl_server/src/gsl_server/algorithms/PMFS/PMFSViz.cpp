@@ -185,54 +185,7 @@ namespace GSL
     void PMFSViz::PlotWindVectors(Grid2D<Vector2> estimatedWindVectors, const PMFS_internal::VisualizationSettings& settings,
                                   const PMFS_internal::PublishersAndSubscribers& pubs)
     {
-        MarkerArray arrow_array;
-        // Add an ARROW marker for each node
-        Marker marker;
-        marker.header.frame_id = "map";
-        marker.header.stamp = pubs.clock->now();
-        marker.ns = "WindVector";
-        marker.type = Marker::ARROW;
-        marker.action = Marker::ADD;
-
-        // Get max wind vector in the map (to normalize the plot)
-        double max_module = 0.0;
-        for (size_t i = 0; i < estimatedWindVectors.data.size(); i++)
-        {
-            if (vmath::length(estimatedWindVectors.data[i]) > max_module)
-                max_module = vmath::length(estimatedWindVectors.data[i]);
-        }
-
-        for (size_t i = 0; i < estimatedWindVectors.data.size(); i++)
-        {
-            if (estimatedWindVectors.occupancy[i] == Occupancy::Free)
-            {
-                double module = vmath::length(estimatedWindVectors.data[i]);
-                double angle = std::atan2(estimatedWindVectors.data[i].y, estimatedWindVectors.data[i].x);
-                if (module > 0.001)
-                {
-                    marker.id = i;
-                    // Set the pose of the marker.
-                    Vector2Int indices2D = estimatedWindVectors.metadata.indices2D(i);
-                    Vector2 coords = estimatedWindVectors.metadata.indicesToCoordinates(indices2D.x, indices2D.y);
-                    marker.pose.position.x = coords.x;
-                    marker.pose.position.y = coords.y;
-                    marker.pose.position.z = settings.markers_height;
-                    marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
-                    // shape
-                    marker.scale.x = estimatedWindVectors.metadata.cellSize * (module / max_module); // arrow length,
-                    marker.scale.y = 0.03;                                                           // arrow width
-                    marker.scale.z = 0.03;                                                           // arrow height
-                    // color -> must normalize to [0-199]
-                    marker.color.r = 1;
-                    marker.color.g = 0;
-                    marker.color.b = 0;
-                    marker.color.a = 1.0;
-
-                    // Push Arrow to array
-                    arrow_array.markers.push_back(marker);
-                }
-            }
-        }
+        MarkerArray arrow_array = Utils::createArrowsMarkers(estimatedWindVectors, settings.markers_height);
         pubs.markers.windArrowMarkers->publish(arrow_array);
     }
 

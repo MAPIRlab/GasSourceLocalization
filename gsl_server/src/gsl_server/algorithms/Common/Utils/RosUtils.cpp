@@ -231,7 +231,7 @@ namespace GSL::Utils
         pub->publish(marker);
     }
 
-    Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid)
+    Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid, float height)
     {
         Marker points;
         points.header.frame_id = "map";
@@ -251,7 +251,7 @@ namespace GSL::Utils
                     Point p;
                     p.x = coords.x;
                     p.y = coords.y;
-                    p.z = 0;
+                    p.z = height;
 
                     points.points.push_back(p);
                     points.colors.push_back(grid.dataAt(col, row));
@@ -259,6 +259,58 @@ namespace GSL::Utils
             }
         }
         return points;
+    }
+
+    MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors, float height)
+    {
+        MarkerArray arrow_array;
+        // Add an ARROW marker for each node
+        Marker marker;
+        marker.header.frame_id = "map";
+        marker.ns = "WindVector";
+        marker.type = Marker::ARROW;
+        marker.action = Marker::ADD;
+
+        // Get max wind vector in the map (to normalize the plot)
+        double max_module = 0.0;
+        for (size_t i = 0; i < vectors.data.size(); i++)
+        {
+            if (vmath::length(vectors.data[i]) > max_module)
+                max_module = vmath::length(vectors.data[i]);
+        }
+
+        for (size_t i = 0; i < vectors.data.size(); i++)
+        {
+            if (vectors.occupancy[i] == Occupancy::Free)
+            {
+                double module = vmath::length(vectors.data[i]);
+                double angle = std::atan2(vectors.data[i].y, vectors.data[i].x);
+                if (module > 0.001)
+                {
+                    marker.id = i;
+                    // Set the pose of the marker.
+                    Vector2Int indices2D = vectors.metadata.indices2D(i);
+                    Vector2 coords = vectors.metadata.indicesToCoordinates(indices2D.x, indices2D.y);
+                    marker.pose.position.x = coords.x;
+                    marker.pose.position.y = coords.y;
+                    marker.pose.position.z = height;
+                    marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
+                    // shape
+                    marker.scale.x = vectors.metadata.cellSize * (module / max_module); // arrow length,
+                    marker.scale.y = 0.03;                                                           // arrow width
+                    marker.scale.z = 0.03;                                                           // arrow height
+                    // color -> must normalize to [0-199]
+                    marker.color.r = 1;
+                    marker.color.g = 0;
+                    marker.color.b = 0;
+                    marker.color.a = 1.0;
+
+                    // Push Arrow to array
+                    arrow_array.markers.push_back(marker);
+                }
+            }
+        }
+        return arrow_array;
     }
 
     Marker createPointsOccupancyMarker(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata)
