@@ -149,8 +149,8 @@ namespace GSL
                     continue;
 
                 auto realNode = As<RealNode>(node);
-                Grid2D<Vector2> wind = realNode->GetWindMap();
-                Marker marker = Utils::createPointsOccupancyMarker(wind.occupancy, wind.metadata);
+                Grid2D<Occupancy> occupancy = realNode->GetOccupancy();
+                Marker marker = Utils::createPointsOccupancyMarker(occupancy.occupancy, occupancy.metadata);
                 marker.id = id;
                 id++;
 

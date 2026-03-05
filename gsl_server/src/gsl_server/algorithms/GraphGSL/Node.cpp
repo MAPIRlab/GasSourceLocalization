@@ -95,4 +95,9 @@ namespace GSL
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);
     }
+
+    const Grid2D<Occupancy> RealNode::GetOccupancy()
+    {
+        return Grid2D<Occupancy>(occupancy, occupancy, gridMetadata);
+    }
 } // namespace GSL

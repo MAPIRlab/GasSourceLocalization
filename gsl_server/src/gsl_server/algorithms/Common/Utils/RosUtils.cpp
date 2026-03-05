@@ -136,10 +136,15 @@ namespace GSL::Utils
         size_t height = mapImage.size().height;
         std::vector<int8_t> imageAsVec(width * height);
         for (int i = 0; i < width * height; i++)
-            imageAsVec[i] = (int8_t)std::clamp(100 - (int)mapImage.data[i], 0, 100);
+            if (mapImage.data[i] == 255)
+                imageAsVec[i] = (int)Occupancy::Free;
+            else if (mapImage.data[i] == 0)
+                imageAsVec[i] = (int)Occupancy::Obstacle;
+            else
+                imageAsVec[i] = (int)Occupancy::Unknown;
 
         std::vector<Occupancy> occupancyGrid(metadata.dimensions.x * metadata.dimensions.y);
-        GridUtils::reduceOccupancyMap(imageAsVec, width, occupancyGrid, metadata);
+        GridUtils::reduceOccupancyMap(imageAsVec, width, height, occupancyGrid, metadata);
 
         return occupancyGrid;
     }

@@ -77,7 +77,7 @@ namespace GSL
         visibilityMap.emplace(gridMetadata.dimensions.x, gridMetadata.dimensions.y,
                               std::max(settings.movement.openMoveSetExpasion, settings.hitProbability.localEstimationWindowSize));
 
-        GridUtils::reduceOccupancyMap(map.data, map.info.width, occupancy, gridMetadata);
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, map.info.height, occupancy, gridMetadata);
         PMFSLib::InitializeMap(
             Grid2D<HitProbability>(
                 hitProbability,
@@ -119,7 +119,6 @@ namespace GSL
     {
         if (!paused)
             Algorithm::OnUpdate();
-
 
         // Update visualization
         PMFSViz::ShowHitProb(Grid2D<HitProbability>(hitProbability, occupancy, gridMetadata), settings.visualization, pubs);

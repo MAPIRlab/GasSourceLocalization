@@ -77,7 +77,7 @@ namespace GSL
         combinedSourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         simulationOccupancy = Utils::parseMapImage(getParam<std::string>("wallsOccupancyFile", "?"), gridMetadata);
 
-        GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, map.info.height, navigationOccupancy, gridMetadata);
         GrGSLLib::initializeMap(*this,
                                 Grid2D<Cell>(cells, simulationOccupancy, gridMetadata));
         positionOfLastHit = Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);

@@ -130,7 +130,7 @@ namespace GSL
         GridUtils() = delete;
 
         // reduce the resolution of an occupancy grid, considering that a cell in the coarser map is occupied as soon as a single smaller cell in it is
-        static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, std::vector<Occupancy>& occupancy,
+        static void reduceOccupancyMap(const std::vector<int8_t>& map, size_t mapWidth, size_t mapHeight, std::vector<Occupancy>& occupancy,
                                        const Grid2DMetadata& metadata)
         {
             int scale = metadata.scale; // scale for dynamic map reduction
@@ -140,11 +140,11 @@ namespace GSL
                 {
                     bool squareIsFree = true;
 
-                    for (int row = j * scale; row < (j + 1) * scale; row++)
+                    for (int row = j * scale; row < (j + 1) * scale && row < mapHeight; row++)
                     {
-                        for (int col = i * scale; col < (i + 1) * scale; col++)
+                        for (int col = i * scale; col < (i + 1) * scale && col < mapWidth; col++)
                         {
-                            if (map[col + row * mapWidth] != 0)
+                            if (map.at(col + row * mapWidth) != 0)
                                 squareIsFree = false;
                         }
                     }

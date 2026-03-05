@@ -118,7 +118,7 @@ namespace GSL
         //----------------------------------
 
         // create the navigation map from the OccupancyGrid published by map_server
-        GridUtils::reduceOccupancyMap(map.data, map.info.width, navigationOccupancy, gridMetadata);
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, map.info.height, navigationOccupancy, gridMetadata);
 
         // read a version of the map that is specifically for navigation, rather than using whatever the map server published (which may be modified for GMRF)
         // navigationOccupancy = Utils::parseMapImage(getParam<std::string>("navigationOccupancyFile", "?"), gridMetadata);

@@ -31,6 +31,7 @@ namespace GSL
         void SetOccupancy(Grid2D<Occupancy> grid);
         void AddObservation(Vector2 location, Vector2 windVector);
         void AddObservation(Vector2 location, float gasObs);
+        const Grid2D<Occupancy> GetOccupancy();
         const Grid2D<Vector2> GetWindMap();
         Vector2 GetPosition() override { return centroid; }
 

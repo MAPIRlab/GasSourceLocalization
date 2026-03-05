@@ -72,7 +72,7 @@ namespace GSL
         cells.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         occupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
 
-        GridUtils::reduceOccupancyMap(map.data, map.info.width, occupancy, gridMetadata);
+        GridUtils::reduceOccupancyMap(map.data, map.info.width, map.info.height, occupancy, gridMetadata);
         GrGSLLib::initializeMap(*this,
                                 Grid2D<Cell>(cells, occupancy, gridMetadata));
         positionOfLastHit = Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);
