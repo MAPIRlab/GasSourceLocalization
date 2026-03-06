@@ -10,7 +10,7 @@ namespace GSL
     class Graph
     {
     public:
-        static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams);
+        static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, float nodeSeparationMultiplier, gmrfw::CGMRF_map::Parameters gmrfParams);
         void AddObservation(Vector2 position, Vector2 wind, float gasConcentration);
 
         MarkerArray VisualizeGraph();

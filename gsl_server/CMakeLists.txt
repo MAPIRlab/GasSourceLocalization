@@ -28,7 +28,7 @@ set(USE_GADEN OFF)
 # It adds some extra features, but currently it has a relatively high performance cost due to async inter-process communication  
 set(USE_NAV_ASSISTANT OFF) 
 
-# Compile graphical interface with DearImGUI. Currently only affects the PMFS and SemanticPMFS algorithms. Not required to function, it is mostly for debugging purposes
+# Compile graphical interface with DearImGUI. Not required to function, it is mostly for debugging purposes
 set(USE_GUI ON)
 
 

@@ -36,6 +36,7 @@ namespace GSL
         const Grid2D<Occupancy> GetOccupancy();
         const Grid2D<Vector2> GetWindMap();
         Vector2 GetPosition() override { return centroid; }
+        bool isDirty() const { return windDirty; }
 
     private:
         static gmrfw::TOccupancyMap ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata);

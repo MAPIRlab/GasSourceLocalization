@@ -77,13 +77,14 @@ namespace GSL
 
     void GraphUI::DrawGraph()
     {
-        Clear(graphPub);
         ImGui::Checkbox("Draw graph", &drawGraph);
         if (drawGraph)
         {
             MarkerArray array = gsl->graph.VisualizeGraph();
             graphPub->publish(array);
         }
+        else
+            Clear(graphPub);
     }
 
     void GraphUI::DrawMaps()
@@ -112,10 +113,10 @@ namespace GSL
                 somethingChanged = true;
         }
 
-        // if (somethingChanged)
-        {
+        if (somethingChanged)
             Clear(occupancyPub);
 
+        {
             MarkerArray occArray;
             MarkerArray windArray;
             size_t occID = 0;

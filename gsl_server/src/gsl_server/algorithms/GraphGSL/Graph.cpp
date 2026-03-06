@@ -7,7 +7,7 @@
 
 namespace GSL
 {
-    Graph Graph::ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams)
+    Graph Graph::ReadFromDisk(const std::filesystem::path& folder, float cellSize, float nodeSeparationMultiplier, gmrfw::CGMRF_map::Parameters gmrfParams)
     {
         if (!std::filesystem::exists(folder))
         {
@@ -31,11 +31,13 @@ namespace GSL
                 Vector2 position;
                 position.x = yaml["pos_x"].as<float>();
                 position.y = yaml["pos_y"].as<float>();
+                position = position * nodeSeparationMultiplier;
                 node = std::make_shared<EmptyNode>(position);
             }
             else
             {
                 Map2D map = Utils::parseMapData(subfolder / "occupancy.yaml", cellSize);
+                map.metadata.origin = map.metadata.origin * nodeSeparationMultiplier;
                 node = std::make_shared<RealNode>(map.AsGrid(), gmrfParams);
             }
 

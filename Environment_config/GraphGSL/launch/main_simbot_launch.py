@@ -45,7 +45,12 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e",
                 parameters=[
-
+                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_graph")},
+                    {"cell_size": 0.15},
+                    {"node_separation_mult": 1.5},
+                    {"GMRF_lambda_flux": 2.5},
+                    {"GMRF_lambda_obstacles": 0.1},
+                    {"GMRF_lambda_reg": 0.7},
                 ],
                 on_exit=Shutdown()
             ),
@@ -162,7 +167,6 @@ def launch_setup(context, *args, **kwargs):
             "-d" + os.path.join(get_package_share_directory("graphgsl_env"), "launch", "graph.rviz")
         ],
     )
-
     actions = []
     # actions.append(gaden_player)
     # actions.extend(anemometer)
@@ -197,48 +201,6 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="robot_name",
             value="PioneerP3DX"
-        ),
-
-
-        # GSL params (overwritable in each YAML)
-        ##############################################
-        SetLaunchConfiguration(
-            name="th_gas_present",
-            value="0.1"
-        ),
-        SetLaunchConfiguration(
-            name="th_wind_present",
-            value="0.02"
-        ),
-
-        SetLaunchConfiguration(
-            name="filament_movement_stdev",
-            value="0.5"
-        ),
-        SetLaunchConfiguration(
-            name="sourceDiscriminationPower",
-            value="0.3"
-        ),
-        SetLaunchConfiguration(
-            name="iterationsToRecord",
-            value="200"
-        ),
-
-        SetLaunchConfiguration(
-            name="minWarmupIterations",
-            value="0"
-        ),
-        SetLaunchConfiguration(
-            name="maxWarmupIterations",
-            value="500"
-        ),
-        SetLaunchConfiguration(
-            name="initialExplorationMoves",
-            value="2"
-        ),
-        SetLaunchConfiguration(
-            name="filamentDeltaTime",
-            value="0.1"
         ),
     ]
 
