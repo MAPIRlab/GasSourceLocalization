@@ -7,7 +7,7 @@
 
 namespace GSL
 {
-    Graph Graph::ReadFromDisk(const std::filesystem::path& folder, float cellSize, float nodeSeparationMultiplier, gmrfw::CGMRF_map::Parameters gmrfParams)
+    Graph Graph::ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams)
     {
         if (!std::filesystem::exists(folder))
         {
@@ -31,13 +31,11 @@ namespace GSL
                 Vector2 position;
                 position.x = yaml["pos_x"].as<float>();
                 position.y = yaml["pos_y"].as<float>();
-                position = position * nodeSeparationMultiplier;
                 node = std::make_shared<EmptyNode>(position);
             }
             else
             {
                 Map2D map = Utils::parseMapData(subfolder / "occupancy.yaml", cellSize);
-                map.metadata.origin = map.metadata.origin * nodeSeparationMultiplier;
                 node = std::make_shared<RealNode>(map.AsGrid(), gmrfParams);
             }
 
@@ -166,7 +164,7 @@ namespace GSL
         size_t id = 0;
         for (auto node : nodes)
         {
-            Vector2 position = node->GetPosition();
+            Vector2 position = node->GetPosition() * nodeSeparationViz;
             ColorRGBA color;
             if (Is<RealNode>(node))
                 color = Utils::create_color(0, 1, 0);
@@ -189,7 +187,7 @@ namespace GSL
             // draw the arcs
             for (size_t i = 0; i < node->arcs.size(); i++)
             {
-                Vector2 otherPos = node->arcs.at(i).to.lock()->GetPosition();
+                Vector2 otherPos = node->arcs.at(i).to.lock()->GetPosition() * nodeSeparationViz;
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::ARROW;
@@ -218,7 +216,10 @@ namespace GSL
 
             auto realNode = As<RealNode>(node);
             Grid2D<Occupancy> occupancy = realNode->GetOccupancy();
-            Marker occMarker = Utils::createPointsOccupancyMarker(occupancy.occupancy, occupancy.metadata);
+
+            Grid2DMetadata vizMetadata = occupancy.metadata;
+            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+            Marker occMarker = Utils::createPointsOccupancyMarker(Grid2D<Occupancy>(occupancy.occupancy, occupancy.occupancy, vizMetadata));
             occMarker.id = occID;
             occID++;
 
@@ -236,7 +237,12 @@ namespace GSL
                 continue;
 
             auto realNode = As<RealNode>(node);
-            MarkerArray windMarker = Utils::createArrowsMarkers(realNode->GetWindMap(), 0, 0.5);
+
+            Grid2D<Vector2> windMap = realNode->GetWindMap();
+            Grid2DMetadata vizMetadata = windMap.metadata;
+            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+
+            MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0, 0.5);
             MergeWindMarkers(windArray, windMarker);
         }
         return windArray;

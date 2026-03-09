@@ -56,7 +56,7 @@ namespace GSL
         void ClearMarkers(rclcpp::Publisher<MarkerArray>::SharedPtr pub);
         Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid, float height = 0);
         MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors, float height = 0, std::optional<float> saturateLength = std::nullopt);
-        Marker createPointsOccupancyMarker(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata);
+        Marker createPointsOccupancyMarker(const Grid2D<Occupancy> occupancy);
         void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic);
     }; // namespace Utils
 }; // namespace GSL

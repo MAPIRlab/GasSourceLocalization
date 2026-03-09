@@ -320,21 +320,21 @@ namespace GSL::Utils
         return arrow_array;
     }
 
-    Marker createPointsOccupancyMarker(const std::vector<Occupancy>& occupancy, const Grid2DMetadata& metadata)
+    Marker createPointsOccupancyMarker(const Grid2D<Occupancy> occupancy)
     {
         Marker points;
         points.header.frame_id = "map";
         points.type = Marker::POINTS;
         points.action = Marker::ADD;
 
-        points.scale.x = metadata.cellSize * 0.95;
-        points.scale.y = metadata.cellSize * 0.95;
+        points.scale.x = occupancy.metadata.cellSize * 0.95;
+        points.scale.y = occupancy.metadata.cellSize * 0.95;
 
-        for (int row = 0; row < metadata.dimensions.y; row++)
+        for (int row = 0; row < occupancy.metadata.dimensions.y; row++)
         {
-            for (int col = 0; col < metadata.dimensions.x; col++)
+            for (int col = 0; col < occupancy.metadata.dimensions.x; col++)
             {
-                auto coords = metadata.indicesToCoordinates(col, row);
+                auto coords = occupancy.metadata.indicesToCoordinates(col, row);
                 Point p;
                 p.x = coords.x;
                 p.y = coords.y;
@@ -342,7 +342,7 @@ namespace GSL::Utils
 
                 points.points.push_back(p);
 
-                Occupancy occ = occupancy.at(metadata.indexOf(col, row));
+                Occupancy occ = occupancy.occupancyAt(col, row);
                 if (occ == Occupancy::Free)
                     points.colors.push_back(create_color(1, 1, 1));
                 else if (occ == Occupancy::Unknown)

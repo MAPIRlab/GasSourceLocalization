@@ -47,7 +47,7 @@ def launch_setup(context, *args, **kwargs):
                 parameters=[
                     {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_graph")},
                     {"cell_size": 0.15},
-                    {"node_separation_mult": 1.0},
+                    {"node_separation_mult": 1.5},
                     {"GMRF_lambda_flux": 2.5},
                     {"GMRF_lambda_obstacles": 0.1},
                     {"GMRF_lambda_reg": 0.7},

@@ -10,7 +10,7 @@ namespace GSL
     class Graph
     {
     public:
-        static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, float nodeSeparationMultiplier, gmrfw::CGMRF_map::Parameters gmrfParams);
+        static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams);
         void AddObservation(Vector2 position, Vector2 wind, float gasConcentration);
         void UpdateAllWindMaps();
 
@@ -22,6 +22,7 @@ namespace GSL
     public:
         std::vector<std::shared_ptr<class Node>> nodes;
         std::map<std::string, bool> selectedForVisualization;
+        float nodeSeparationViz = 1; //multiplier for the origin of each node (for visualization only) Makes it easier to see which area corresponds to which node
 
     private:
         void MergeWindMarkers(MarkerArray& all, const MarkerArray& _new);

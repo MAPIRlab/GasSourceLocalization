@@ -28,8 +28,9 @@ namespace GSL
         std::filesystem::path path =
             node->declare_parameter<std::string>("graph_path",
                                                  std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph");
+        graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
         float artificialSeparation = node->declare_parameter<float>("node_separation_mult", 1);
-        graph = Graph::ReadFromDisk(path, cellSize, artificialSeparation, gmrfParams);
+        graph.nodeSeparationViz = artificialSeparation;
 
         // GUI
         IF_GUI(gui.Run());

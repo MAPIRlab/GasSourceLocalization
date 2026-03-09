@@ -58,6 +58,7 @@ namespace GSL
         ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
         {
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
+            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1., 10.);
             SelectNodes();
         }
         ImGui::End();
