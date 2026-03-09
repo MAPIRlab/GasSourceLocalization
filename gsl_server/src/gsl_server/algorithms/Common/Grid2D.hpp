@@ -85,12 +85,12 @@ namespace GSL
 
         T& dataAt(size_t col, size_t row) const
         {
-            return data[metadata.indexOf(col, row)];
+            return data.at(metadata.indexOf(col, row));
         }
 
         Occupancy& occupancyAt(size_t col, size_t row) const
         {
-            return occupancy[metadata.indexOf(col, row)];
+            return occupancy.at(metadata.indexOf(col, row));
         }
 
         bool freeAt(size_t col, size_t row) const
@@ -100,12 +100,12 @@ namespace GSL
 
         T& dataAt(const Vector2Int& indices) const
         {
-            return data[metadata.indexOf(indices)];
+            return data.at(metadata.indexOf(indices));
         }
 
         Occupancy& occupancyAt(const Vector2Int& indices) const
         {
-            return occupancy[metadata.indexOf(indices)];
+            return occupancy.at(metadata.indexOf(indices));
         }
 
         bool freeAt(const Vector2Int& indices) const
@@ -153,11 +153,11 @@ namespace GSL
                         }
                     }
                     if (squareIsFree)
-                        occupancy[metadata.indexOf({i, j})] = Occupancy::Free;
+                        occupancy.at(metadata.indexOf({i, j})) = Occupancy::Free;
                     else if (squareIsObstacle)
-                        occupancy[metadata.indexOf({i, j})] = Occupancy::Obstacle;
+                        occupancy.at(metadata.indexOf({i, j})) = Occupancy::Obstacle;
                     else
-                        occupancy[metadata.indexOf({i, j})] = Occupancy::Unknown;
+                        occupancy.at(metadata.indexOf({i, j})) = Occupancy::Unknown;
                 }
             }
         }
@@ -171,7 +171,7 @@ namespace GSL
             DDA::_2D::Map<GSL::Occupancy> map(occupancy, metadata.origin, metadata.cellSize, {metadata.dimensions.x, metadata.dimensions.y});
 
             // check there are no obstacles between origin and end
-            if (!(occupancy[metadata.indexOf(originInd)] == Occupancy::Free && occupancy[metadata.indexOf(endInd)] == Occupancy::Free))
+            if (!(occupancy.at(metadata.indexOf(originInd)) == Occupancy::Free && occupancy.at(metadata.indexOf(endInd)) == Occupancy::Free))
                 return false;
             Vector2 direction = end - origin;
             DDA::_2D::RayCastInfo raycastInfo = DDA::_2D::castRay<GSL::Occupancy>(

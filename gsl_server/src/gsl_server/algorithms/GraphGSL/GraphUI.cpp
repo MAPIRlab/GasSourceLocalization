@@ -16,9 +16,6 @@ namespace GSL
     GraphUI::GraphUI(GraphGSL* _gsl)
         : gsl(_gsl)
     {
-        graphPub = gsl->node->create_publisher<MarkerArray>("gsl_graph", 1);
-        occupancyPub = gsl->node->create_publisher<MarkerArray>("gsl_occupancy", 1);
-        windPub = gsl->node->create_publisher<MarkerArray>("gsl_wind", 1);
     }
 
     GraphUI::~GraphUI()
@@ -60,40 +57,28 @@ namespace GSL
     {
         ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
         {
-            DrawGraph();
-            DrawMaps();
+            ImGui::Checkbox("Draw graph", &gsl->drawGraph);
+            SelectNodes();
+        }
+        ImGui::End();
 
-            ImGui::Begin("Current State");
-            {
-                if (gsl->stateMachine.getCurrentState())
-                    gsl->stateMachine.getCurrentState()->RenderUI();
-                else
-                    ImGui::Text("Null state");
-            }
-            ImGui::End();
+        ImGui::Begin("Current State");
+        {
+            if (gsl->stateMachine.getCurrentState())
+                gsl->stateMachine.getCurrentState()->RenderUI();
+            else
+                ImGui::Text("Null state");
         }
         ImGui::End();
     }
 
-    void GraphUI::DrawGraph()
-    {
-        ImGui::Checkbox("Draw graph", &drawGraph);
-        if (drawGraph)
-        {
-            MarkerArray array = gsl->graph.VisualizeGraph();
-            graphPub->publish(array);
-        }
-        else
-            Clear(graphPub);
-    }
-
-    void GraphUI::DrawMaps()
+    void GraphUI::SelectNodes()
     {
         bool somethingChanged = false;
         if (ImGui::Button("Toggle All"))
         {
             occupancyToggleState = !occupancyToggleState;
-            for (auto& entry : selectedOccupancy)
+            for (auto& entry : gsl->graph.selectedForVisualization)
                 entry.second = occupancyToggleState;
             somethingChanged = true;
         }
@@ -103,61 +88,18 @@ namespace GSL
             if (!Is<RealNode>(node))
                 continue;
 
-            if (!selectedOccupancy.contains(node->id))
-                selectedOccupancy[node->id] = true;
+            if (!gsl->graph.selectedForVisualization.contains(node->id))
+                gsl->graph.selectedForVisualization[node->id] = true;
 
-            bool oldValue = selectedOccupancy.at(node->id);
-            ImGui::Checkbox(node->id.c_str(), &selectedOccupancy.at(node->id));
+            bool oldValue = gsl->graph.selectedForVisualization.at(node->id);
+            ImGui::Checkbox(node->id.c_str(), &gsl->graph.selectedForVisualization.at(node->id));
 
-            if (selectedOccupancy.at(node->id) != oldValue)
+            if (gsl->graph.selectedForVisualization.at(node->id) != oldValue)
                 somethingChanged = true;
         }
 
         if (somethingChanged)
-            Clear(occupancyPub);
-
-        {
-            MarkerArray occArray;
-            MarkerArray windArray;
-            size_t occID = 0;
-            for (auto node : gsl->graph.nodes)
-            {
-                if (!Is<RealNode>(node) || !selectedOccupancy.at(node->id))
-                    continue;
-
-                auto realNode = As<RealNode>(node);
-                Grid2D<Occupancy> occupancy = realNode->GetOccupancy();
-                Marker occMarker = Utils::createPointsOccupancyMarker(occupancy.occupancy, occupancy.metadata);
-                occMarker.id = occID;
-                occID++;
-
-                MarkerArray windMarker = Utils::createArrowsMarkers(realNode->GetWindMap());
-                MergeWindMarkers(windArray, windMarker);
-                occArray.markers.push_back(occMarker);
-            }
-            occupancyPub->publish(occArray);
-            windPub->publish(windArray);
-        }
-    }
-
-    void GraphUI::Clear(rclcpp::Publisher<MarkerArray>::SharedPtr pub)
-    {
-        // clear old data
-        Marker clear;
-        clear.action = Marker::DELETEALL;
-        MarkerArray array;
-        array.markers.push_back(clear);
-        pub->publish(array);
-    }
-
-    void GraphUI::MergeWindMarkers(MarkerArray& all, const MarkerArray& _new)
-    {
-        size_t startingID = all.markers.size() > 0 ? all.markers.back().id + 1 : 0;
-        for (Marker marker : _new.markers)
-        {
-            marker.id += startingID;
-            all.markers.push_back(marker);
-        }
+            Utils::ClearMarkers(gsl->pubs.occupancyPub);
     }
 } // namespace GSL
 

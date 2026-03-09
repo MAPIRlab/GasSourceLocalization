@@ -104,6 +104,62 @@ namespace GSL
             GSL_INFO("Observation not accepted by any nodes!");
     }
 
+    void Graph::UpdateAllWindMaps()
+    {
+        // to make sure that the observations in one of the nodes also affect the rest of the maps, we can add "virtual" observations to all the neighbouring nodes
+        // these observations will have the value of whatever wind vector was predicted by GMRF at the connecting doorway
+        // then, we do another round of updates for all the nodes which just got a virtual observation added
+        // TODO do we want to (potentially) do more updates? with only 2, an observation cannot affect a node that is not its immediate neighbour
+        for (auto node : nodes)
+        {
+            if (!Is<RealNode>(node))
+                continue;
+
+            auto realNode = As<RealNode>(node);
+            if (realNode->isDirty())
+            {
+                Grid2D<Vector2> windMap = realNode->GetWindMap();
+
+                // add a virtual observation at spawnPoint which is equal to the average wind vector inside the doorway area
+                for (auto arc : realNode->arcs)
+                {
+                    Grid2DMetadata metadata = realNode->GetOccupancy().metadata;
+                    AABB2DInt aabbIdx{
+                        metadata.coordinatesToIndices(arc.aabb.min),
+                        metadata.coordinatesToIndices(arc.aabb.max)};
+
+                    Vector2 windVec;
+                    size_t count = 0;
+                    for (Vector2Int indices : aabbIdx)
+                        if (metadata.indicesInBounds(indices) && realNode->GetOccupancy().freeAt(indices))
+                        {
+                            windVec += windMap.dataAt(indices);
+                            count++;
+                        }
+
+                    if (count > 0)
+                    {
+                        windVec = windVec / count;
+                        arc.to.lock()->AddObservation(arc.spawnPoint, windVec);
+                    }
+                    else
+                        GSL_WARN("0 free cells in the connection between {} and {}! Probably not right!", node->id, arc.to.lock()->id);
+                }
+            }
+        }
+
+        // second round
+        for (auto node : nodes)
+        {
+            if (!Is<RealNode>(node))
+                continue;
+
+            auto realNode = As<RealNode>(node);
+            if (realNode->isDirty())
+                realNode->GetWindMap();
+        }
+    }
+
     MarkerArray Graph::VisualizeGraph()
     {
         MarkerArray array;
@@ -150,4 +206,49 @@ namespace GSL
         return array;
     }
 
+    MarkerArray Graph::VisualizeOccupancy()
+    {
+        MarkerArray occArray;
+        MarkerArray windArray;
+        size_t occID = 0;
+        for (auto node : nodes)
+        {
+            if (!Is<RealNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+                continue;
+
+            auto realNode = As<RealNode>(node);
+            Grid2D<Occupancy> occupancy = realNode->GetOccupancy();
+            Marker occMarker = Utils::createPointsOccupancyMarker(occupancy.occupancy, occupancy.metadata);
+            occMarker.id = occID;
+            occID++;
+
+            occArray.markers.push_back(occMarker);
+        }
+        return occArray;
+    }
+
+    MarkerArray Graph::VisualizeWind()
+    {
+        MarkerArray windArray;
+        for (auto node : nodes)
+        {
+            if (!Is<RealNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+                continue;
+
+            auto realNode = As<RealNode>(node);
+            MarkerArray windMarker = Utils::createArrowsMarkers(realNode->GetWindMap(), 0, 0.5);
+            MergeWindMarkers(windArray, windMarker);
+        }
+        return windArray;
+    }
+
+    void Graph::MergeWindMarkers(MarkerArray& all, const MarkerArray& _new)
+    {
+        size_t startingID = all.markers.size() > 0 ? all.markers.back().id + 1 : 0;
+        for (Marker marker : _new.markers)
+        {
+            marker.id += startingID;
+            all.markers.push_back(marker);
+        }
+    }
 } // namespace GSL

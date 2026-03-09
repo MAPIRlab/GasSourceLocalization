@@ -8,7 +8,8 @@ namespace GSL
 
     GraphGSL::GraphGSL(std::shared_ptr<rclcpp::Node> _node)
         : Algorithm(_node),
-          gui(this)
+          gui(this),
+          visualizationCD(0.1)
     {}
 
     void GraphGSL::Initialize()
@@ -33,6 +34,11 @@ namespace GSL
         // GUI
         IF_GUI(gui.Run());
 
+        // publishers
+        pubs.graphPub = node->create_publisher<MarkerArray>("gsl_graph", 1);
+        pubs.occupancyPub = node->create_publisher<MarkerArray>("gsl_occupancy", 1);
+        pubs.windPub = node->create_publisher<MarkerArray>("gsl_wind", 1);
+
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
@@ -46,6 +52,12 @@ namespace GSL
     void GraphGSL::OnUpdate()
     {
         Algorithm::OnUpdate();
+
+        if (visualizationCD.isDone())
+        {
+            Visualize();
+            visualizationCD.Restart();
+        }
     }
 
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -59,7 +71,19 @@ namespace GSL
     {
         Vector2 wind = Algorithm::windCallback(msg);
         graph.AddObservation(currentRobotPosition, wind, 0);
+        graph.UpdateAllWindMaps(); // TODO remove this! it's a test
         return wind;
+    }
+
+    void GraphGSL::Visualize()
+    {
+        if (drawGraph)
+            pubs.graphPub->publish(graph.VisualizeGraph());
+        else
+            Utils::ClearMarkers(pubs.graphPub);
+
+        pubs.occupancyPub->publish(graph.VisualizeOccupancy());
+        pubs.windPub->publish(graph.VisualizeWind());
     }
 
 } // namespace GSL

@@ -261,7 +261,7 @@ namespace GSL::Utils
         return points;
     }
 
-    MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors, float height)
+    MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors, float height, std::optional<float> saturateLength)
     {
         MarkerArray arrow_array;
         // Add an ARROW marker for each node
@@ -272,11 +272,17 @@ namespace GSL::Utils
         marker.action = Marker::ADD;
 
         // Get max wind vector in the map (to normalize the plot)
-        double max_module = 0.0;
-        for (size_t i = 0; i < vectors.data.size(); i++)
+        double max_module;
+        if (saturateLength)
+            max_module = *saturateLength;
+        else
         {
-            if (vmath::length(vectors.data[i]) > max_module)
-                max_module = vmath::length(vectors.data[i]);
+            max_module = 0.0;
+            for (size_t i = 0; i < vectors.data.size(); i++)
+            {
+                if (vmath::length(vectors.data[i]) > max_module)
+                    max_module = vmath::length(vectors.data[i]);
+            }
         }
 
         for (size_t i = 0; i < vectors.data.size(); i++)
@@ -296,14 +302,15 @@ namespace GSL::Utils
                     marker.pose.position.z = height;
                     marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
                     // shape
-                    marker.scale.x = vectors.metadata.cellSize * (module / max_module); // arrow length,
-                    marker.scale.y = 0.03;                                                           // arrow width
-                    marker.scale.z = 0.03;                                                           // arrow height
-                    // color -> must normalize to [0-199]
-                    marker.color.r = 1;
-                    marker.color.g = 0;
-                    marker.color.b = 0;
-                    marker.color.a = 1.0;
+                    marker.scale.x = vectors.metadata.cellSize * std::clamp(module / max_module, 0., 1.); // arrow length,
+                    marker.scale.y = 0.03;                                                                // arrow width
+                    marker.scale.z = 0.03;                                                                // arrow height
+
+                    // if we have a manually specified speed to correspond to the max arrow length, but this exceeds it, give it a different color
+                    if (module <= max_module)
+                        marker.color = create_color(0.7, 0.7, 0.7);
+                    else
+                        marker.color = create_color(1, 0, 0); 
 
                     // Push Arrow to array
                     arrow_array.markers.push_back(marker);
@@ -416,5 +423,15 @@ namespace GSL::Utils
         auto exec = std::make_shared<rclcpp::executors::SingleThreadedExecutor>(options);
         exec->add_node(node);
         return exec;
+    }
+
+    void ClearMarkers(rclcpp::Publisher<MarkerArray>::SharedPtr pub)
+    {
+        // clear old data
+        Marker clear;
+        clear.action = Marker::DELETEALL;
+        MarkerArray array;
+        array.markers.push_back(clear);
+        pub->publish(array);
     }
 } // namespace GSL::Utils
