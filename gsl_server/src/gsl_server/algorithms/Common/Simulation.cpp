@@ -194,27 +194,23 @@ namespace GSL
 #endif
     }
 
-
-
-
     static void show(const cv::Mat& mat, std::string name)
     {
         cv::Mat resized;
         cv::resize(mat, resized, cv::Size(mat.size[1] * 10, mat.size[0] * 10), 0, 0, cv::INTER_NEAREST);
         cv::imshow(name, resized);
-        cv::waitKey();
-        cv::destroyAllWindows();
+        while (cv::getWindowProperty(name, cv::WindowPropertyFlags::WND_PROP_VISIBLE) && cv::waitKey(30)==-1)
+            ;
+        cv::destroyWindow(name);
     }
 
-
-    void Simulation::makeSimulationImage(const SimulationSource& source)
+    void Simulation::makeSimulationImage()
     {
         std::vector<float> hitMap(wind.data.size(), 0.0);
         Run(hitMap);
 
         displayImage(hitMap);
     }
-
 
     void Simulation::displayImage(const std::vector<float>& hitMap, const std::string& imageName) const
     {

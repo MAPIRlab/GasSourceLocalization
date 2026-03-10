@@ -11,6 +11,7 @@ namespace GSL
     {
     public:
         static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams);
+        std::shared_ptr<class Node> GetCorrespondingNode(Vector2 position);
         void AddObservation(Vector2 position, Vector2 wind, float gasConcentration);
         void UpdateAllWindMaps();
 

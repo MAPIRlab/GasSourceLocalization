@@ -56,6 +56,15 @@ namespace GSL
             gmrf->setObservations_GMRF(observations);
     }
 
+    bool RealNode::IsValidPoint(Vector2 location)
+    {
+        Vector2Int indices = gridMetadata.coordinatesToIndices(location);
+        if (!gridMetadata.indicesInBounds(indices))
+            return false;
+
+        return AsGrid().freeAt(indices);
+    }
+
     bool RealNode::AddObservation(Vector2 location, Vector2 windVector)
     {
         constexpr float variance = 0.001; // TODO
@@ -75,7 +84,7 @@ namespace GSL
     bool RealNode::AddObservation(Vector2 location, float gasObs)
     {
         // TODO
-        return false;
+        return IsValidPoint(location);
     }
 
     const Grid2D<Vector2> RealNode::GetWindMap()

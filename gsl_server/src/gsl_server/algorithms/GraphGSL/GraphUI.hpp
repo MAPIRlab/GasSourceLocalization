@@ -1,4 +1,7 @@
 #pragma once
+#include "geometry_msgs/msg/point_stamped.hpp"
+#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include <rclcpp/subscription.hpp>
 #if USE_GUI
 
 #include <rclcpp/publisher.hpp>
@@ -25,6 +28,9 @@ namespace GSL
         std::jthread renderThread;
 
         bool occupancyToggleState = true;
+
+        rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
+        Vector2 selectedCoordinates;
     };
 } // namespace GSL
 

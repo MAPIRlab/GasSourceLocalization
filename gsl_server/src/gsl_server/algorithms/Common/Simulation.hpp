@@ -41,9 +41,9 @@ namespace GSL
         bool warmup = false;
         size_t timesteps = 200;
         float deltaTime = 0.1;
-        float noiseSTDev = 0.25;
+        float noiseSTDev = 0.15;
 
-        size_t minWarmupIterations = 0;
+        size_t minWarmupIterations = 100;
         size_t maxWarmupIterations = 500;
 
         Grid2D<Vector2> wind;
@@ -54,7 +54,7 @@ namespace GSL
         bool filamentIsOutside(const Filament& filament) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
 
-        void makeSimulationImage(const SimulationSource& source);
+        void makeSimulationImage();
         void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult") const;
     };
 } // namespace GSL

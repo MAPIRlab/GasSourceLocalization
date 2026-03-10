@@ -86,6 +86,16 @@ namespace GSL
         return graph;
     }
 
+    std::shared_ptr<Node> Graph::GetCorrespondingNode(Vector2 position)
+    {
+        for (auto node : nodes)
+        {
+            if (node->IsValidPoint(position))
+                return node;
+        }
+        return nullptr;
+    }
+
     void Graph::AddObservation(Vector2 position, Vector2 wind, float gasConcentration)
     {
         bool accepted = false;

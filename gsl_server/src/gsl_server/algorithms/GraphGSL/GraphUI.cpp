@@ -1,3 +1,4 @@
+#include "gsl_server/algorithms/Common/Simulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
@@ -16,6 +17,13 @@ namespace GSL
     GraphUI::GraphUI(GraphGSL* _gsl)
         : gsl(_gsl)
     {
+        clickedPointSub =
+            gsl->node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1,
+                                                                             [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
+                                                                             {
+                                                                                 selectedCoordinates.x = point->point.x;
+                                                                                 selectedCoordinates.y = point->point.y;
+                                                                             });
     }
 
     GraphUI::~GraphUI()
@@ -60,6 +68,24 @@ namespace GSL
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
             ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1., 10.);
             SelectNodes();
+
+            if (ImGui::Button("Simulate source"))
+            {
+                std::shared_ptr<Node> node = gsl->graph.GetCorrespondingNode(selectedCoordinates);
+                auto realNode = As<RealNode>(node);
+                if (node)
+                {
+                    Simulation sim
+                    {
+                        .source = SimulationSource(selectedCoordinates, realNode->GetOccupancy().metadata),
+                        .wind = realNode->GetWindMap()
+                    };
+
+                    sim.makeSimulationImage();
+                }
+                else
+                    GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
+            }
         }
         ImGui::End();
 
