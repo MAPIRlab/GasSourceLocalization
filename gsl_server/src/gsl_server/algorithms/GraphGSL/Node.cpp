@@ -50,6 +50,7 @@ namespace GSL
         gmrf.emplace(ToGMRFOcc(occupancy, gridMetadata), gmrf_parameters, false, false);
         gas.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);  // TODO what happens to the gas map on resize?
         wind.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
+        outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
         windDirty = true;
 
         if (observations.size() > 0)
@@ -87,6 +88,25 @@ namespace GSL
         return IsValidPoint(location);
     }
 
+    void RealNode::UpdateArcsMask()
+    {
+        outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
+        std::fill(outletMask.begin(), outletMask.end(), -1);
+
+        Grid2D<int> maskGrid(outletMask, occupancy, gridMetadata);
+        for (size_t i = 0; i < arcs.size(); i++)
+        {
+            const Arc& arc = arcs.at(i);
+            AABB2DInt aabbIdx{
+                gridMetadata.coordinatesToIndices(arc.aabb.min),
+                gridMetadata.coordinatesToIndices(arc.aabb.max)};
+                
+            for (Vector2Int indices : aabbIdx)
+                if (maskGrid.metadata.indicesInBounds(indices) && maskGrid.freeAt(indices))
+                    maskGrid.dataAt(indices) = i;
+        }
+    }
+
     const Grid2D<Vector2> RealNode::GetWindMap()
     {
         if (windDirty)
@@ -104,6 +124,11 @@ namespace GSL
             windDirty = false;
         }
         return AsGrid();
+    }
+
+    const Grid2D<int> RealNode::GetOutletsMask()
+    {
+        return Grid2D<int>(outletMask, occupancy, gridMetadata);
     }
 
     Grid2D<Vector2> RealNode::AsGrid()

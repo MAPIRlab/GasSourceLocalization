@@ -18,10 +18,27 @@ namespace GSL
         moveAlongPath(filament.position, newPos);
     }
 
-    bool Simulation::filamentIsOutside(const Filament& filament) const
+    bool Simulation::filamentIsOutside(const Filament& filament)
     {
         Vector2Int newIndices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
-        return !wind.metadata.indicesInBounds(newIndices);
+
+        if (!wind.metadata.indicesInBounds(newIndices))
+            return true;
+
+        // if we have manually defined outlets (other than the edges of the map)
+        if (outlets)
+        {
+            int outletNum = outlets->mask.dataAt(newIndices);
+
+            // keep track of how many filaments exit through each outlet
+            if (outletNum >= 0 && outlets->enabled.at(outletNum))
+            {
+                outlets->exitsCount.at(outletNum)++;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void Simulation::Run(std::vector<float>& hitMap)
@@ -42,6 +59,9 @@ namespace GSL
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
+        // reset the count of how many filaments took each outlet
+        std::fill(outlets->exitsCount.begin(), outlets->exitsCount.end(), 0);
+
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
         {
@@ -55,6 +75,7 @@ namespace GSL
                 {
                     activeFilamentVec->emplace_back();
                     activeFilamentVec->back().position = source.getPoint();
+                    totalEmittedFilaments++;
                 }
 
                 for (Filament& filament : *activeFilamentVec)
@@ -86,6 +107,7 @@ namespace GSL
             {
                 activeFilamentVec->emplace_back();
                 activeFilamentVec->back().position = source.getPoint();
+                totalEmittedFilaments++;
             }
 
             for (Filament& filament : *activeFilamentVec)
@@ -199,7 +221,7 @@ namespace GSL
         cv::Mat resized;
         cv::resize(mat, resized, cv::Size(mat.size[1] * 10, mat.size[0] * 10), 0, 0, cv::INTER_NEAREST);
         cv::imshow(name, resized);
-        while (cv::getWindowProperty(name, cv::WindowPropertyFlags::WND_PROP_VISIBLE) && cv::waitKey(30)==-1)
+        while (cv::getWindowProperty(name, cv::WindowPropertyFlags::WND_PROP_VISIBLE) && cv::waitKey(30) == -1)
             ;
         cv::destroyWindow(name);
     }

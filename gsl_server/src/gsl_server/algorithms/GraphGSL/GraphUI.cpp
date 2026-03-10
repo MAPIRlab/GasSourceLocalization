@@ -14,16 +14,16 @@
 namespace GSL
 {
 
-    GraphUI::GraphUI(GraphGSL* _gsl)
-        : gsl(_gsl)
+    GraphUI::GraphUI(GraphGSL* _gsl) : gsl(_gsl)
     {
         clickedPointSub =
-            gsl->node->create_subscription<geometry_msgs::msg::PointStamped>("/clicked_point", 1,
-                                                                             [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
-                                                                             {
-                                                                                 selectedCoordinates.x = point->point.x;
-                                                                                 selectedCoordinates.y = point->point.y;
-                                                                             });
+            gsl->node->create_subscription<geometry_msgs::msg::PointStamped>(
+                "/clicked_point", 1,
+                [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
+                {
+                    selectedCoordinates.x = point->point.x;
+                    selectedCoordinates.y = point->point.y;
+                });
     }
 
     GraphUI::~GraphUI()
@@ -39,10 +39,10 @@ namespace GSL
     void GraphUI::RenderImgui()
     {
         ImguiGL::Setup(
-            fmt::format("{}/resources/graph_imgui.ini", ament_index_cpp::get_package_share_directory("gsl_server")).c_str(),
-            "GraphGSL",
-            900,
-            600);
+            fmt::format("{}/resources/graph_imgui.ini",
+                        ament_index_cpp::get_package_share_directory("gsl_server"))
+                .c_str(),
+            "GraphGSL", 900, 600);
         ImPlot::CreateContext();
 
         rclcpp::Rate rate(30);
@@ -63,27 +63,48 @@ namespace GSL
 
     void GraphUI::CreateUI()
     {
-        ImGui::Begin("Main", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoCollapse);
+        ImGui::Begin("Main", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
+                         ImGuiWindowFlags_NoCollapse);
         {
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
-            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1., 10.);
+            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1.,
+                             10.);
             SelectNodes();
 
             if (ImGui::Button("Simulate source"))
             {
-                std::shared_ptr<Node> node = gsl->graph.GetCorrespondingNode(selectedCoordinates);
+                std::shared_ptr<Node> node =
+                    gsl->graph.GetCorrespondingNode(selectedCoordinates);
                 auto realNode = As<RealNode>(node);
                 if (node)
                 {
-                    Simulation sim
-                    {
-                        .source = SimulationSource(selectedCoordinates, realNode->GetOccupancy().metadata),
+                    Simulation sim{
+                        .source = SimulationSource(selectedCoordinates,
+                                                   realNode->GetOccupancy().metadata),
                         .minWarmupIterations = 1000,
                         .maxWarmupIterations = 2000,
-                        .wind = realNode->GetWindMap()
+                        .wind = realNode->GetWindMap(),
+                        .outlets = Outlets{
+                            .mask = realNode->GetOutletsMask(),
+                            .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
+                        },
                     };
 
-                    sim.makeSimulationImage();
+                    sim.outlets->exitsCount.resize(realNode->arcs.size(), 0);
+                    sim.outlets->enabled.resize(realNode->arcs.size(), true);
+
+                    for (size_t i = 0; i < realNode->arcs.size(); i++)
+                        if (realNode->arcs.at(i).to.lock()->id == "room_2")
+                            sim.outlets->enabled.at(i) = false;
+
+                    std::vector<float> hitMap(realNode->GetOccupancy().data.size(), 0.);
+                    sim.Run(hitMap);
+                    
+                    GSL_INFO("Emitted {} filaments in total", sim.totalEmittedFilaments);
+                    for (size_t i = 0; i < sim.outlets->exitsCount.size(); i++)
+                        GSL_INFO("{} -> {}", sim.outlets->exitsCount.at(i),
+                                 realNode->arcs.at(i).to.lock()->id);
                 }
                 else
                     GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
@@ -121,7 +142,8 @@ namespace GSL
                 gsl->graph.selectedForVisualization[node->id] = true;
 
             bool oldValue = gsl->graph.selectedForVisualization.at(node->id);
-            ImGui::Checkbox(node->id.c_str(), &gsl->graph.selectedForVisualization.at(node->id));
+            ImGui::Checkbox(node->id.c_str(),
+                            &gsl->graph.selectedForVisualization.at(node->id));
 
             if (gsl->graph.selectedForVisualization.at(node->id) != oldValue)
                 somethingChanged = true;

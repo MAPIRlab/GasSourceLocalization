@@ -81,6 +81,8 @@ namespace GSL
                     .aabb = aabb,
                     .spawnPoint = spawnPoint});
             }
+
+            thisNode->UpdateArcsMask();
         }
 
         return graph;

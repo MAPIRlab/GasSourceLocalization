@@ -35,6 +35,13 @@ namespace GSL
         Vector2 getPoint() const;
     };
 
+    struct Outlets
+    {
+        Grid2D<int> mask;
+        std::vector<size_t> exitsCount;
+        std::vector<bool> enabled;
+    };
+
     struct Simulation
     {
         SimulationSource source;
@@ -48,13 +55,16 @@ namespace GSL
 
         Grid2D<Vector2> wind;
         std::optional<std::reference_wrapper<VisibilityMap>> visibilityMap;
+        std::optional<Outlets> outlets;
 
         void Run(std::vector<float>& hitMap);
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
-        bool filamentIsOutside(const Filament& filament) const;
+        bool filamentIsOutside(const Filament& filament);
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
 
         void makeSimulationImage();
         void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult") const;
+
+        size_t totalEmittedFilaments = 0; // to be read after the simulation ends
     };
 } // namespace GSL

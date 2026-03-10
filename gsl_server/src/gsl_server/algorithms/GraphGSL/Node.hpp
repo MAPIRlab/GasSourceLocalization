@@ -21,6 +21,7 @@ namespace GSL
         virtual bool IsValidPoint(Vector2 location) = 0;
         virtual bool AddObservation(Vector2 location, Vector2 windVector) = 0;
         virtual bool AddObservation(Vector2 location, float gasObs) = 0;
+        virtual void UpdateArcsMask() {}
 
         std::vector<Arc> arcs;
         std::string id;
@@ -31,12 +32,15 @@ namespace GSL
     public:
         RealNode(Grid2D<Occupancy> grid, gmrfw::CGMRF_map::Parameters gmrf_params);
 
-        void SetOccupancy(Grid2D<Occupancy> grid);
         bool IsValidPoint(Vector2 location) override;
         bool AddObservation(Vector2 location, Vector2 windVector) override;
         bool AddObservation(Vector2 location, float gasObs) override;
+        void UpdateArcsMask() override;
+
+        void SetOccupancy(Grid2D<Occupancy> grid);
         const Grid2D<Occupancy> GetOccupancy();
         const Grid2D<Vector2> GetWindMap();
+        const Grid2D<int> GetOutletsMask();
         Vector2 GetPosition() override { return centroid; }
         bool isDirty() const { return windDirty; }
 
@@ -46,6 +50,7 @@ namespace GSL
 
         bool windDirty = true;
         std::vector<Occupancy> occupancy;
+        std::vector<int> outletMask;
         std::vector<Vector2> wind;
         std::vector<float> gas;
         std::optional<gmrfw::CGMRF_map> gmrf;
