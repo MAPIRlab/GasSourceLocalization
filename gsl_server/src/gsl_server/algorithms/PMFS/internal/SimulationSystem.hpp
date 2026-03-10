@@ -61,6 +61,5 @@ namespace GSL::PMFS_internal
         SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
 
         void blurHitMap(cv::Mat& asImage) const;
-        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult") const;
     };
 } // namespace GSL::PMFS_internal

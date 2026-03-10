@@ -283,48 +283,7 @@ namespace GSL::PMFS_internal
             .visibilityMap = *visibilityMap};
         sim.Run(hitMap);
 
-        displayImage(hitMap);
-    }
-
-    static void show(const cv::Mat& mat, std::string name)
-    {
-        cv::Mat resized;
-        cv::resize(mat, resized, cv::Size(mat.size[1] * 10, mat.size[0] * 10), 0, 0, cv::INTER_NEAREST);
-        cv::imshow(name, resized);
-        cv::waitKey();
-        cv::destroyAllWindows();
-    }
-
-    void SimulationSystem::displayImage(const std::vector<float>& hitMap, const std::string& imageName) const
-    {
-        cv::Mat asImage(hitMap);
-        asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
-        if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
-        {
-            blurHitMap(asImage);
-        }
-
-        cv::Mat inColor;
-        cv::cvtColor(asImage, inColor, cv::COLOR_GRAY2BGR);
-
-        for (int j = 0; j < measuredHitProb.metadata.dimensions.y; j++)
-        {
-            for (int i = 0; i < measuredHitProb.metadata.dimensions.x; i++)
-            {
-                if (!measuredHitProb.freeAt(i, j))
-                    inColor.at<cv::Vec3f>(j, i) = cv::Vec3f(0, 0, 1);
-            }
-        }
-
-#if 0
-        cv::flip(inColor, inColor, 0);
-        inColor *= 255;
-        cv::imwrite(fmt::format("{}.png", imageName), inColor);
-        GSL_WARN("hitMap image saved");
-#else
-        cv::flip(inColor, inColor, 0);
-        show(inColor, imageName);
-#endif
+        sim.displayImage(hitMap);
     }
 
     void SimulationSystem::blurHitMap(cv::Mat& asImage) const

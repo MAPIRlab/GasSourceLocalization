@@ -53,5 +53,8 @@ namespace GSL
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament) const;
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
+
+        void makeSimulationImage(const SimulationSource& source);
+        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult") const;
     };
 } // namespace GSL
