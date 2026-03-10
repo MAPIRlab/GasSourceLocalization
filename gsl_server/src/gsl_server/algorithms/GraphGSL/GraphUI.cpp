@@ -78,6 +78,8 @@ namespace GSL
                     Simulation sim
                     {
                         .source = SimulationSource(selectedCoordinates, realNode->GetOccupancy().metadata),
+                        .minWarmupIterations = 1000,
+                        .maxWarmupIterations = 2000,
                         .wind = realNode->GetWindMap()
                     };
 

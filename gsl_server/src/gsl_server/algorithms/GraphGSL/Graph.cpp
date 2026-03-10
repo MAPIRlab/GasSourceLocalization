@@ -193,7 +193,10 @@ namespace GSL
         size_t id = 0;
         for (auto node : nodes)
         {
-            Vector2 position = node->GetPosition() * nodeSeparationViz;
+            Vector2 position = node->GetPosition();
+            if (Is<RealNode>(node))
+                position += As<RealNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+
             ColorRGBA color;
             if (Is<RealNode>(node))
                 color = Utils::create_color(0, 1, 0);
@@ -216,7 +219,12 @@ namespace GSL
             // draw the arcs
             for (size_t i = 0; i < node->arcs.size(); i++)
             {
-                Vector2 otherPos = node->arcs.at(i).to.lock()->GetPosition() * nodeSeparationViz;
+                auto otherNode = node->arcs.at(i).to.lock();
+                Vector2 otherPos = otherNode->GetPosition();
+
+                if (Is<RealNode>(otherNode))
+                    otherPos += As<RealNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::ARROW;
