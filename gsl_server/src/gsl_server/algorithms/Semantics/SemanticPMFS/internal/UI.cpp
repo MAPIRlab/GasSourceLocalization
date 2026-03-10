@@ -12,7 +12,7 @@
 #include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
+#include <gsl_server/algorithms/PMFS/internal/SimulationSystem.hpp>
 
 using namespace GSL::PMFS_internal;
 

@@ -112,6 +112,8 @@ namespace GSL
         {
             return occupancyAt(indices) == Occupancy::Free;
         }
+
+        Grid2D<Occupancy> AsOccupancy() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
     };
 
     // unlike a Grid, a Map is an owning struct

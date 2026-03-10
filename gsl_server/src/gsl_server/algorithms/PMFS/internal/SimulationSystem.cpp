@@ -1,10 +1,8 @@
-#include "gsl_server/algorithms/PMFS/internal/HitProbability.hpp"
-#include <cstddef>
+#include "SimulationSystem.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/Time.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
 #include <gsl_server/core/Logging.hpp>
 
 #include <opencv2/core/hal/interface.h>
@@ -21,9 +19,6 @@ namespace GSL::PMFS_internal
     namespace NQA = Utils::NQA;
     using HashSet = std::unordered_set<Vector2Int>;
 
-    // We have a long list of pre-calculated random values for Speeeeeeeeeeeeeeeeed
-    static thread_local Utils::PrecalculatedGaussian<2500> gaussian;
-
     static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
                                               double& variance)
     {
@@ -36,7 +31,7 @@ namespace GSL::PMFS_internal
     }
 
     // create the occupancy Quadtree
-    void Simulations::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
+    void SimulationSystem::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
     {
         ZoneScoped;
         quadtree = std::make_unique<Utils::NQA::Quadtree>(occupancyMap);
@@ -79,7 +74,7 @@ namespace GSL::PMFS_internal
         }
     }
 
-    void Simulations::updateSourceProbability(float refineFraction)
+    void SimulationSystem::updateSourceProbability(float refineFraction)
     {
         ZoneScoped;
         GSL_INFO_COLOR(fmt::terminal_color::yellow, "Started simulations. Might take a while!");
@@ -196,7 +191,7 @@ namespace GSL::PMFS_internal
         GSL_INFO("Time ellapsed in simulation = {} s", stopwatch.ellapsed());
     }
 
-    Simulations::SimulationResult Simulations::runSimulation(std::vector<LeafScore>& scores, size_t index)
+    SimulationSystem::SimulationResult SimulationSystem::runSimulation(std::vector<LeafScore>& scores, size_t index)
     {
         SimulationResult result{.valid = false};
         NQA::Node* node = scores[index].leaf;
@@ -206,9 +201,15 @@ namespace GSL::PMFS_internal
         result.valid = true;
         result.hitMap.resize(measuredHitProb.data.size(), 0.0);
 
-        SimulationSource source(node, measuredHitProb.metadata);
-        simulateSourceInPosition(source, result.hitMap, true, settings.iterationsToRecord, settings.deltaTime,
-                                 settings.noiseSTDev);
+        Simulation sim{
+            .source = SimulationSource(node, measuredHitProb.metadata),
+            .warmup = true,
+            .timesteps = settings.iterationsToRecord,
+            .deltaTime = (float)settings.deltaTime,
+            .noiseSTDev = (float)settings.noiseSTDev,
+            .wind = wind,
+            .visibilityMap = *visibilityMap};
+        sim.Run(result.hitMap);
 
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
         {
@@ -228,7 +229,7 @@ namespace GSL::PMFS_internal
         return result;
     }
 
-    long double Simulations::sourceProbFromMaps(const Grid2D<HitProbability>& measuredHitProb, const std::vector<float>& hitMap) const
+    long double SimulationSystem::sourceProbFromMaps(const Grid2D<HitProbability>& measuredHitProb, const std::vector<float>& hitMap) const
     {
         ZoneScoped;
         long double total = 1;
@@ -245,7 +246,7 @@ namespace GSL::PMFS_internal
         return total;
     }
 
-    double Simulations::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
+    double SimulationSystem::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
     {
 #define FREQUENCY_DISTRIBUTION_METHOD 0
 #if FREQUENCY_DISTRIBUTION_METHOD
@@ -263,199 +264,25 @@ namespace GSL::PMFS_internal
 #endif
     }
 
-    double Simulations::probabilitySingleFrequency(double measured, double simulated) const
+    double SimulationSystem::probabilitySingleFrequency(double measured, double simulated) const
     {
         return 1 - std::abs(measured - simulated) * settings.sourceDiscriminationPower;
     }
 
-    void Simulations::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
-    {
-        Vector2 velocity = wind.dataAt(indices.x, indices.y) + Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
-
-        Vector2 newPos = filament.position + deltaTime * velocity;
-        moveAlongPath(filament.position, newPos);
-    }
-
-    bool Simulations::filamentIsOutside(const Filament& filament) const
-    {
-        Vector2Int newIndices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
-        return !measuredHitProb.metadata.indicesInBounds(newIndices);
-    }
-
-    void Simulations::simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup,
-                                               int timesteps, float deltaTime, float noiseSTDev) const
-    {
-        constexpr int numFilamentsIteration = 5;
-        size_t max_filaments = settings.maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration;
-
-        // To avoid having to delete filaments from the middle of the vector, which is quite slow, we will ping-pong the active filaments between two vectors
-        // at the start of any iteration, one vector (active) will contain all the released filaments and the other one will be empty
-        // after each filament has been moved, if it is still active, it will be copied to the other vector
-        // then, the active vector changes and the old one is cleared
-        std::vector<Filament> filaments1;
-        std::vector<Filament> filaments2;
-        filaments1.reserve(max_filaments);
-        filaments2.reserve(max_filaments);
-        std::vector<Filament>* activeFilamentVec = &filaments1;
-        std::vector<Filament>* otherFilamentVec = &filaments2;
-
-        std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
-
-        // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
-        // environment through an outlet, or a maximum number of steps
-        {
-            ZoneScopedN("Warmup");
-
-            bool stable = false;
-            int iterationCount = 0;
-            while (iterationCount < settings.minWarmupIterations || (!stable && iterationCount < settings.maxWarmupIterations))
-            {
-                for (size_t i = 0; i < numFilamentsIteration; i++)
-                {
-                    activeFilamentVec->emplace_back();
-                    activeFilamentVec->back().position = source.getPoint();
-                }
-
-                for (Filament& filament : *activeFilamentVec)
-                {
-                    auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
-
-                    // move active filaments
-                    moveFilament(filament, indices, deltaTime * 2, noiseSTDev);
-
-                    // remove filaments
-                    if (filamentIsOutside(filament))
-                        stable = true;
-                    else
-                        otherFilamentVec->push_back(filament);
-                }
-                iterationCount++;
-
-                // "other" now contains the list of all the filaments that are still available, so swap the vectors and remove the old list
-                activeFilamentVec->clear();
-                std::swap(activeFilamentVec, otherFilamentVec);
-            }
-        }
-
-        ZoneScopedN("Recording");
-        // now, we do the thing
-        for (int t = 1; t < timesteps + 1; t++)
-        {
-            for (int i = 0; i < numFilamentsIteration; i++)
-            {
-                activeFilamentVec->emplace_back();
-                activeFilamentVec->back().position = source.getPoint();
-            }
-
-            for (Filament& filament : *activeFilamentVec)
-            {
-                // update map
-                auto indices = measuredHitProb.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
-                size_t index = measuredHitProb.metadata.indexOf(indices);
-                GSL_ASSERT(measuredHitProb.metadata.indicesInBounds(indices));
-                // mark as updated so it doesn't count multiple filaments in the same timestep
-                if (updated[index] < t)
-                {
-                    hitMap[index]++;
-                    updated[index] = t;
-                }
-
-                // move active filaments
-                moveFilament(filament, indices, deltaTime, noiseSTDev);
-
-                // remove filaments
-                if (!filamentIsOutside(filament))
-                    otherFilamentVec->push_back(filament);
-            }
-            activeFilamentVec->clear();
-            std::swap(activeFilamentVec, otherFilamentVec);
-        }
-
-        // convert the total hit count into relative frequency
-        for (int i = 0; i < measuredHitProb.data.size(); i++)
-        {
-            if (measuredHitProb.occupancy[i] == Occupancy::Free)
-                hitMap[i] = hitMap[i] / timesteps;
-        }
-    }
-
-    Vector2 SimulationSource::getPoint() const
-    {
-        if (mode == Mode::Point)
-            return point;
-
-        Vector2 start = metadata.indicesToCoordinates(nqaNode->origin.x, nqaNode->origin.y, false);
-        Vector2 end = metadata.indicesToCoordinates(nqaNode->origin.x + nqaNode->size.x, nqaNode->origin.y + nqaNode->size.y, false);
-
-        Vector2 randP(Utils::uniformRandomF(start.x, end.x), Utils::uniformRandomF(start.y, end.y));
-        GSL_ASSERT(randP.x >= start.x && randP.x < end.x && randP.y >= start.y && randP.y < end.y);
-        return randP;
-    }
-
-    bool Simulations::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
-    {
-        Vector2Int indexEnd = measuredHitProb.metadata.coordinatesToIndices(end.x, end.y);
-        Vector2Int indexOrigin = measuredHitProb.metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
-
-        if (!measuredHitProb.freeAt(indexOrigin.x, indexOrigin.y))
-        {
-            return false;
-        }
-
-        // try to avoid doing the raycast by looking at the pre-computed visibilityMap
-        if (indexOrigin == indexEnd || (measuredHitProb.metadata.indicesInBounds(indexEnd) && measuredHitProb.freeAt(indexEnd.x, indexEnd.y) &&
-                                        visibilityMap->isVisible(indexOrigin, indexEnd) == Visibility::Visible))
-        {
-            currentPosition = end;
-            return true;
-        }
-
-#define USE_DDA 0
-#if USE_DDA
-        Vector2 movement = end - currentPosition;
-        DDA::_2D::RayCastInfo raycastInfo =
-            DDA::_2D::castRay<GSL::Occupancy>(currentPosition, movement, vmath::length(movement),
-                                              DDA::_2D::Map<GSL::Occupancy>(measuredHitProb.occupancy, measuredHitProb.metadata.origin,
-                                                                            measuredHitProb.metadata.cellSize, measuredHitProb.metadata.dimensions),
-                                              [](const GSL::Occupancy& occ)
-                                              {
-                                                  return occ == GSL::Occupancy::Free;
-                                              });
-        // This is a completely hacky arbitrary value to try and stop filaments from getting stuck right next to a wall
-        // ideally, we should implement a "deflection" instead so they move along the wall a bit rather than stopping dead
-        constexpr float wallStoppingProportion = 0.7;
-        currentPosition += movement * raycastInfo.distance * wallStoppingProportion;
-
-        return true;
-#else
-        const auto& metadata = measuredHitProb.metadata;
-        bool pathIsFree = true;
-
-        Vector2 vector = end - currentPosition;
-        float travelDistance = vmath::length(vector);
-        float stepSize = std::min(travelDistance, metadata.cellSize * 0.5f);
-        Vector2 increment = vmath::normalized(vector) * stepSize;
-        int steps = travelDistance / stepSize;
-
-        int index = 0;
-        while (index < steps && pathIsFree)
-        {
-            currentPosition += increment;
-            index++;
-            Vector2Int pair = metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
-            pathIsFree = !metadata.indicesInBounds(pair) || measuredHitProb.freeAt(pair.x, pair.y);
-            if (!pathIsFree)
-                currentPosition -= increment;
-        }
-        return pathIsFree;
-#endif
-    }
-
-    void Simulations::makeSimulationImage(const SimulationSource& source)
+    void SimulationSystem::makeSimulationImage(const SimulationSource& source)
     {
         std::vector<float> hitMap(measuredHitProb.data.size(), 0.0);
-        simulateSourceInPosition(source, hitMap, true, settings.iterationsToRecord, settings.deltaTime,
-                                 settings.noiseSTDev);
+
+        Simulation sim{
+            .source = source,
+            .warmup = true,
+            .timesteps = settings.iterationsToRecord,
+            .deltaTime = (float)settings.deltaTime,
+            .noiseSTDev = (float)settings.noiseSTDev,
+            .wind = wind,
+            .visibilityMap = *visibilityMap};
+        sim.Run(hitMap);
+
         displayImage(hitMap);
     }
 
@@ -468,7 +295,7 @@ namespace GSL::PMFS_internal
         cv::destroyAllWindows();
     }
 
-    void Simulations::displayImage(const std::vector<float>& hitMap, const std::string& imageName) const
+    void SimulationSystem::displayImage(const std::vector<float>& hitMap, const std::string& imageName) const
     {
         cv::Mat asImage(hitMap);
         asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
@@ -500,7 +327,7 @@ namespace GSL::PMFS_internal
 #endif
     }
 
-    void Simulations::blurHitMap(cv::Mat& asImage) const
+    void SimulationSystem::blurHitMap(cv::Mat& asImage) const
     {
         cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
         // divide by the blurred mask to correct the edges always getting lower

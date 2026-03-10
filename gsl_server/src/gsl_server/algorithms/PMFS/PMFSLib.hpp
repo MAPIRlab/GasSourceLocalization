@@ -5,8 +5,8 @@
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/PublishersAndSubscribers.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
-#include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
+#include <gsl_server/algorithms/PMFS/internal/SimulationSystem.hpp>
+#include <gsl_server/algorithms/Common/VisibilityMap.hpp>
 #include <gsl_server/core/ConditionalMacros.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 
@@ -33,7 +33,7 @@ namespace GSL
         static void InitMetadata(Grid2DMetadata& metadata, const OccupancyGrid& map, int scale);
 
         static void InitializeMap(Grid2D<HitProbability> grid,
-                                  PMFS_internal::Simulations& simulations,
+                                  PMFS_internal::SimulationSystem& simulations,
                                   VisibilityMap& visibilityMap,
                                   Vector2 startingPosition);
 

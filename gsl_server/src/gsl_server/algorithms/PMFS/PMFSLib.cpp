@@ -197,7 +197,7 @@ namespace GSL
     }
 
     void PMFSLib::InitializeMap(Grid2D<HitProbability> grid,
-                                PMFS_internal::Simulations& simulations,
+                                PMFS_internal::SimulationSystem& simulations,
                                 VisibilityMap& visibilityMap,
                                 Vector2 startingPosition)
     {
@@ -215,39 +215,8 @@ namespace GSL
                 occupancyMap[i][j] = grid.freeAt(i, j) ? 1 : 0;
 
         // precomputed visibility map
-        {
-            for (int i = 0; i < grid.metadata.dimensions.x; i++)
-            {
-                for (int j = 0; j < grid.metadata.dimensions.y; j++)
-                {
-                    Vector2Int ij(i, j);
-                    if (!grid.freeAt(i, j))
-                    {
-                        visibilityMap.emplace(ij, {});
-                        continue;
-                    }
-                    int oR = std::max(0, j - (int)visibilityMap.range);
-                    int fR = std::min((int)grid.metadata.dimensions.y - 1, j + (int)visibilityMap.range);
-                    int oC = std::max(0, i - (int)visibilityMap.range);
-                    int fC = std::min((int)grid.metadata.dimensions.x - 1, i + (int)visibilityMap.range);
-
-                    std::vector<Vector2Int> visibleCells;
-                    for (int row = oR; row <= fR; row++)
-                    {
-                        for (int col = oC; col <= fC; col++)
-                        {
-                            Vector2Int thisCell(col, row);
-                            Vector2 start = grid.metadata.indicesToCoordinates(ij);
-                            Vector2 end = grid.metadata.indicesToCoordinates(thisCell);
-                            if (thisCell == ij || GridUtils::PathFree(grid.metadata, grid.occupancy, start, end))
-                                visibleCells.push_back(thisCell);
-                        }
-                    }
-                    visibilityMap.emplace(ij, visibleCells);
-                }
-            }
-            GSL_TRACE("Created visibility map");
-        }
+        visibilityMap.Populate(grid.AsOccupancy());
+        GSL_TRACE("Created visibility map");
 
         simulations.initializeMap(occupancyMap);
         simulations.visibilityMap = &visibilityMap;

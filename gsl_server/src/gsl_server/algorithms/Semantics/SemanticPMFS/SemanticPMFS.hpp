@@ -5,7 +5,7 @@
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
+#include <gsl_server/algorithms/PMFS/internal/SimulationSystem.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/MovingStateSemanticPMFS.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSPubs.hpp>
 #include <gsl_server/algorithms/Semantics/SemanticPMFS/SemanticPMFSSettings.hpp>
@@ -63,7 +63,7 @@ namespace GSL
         std::vector<Occupancy> simulationOccupancy;
         std::vector<Vector2> estimatedWindVectors;
 
-        PMFS_internal::Simulations simulations;
+        PMFS_internal::SimulationSystem simulations;
 
         //-------------Data-------------
         SemanticPMFS_internal::Settings settings;

@@ -4,7 +4,7 @@
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
+#include <gsl_server/algorithms/PMFS/internal/SimulationSystem.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
 #include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
 #include <imgui_gl/imgui_gl.h>

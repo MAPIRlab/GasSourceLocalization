@@ -5,9 +5,9 @@
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
 #include <gsl_server/algorithms/PMFS/internal/PublishersAndSubscribers.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbKernel.hpp>
-#include <gsl_server/algorithms/PMFS/internal/Simulations.hpp>
+#include <gsl_server/algorithms/PMFS/internal/SimulationSystem.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
-#include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
+#include <gsl_server/algorithms/Common/VisibilityMap.hpp>
 #include <gsl_server/algorithms/PMFS/MovingStatePMFS.hpp>
 
 #include <gsl_server/core/ConditionalMacros.hpp>
@@ -17,8 +17,7 @@ namespace GSL
     class PMFS : public Algorithm
     {
         friend class MovingStatePMFS;
-        friend class PMFS_internal::Simulations;
-        friend struct PMFS_internal::SimulationSource;
+        friend class PMFS_internal::SimulationSystem;
 #ifdef USE_GUI
         friend class PMFS_internal::UI;
 #endif
@@ -54,7 +53,7 @@ namespace GSL
         std::vector<Occupancy> occupancy;
         std::vector<Vector2> estimatedWindVectors;
 
-        PMFS_internal::Simulations simulations;
+        PMFS_internal::SimulationSystem simulations;
 
         //-------------Data-------------
         PMFS_internal::Settings settings;

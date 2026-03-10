@@ -34,9 +34,9 @@ namespace GSL::PMFS_internal
         double sourceDiscriminationPower = 0.2; // higher values here will lead to a larger difference in the estimated source probability from one cell to another
         double refineFraction = 0.25;           // proportion of the cells that will be subdivided for the finer simulation
 
-        int maxWarmupIterations = 500;
-        int minWarmupIterations = 0;
-        int iterationsToRecord = 100;
+        size_t maxWarmupIterations = 500;
+        size_t minWarmupIterations = 0;
+        size_t iterationsToRecord = 100;
         double deltaTime = 0.1;
         double noiseSTDev = 0.2;
 

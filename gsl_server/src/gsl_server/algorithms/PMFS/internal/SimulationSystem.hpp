@@ -1,8 +1,9 @@
 #pragma once
+#include <gsl_server/algorithms/Common/Simulation.hpp>
 #include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
-#include <gsl_server/algorithms/PMFS/internal/VisibilityMap.hpp>
+#include <gsl_server/algorithms/Common/VisibilityMap.hpp>
 #include <opencv2/core.hpp>
 
 namespace GSL
@@ -12,40 +13,10 @@ namespace GSL
 
 namespace GSL::PMFS_internal
 {
-
-    struct Filament
-    {
-        Vector2 position;
-    };
-
-    struct SimulationSource
-    {
-        enum Mode
-        {
-            Quadtree,
-            Point
-        };
-
-        const Mode mode;
-        const Utils::NQA::Node* nqaNode;
-        const Vector2 point;
-        const Grid2DMetadata& metadata;
-
-        SimulationSource(const Vector2& _point, const Grid2DMetadata& _metadata)
-            : mode(Mode::Point), nqaNode(nullptr), point(_point), metadata(_metadata)
-        {}
-        SimulationSource(const Utils::NQA::Node* _node, const Grid2DMetadata& _metadata)
-            : mode(Mode::Quadtree), nqaNode(_node), point(0, 0), metadata(_metadata)
-        {}
-
-        Vector2 getPoint() const;
-    };
-
-    class Simulations
+    class SimulationSystem
     {
         using HashSet = std::unordered_set<Vector2Int>;
 
-    public:
         struct SimulationResult
         {
             bool valid = false;
@@ -54,8 +25,8 @@ namespace GSL::PMFS_internal
         };
 
     public:
-        Simulations(Grid2D<HitProbability> _measuredHitProb, Grid2D<double> _sourceProb, Grid2D<Vector2> _wind,
-                    const PMFS_internal::SimulationSettings& _settings)
+        SimulationSystem(Grid2D<HitProbability> _measuredHitProb, Grid2D<double> _sourceProb, Grid2D<Vector2> _wind,
+                         const PMFS_internal::SimulationSettings& _settings)
             : settings(_settings), measuredHitProb(_measuredHitProb), sourceProb(_sourceProb), wind(_wind)
         {}
 
@@ -74,7 +45,6 @@ namespace GSL::PMFS_internal
         VisibilityMap* visibilityMap;
 
     protected:
-
         struct LeafScore
         {
             long double score;
@@ -89,11 +59,6 @@ namespace GSL::PMFS_internal
         cv::Mat freeSpaceMask;
 
         SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
-        void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
-        void simulateSourceInPosition(const SimulationSource& source, std::vector<float>& hitMap, bool warmup,
-                                      int timesteps, float deltaTime, float noiseSTDev) const;
-        bool filamentIsOutside(const Filament& filament) const;
-        bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
 
         void blurHitMap(cv::Mat& asImage) const;
         void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult") const;

@@ -1,7 +1,9 @@
 #pragma once
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
+#include "gsl_server/algorithms/Common/Occupancy.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
-#include <gsl_server/core/Profiling.hpp>
 #include <gsl_server/core/Logging.hpp>
+#include <gsl_server/core/Profiling.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
 
@@ -106,6 +108,9 @@ namespace GSL
             return Range<std::vector<Vector2Int>::const_iterator>::make_range(m_map.begin(), beginIndex, beginIndex + usedSize);
         }
 
+        void Populate(Grid2D<Occupancy> grid);
+        static VisibilityMap Create(Grid2D<Occupancy> grid, size_t range);
+
     private:
         const size_t bucketSize;
         const size_t m_width;
@@ -130,4 +135,45 @@ namespace GSL
             return false;
         }
     };
+
+    inline void VisibilityMap::Populate(Grid2D<Occupancy> grid)
+    {
+        for (int i = 0; i < grid.metadata.dimensions.x; i++)
+        {
+            for (int j = 0; j < grid.metadata.dimensions.y; j++)
+            {
+                Vector2Int ij(i, j);
+                if (!grid.freeAt(i, j))
+                {
+                    emplace(ij, {});
+                    continue;
+                }
+                int oR = std::max(0, j - (int)range);
+                int fR = std::min((int)grid.metadata.dimensions.y - 1, j + (int)range);
+                int oC = std::max(0, i - (int)range);
+                int fC = std::min((int)grid.metadata.dimensions.x - 1, i + (int)range);
+
+                std::vector<Vector2Int> visibleCells;
+                for (int row = oR; row <= fR; row++)
+                {
+                    for (int col = oC; col <= fC; col++)
+                    {
+                        Vector2Int thisCell(col, row);
+                        Vector2 start = grid.metadata.indicesToCoordinates(ij);
+                        Vector2 end = grid.metadata.indicesToCoordinates(thisCell);
+                        if (thisCell == ij || GridUtils::PathFree(grid.metadata, grid.occupancy, start, end))
+                            visibleCells.push_back(thisCell);
+                    }
+                }
+                emplace(ij, visibleCells);
+            }
+        }
+    }
+
+    inline VisibilityMap VisibilityMap::Create(Grid2D<Occupancy> grid, size_t range)
+    {
+        VisibilityMap visibilityMap(grid.metadata.dimensions.x, grid.metadata.dimensions.y, range);
+        visibilityMap.Populate(grid);
+        return visibilityMap;
+    }
 } // namespace GSL
