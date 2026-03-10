@@ -71,3 +71,10 @@ bool Is(const std::shared_ptr<Baseclass>& p)
 {
     return dynamic_cast<Subclass*>(p.get()) != nullptr;
 }
+
+template <typename Subclass, typename Baseclass>
+    requires(std::derived_from<Subclass, Baseclass>)
+bool Is(const std::weak_ptr<Baseclass>& p)
+{
+    return Is<Subclass>(p.lock());
+}

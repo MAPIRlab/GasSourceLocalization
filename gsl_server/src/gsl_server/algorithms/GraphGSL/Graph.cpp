@@ -106,8 +106,11 @@ namespace GSL
     {
         // to make sure that the observations in one of the nodes also affect the rest of the maps, we can add "virtual" observations to all the neighbouring nodes
         // these observations will have the value of whatever wind vector was predicted by GMRF at the connecting doorway
-        // then, we do another round of updates for all the nodes which just got a virtual observation added
-        // TODO do we want to (potentially) do more updates? with only 2, an observation cannot affect a node that is not its immediate neighbour
+
+        std::set<std::string> closedNodes;
+        // would it make a difference to make this a priority queue so that we update nodes in order, based on how close they are to the measurements?
+        std::queue<std::shared_ptr<RealNode>> dirtyNodes;
+
         for (auto node : nodes)
         {
             if (!Is<RealNode>(node))
@@ -116,34 +119,50 @@ namespace GSL
             auto realNode = As<RealNode>(node);
             if (realNode->isDirty())
             {
-                Grid2D<Vector2> windMap = realNode->GetWindMap();
-
-                // add a virtual observation at spawnPoint which is equal to the average wind vector inside the doorway area
-                for (auto arc : realNode->arcs)
-                {
-                    Grid2DMetadata metadata = realNode->GetOccupancy().metadata;
-                    AABB2DInt aabbIdx{
-                        metadata.coordinatesToIndices(arc.aabb.min),
-                        metadata.coordinatesToIndices(arc.aabb.max)};
-
-                    Vector2 windVec;
-                    size_t count = 0;
-                    for (Vector2Int indices : aabbIdx)
-                        if (metadata.indicesInBounds(indices) && realNode->GetOccupancy().freeAt(indices))
-                        {
-                            windVec += windMap.dataAt(indices);
-                            count++;
-                        }
-
-                    if (count > 0)
-                    {
-                        windVec = windVec / count;
-                        arc.to.lock()->AddObservation(arc.spawnPoint, windVec);
-                    }
-                    else
-                        GSL_WARN("0 free cells in the connection between {} and {}! Probably not right!", node->id, arc.to.lock()->id);
-                }
+                dirtyNodes.push(realNode);
+                // closedNodes.insert(realNode->id); //allow virtual measurements for nodes that also contain real ones?
             }
+        }
+
+        while (!dirtyNodes.empty())
+        {
+            auto realNode = dirtyNodes.front();
+            dirtyNodes.pop();
+
+            Grid2D<Vector2> windMap = realNode->GetWindMap();
+
+            // add a virtual observation at spawnPoint which is equal to the average wind vector inside the doorway area
+            for (auto arc : realNode->arcs)
+            {
+                if (closedNodes.contains(arc.to.lock()->id) || !Is<RealNode>(arc.to))
+                    continue;
+
+                Grid2DMetadata metadata = realNode->GetOccupancy().metadata;
+                AABB2DInt aabbIdx{
+                    metadata.coordinatesToIndices(arc.aabb.min),
+                    metadata.coordinatesToIndices(arc.aabb.max)};
+
+                Vector2 windVec;
+                size_t count = 0;
+                for (Vector2Int indices : aabbIdx)
+                    if (metadata.indicesInBounds(indices) && realNode->GetOccupancy().freeAt(indices))
+                    {
+                        windVec += windMap.dataAt(indices);
+                        count++;
+                    }
+
+                if (count > 0)
+                {
+                    windVec = windVec / count;
+                    auto otherNode = As<RealNode>(arc.to.lock());
+                    otherNode->AddObservation(arc.spawnPoint, windVec); // TODO lower confidence for these virtual measurements?
+                    dirtyNodes.push(otherNode);
+                }
+                else
+                    GSL_WARN("0 free cells in the connection between {} and {}! Probably not right!", realNode->id, arc.to.lock()->id);
+            }
+
+            closedNodes.insert(realNode->id);
         }
 
         // second round
