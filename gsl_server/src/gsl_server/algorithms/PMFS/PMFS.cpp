@@ -26,11 +26,6 @@ namespace GSL
         Algorithm::Initialize();
         PMFSLib::InitializePublishers(pubs, node);
 
-#if USE_GUI
-        if (!settings.visualization.headless)
-            ui.run();
-#endif
-
         iterationsCounter = 0;
 
         waitForGasState = std::make_unique<WaitForGasState>(this);
@@ -44,6 +39,11 @@ namespace GSL
         movingState = std::make_unique<MovingStatePMFS>(this);
 #endif
         stateMachine.forceSetState(waitForMapState.get());
+
+#if USE_GUI
+        if (!settings.visualization.headless)
+            ui.run();
+#endif
     }
 
     void PMFS::declareParameters()

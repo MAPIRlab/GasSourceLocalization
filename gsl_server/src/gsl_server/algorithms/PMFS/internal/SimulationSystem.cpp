@@ -57,21 +57,6 @@ namespace GSL::PMFS_internal
             }
         }
         sourceProbInternal.resize(sourceProb.data.size(), 0.0);
-
-        // we want to have the occupancy mask as a cv image so we can correct the blur later
-        freeSpaceMask = cv::Mat(
-            cv::Size(measuredHitProb.metadata.dimensions.x, measuredHitProb.metadata.dimensions.y),
-            CV_32F,
-            cv::Scalar(0, 0, 0));
-
-        for (int j = 0; j < measuredHitProb.metadata.dimensions.y; j++)
-        {
-            for (int i = 0; i < measuredHitProb.metadata.dimensions.x; i++)
-            {
-                if (measuredHitProb.freeAt(i, j))
-                    freeSpaceMask.at<float>(j, i) = 1;
-            }
-        }
     }
 
     void SimulationSystem::updateSourceProbability(float refineFraction)
@@ -203,8 +188,8 @@ namespace GSL::PMFS_internal
 
         Simulation sim{
             .source = SimulationSource(AABB2D(
-                                           measuredHitProb.metadata.indicesToCoordinates(node->origin),
-                                           measuredHitProb.metadata.indicesToCoordinates(node->origin + node->size))),
+                measuredHitProb.metadata.indicesToCoordinates(node->origin, false),
+                measuredHitProb.metadata.indicesToCoordinates(node->origin + node->size, false))),
             .warmup = true,
             .timesteps = settings.iterationsToRecord,
             .deltaTime = (float)settings.deltaTime,
@@ -215,9 +200,9 @@ namespace GSL::PMFS_internal
 
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
         {
-            cv::Mat asImage(result.hitMap);
+            cv::Mat asImage(result.hitMap, false); // copyData=false, so changes to the matrix will affect the hitMap vector
             asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
-            blurHitMap(asImage);
+            Simulation::blurHitMap(asImage, Vector2(settings.blurSigmaX, settings.blurSigmaY), wind.AsOccupancy(), blurredMask);
         }
 
         result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
@@ -287,19 +272,4 @@ namespace GSL::PMFS_internal
 
         sim.displayImage(hitMap);
     }
-
-    void SimulationSystem::blurHitMap(cv::Mat& asImage) const
-    {
-        cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
-        // divide by the blurred mask to correct the edges always getting lower
-        // TODO measure performance of doing this repeatedly. Is it worth it to pre-compute and only redo it if the blur sigma has changed?
-        cv::Mat blurredMask;
-        cv::GaussianBlur(freeSpaceMask, blurredMask, cv::Size(0, 0), settings.blurSigmaX, settings.blurSigmaY);
-
-        for (int i = 0; i < measuredHitProb.metadata.dimensions.y; i++)
-            for (int j = 0; j < measuredHitProb.metadata.dimensions.x; j++)
-                if (blurredMask.at<float>(i, j) != 0)
-                    asImage.at<float>(i, j) = Utils::clamp(asImage.at<float>(i, j) / blurredMask.at<float>(i, j), 0, 1);
-    }
-
 } // namespace GSL::PMFS_internal

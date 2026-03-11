@@ -2,6 +2,7 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/VisibilityMap.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include <opencv2/core/mat.hpp>
 #include <optional>
 
 namespace GSL
@@ -62,6 +63,7 @@ namespace GSL
 
         void makeSimulationImage();
         void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult", float raisePower=1) const;
+        static void blurHitMap(cv::Mat& asImage, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask);
 
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
     };

@@ -48,8 +48,11 @@ namespace GSL::PMFS_internal
         while (rclcpp::ok() && !pmfs->HasEnded())
         {
             ImguiGL::StartFrame();
-            createUI();
-            createPlots();
+            if (pmfs->stateMachine.getCurrentState() != pmfs->waitForMapState.get())
+            {
+                createUI();
+                createPlots();
+            }
 
             ImguiGL::Render();
             rate.sleep();
@@ -100,8 +103,8 @@ namespace GSL::PMFS_internal
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else
-                    pmfs->simulations.makeSimulationImage(SimulationSource(AABB2D(pmfs->gridMetadata.indicesToCoordinates(leaf->origin),
-                                                                                  pmfs->gridMetadata.indicesToCoordinates(leaf->origin + leaf->size))));
+                    pmfs->simulations.makeSimulationImage(SimulationSource(AABB2D(pmfs->gridMetadata.indicesToCoordinates(leaf->origin, false),
+                                                                                  pmfs->gridMetadata.indicesToCoordinates(leaf->origin + leaf->size, false))));
             }
             else if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
@@ -202,7 +205,10 @@ namespace GSL::PMFS_internal
 
         ImGui::Begin("Current State");
         {
-            pmfs->stateMachine.getCurrentState()->RenderUI();
+            if (pmfs->stateMachine.getCurrentState())
+                pmfs->stateMachine.getCurrentState()->RenderUI();
+            else
+                ImGui::Text("Null state");
         }
         ImGui::End();
     }

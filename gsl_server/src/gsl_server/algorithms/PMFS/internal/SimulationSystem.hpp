@@ -56,10 +56,8 @@ namespace GSL::PMFS_internal
         Grid2D<HitProbability> measuredHitProb;
         Grid2D<double> sourceProb;
         Grid2D<Vector2> wind;
-        cv::Mat freeSpaceMask;
+        std::optional<cv::Mat> blurredMask; // used for smoothing out the results of the filament simulation
 
         SimulationResult runSimulation(std::vector<LeafScore>& nodes, size_t index);
-
-        void blurHitMap(cv::Mat& asImage) const;
     };
 } // namespace GSL::PMFS_internal

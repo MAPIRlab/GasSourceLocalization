@@ -60,7 +60,8 @@ namespace GSL
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
         // reset the count of how many filaments took each outlet
-        std::fill(outlets->exitsCount.begin(), outlets->exitsCount.end(), 0);
+        if (outlets)
+            std::fill(outlets->exitsCount.begin(), outlets->exitsCount.end(), 0);
 
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
@@ -264,5 +265,36 @@ namespace GSL
         cv::flip(inColor, inColor, 0);
         show(inColor, imageName);
 #endif
+    }
+
+    void Simulation::blurHitMap(cv::Mat& asImage, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask)
+    {
+        cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), blurSigma.x, blurSigma.y);
+
+        // divide by the blurred mask to correct the edges always getting lower
+        if (!blurredMask)
+        {
+            blurredMask.emplace();
+            cv::Mat freeSpaceMask(
+                cv::Size(occupancy.metadata.dimensions.x, occupancy.metadata.dimensions.y),
+                CV_32F,
+                cv::Scalar(0, 0, 0));
+
+            for (int j = 0; j < occupancy.metadata.dimensions.y; j++)
+            {
+                for (int i = 0; i < occupancy.metadata.dimensions.x; i++)
+                {
+                    if (occupancy.freeAt(i, j))
+                        freeSpaceMask.at<float>(j, i) = 1;
+                }
+            }
+
+            cv::GaussianBlur(freeSpaceMask, *blurredMask, cv::Size(0, 0), blurSigma.x, blurSigma.y);
+        }
+
+        for (int i = 0; i < occupancy.metadata.dimensions.y; i++)
+            for (int j = 0; j < occupancy.metadata.dimensions.x; j++)
+                if (blurredMask->at<float>(i, j) > 0)
+                    asImage.at<float>(i, j) = Utils::clamp(asImage.at<float>(i, j) / blurredMask->at<float>(i, j), 0, 1);
     }
 } // namespace GSL

@@ -438,9 +438,6 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /clicked_point
-    - Class: nav_assistant_tools/SetNavGoal
-      Topic: /PioneerP3DX/nav_assistant
-      Turn before nav: true
   Transformation:
     Current:
       Class: rviz_default_plugins/TF
