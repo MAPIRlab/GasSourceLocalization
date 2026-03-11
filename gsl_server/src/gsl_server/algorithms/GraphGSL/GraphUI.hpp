@@ -32,6 +32,12 @@ namespace GSL
 
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         Vector2 selectedCoordinates;
+
+        struct SimulationOptions
+        {
+            bool exactPoint = false;
+            size_t selectedArcIdx = 0;
+        } simulationOptions;
     };
 } // namespace GSL
 

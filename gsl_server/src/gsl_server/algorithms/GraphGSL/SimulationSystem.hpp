@@ -6,6 +6,7 @@
 namespace GSL
 {
     class Arc;
+    class RealNode;
 }
 
 namespace GSL::Graph_internal
@@ -20,6 +21,7 @@ namespace GSL::Graph_internal
         };
 
     public:
+        static SimWithResult SimulateFromPoint(const std::shared_ptr<RealNode> node, Vector2 point);
         static SimWithResult SimulateFromArc(const Arc& arc);
     };
 } // namespace GSL::Graph_internal

@@ -4,6 +4,28 @@
 
 namespace GSL::Graph_internal
 {
+    SimulationSystem::SimWithResult SimulationSystem::SimulateFromPoint(const std::shared_ptr<RealNode> realNode, Vector2 point)
+    {
+        SimWithResult result;
+        result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
+        result.simulation = std::shared_ptr<Simulation>(new Simulation{
+            .source = SimulationSource(point),
+            .minWarmupIterations = 1000,
+            .maxWarmupIterations = 2000,
+            .wind = realNode->GetWindMap(),
+            .outlets = Outlets{
+                .mask = realNode->GetOutletsMask(),
+                .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
+            },
+        });
+
+        result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
+        result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
+
+        result.simulation->Run(*result.hitMap);
+        return result;
+    }
+
     SimulationSystem::SimWithResult SimulationSystem::SimulateFromArc(const Arc& arc)
     {
         SimWithResult result;

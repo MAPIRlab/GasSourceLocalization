@@ -120,21 +120,47 @@ namespace GSL
     {
         ImGui::Begin("Simulate Source");
         {
-            
+            std::shared_ptr<Node> node = gsl->graph.GetCorrespondingNode(selectedCoordinates);
+            std::string name = node ? node->id : "Null";
+            ImGui::Text("Currently selected node: %s", name.c_str());
+
+            ImGui::Checkbox("Simulate point", &simulationOptions.exactPoint);
+
+            if (simulationOptions.exactPoint)
+                ImGui::DragFloat2("Selected point", &selectedCoordinates.x, 0.02);
+            else if (node)
+            {
+                if (node->arcs.size() == 0)
+                    ImGui::Text("Node has no arcs!");
+                else
+                {
+                    if (simulationOptions.selectedArcIdx > node->arcs.size())
+                        simulationOptions.selectedArcIdx = 0;
+
+                    ImGui::PushID("node");
+                    if (ImGui::BeginCombo("Arc", node->arcs.at(simulationOptions.selectedArcIdx).to.lock()->id.c_str()))
+                    {
+                        for (size_t i = 0; i < node->arcs.size(); i++)
+                            if (ImGui::Selectable(node->arcs.at(i).to.lock()->id.c_str()))
+                                simulationOptions.selectedArcIdx = i;
+
+                        ImGui::EndCombo();
+                    }
+                    ImGui::PopID();
+                }
+            }
+
             if (ImGui::Button("Run simulation"))
             {
-                std::shared_ptr<Node> node =
-                    gsl->graph.GetCorrespondingNode(selectedCoordinates);
                 auto realNode = As<RealNode>(node);
-                if (node)
+                if (realNode)
                 {
-                    const Arc* room2Arc;
-                    for (size_t i = 0; i < realNode->arcs.size(); i++)
-                        if (realNode->arcs.at(i).to.lock()->id == "out_2")
-                            room2Arc = &realNode->arcs.at(i);
-
                     // Run
-                    SimulationSystem::SimWithResult result = SimulationSystem::SimulateFromArc(*room2Arc);
+                    SimulationSystem::SimWithResult result;
+                    if (simulationOptions.exactPoint)
+                        result = SimulationSystem::SimulateFromPoint(realNode, selectedCoordinates);
+                    else
+                        result = SimulationSystem::SimulateFromArc(realNode->arcs.at(simulationOptions.selectedArcIdx));
 
                     // Log results
                     GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
