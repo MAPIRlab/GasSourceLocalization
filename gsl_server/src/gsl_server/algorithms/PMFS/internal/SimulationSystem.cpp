@@ -202,7 +202,9 @@ namespace GSL::PMFS_internal
         result.hitMap.resize(measuredHitProb.data.size(), 0.0);
 
         Simulation sim{
-            .source = SimulationSource(node, measuredHitProb.metadata),
+            .source = SimulationSource(AABB2D(
+                                           measuredHitProb.metadata.indicesToCoordinates(node->origin),
+                                           measuredHitProb.metadata.indicesToCoordinates(node->origin + node->size))),
             .warmup = true,
             .timesteps = settings.iterationsToRecord,
             .deltaTime = (float)settings.deltaTime,

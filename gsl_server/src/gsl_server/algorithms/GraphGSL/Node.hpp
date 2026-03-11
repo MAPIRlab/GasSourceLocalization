@@ -8,6 +8,7 @@ namespace GSL
 {
     struct Arc
     {
+        std::weak_ptr<class Node> from;
         std::weak_ptr<class Node> to;
         float weight;
         AABB2D aabb;

@@ -1,12 +1,12 @@
 #ifdef USE_GUI
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/PMFS/PMFS.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSViz.hpp>
 #include <gsl_server/algorithms/PMFS/internal/SimulationSystem.hpp>
 #include <gsl_server/algorithms/PMFS/internal/UI.hpp>
-#include <gsl_server/algorithms/Common/GUI/ScrollingBuffer.hpp>
 #include <imgui_gl/imgui_gl.h>
 #include <implot/implot.h>
 
@@ -100,11 +100,12 @@ namespace GSL::PMFS_internal
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else
-                    pmfs->simulations.makeSimulationImage(SimulationSource(leaf, pmfs->gridMetadata));
+                    pmfs->simulations.makeSimulationImage(SimulationSource(AABB2D(pmfs->gridMetadata.indicesToCoordinates(leaf->origin),
+                                                                                  pmfs->gridMetadata.indicesToCoordinates(leaf->origin + leaf->size))));
             }
             else if (ImGui::Button("Simulate cell") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
-                pmfs->simulations.makeSimulationImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(x, y), pmfs->gridMetadata));
+                pmfs->simulations.makeSimulationImage(SimulationSource(pmfs->gridMetadata.indicesToCoordinates(x, y)));
             }
 
             ImGui::Text("%s", result.c_str());
@@ -147,8 +148,9 @@ namespace GSL::PMFS_internal
             {
                 pmfs->functionQueue.submit([this]()
                                            {
-                    pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
-                    PMFSViz::ShowSourceProb(Grid2D<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs); });
+                                               pmfs->simulations.updateSourceProbability(pmfs->settings.simulation.refineFraction);
+                                               PMFSViz::ShowSourceProb(Grid2D<double>(pmfs->sourceProbability, pmfs->occupancy, pmfs->gridMetadata), pmfs->settings.visualization, pmfs->pubs);
+                                           });
             }
         }
         ImGui::End();

@@ -1,4 +1,4 @@
-#include "gsl_server/algorithms/Common/Simulation.hpp"
+#include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
@@ -11,9 +11,9 @@
 #include <implot/implot.h>
 #include <rclcpp/rclcpp.hpp>
 
+using namespace GSL::Graph_internal;
 namespace GSL
 {
-
     GraphUI::GraphUI(GraphGSL* _gsl) : gsl(_gsl)
     {
         clickedPointSub =
@@ -68,49 +68,12 @@ namespace GSL
                          ImGuiWindowFlags_NoCollapse);
         {
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
-            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1.,
-                             10.);
+            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1., 10.);
             SelectNodes();
-
-            if (ImGui::Button("Simulate source"))
-            {
-                std::shared_ptr<Node> node =
-                    gsl->graph.GetCorrespondingNode(selectedCoordinates);
-                auto realNode = As<RealNode>(node);
-                if (node)
-                {
-                    Simulation sim{
-                        .source = SimulationSource(selectedCoordinates,
-                                                   realNode->GetOccupancy().metadata),
-                        .minWarmupIterations = 1000,
-                        .maxWarmupIterations = 2000,
-                        .wind = realNode->GetWindMap(),
-                        .outlets = Outlets{
-                            .mask = realNode->GetOutletsMask(),
-                            .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
-                        },
-                    };
-
-                    sim.outlets->exitsCount.resize(realNode->arcs.size(), 0);
-                    sim.outlets->enabled.resize(realNode->arcs.size(), true);
-
-                    for (size_t i = 0; i < realNode->arcs.size(); i++)
-                        if (realNode->arcs.at(i).to.lock()->id == "room_2")
-                            sim.outlets->enabled.at(i) = false;
-
-                    std::vector<float> hitMap(realNode->GetOccupancy().data.size(), 0.);
-                    sim.Run(hitMap);
-                    
-                    GSL_INFO("Emitted {} filaments in total", sim.totalEmittedFilaments);
-                    for (size_t i = 0; i < sim.outlets->exitsCount.size(); i++)
-                        GSL_INFO("{} -> {}", sim.outlets->exitsCount.at(i),
-                                 realNode->arcs.at(i).to.lock()->id);
-                }
-                else
-                    GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
-            }
         }
         ImGui::End();
+
+        SimulateSourceMenu();
 
         ImGui::Begin("Current State");
         {
@@ -151,6 +114,41 @@ namespace GSL
 
         if (somethingChanged)
             Utils::ClearMarkers(gsl->pubs.occupancyPub);
+    }
+
+    void GraphUI::SimulateSourceMenu()
+    {
+        ImGui::Begin("Simulate Source");
+        {
+            
+            if (ImGui::Button("Run simulation"))
+            {
+                std::shared_ptr<Node> node =
+                    gsl->graph.GetCorrespondingNode(selectedCoordinates);
+                auto realNode = As<RealNode>(node);
+                if (node)
+                {
+                    const Arc* room2Arc;
+                    for (size_t i = 0; i < realNode->arcs.size(); i++)
+                        if (realNode->arcs.at(i).to.lock()->id == "out_2")
+                            room2Arc = &realNode->arcs.at(i);
+
+                    // Run
+                    SimulationSystem::SimWithResult result = SimulationSystem::SimulateFromArc(*room2Arc);
+
+                    // Log results
+                    GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
+                    for (size_t i = 0; i < result.simulation->outlets->exitsCount.size(); i++)
+                        GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i),
+                                 realNode->arcs.at(i).to.lock()->id);
+
+                    result.simulation->displayImage(*result.hitMap, "result");
+                }
+                else
+                    GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
+            }
+        }
+        ImGui::End();
     }
 } // namespace GSL
 

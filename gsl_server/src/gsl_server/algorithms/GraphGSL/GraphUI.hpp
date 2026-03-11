@@ -23,6 +23,7 @@ namespace GSL
     private:
         void CreateUI();
         void SelectNodes();
+        void SimulateSourceMenu();
 
         GraphGSL* gsl;
         std::jthread renderThread;

@@ -193,6 +193,8 @@ namespace GSL
             Vector2 maxCoords = grid.metadata.indicesToCoordinates(grid.metadata.dimensions);
             bounds.min.x = std::clamp(bounds.min.x, grid.metadata.origin.x, maxCoords.x);
             bounds.min.y = std::clamp(bounds.min.y, grid.metadata.origin.y, maxCoords.y);
+            bounds.max.x = std::clamp(bounds.max.x, grid.metadata.origin.x, maxCoords.x);
+            bounds.max.y = std::clamp(bounds.max.y, grid.metadata.origin.y, maxCoords.y);
 
             // get croppin'
             Map2D cropped;

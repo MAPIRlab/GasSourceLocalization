@@ -1,6 +1,5 @@
 #pragma once
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
-#include "gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp"
 #include "gsl_server/algorithms/Common/VisibilityMap.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <optional>
@@ -16,20 +15,19 @@ namespace GSL
     {
         enum Mode
         {
-            Quadtree,
+            AABB,
             Point
         };
 
         const Mode mode;
-        const Utils::NQA::Node* nqaNode;
+        const std::optional<AABB2D> aabb;
         const Vector2 point;
-        const Grid2DMetadata& metadata;
 
-        SimulationSource(const Vector2& _point, const Grid2DMetadata& _metadata)
-            : mode(Mode::Point), nqaNode(nullptr), point(_point), metadata(_metadata)
+        SimulationSource(const Vector2& _point)
+            : mode(Mode::Point), aabb(std::nullopt), point(_point)
         {}
-        SimulationSource(const Utils::NQA::Node* _node, const Grid2DMetadata& _metadata)
-            : mode(Mode::Quadtree), nqaNode(_node), point(0, 0), metadata(_metadata)
+        SimulationSource(const AABB2D& _aabb)
+            : mode(Mode::AABB), aabb(_aabb), point(0, 0)
         {}
 
         Vector2 getPoint() const;
