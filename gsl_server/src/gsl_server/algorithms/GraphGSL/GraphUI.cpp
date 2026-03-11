@@ -113,7 +113,10 @@ namespace GSL
         }
 
         if (somethingChanged)
+        {
             Utils::ClearMarkers(gsl->pubs.occupancyPub);
+            Utils::ClearMarkers(gsl->pubs.windPub);
+        }
     }
 
     void GraphUI::SimulateSourceMenu()
