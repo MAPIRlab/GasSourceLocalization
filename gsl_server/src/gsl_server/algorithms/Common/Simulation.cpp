@@ -234,14 +234,17 @@ namespace GSL
         displayImage(hitMap);
     }
 
-    void Simulation::displayImage(const std::vector<float>& hitMap, const std::string& imageName) const
+    void Simulation::displayImage(const std::vector<float>& hitMap, const std::string& imageName, float raisePower) const
     {
-        cv::Mat asImage(hitMap);
+        std::vector<float> hitMapCopy = hitMap;
+        for (float& f : hitMapCopy)
+            f = std::pow(f, raisePower);
+        cv::Mat asImage(hitMapCopy);
         asImage = asImage.reshape(1, wind.metadata.dimensions.y);
 
         cv::Mat inColor;
         asImage.convertTo(asImage, CV_8UC1, 255);
-        applyColorMap(asImage, inColor, cv::COLORMAP_JET);
+        cv::applyColorMap(asImage, inColor, cv::COLORMAP_JET);
 
         for (int j = 0; j < wind.metadata.dimensions.y; j++)
         {

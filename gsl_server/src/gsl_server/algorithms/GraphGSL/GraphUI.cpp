@@ -68,6 +68,7 @@ namespace GSL
                          ImGuiWindowFlags_NoCollapse);
         {
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
+            ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1., 10.);
             SelectNodes();
         }
@@ -171,11 +172,14 @@ namespace GSL
                         GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i),
                                  realNode->arcs.at(i).to.lock()->id);
 
-                    result.simulation->displayImage(*result.hitMap, "result");
+                    result.simulation->displayImage(*result.hitMap, "result", simulationOptions.imageDisplayPower);
                 }
                 else
                     GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
             }
+
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Image color power", &simulationOptions.imageDisplayPower, 0.05, 0, 10);
         }
         ImGui::End();
     }

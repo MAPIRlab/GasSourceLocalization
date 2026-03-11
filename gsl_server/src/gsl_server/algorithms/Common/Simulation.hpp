@@ -61,7 +61,7 @@ namespace GSL
         bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
 
         void makeSimulationImage();
-        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult") const;
+        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult", float raisePower=1) const;
 
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
     };
