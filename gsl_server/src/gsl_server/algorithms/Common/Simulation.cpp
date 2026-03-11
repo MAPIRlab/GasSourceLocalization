@@ -240,14 +240,15 @@ namespace GSL
         asImage = asImage.reshape(1, wind.metadata.dimensions.y);
 
         cv::Mat inColor;
-        cv::cvtColor(asImage, inColor, cv::COLOR_GRAY2BGR);
+        asImage.convertTo(asImage, CV_8UC1, 255);
+        applyColorMap(asImage, inColor, cv::COLORMAP_JET);
 
         for (int j = 0; j < wind.metadata.dimensions.y; j++)
         {
             for (int i = 0; i < wind.metadata.dimensions.x; i++)
             {
                 if (!wind.freeAt(i, j))
-                    inColor.at<cv::Vec3f>(j, i) = cv::Vec3f(0, 0, 1);
+                    inColor.at<cv::Vec3b>(j, i) = cv::Vec3b(20, 20, 20);
             }
         }
 
