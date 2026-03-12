@@ -48,9 +48,11 @@ def launch_setup(context, *args, **kwargs):
                     {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_graph")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
-                    {"GMRF_lambda_flux": 2.5},
-                    {"GMRF_lambda_obstacles": 0.1},
-                    {"GMRF_lambda_reg": 0.7},
+
+                    {"GMRF_lambdaPrior_advection": 100.0},             # Advection constraint -> neighboring cells should have similar wind values in the direction of the wind
+                    {"GMRF_lambdaPrior_mass_conservation": 1000.0},    # Mass conservation law -> divergence of the wind field is zero
+                    {"GMRF_lambdaPrior_diffusion": 0.0001},            # Diffusion constraint -> neighboring cells should have similar wind values in all directions
+                    {"GMRF_lambdaPrior_obstacles": 2000.0},            # Obstacles --> cells close to obstacles has only tangencial wind
                 ],
                 on_exit=Shutdown()
             ),

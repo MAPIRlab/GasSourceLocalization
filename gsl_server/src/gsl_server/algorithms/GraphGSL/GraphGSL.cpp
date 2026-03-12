@@ -20,9 +20,10 @@ namespace GSL
 
         // GMRF
         gmrfParams.cell_size = cellSize;
-        gmrfParams.m_lambdaPrior_flux_conservation = node->declare_parameter<float>("GMRF_lambda_flux");
-        gmrfParams.m_lambdaPrior_obstacles = node->declare_parameter<float>("GMRF_lambda_obstacles");
-        gmrfParams.m_lambdaPrior_reg = node->declare_parameter<float>("GMRF_lambda_reg");
+        gmrfParams.lambdaPrior_advection = node->declare_parameter<float>("GMRF_lambdaPrior_advection");
+        gmrfParams.lambdaPrior_diffusion = node->declare_parameter<float>("GMRF_lambdaPrior_diffusion");
+        gmrfParams.lambdaPrior_mass_conservation = node->declare_parameter<float>("GMRF_lambdaPrior_mass_conservation");
+        gmrfParams.lambdaPrior_obstacles = node->declare_parameter<float>("GMRF_lambdaPrior_obstacles");
 
         // graph creation
         std::filesystem::path path =

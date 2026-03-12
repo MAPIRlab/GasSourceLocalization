@@ -109,7 +109,7 @@ namespace GSL
 
     const Grid2D<Vector2> RealNode::GetWindMap()
     {
-        if (windDirty)
+        // if (windDirty)
         {
             gmrf->MAP_estimation_GMRF();
 
