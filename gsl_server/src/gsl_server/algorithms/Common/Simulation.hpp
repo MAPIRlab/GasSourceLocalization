@@ -47,7 +47,7 @@ namespace GSL
         bool warmup = false;
         size_t timesteps = 200;
         float deltaTime = 0.1;
-        float noiseSTDev = 0.15;
+        float noiseSTDev = 0.1;
 
         size_t minWarmupIterations = 100;
         size_t maxWarmupIterations = 500;
@@ -63,7 +63,7 @@ namespace GSL
 
         void makeSimulationImage();
         void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult", float raisePower=1) const;
-        static void blurHitMap(cv::Mat& asImage, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask);
+        static void blurHitMap(std::vector<float>& hitMap, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask);
 
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
     };

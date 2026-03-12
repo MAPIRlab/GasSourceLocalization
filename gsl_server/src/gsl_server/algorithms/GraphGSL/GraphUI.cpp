@@ -172,6 +172,8 @@ namespace GSL
                         GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i),
                                  realNode->arcs.at(i).to.lock()->id);
 
+                    // std::optional<cv::Mat> mask;
+                    // Simulation::blurHitMap(*result.hitMap, Vector2(1.5, 1.5), realNode->GetOccupancy(), mask);
                     result.simulation->displayImage(*result.hitMap, "result", simulationOptions.imageDisplayPower);
                 }
                 else

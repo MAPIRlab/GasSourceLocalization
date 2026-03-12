@@ -252,7 +252,7 @@ namespace GSL
             for (int i = 0; i < wind.metadata.dimensions.x; i++)
             {
                 if (!wind.freeAt(i, j))
-                    inColor.at<cv::Vec3b>(j, i) = cv::Vec3b(20, 20, 20);
+                    inColor.at<cv::Vec3b>(j, i) = cv::Vec3b(80, 80, 80);
             }
         }
 
@@ -267,8 +267,11 @@ namespace GSL
 #endif
     }
 
-    void Simulation::blurHitMap(cv::Mat& asImage, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask)
+    void Simulation::blurHitMap(std::vector<float>& hitMap, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask)
     {
+        cv::Mat asImage(hitMap, false); // copyData=false, so changes to the matrix will affect the hitMap vector
+        asImage = asImage.reshape(1, occupancy.metadata.dimensions.y);
+        
         cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), blurSigma.x, blurSigma.y);
 
         // divide by the blurred mask to correct the edges always getting lower

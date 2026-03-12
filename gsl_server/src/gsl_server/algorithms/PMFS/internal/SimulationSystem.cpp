@@ -199,11 +199,7 @@ namespace GSL::PMFS_internal
         sim.Run(result.hitMap);
 
         if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
-        {
-            cv::Mat asImage(result.hitMap, false); // copyData=false, so changes to the matrix will affect the hitMap vector
-            asImage = asImage.reshape(1, measuredHitProb.metadata.dimensions.y);
-            Simulation::blurHitMap(asImage, Vector2(settings.blurSigmaX, settings.blurSigmaY), wind.AsOccupancy(), blurredMask);
-        }
+            Simulation::blurHitMap(result.hitMap, Vector2(settings.blurSigmaX, settings.blurSigmaY), wind.AsOccupancy(), blurredMask);
 
         result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
 

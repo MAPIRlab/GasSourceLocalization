@@ -56,7 +56,7 @@ namespace GSL::Graph_internal
         result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
 
         for (size_t i = 0; i < realNode->arcs.size(); i++)
-            if (&realNode->arcs.at(i) == &arc) // TODO
+            if (&realNode->arcs.at(i) == &arc)
                 result.simulation->outlets->enabled.at(i) = false;
 
         result.simulation->Run(*result.hitMap);
