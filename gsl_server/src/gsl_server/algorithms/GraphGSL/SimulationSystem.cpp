@@ -10,10 +10,10 @@ namespace GSL::Graph_internal
         result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
         result.simulation = std::shared_ptr<Simulation>(new Simulation{
             .source = SimulationSource(point),
-            .minWarmupIterations = 1000,
+            .minWarmupIterations = 500,
             .maxWarmupIterations = 2000,
             .wind = realNode->GetWindMap(),
-            .outlets = Outlets{
+            .outlets = SimulationOutlets{
                 .mask = realNode->GetOutletsMask(),
                 .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
             },
@@ -23,6 +23,7 @@ namespace GSL::Graph_internal
         result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
 
         result.simulation->Run(*result.hitMap);
+        Simulation::blurHitMap(*result.hitMap, blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
         return result;
     }
 
@@ -43,10 +44,10 @@ namespace GSL::Graph_internal
         result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
         result.simulation = std::shared_ptr<Simulation>(new Simulation{
             .source = SimulationSource(sourceAABB),
-            .minWarmupIterations = 1000,
+            .minWarmupIterations = 500,
             .maxWarmupIterations = 2000,
             .wind = realNode->GetWindMap(),
-            .outlets = Outlets{
+            .outlets = SimulationOutlets{
                 .mask = realNode->GetOutletsMask(),
                 .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
             },
@@ -60,6 +61,8 @@ namespace GSL::Graph_internal
                 result.simulation->outlets->enabled.at(i) = false;
 
         result.simulation->Run(*result.hitMap);
+
+        Simulation::blurHitMap(*result.hitMap, blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
 
         return result;
     }

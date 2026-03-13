@@ -380,8 +380,7 @@ namespace GSL
         settings.maxWarmupIterations = algorithm.getParam<int>("maxWarmupIterations", 500);
         settings.minWarmupIterations = algorithm.getParam<int>("minWarmupIterations", 200);
 
-        settings.blurSigmaX = algorithm.getParam<double>("blurSigmaX", 0);
-        settings.blurSigmaY = algorithm.getParam<double>("blurSigmaY", 0);
+        settings.blurSigma = algorithm.getParam<double>("blurSigmaX", 0); //keep the X in the name for compatibility with old launch file
     }
 
     void PMFSLib::GetHitProbabilitySettings(Algorithm& algorithm, PMFS_internal::HitProbabilitySettings& settings)

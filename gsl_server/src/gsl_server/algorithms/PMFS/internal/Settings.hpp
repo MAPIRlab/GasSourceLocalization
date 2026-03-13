@@ -40,8 +40,7 @@ namespace GSL::PMFS_internal
         double deltaTime = 0.1;
         double noiseSTDev = 0.2;
 
-        double blurSigmaX = 0;
-        double blurSigmaY = 0;
+        double blurSigma = 0;
     };
     struct MovementSettings
     {

@@ -267,17 +267,20 @@ namespace GSL
 #endif
     }
 
-    void Simulation::blurHitMap(std::vector<float>& hitMap, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask)
+    void Simulation::blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask)
     {
+        if (blurSigma == 0)
+            return;
         cv::Mat asImage(hitMap, false); // copyData=false, so changes to the matrix will affect the hitMap vector
         asImage = asImage.reshape(1, occupancy.metadata.dimensions.y);
-        
-        cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), blurSigma.x, blurSigma.y);
+
+        cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), blurSigma, blurSigma);
 
         // divide by the blurred mask to correct the edges always getting lower
-        if (!blurredMask)
+        if (!blurredMask || blurredMask->sigma != blurSigma)
         {
             blurredMask.emplace();
+            blurredMask->sigma = blurSigma;
             cv::Mat freeSpaceMask(
                 cv::Size(occupancy.metadata.dimensions.x, occupancy.metadata.dimensions.y),
                 CV_32F,
@@ -292,12 +295,12 @@ namespace GSL
                 }
             }
 
-            cv::GaussianBlur(freeSpaceMask, *blurredMask, cv::Size(0, 0), blurSigma.x, blurSigma.y);
+            cv::GaussianBlur(freeSpaceMask, blurredMask->mask, cv::Size(0, 0), blurSigma, blurSigma);
         }
 
         for (int i = 0; i < occupancy.metadata.dimensions.y; i++)
             for (int j = 0; j < occupancy.metadata.dimensions.x; j++)
-                if (blurredMask->at<float>(i, j) > 0)
-                    asImage.at<float>(i, j) = Utils::clamp(asImage.at<float>(i, j) / blurredMask->at<float>(i, j), 0, 1);
+                if (blurredMask->mask.at<float>(i, j) > 0)
+                    asImage.at<float>(i, j) = Utils::clamp(asImage.at<float>(i, j) / blurredMask->mask.at<float>(i, j), 0, 1);
     }
 } // namespace GSL

@@ -34,11 +34,17 @@ namespace GSL
         Vector2 getPoint() const;
     };
 
-    struct Outlets
+    struct SimulationOutlets
     {
         Grid2D<int> mask;
         std::vector<size_t> exitsCount;
         std::vector<bool> enabled;
+    };
+
+    struct SimulationBlurMask
+    {
+        float sigma = 0.0;
+        cv::Mat mask;
     };
 
     struct Simulation
@@ -54,7 +60,7 @@ namespace GSL
 
         Grid2D<Vector2> wind;
         std::optional<std::reference_wrapper<VisibilityMap>> visibilityMap;
-        std::optional<Outlets> outlets;
+        std::optional<SimulationOutlets> outlets;
 
         void Run(std::vector<float>& hitMap);
         void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
@@ -63,7 +69,7 @@ namespace GSL
 
         void makeSimulationImage();
         void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult", float raisePower=1) const;
-        static void blurHitMap(std::vector<float>& hitMap, Vector2 blurSigma, Grid2D<Occupancy> occupancy, std::optional<cv::Mat>& blurredMask);
+        static void blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask);
 
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
     };

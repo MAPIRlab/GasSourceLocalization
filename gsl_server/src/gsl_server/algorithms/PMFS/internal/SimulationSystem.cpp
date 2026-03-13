@@ -198,8 +198,7 @@ namespace GSL::PMFS_internal
             .visibilityMap = *visibilityMap};
         sim.Run(result.hitMap);
 
-        if (settings.blurSigmaX > 0 || settings.blurSigmaY > 0)
-            Simulation::blurHitMap(result.hitMap, Vector2(settings.blurSigmaX, settings.blurSigmaY), wind.AsOccupancy(), blurredMask);
+        Simulation::blurHitMap(result.hitMap, settings.blurSigma, wind.AsOccupancy(), blurredMask);
 
         result.sourceProb = sourceProbFromMaps(measuredHitProb, result.hitMap);
 

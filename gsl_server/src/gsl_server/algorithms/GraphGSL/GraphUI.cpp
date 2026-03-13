@@ -172,14 +172,14 @@ namespace GSL
                         GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i),
                                  realNode->arcs.at(i).to.lock()->id);
 
-                    // std::optional<cv::Mat> mask;
-                    // Simulation::blurHitMap(*result.hitMap, Vector2(1.5, 1.5), realNode->GetOccupancy(), mask);
                     result.simulation->displayImage(*result.hitMap, "result", simulationOptions.imageDisplayPower);
                 }
                 else
                     GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
             }
 
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Blur sigma", &SimulationSystem::blurSigma, 0.01, 0, 2.0);
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Image color power", &simulationOptions.imageDisplayPower, 0.05, 0, 10);
         }
