@@ -6,24 +6,30 @@ namespace GSL::Graph_internal
 {
     SimulationSystem::SimWithResult SimulationSystem::SimulateFromPoint(const std::shared_ptr<RealNode> realNode, Vector2 point)
     {
+        ScopedStopwatch s("sims");
         SimWithResult result;
-        result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
-        result.simulation = std::shared_ptr<Simulation>(new Simulation{
-            .source = SimulationSource(point),
-            .minWarmupIterations = 500,
-            .maxWarmupIterations = 2000,
-            .wind = realNode->GetWindMap(),
-            .outlets = SimulationOutlets{
-                .mask = realNode->GetOutletsMask(),
-                .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
-            },
-        });
+        // for (size_t i = 0; i < 200; i++)
+        {
+            result = SimWithResult{};
+            result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
+            result.simulation = std::shared_ptr<Simulation>(new Simulation{
+                .source = SimulationSource(point),
+                .minWarmupIterations = 500,
+                .maxWarmupIterations = 2000,
+                .wind = realNode->GetWindMap(),
+                .outlets = SimulationOutlets{
+                    .mask = realNode->GetOutletsMask(),
+                    .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
+                },
+            });
 
-        result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
-        result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
+            result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
+            result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
 
-        result.simulation->Run(*result.hitMap);
-        Simulation::blurHitMap(*result.hitMap, blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+            Simulation::Type type = cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
+            result.simulation->Run(*result.hitMap, type);
+            Simulation::blurHitMap(*result.hitMap, blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+        }
         return result;
     }
 
@@ -60,8 +66,8 @@ namespace GSL::Graph_internal
             if (&realNode->arcs.at(i) == &arc)
                 result.simulation->outlets->enabled.at(i) = false;
 
-        result.simulation->Run(*result.hitMap);
-
+        Simulation::Type type = cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
+        result.simulation->Run(*result.hitMap, type);
         Simulation::blurHitMap(*result.hitMap, blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
 
         return result;

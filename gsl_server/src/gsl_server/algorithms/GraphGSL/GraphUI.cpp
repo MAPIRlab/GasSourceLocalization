@@ -128,6 +128,7 @@ namespace GSL
             std::string name = node ? node->id : "Null";
             ImGui::Text("Currently selected node: %s", name.c_str());
 
+            ImGui::Checkbox("Cummulative map", &SimulationSystem::cummulativeMap);
             ImGui::Checkbox("Simulate point", &simulationOptions.exactPoint);
 
             if (simulationOptions.exactPoint)

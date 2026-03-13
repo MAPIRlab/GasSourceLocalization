@@ -41,7 +41,7 @@ namespace GSL
         return false;
     }
 
-    void Simulation::Run(std::vector<float>& hitMap)
+    void Simulation::Run(std::vector<float>& hitMap, Type type)
     {
         constexpr int numFilamentsIteration = 5;
         size_t max_filaments = maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration;
@@ -120,13 +120,23 @@ namespace GSL
                 // update map
                 auto indices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
                 size_t index = wind.metadata.indexOf(indices);
+
+                // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
+                if (!wind.freeAt(indices.x, indices.y)) 
+                    continue;
+
                 GSL_ASSERT(wind.metadata.indicesInBounds(indices));
                 // mark as updated so it doesn't count multiple filaments in the same timestep
-                if (updated[index] < t)
+                if (type == Type::HitFrequency)
                 {
-                    hitMap[index]++;
-                    updated[index] = t;
+                    if (updated[index] < t)
+                    {
+                        hitMap[index]++;
+                        updated[index] = t;
+                    }
                 }
+                else
+                    hitMap[index]++;
 
                 // move active filaments
                 moveFilament(filament, indices, deltaTime, noiseSTDev);
@@ -139,12 +149,23 @@ namespace GSL
             std::swap(activeFilamentVec, otherFilamentVec);
         }
 
+        float normalizationVal;
+        if (type == Type::HitFrequency)
+            normalizationVal = timesteps;
+        else
+        {
+            // take the value of the 10th percentile to avoid outliers messing things up
+            std::vector<float> sorted;
+            sorted.reserve(hitMap.size());
+            std::copy(hitMap.begin(), hitMap.end(), std::back_inserter(sorted));
+            std::sort(sorted.begin(), sorted.end());
+
+            normalizationVal = sorted.at(0.9 * sorted.size());
+        }
+
         // convert the total hit count into relative frequency
         for (int i = 0; i < wind.occupancy.size(); i++)
-        {
-            if (wind.occupancy[i] == Occupancy::Free)
-                hitMap[i] = hitMap[i] / timesteps;
-        }
+            hitMap[i] = std::clamp(hitMap[i] / normalizationVal, 0.f, 1.f);
     }
 
     Vector2 SimulationSource::getPoint() const

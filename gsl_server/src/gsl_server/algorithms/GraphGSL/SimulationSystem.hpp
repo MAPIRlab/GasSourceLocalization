@@ -24,6 +24,7 @@ namespace GSL::Graph_internal
         static SimWithResult SimulateFromPoint(const std::shared_ptr<RealNode> node, Vector2 point);
         static SimWithResult SimulateFromArc(const Arc& arc);
 
+        static inline bool cummulativeMap = true;
         static inline float blurSigma = 1.0;
         static inline std::map<std::shared_ptr<RealNode>, std::optional<SimulationBlurMask>> blurMasks;
     };
