@@ -154,6 +154,12 @@ namespace GSL
                     ImGui::PopID();
                 }
             }
+            else
+            {
+                ImGui::BeginDisabled();
+                ImGui::BeginCombo("Arc", "No node selected");
+                ImGui::EndDisabled();
+            }
 
             ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
             if (ImGui::Button("Run simulation"))

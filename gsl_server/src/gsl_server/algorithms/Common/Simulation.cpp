@@ -84,7 +84,7 @@ namespace GSL
                     auto indices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
                     // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
-                    if (!wind.freeAt(indices.x, indices.y)) 
+                    if (!wind.freeAt(indices.x, indices.y))
                         continue;
 
                     // move active filaments
@@ -122,7 +122,7 @@ namespace GSL
                 size_t index = wind.metadata.indexOf(indices);
 
                 // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
-                if (!wind.freeAt(indices.x, indices.y)) 
+                if (!wind.freeAt(indices.x, indices.y))
                     continue;
 
                 GSL_ASSERT(wind.metadata.indicesInBounds(indices));
@@ -154,13 +154,17 @@ namespace GSL
             normalizationVal = timesteps;
         else
         {
-            // take the value of the 10th percentile to avoid outliers messing things up
+            // take the value of the 5th percentile to avoid outliers messing things up (unless it is 0, which means very few cells even contain any gas)
             std::vector<float> sorted;
             sorted.reserve(hitMap.size());
             std::copy(hitMap.begin(), hitMap.end(), std::back_inserter(sorted));
             std::sort(sorted.begin(), sorted.end());
 
-            normalizationVal = sorted.at(0.9 * sorted.size());
+            float fifth = sorted.at(0.95 * sorted.size());
+            if (fifth > 0)
+                normalizationVal = fifth;
+            else
+                normalizationVal = sorted.back();
         }
 
         // convert the total hit count into relative frequency
