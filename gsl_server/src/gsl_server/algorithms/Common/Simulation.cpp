@@ -10,12 +10,12 @@ namespace GSL
     // We have a long list of pre-calculated random values for Speeeeeeeeeeeeeeeeed
     static thread_local Utils::PrecalculatedGaussian<2500> gaussian;
 
-    void Simulation::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
+    bool Simulation::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
     {
         Vector2 velocity = wind.dataAt(indices.x, indices.y) + Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
 
         Vector2 newPos = filament.position + deltaTime * velocity;
-        moveAlongPath(filament.position, newPos);
+        return moveAlongPath(filament.position, indices, newPos);
     }
 
     bool Simulation::filamentIsOutside(const Filament& filament)
@@ -82,6 +82,10 @@ namespace GSL
                 for (Filament& filament : *activeFilamentVec)
                 {
                     auto indices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
+
+                    // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
+                    if (!wind.freeAt(indices.x, indices.y)) 
+                        continue;
 
                     // move active filaments
                     moveFilament(filament, indices, deltaTime * 2, noiseSTDev);
@@ -156,15 +160,9 @@ namespace GSL
         return randP;
     }
 
-    bool Simulation::moveAlongPath(Vector2& currentPosition, const Vector2& end) const
+    bool Simulation::moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const
     {
         Vector2Int indexEnd = wind.metadata.coordinatesToIndices(end.x, end.y);
-        Vector2Int indexOrigin = wind.metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
-
-        if (!wind.freeAt(indexOrigin.x, indexOrigin.y))
-        {
-            return false;
-        }
 
         // try to avoid doing the raycast by looking at the pre-computed visibilityMap
         if (indexOrigin == indexEnd || //

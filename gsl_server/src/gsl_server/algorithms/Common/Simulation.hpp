@@ -49,6 +49,7 @@ namespace GSL
 
     struct Simulation
     {
+        enum class Type{HitFrequency = 0, Cummulative = 1};
         SimulationSource source;
         bool warmup = false;
         size_t timesteps = 200;
@@ -62,10 +63,10 @@ namespace GSL
         std::optional<std::reference_wrapper<VisibilityMap>> visibilityMap;
         std::optional<SimulationOutlets> outlets;
 
-        void Run(std::vector<float>& hitMap);
-        void moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
+        void Run(std::vector<float>& hitMap, Type type = Simulation::Type::HitFrequency);
+        bool moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
         bool filamentIsOutside(const Filament& filament);
-        bool moveAlongPath(Vector2& beginning, const Vector2& end) const;
+        bool moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const;
 
         void makeSimulationImage();
         void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult", float raisePower=1) const;

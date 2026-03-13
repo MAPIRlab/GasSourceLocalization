@@ -154,25 +154,31 @@ namespace GSL
                 }
             }
 
+            ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
             if (ImGui::Button("Run simulation"))
             {
                 auto realNode = As<RealNode>(node);
                 if (realNode)
                 {
                     // Run
-                    SimulationSystem::SimWithResult result;
-                    if (simulationOptions.exactPoint)
-                        result = SimulationSystem::SimulateFromPoint(realNode, selectedCoordinates);
-                    else
-                        result = SimulationSystem::SimulateFromArc(realNode->arcs.at(simulationOptions.selectedArcIdx));
+                    gsl->functionQueue.submit([this, realNode]()
+                                              {
+                                                  simulationOptions.simulationEnabled = false;
+                                                  SimulationSystem::SimWithResult result;
+                                                  if (simulationOptions.exactPoint)
+                                                      result = SimulationSystem::SimulateFromPoint(realNode, selectedCoordinates);
+                                                  else
+                                                      result = SimulationSystem::SimulateFromArc(realNode->arcs.at(simulationOptions.selectedArcIdx));
 
-                    // Log results
-                    GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
-                    for (size_t i = 0; i < result.simulation->outlets->exitsCount.size(); i++)
-                        GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i),
-                                 realNode->arcs.at(i).to.lock()->id);
+                                                  // Log results
+                                                  GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
+                                                  for (size_t i = 0; i < result.simulation->outlets->exitsCount.size(); i++)
+                                                      GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i),
+                                                               realNode->arcs.at(i).to.lock()->id);
 
-                    result.simulation->displayImage(*result.hitMap, "result", simulationOptions.imageDisplayPower);
+                                                  result.simulation->displayImage(*result.hitMap, "result", simulationOptions.imageDisplayPower);
+                                                  simulationOptions.simulationEnabled = true;
+                                              });
                 }
                 else
                     GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
@@ -182,6 +188,7 @@ namespace GSL
             ImGui::DragFloat("Blur sigma", &SimulationSystem::blurSigma, 0.01, 0, 2.0);
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Image color power", &simulationOptions.imageDisplayPower, 0.05, 0, 10);
+            ImGui::EndDisabled();
         }
         ImGui::End();
     }

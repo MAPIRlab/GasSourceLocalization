@@ -38,6 +38,7 @@ namespace GSL
             bool exactPoint = false;
             size_t selectedArcIdx = 0;
             float imageDisplayPower = 1;
+            bool simulationEnabled = true;
         } simulationOptions;
     };
 } // namespace GSL
