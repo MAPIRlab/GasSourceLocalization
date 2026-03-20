@@ -7,7 +7,7 @@ namespace GSL
 {
     class Arc;
     class RealNode;
-}
+} // namespace GSL
 
 namespace GSL::Graph_internal
 {
@@ -24,8 +24,17 @@ namespace GSL::Graph_internal
         static SimWithResult SimulateFromPoint(const std::shared_ptr<RealNode> node, Vector2 point);
         static SimWithResult SimulateFromArc(const Arc& arc);
 
-        static inline bool cummulativeMap = true;
-        static inline float blurSigma = 1.0;
+        struct Options
+        {
+            bool cummulativeMap = true;
+            float blurSigma = 1.0;
+            float noiseSTDev = 0.1;
+            size_t minWarmupIterations = 500;
+            size_t maxWarmupIterations = 2000;
+        };
+        static Options options;
+
+    private:
         static inline std::map<std::shared_ptr<RealNode>, std::optional<SimulationBlurMask>> blurMasks;
     };
 } // namespace GSL::Graph_internal

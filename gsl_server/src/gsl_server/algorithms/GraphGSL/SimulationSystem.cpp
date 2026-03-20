@@ -4,6 +4,8 @@
 
 namespace GSL::Graph_internal
 {
+    SimulationSystem::Options SimulationSystem::options;
+
     SimulationSystem::SimWithResult SimulationSystem::SimulateFromPoint(const std::shared_ptr<RealNode> realNode, Vector2 point)
     {
         ScopedStopwatch s("sims");
@@ -14,8 +16,9 @@ namespace GSL::Graph_internal
             result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
             result.simulation = std::shared_ptr<Simulation>(new Simulation{
                 .source = SimulationSource(point),
-                .minWarmupIterations = 500,
-                .maxWarmupIterations = 2000,
+                .noiseSTDev = options.noiseSTDev,
+                .minWarmupIterations = options.minWarmupIterations,
+                .maxWarmupIterations = options.maxWarmupIterations,
                 .wind = realNode->GetWindMap(),
                 .outlets = SimulationOutlets{
                     .mask = realNode->GetOutletsMask(),
@@ -26,9 +29,9 @@ namespace GSL::Graph_internal
             result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
             result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
 
-            Simulation::Type type = cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
+            Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
             result.simulation->Run(*result.hitMap, type);
-            Simulation::blurHitMap(*result.hitMap, blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+            Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
         }
         return result;
     }
@@ -50,8 +53,9 @@ namespace GSL::Graph_internal
         result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
         result.simulation = std::shared_ptr<Simulation>(new Simulation{
             .source = SimulationSource(sourceAABB),
-            .minWarmupIterations = 500,
-            .maxWarmupIterations = 2000,
+            .noiseSTDev = options.noiseSTDev,
+            .minWarmupIterations = options.minWarmupIterations,
+            .maxWarmupIterations = options.maxWarmupIterations,
             .wind = realNode->GetWindMap(),
             .outlets = SimulationOutlets{
                 .mask = realNode->GetOutletsMask(),
@@ -66,9 +70,9 @@ namespace GSL::Graph_internal
             if (&realNode->arcs.at(i) == &arc)
                 result.simulation->outlets->enabled.at(i) = false;
 
-        Simulation::Type type = cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
+        Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-        Simulation::blurHitMap(*result.hitMap, blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+        Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
 
         return result;
     }
