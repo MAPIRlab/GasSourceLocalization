@@ -155,22 +155,18 @@ namespace GSL
                     metadata.coordinatesToIndices(arc.aabb.min),
                     metadata.coordinatesToIndices(arc.aabb.max)};
 
-                Vector2 windVec;
+                auto otherNode = As<RealNode>(arc.to.lock());
                 size_t count = 0;
                 for (Vector2Int indices : aabbIdx)
                     if (metadata.indicesInBounds(indices) && realNode->GetOccupancy().freeAt(indices))
                     {
-                        windVec += windMap.dataAt(indices);
+                        Vector2 windVec = windMap.dataAt(indices);
                         count++;
+                        otherNode->AddObservation(windMap.metadata.indicesToCoordinates(indices), windVec); // TODO lower confidence for these virtual measurements?
                     }
 
                 if (count > 0)
-                {
-                    windVec = windVec / count;
-                    auto otherNode = As<RealNode>(arc.to.lock());
-                    otherNode->AddObservation(arc.spawnPoint, windVec); // TODO lower confidence for these virtual measurements?
                     dirtyNodes.push(otherNode);
-                }
                 else
                     GSL_WARN("0 free cells in the connection between {} and {}! Probably not right!", realNode->id, arc.to.lock()->id);
             }

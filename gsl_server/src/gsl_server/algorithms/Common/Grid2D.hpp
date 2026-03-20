@@ -190,7 +190,7 @@ namespace GSL
         static Map2D CropMap(Grid2D<Occupancy> grid, AABB2D bounds)
         {
             // ensure the aabb is within the bounds of the original map
-            Vector2 maxCoords = grid.metadata.indicesToCoordinates(grid.metadata.dimensions);
+            Vector2 maxCoords = grid.metadata.indicesToCoordinates(grid.metadata.dimensions, false) - Vector2{0.001, 0.001};
             bounds.min.x = std::clamp(bounds.min.x, grid.metadata.origin.x, maxCoords.x);
             bounds.min.y = std::clamp(bounds.min.y, grid.metadata.origin.y, maxCoords.y);
             bounds.max.x = std::clamp(bounds.max.x, grid.metadata.origin.x, maxCoords.x);

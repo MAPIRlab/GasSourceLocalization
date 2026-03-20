@@ -43,8 +43,9 @@ namespace GSL
 
     void Simulation::Run(std::vector<float>& hitMap, Type type)
     {
-        // we have this as a function template so the lambdas can be inlined and we have a single branch per simulation (here) rather than every filament update
-        // using functors rathen than lambdas to facilitate inlining inside the template
+        // we have this as a function template so the update process can be inlined and we have a single branch per simulation (here) 
+        // rather than every filament update
+        // using functors instead of lambdas to facilitate inlining inside the template
 
         struct HitFreqFunc
         {
@@ -68,9 +69,9 @@ namespace GSL
         };
 
         if (type == Type::HitFrequency)
-            _Run(hitMap, HitFreqFunc{}, Type::HitFrequency);
+            _Run(hitMap, HitFreqFunc{}, type);
         else
-            _Run(hitMap, CummulativeFunc{}, Type::Cummulative);
+            _Run(hitMap, CummulativeFunc{}, type);
     }
 
     template <typename UpdateFunc>

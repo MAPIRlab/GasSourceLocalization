@@ -8,7 +8,7 @@ namespace GSL::Graph_internal
     {
         ScopedStopwatch s("sims");
         SimWithResult result;
-        for (size_t i = 0; i < 200; i++)
+        // for (size_t i = 0; i < 200; i++)
         {
             result = SimWithResult{};
             result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
@@ -40,7 +40,7 @@ namespace GSL::Graph_internal
         Grid2DMetadata nodeMetadata = realNode->GetOccupancy().metadata;
         AABB2D sourceAABB(arc.aabb.min,
                           arc.aabb.max);
-        Vector2 maxCoords = nodeMetadata.indicesToCoordinates(nodeMetadata.dimensions, true);
+        Vector2 maxCoords = nodeMetadata.indicesToCoordinates(nodeMetadata.dimensions, false) - Vector2{0.001, 0.001};
         sourceAABB.min.x = std::clamp(sourceAABB.min.x, nodeMetadata.origin.x, maxCoords.x);
         sourceAABB.min.y = std::clamp(sourceAABB.min.y, nodeMetadata.origin.y, maxCoords.y);
         sourceAABB.max.x = std::clamp(sourceAABB.max.x, nodeMetadata.origin.x, maxCoords.x);

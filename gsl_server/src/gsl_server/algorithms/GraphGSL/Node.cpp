@@ -100,7 +100,7 @@ namespace GSL
             AABB2DInt aabbIdx{
                 gridMetadata.coordinatesToIndices(arc.aabb.min),
                 gridMetadata.coordinatesToIndices(arc.aabb.max)};
-                
+
             for (Vector2Int indices : aabbIdx)
                 if (maskGrid.metadata.indicesInBounds(indices) && maskGrid.freeAt(indices))
                     maskGrid.dataAt(indices) = i;
@@ -109,9 +109,9 @@ namespace GSL
 
     const Grid2D<Vector2> RealNode::GetWindMap()
     {
-        // if (windDirty)
+        if (windDirty)
         {
-            gmrf->MAP_estimation_GMRF();
+            gmrf->MAP_estimation_GMRF(50);
 
 #pragma omp parallel for
             for (size_t i = 0; i < wind.size(); i++)
