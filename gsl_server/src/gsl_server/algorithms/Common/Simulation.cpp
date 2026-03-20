@@ -43,6 +43,39 @@ namespace GSL
 
     void Simulation::Run(std::vector<float>& hitMap, Type type)
     {
+        // we have this as a function template so the lambdas can be inlined and we have a single branch per simulation (here) rather than every filament update
+        // using functors rathen than lambdas to facilitate inlining inside the template
+
+        struct HitFreqFunc
+        {
+            void Update(std::vector<float>& hitMap, std::vector<uint16_t>& updated, size_t index, size_t t) const
+            {
+                // mark as updated so it doesn't count multiple filaments in the same timestep
+                if (updated[index] < t)
+                {
+                    hitMap[index]++;
+                    updated[index] = t;
+                }
+            }
+        };
+
+        struct CummulativeFunc
+        {
+            void Update(std::vector<float>& hitMap, std::vector<uint16_t>& updated, size_t index, size_t t) const
+            {
+                hitMap[index]++;
+            }
+        };
+
+        if (type == Type::HitFrequency)
+            _Run(hitMap, HitFreqFunc{}, Type::HitFrequency);
+        else
+            _Run(hitMap, CummulativeFunc{}, Type::Cummulative);
+    }
+
+    template <typename UpdateFunc>
+    void Simulation::_Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type)
+    {
         constexpr int numFilamentsIteration = 5;
         size_t max_filaments = maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration;
 
@@ -126,17 +159,7 @@ namespace GSL
                     continue;
 
                 GSL_ASSERT(wind.metadata.indicesInBounds(indices));
-                // mark as updated so it doesn't count multiple filaments in the same timestep
-                if (type == Type::HitFrequency)
-                {
-                    if (updated[index] < t)
-                    {
-                        hitMap[index]++;
-                        updated[index] = t;
-                    }
-                }
-                else
-                    hitMap[index]++;
+                updateFunc.Update(hitMap, updated, index, t);
 
                 // move active filaments
                 moveFilament(filament, indices, deltaTime, noiseSTDev);
@@ -147,6 +170,16 @@ namespace GSL
             }
             activeFilamentVec->clear();
             std::swap(activeFilamentVec, otherFilamentVec);
+        }
+
+        if (outlets)
+        {
+            for (size_t i = 0; i < outlets->mask.data.size(); i++)
+            {
+                int outletNum = outlets->mask.data.at(i);
+                if (outletNum != -1 && outlets->enabled.at(outletNum))
+                    hitMap.at(i) = outlets->exitsCount.at(outletNum);
+            }
         }
 
         float normalizationVal;

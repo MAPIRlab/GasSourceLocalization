@@ -49,7 +49,11 @@ namespace GSL
 
     struct Simulation
     {
-        enum class Type{HitFrequency = 0, Cummulative = 1};
+        enum class Type
+        {
+            HitFrequency = 0,
+            Cummulative = 1
+        };
         SimulationSource source;
         bool warmup = false;
         size_t timesteps = 200;
@@ -69,9 +73,13 @@ namespace GSL
         bool moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const;
 
         void makeSimulationImage();
-        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult", float raisePower=1) const;
+        void displayImage(const std::vector<float>& hitMap, const std::string& imageName = "simResult", float raisePower = 1) const;
         static void blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask);
 
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
+
+    private:
+        template <typename UpdateFunc>
+        void _Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type);
     };
 } // namespace GSL

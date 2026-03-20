@@ -8,7 +8,7 @@ namespace GSL::Graph_internal
     {
         ScopedStopwatch s("sims");
         SimWithResult result;
-        // for (size_t i = 0; i < 200; i++)
+        for (size_t i = 0; i < 200; i++)
         {
             result = SimWithResult{};
             result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
