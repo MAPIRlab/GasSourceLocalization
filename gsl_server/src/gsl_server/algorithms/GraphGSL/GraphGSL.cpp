@@ -1,5 +1,6 @@
 #include "GraphGSL.hpp"
 #include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
+#include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
@@ -45,9 +46,14 @@ namespace GSL
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
         waitForMapState->shouldWaitForGas = false;
-
+        
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<ManualNavigationState>(this);
+        
+        // update first to clear the dirty flag and initialize the maps to 0
+        graph.UpdateAllWindMaps();
+        SimulateMeasurements(std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "test_data" / "data1");
+        
         stateMachine.forceSetState(movingState.get());
     }
 
@@ -64,8 +70,9 @@ namespace GSL
 
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
-        // graph.AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
-        stateMachine.forceSetState(movingState.get());
+        graph.AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
+        graph.UpdateAllWindMaps();
+        // stateMachine.forceSetState(movingState.get());
     }
 
     // TODO we probably don't want to override this at all! this is here for testing purposes

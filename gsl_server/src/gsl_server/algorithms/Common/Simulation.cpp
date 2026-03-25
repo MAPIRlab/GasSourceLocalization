@@ -43,7 +43,7 @@ namespace GSL
 
     void Simulation::Run(std::vector<float>& hitMap, Type type)
     {
-        // we have this as a function template so the update process can be inlined and we have a single branch per simulation (here) 
+        // we have this as a function template so the update process can be inlined and we have a single branch per simulation (here)
         // rather than every filament update
         // using functors instead of lambdas to facilitate inlining inside the template
 
@@ -183,27 +183,14 @@ namespace GSL
             }
         }
 
-        float normalizationVal;
         if (type == Type::HitFrequency)
-            normalizationVal = timesteps;
-        else
         {
-            // take the value of the 5th percentile to avoid outliers messing things up (unless it is 0, which means very few cells even contain any gas)
-            std::vector<float> sorted;
-            sorted.reserve(hitMap.size());
-            std::copy(hitMap.begin(), hitMap.end(), std::back_inserter(sorted));
-            std::sort(sorted.begin(), sorted.end());
+            float normalizationVal = timesteps;
 
-            float fifth = sorted.at(0.95 * sorted.size());
-            if (fifth > 0)
-                normalizationVal = fifth;
-            else
-                normalizationVal = sorted.back();
+            // convert the total hit count into relative frequency
+            for (int i = 0; i < wind.occupancy.size(); i++)
+                hitMap[i] = std::clamp(hitMap[i] / normalizationVal, 0.f, 1.f);
         }
-
-        // convert the total hit count into relative frequency
-        for (int i = 0; i < wind.occupancy.size(); i++)
-            hitMap[i] = std::clamp(hitMap[i] / normalizationVal, 0.f, 1.f);
     }
 
     Vector2 SimulationSource::getPoint() const
@@ -302,7 +289,7 @@ namespace GSL
 
         cv::Mat inColor;
         asImage.convertTo(asImage, CV_8UC1, 255);
-        cv::applyColorMap(asImage, inColor, cv::COLORMAP_JET);
+        cv::applyColorMap(asImage, inColor, cv::COLORMAP_VIRIDIS);
 
         for (int j = 0; j < wind.metadata.dimensions.y; j++)
         {

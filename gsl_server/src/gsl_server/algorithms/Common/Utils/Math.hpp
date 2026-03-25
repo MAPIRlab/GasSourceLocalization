@@ -41,9 +41,11 @@ namespace GSL::Utils
         std::function<double(const T&)> accessor);
 
     template <typename T>
-    void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy);
-    void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy);
-    void NormalizeDistributionLong(std::vector<long double>& variable, std::vector<Occupancy>& occupancy);
+    void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, const std::vector<Occupancy>& occupancy);
+    template <typename T>
+    void NormalizeDistribution(std::vector<T>& variable, const std::vector<Occupancy>& occupancy);
+
+    void LogNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float base = 2.7);
 
     float EquallyDistributed01F();
 
@@ -140,7 +142,25 @@ inline double GSL::Utils::KLD(
 }
 
 template <typename T>
-inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, std::vector<Occupancy>& occupancy)
+void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, const std::vector<GSL::Occupancy>& occupancy)
+{
+    T total = 0;
+    for (int i = 0; i < variable.size(); i++)
+    {
+        if (occupancy[i] == GSL::Occupancy::Free)
+            total += variable[i];
+    }
+
+#pragma omp parallel for
+    for (int i = 0; i < variable.size(); i++)
+    {
+        if (occupancy[i] == GSL::Occupancy::Free)
+            variable[i] = variable[i] / total;
+    }
+}
+
+template <typename T>
+inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, const std::vector<Occupancy>& occupancy)
 {
     double total = 0;
     for (int i = 0; i < variable.size(); i++)

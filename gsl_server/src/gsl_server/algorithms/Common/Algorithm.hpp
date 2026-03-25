@@ -1,5 +1,6 @@
 #pragma once
 #include "gsl_server/core/FunctionQueue.hpp"
+#include <filesystem>
 #include <rclcpp/rclcpp.hpp>
 #include <gsl_server/core/ros_typedefs.hpp>
 #include <gsl_server/core/Navigation.hpp>
@@ -62,7 +63,7 @@ namespace GSL
         virtual void onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
         virtual void OnCompleteNavigation(GSLResult result, State* previousState);
         
-        
+        void SimulateMeasurements(std::filesystem::path file);
         
         void onGetCostMap(const OccupancyGrid::SharedPtr msg);
         void localizationCallback(const PoseWithCovarianceStamped::SharedPtr msg);

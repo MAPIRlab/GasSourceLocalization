@@ -152,11 +152,23 @@ def launch_setup(context, *args, **kwargs):
     windMapCreator = Node(
         package="wind_map_creator",
         executable="gui_pub",
-        prefix="xterm -hold -e",
         parameters=[
                 {"listenTopic": parse_substitution("$(var robot_name)/initialpose")},
                 {"publishTopic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
                 {"poseTopic": parse_substitution("$(var robot_name)/amcl_pose")}
+        ],
+    )
+
+    observationRecorder = Node(
+        package="gsl_server",
+        executable="observation_recorder",
+        name="obs",
+        # prefix="xterm -hold -e",
+        parameters=[
+                {"pose_topic": parse_substitution("$(var robot_name)/amcl_pose")},
+                {"wind_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
+                {"gas_topic": parse_substitution("$(var robot_name)/PID/Sensor_reading")},
+                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_data", "data1")},
         ],
     )
 
@@ -179,6 +191,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_call)
     actions.append(rviz)
     actions.append(windMapCreator)
+    actions.append(observationRecorder)
 
     return actions
 

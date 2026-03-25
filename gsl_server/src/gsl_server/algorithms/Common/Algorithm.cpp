@@ -4,6 +4,7 @@
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <yaml-cpp/yaml.h>
 
 namespace GSL
 {
@@ -168,6 +169,27 @@ namespace GSL
             stateMachine.forceResetState(waitForGasState.get());
         else
             stateMachine.forceResetState(stopAndMeasureState.get());
+    }
+
+    void Algorithm::SimulateMeasurements(std::filesystem::path file)
+    {
+        GSL_INFO("Reading measurements from file {}", file.c_str());
+        YAML::Node root = YAML::LoadFile(file);
+        for (YAML::Node entry : root)
+        {
+            YAML::Node pose = entry["pose"];
+            currentRobotPosition.x = pose["x"].as<float>();
+            currentRobotPosition.y = pose["y"].as<float>();
+
+            YAML::Node wind = entry["wind"];
+            float wind_direction = wind["direction"].as<float>();
+            float wind_speed = wind["speed"].as<float>();
+
+            YAML::Node gas = entry["gas"];
+            float concentration = gas["concentration"].as<float>(); 
+
+            processGasAndWindMeasurements(concentration, wind_speed, wind_direction);
+        }
     }
 
     // This is overriden by non-reactive methods to be based on the uncertainty of the estimation

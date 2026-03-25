@@ -81,37 +81,22 @@ namespace GSL::Utils
         return uniformRandomT(min, max);
     }
 
-    void NormalizeDistribution(std::vector<double>& variable, std::vector<Occupancy>& occupancy)
+    void LogNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float base)
     {
-        double total = 0;
-        for (int i = 0; i < variable.size(); i++)
+        float max = 0;
+        for (size_t i = 0; i < vec.size(); i++)
         {
-            if (occupancy[i] == Occupancy::Free)
-                total += variable[i];
+            if (occupancy.at(i) != Occupancy::Free)
+                continue;
+            vec.at(i) = std::log(vec.at(i) + 1);
+            max = std::max(max, vec.at(i));
         }
 
-#pragma omp parallel for
-        for (int i = 0; i < variable.size(); i++)
+        for (size_t i = 0; i < vec.size(); i++)
         {
-            if (occupancy[i] == Occupancy::Free)
-                variable[i] = variable[i] / total;
-        }
-    }
-
-    void NormalizeDistributionLong(std::vector<long double>& variable, std::vector<Occupancy>& occupancy)
-    {
-        long double total = 0;
-        for (int i = 0; i < variable.size(); i++)
-        {
-            if (occupancy[i] == Occupancy::Free)
-                total += variable[i];
-        }
-
-#pragma omp parallel for
-        for (int i = 0; i < variable.size(); i++)
-        {
-            if (occupancy[i] == Occupancy::Free)
-                variable[i] = variable[i] / total;
+            if (occupancy.at(i) != Occupancy::Free)
+                continue;
+            vec.at(i) = vec.at(i) / max;
         }
     }
 

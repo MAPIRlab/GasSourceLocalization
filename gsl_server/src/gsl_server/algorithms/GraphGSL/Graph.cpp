@@ -112,7 +112,7 @@ namespace GSL
             node->AddObservation(position, gasConcentration);
         }
         if (!accepted)
-            GSL_INFO("Observation not accepted by any nodes!");
+            GSL_INFO("Observation at {} not accepted by any nodes!", position);
     }
 
     void Graph::UpdateAllWindMaps()
@@ -172,17 +172,6 @@ namespace GSL
             }
 
             closedNodes.insert(realNode->id);
-        }
-
-        // second round
-        for (auto node : nodes)
-        {
-            if (!Is<RealNode>(node))
-                continue;
-
-            auto realNode = As<RealNode>(node);
-            if (realNode->isDirty())
-                realNode->GetWindMap();
         }
     }
 
