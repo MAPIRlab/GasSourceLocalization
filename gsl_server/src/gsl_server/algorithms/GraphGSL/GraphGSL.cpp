@@ -50,8 +50,6 @@ namespace GSL
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<ManualNavigationState>(this);
         
-        // update first to clear the dirty flag and initialize the maps to 0
-        graph.UpdateAllWindMaps();
         SimulateMeasurements(std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "test_data" / "data1");
         
         stateMachine.forceSetState(movingState.get());

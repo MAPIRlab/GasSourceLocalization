@@ -51,7 +51,7 @@ namespace GSL
         gas.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);  // TODO what happens to the gas map on resize?
         wind.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
         outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
-        windDirty = true;
+        // windDirty = true; //TODO if we want to actually allow resizing, this would be necesary. Buut it kinda messes up the global update to have everything marked as dirty from the beginning
 
         if (observations.size() > 0)
             gmrf->setObservations_GMRF(observations);

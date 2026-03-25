@@ -49,7 +49,7 @@ namespace GSL
         static gmrfw::TOccupancyMap ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata);
         Grid2D<Vector2> AsGrid();
 
-        bool windDirty = true;
+        bool windDirty = false;
         std::vector<Occupancy> occupancy;
         std::vector<int> outletMask;
         std::vector<Vector2> wind;
