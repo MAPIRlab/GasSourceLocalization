@@ -31,6 +31,7 @@ namespace GSL::Graph_internal
             float noiseSTDev = 0.1;
             size_t minWarmupIterations = 500;
             size_t maxWarmupIterations = 2000;
+            float normalizationBase = 2.5;
         };
         static Options options;
 

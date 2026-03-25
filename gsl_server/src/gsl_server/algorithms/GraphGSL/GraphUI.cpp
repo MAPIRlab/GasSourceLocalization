@@ -208,6 +208,8 @@ namespace GSL
         ImGui::DragFloat("Noise sigma", &SimulationSystem::options.noiseSTDev, 0.01, 0, 1.0);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Blur sigma", &SimulationSystem::options.blurSigma, 0.01, 0, 2.0);
+        ImGui::SetNextItemWidth(100);
+        ImGui::DragFloat("Normalization base", &SimulationSystem::options.normalizationBase, 0.01, 0, 100.0);
 
         ImGui::End();
     }

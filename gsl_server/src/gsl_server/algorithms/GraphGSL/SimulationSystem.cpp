@@ -1,5 +1,6 @@
 #include "SimulationSystem.hpp"
 #include "Node.hpp"
+#include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 
 namespace GSL::Graph_internal
@@ -31,6 +32,7 @@ namespace GSL::Graph_internal
 
             Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
             result.simulation->Run(*result.hitMap, type);
+            Utils::LogNormalize(*result.hitMap, realNode->GetOccupancy().occupancy);
             Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
         }
         return result;
@@ -72,7 +74,9 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
+        Utils::LogNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationBase);
         Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+        Utils::NormalizeDistribution(*result.hitMap, realNode->GetOccupancy().occupancy);
 
         return result;
     }

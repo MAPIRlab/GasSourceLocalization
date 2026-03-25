@@ -166,7 +166,7 @@ namespace GSL::PMFS_internal
         GSL_INFO("Number of levels in the simulation: {0}", numberOfLevelsSimulated);
         GSL_INFO("Total number of simulations: {0}", numberOfSimulations);
 
-        Utils::NormalizeDistributionLong(
+        Utils::NormalizeDistribution<long double>(
             sourceProbInternal,
             sourceProb.occupancy);
 
