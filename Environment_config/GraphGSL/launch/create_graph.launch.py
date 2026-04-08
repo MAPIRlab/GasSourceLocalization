@@ -25,8 +25,8 @@ def launch_setup(context, *args, **kwargs):
         name="creator",
         parameters=[
             {
-                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "test_graph", "occupancy.yaml"),
-                "root_directory": "/home/pepe/ros2_ws/src/GasSourceLocalization/Environment_config/GraphGSL/test_graph"
+                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "second_graph", "occupancy.yaml"),
+                "root_directory": "/mnt/HDD/colcon_ws/src/GSL/Environment_config/GraphGSL/second_graph"
             },
         ],
     )
