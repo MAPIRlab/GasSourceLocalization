@@ -81,7 +81,27 @@ namespace GSL::Utils
         return uniformRandomT(min, max);
     }
 
-    void LogNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float base)
+    void PowerMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float power)
+    {
+        float max = 0;
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            if (occupancy.at(i) != Occupancy::Free)
+                continue;
+            vec.at(i) = std::pow(vec.at(i), power);
+            max = std::max(max, vec.at(i));
+        }
+
+#pragma omp parallel for
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            if (occupancy.at(i) != Occupancy::Free)
+                continue;
+            vec.at(i) = vec.at(i) / max;
+        }
+    }
+
+    void LogMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy)
     {
         float max = 0;
         for (size_t i = 0; i < vec.size(); i++)
@@ -92,6 +112,7 @@ namespace GSL::Utils
             max = std::max(max, vec.at(i));
         }
 
+#pragma omp parallel for
         for (size_t i = 0; i < vec.size(); i++)
         {
             if (occupancy.at(i) != Occupancy::Free)

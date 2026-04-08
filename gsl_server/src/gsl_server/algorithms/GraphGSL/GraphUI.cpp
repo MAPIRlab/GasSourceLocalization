@@ -128,7 +128,6 @@ namespace GSL
             std::string name = node ? node->id : "Null";
             ImGui::Text("Currently selected node: %s", name.c_str());
 
-            ImGui::Checkbox("Cummulative map", &SimulationSystem::options.cummulativeMap);
             ImGui::Checkbox("Simulate point", &simulationOptions.exactPoint);
 
             if (simulationOptions.exactPoint)
@@ -204,12 +203,13 @@ namespace GSL
         ImGui::SetNextItemWidth(100);
         ImGui::InputScalar("Max Warmup iterations", ImGuiDataType_U64, &SimulationSystem::options.maxWarmupIterations);
 
+        ImGui::Checkbox("Cummulative map", &SimulationSystem::options.cummulativeMap);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Noise sigma", &SimulationSystem::options.noiseSTDev, 0.01, 0, 1.0);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Blur sigma", &SimulationSystem::options.blurSigma, 0.01, 0, 2.0);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Normalization base", &SimulationSystem::options.normalizationBase, 0.01, 0, 100.0);
+        ImGui::DragFloat("Normalization power", &SimulationSystem::options.normalizationPower, 0.01, 0, 5.0);
 
         ImGui::End();
     }

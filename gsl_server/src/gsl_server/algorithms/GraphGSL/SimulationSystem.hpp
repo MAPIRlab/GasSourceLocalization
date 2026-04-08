@@ -27,11 +27,11 @@ namespace GSL::Graph_internal
         struct Options
         {
             bool cummulativeMap = true;
-            float blurSigma = 1.0;
+            float blurSigma = 0.7;
             float noiseSTDev = 0.1;
             size_t minWarmupIterations = 500;
             size_t maxWarmupIterations = 2000;
-            float normalizationBase = 2.5;
+            float normalizationPower = 1.0;
         };
         static Options options;
 

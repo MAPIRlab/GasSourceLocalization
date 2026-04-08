@@ -186,11 +186,35 @@ namespace GSL
         if (type == Type::HitFrequency)
         {
             float normalizationVal = timesteps;
-
             // convert the total hit count into relative frequency
             for (int i = 0; i < wind.occupancy.size(); i++)
-                hitMap[i] = std::clamp(hitMap[i] / normalizationVal, 0.f, 1.f);
+                hitMap[i] = hitMap[i] / normalizationVal;
         }
+        else
+        {
+            // take the value of the 5th percentile to avoid outliers messing things up (unless it is 0, which means very few cells even contain any gas)
+            std::vector<float> sorted;
+            sorted.reserve(hitMap.size());
+            std::copy(hitMap.begin(), hitMap.end(), std::back_inserter(sorted));
+            std::sort(sorted.begin(), sorted.end());
+
+            size_t index_fifth = 0.95 * sorted.size();
+            float fifth = sorted.at(index_fifth);
+            float maxVal = 0;
+
+            if (fifth > 0)
+                maxVal = fifth;
+            else
+            {
+                // just take the first non-zero value
+                for (size_t i = index_fifth; i < sorted.size(); i++)
+                    if (sorted.at(i) > 0)
+                        maxVal = sorted.at(i);
+            }
+            for (int i = 0; i < wind.occupancy.size(); i++)
+                hitMap[i] = std::clamp(hitMap[i], 0.f, maxVal);
+        }
+
     }
 
     Vector2 SimulationSource::getPoint() const
@@ -266,6 +290,7 @@ namespace GSL
         cv::Mat resized;
         cv::resize(mat, resized, cv::Size(mat.size[1] * 10, mat.size[0] * 10), 0, 0, cv::INTER_NEAREST);
         cv::imshow(name, resized);
+        cv::setWindowProperty(name, cv::WND_PROP_TOPMOST, 1); // force focus
         while (cv::getWindowProperty(name, cv::WindowPropertyFlags::WND_PROP_VISIBLE) && cv::waitKey(30) == -1)
             ;
         cv::destroyWindow(name);

@@ -32,8 +32,9 @@ namespace GSL::Graph_internal
 
             Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
             result.simulation->Run(*result.hitMap, type);
-            Utils::LogNormalize(*result.hitMap, realNode->GetOccupancy().occupancy);
+            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationPower);
             Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, 1);
         }
         return result;
     }
@@ -74,9 +75,17 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-        Utils::LogNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationBase);
-        Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
-        Utils::NormalizeDistribution(*result.hitMap, realNode->GetOccupancy().occupancy);
+
+        if (options.cummulativeMap)
+        {
+            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationPower);
+            Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, 1);
+        }
+        else
+        {
+            Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+        }
 
         return result;
     }

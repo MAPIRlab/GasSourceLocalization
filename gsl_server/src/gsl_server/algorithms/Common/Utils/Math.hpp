@@ -45,7 +45,8 @@ namespace GSL::Utils
     template <typename T>
     void NormalizeDistribution(std::vector<T>& variable, const std::vector<Occupancy>& occupancy);
 
-    void LogNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float base = 2.7);
+    void LogMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy);
+    void PowerMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float power = 1);
 
     float EquallyDistributed01F();
 
