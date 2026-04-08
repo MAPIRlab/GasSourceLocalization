@@ -45,7 +45,8 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e",
                 parameters=[
-                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_graph")},
+                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "second_graph")},
+                    # {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_data", "data1")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
 
@@ -191,7 +192,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_call)
     actions.append(rviz)
     actions.append(windMapCreator)
-    actions.append(observationRecorder)
+    # actions.append(observationRecorder)
 
     return actions
 

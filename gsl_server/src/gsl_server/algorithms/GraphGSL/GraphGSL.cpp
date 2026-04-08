@@ -46,12 +46,14 @@ namespace GSL
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
         waitForMapState->shouldWaitForGas = false;
-        
+
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<ManualNavigationState>(this);
-        
-        SimulateMeasurements(std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "test_data" / "data1");
-        
+
+        std::string simulatedMeasurementsPath = node->declare_parameter<std::string>("sim_measurements_path", "?");
+        if (simulatedMeasurementsPath != "?")
+            SimulateMeasurements(simulatedMeasurementsPath);
+
         stateMachine.forceSetState(movingState.get());
     }
 
