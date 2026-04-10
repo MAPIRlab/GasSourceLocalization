@@ -1,0 +1,65 @@
+- pose:
+    x: 4.4484777450561523
+    y: 15.207180023193359
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -1.59488726
+    speed: 0.300000012
+    frame: anemometer
+  gas:
+    concentration: 0
+- pose:
+    x: 8.9498567581176758
+    y: 15.183036804199219
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -1.67753398
+    speed: 0.300000012
+    frame: anemometer
+  gas:
+    concentration: 0
+- pose:
+    x: 8.7107715606689453
+    y: 14.004691123962402
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -2.12939072
+    speed: 0.275000006
+    frame: anemometer
+  gas:
+    concentration: 0
+- pose:
+    x: 4.5716896057128906
+    y: 13.235828399658203
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -1.82077527
+    speed: 0.300000012
+    frame: anemometer
+  gas:
+    concentration: 0
+- pose:
+    x: 3.4149670600891113
+    y: 5.3179850578308105
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -1.81002772
+    speed: 0.275000006
+    frame: anemometer
+  gas:
+    concentration: 0

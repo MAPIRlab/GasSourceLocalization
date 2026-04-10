@@ -46,13 +46,13 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e",
                 parameters=[
                     {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph3")},
-                    # {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data1")},
+                    {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_3")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
 
                     {"GMRF_lambdaPrior_advection": 100.0},             # Advection constraint -> neighboring cells should have similar wind values in the direction of the wind
                     {"GMRF_lambdaPrior_mass_conservation": 1000.0},    # Mass conservation law -> divergence of the wind field is zero
-                    {"GMRF_lambdaPrior_diffusion": 0.0001},            # Diffusion constraint -> neighboring cells should have similar wind values in all directions
+                    {"GMRF_lambdaPrior_diffusion": 10.0},              # Diffusion constraint -> neighboring cells should have similar wind values in all directions
                     {"GMRF_lambdaPrior_obstacles": 2000.0},            # Obstacles --> cells close to obstacles has only tangencial wind
                 ],
                 on_exit=Shutdown()
@@ -169,7 +169,7 @@ def launch_setup(context, *args, **kwargs):
                 {"pose_topic": parse_substitution("$(var robot_name)/amcl_pose")},
                 {"wind_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
                 {"gas_topic": parse_substitution("$(var robot_name)/PID/Sensor_reading")},
-                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data1")},
+                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_3")},
         ],
     )
 
@@ -192,7 +192,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_call)
     actions.append(rviz)
     actions.append(windMapCreator)
-    # actions.append(observationRecorder)
+    actions.append(observationRecorder)
 
     return actions
 

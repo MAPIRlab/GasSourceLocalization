@@ -70,7 +70,7 @@ namespace GSL
         {
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.05, 1., 10.);
+            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.005, 1., 10.);
             SelectNodes();
         }
         ImGui::End();

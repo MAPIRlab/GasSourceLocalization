@@ -161,7 +161,6 @@ void GraphCreator::CreateNodeWindow()
             {
                 std::ofstream yamlFile(rootPath / node_id / "occupancy.yaml");
                 YAML::Emitter emitter(yamlFile);
-                emitter.SetFloatPrecision(2);
                 emitter << YAML::BeginMap;
                 emitter << YAML::Key << "image" << YAML::Value << "occupancy.pgm";
                 emitter << YAML::Key << "resolution" << YAML::Value << completeMap.metadata.cellSize;
@@ -224,7 +223,6 @@ void GraphCreator::CreateEmptyNodeWindow()
             {
                 std::ofstream yamlFile(rootPath / node_id / "out.yaml");
                 YAML::Emitter emitter(yamlFile);
-                emitter.SetFloatPrecision(2);
                 emitter << YAML::BeginMap;
                 emitter << YAML::Key << "pos_x" << YAML::Value << emptyPosition.x;
                 emitter << YAML::Key << "pos_y" << YAML::Value << emptyPosition.y;
@@ -304,7 +302,6 @@ void GraphCreator::CreateLinkWindow()
 
         std::ofstream yamlFile(rootPath / firstID / "links" / fmt::format("{}.yaml", secondID));
         YAML::Emitter emitter(yamlFile);
-        emitter.SetFloatPrecision(2);
         emitter << YAML::BeginMap;
         emitter << YAML::Key << "min_x" << YAML::Value << currentAABB.min.x;
         emitter << YAML::Key << "min_y" << YAML::Value << currentAABB.min.y;

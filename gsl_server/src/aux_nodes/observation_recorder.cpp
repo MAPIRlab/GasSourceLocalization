@@ -111,7 +111,6 @@ void ObservationRecorder::Serialize()
     std::ofstream yamlFile(filePath, std::ios_base::app);
     GSL_INFO("Writing messages to '{}'", filePath.c_str());
     YAML::Emitter emitter(yamlFile);
-    emitter.SetFloatPrecision(2);
 
     // WIND
     emitter << YAML::Value << YAML::Block << YAML::BeginSeq;
