@@ -83,6 +83,11 @@ namespace GSL
             : data(_data), occupancy(_occupancy), metadata(_metadata)
         {}
 
+        template <typename OtherT>
+        Grid2D(std::vector<T>& data, const Grid2D<OtherT>& other)
+            : data(data), occupancy(other.occupancy), metadata(other.metadata)
+        {}
+
         T& dataAt(size_t col, size_t row) const
         {
             return data.at(metadata.indexOf(col, row));
