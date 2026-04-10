@@ -25,8 +25,8 @@ def launch_setup(context, *args, **kwargs):
         name="creator",
         parameters=[
             {
-                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "data", "second_graph", "occupancy.yaml"),
-                "root_directory": os.path.join(get_package_share_directory("graphgsl_env"), "data", "second_graph")
+                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph3", "occupancy.yaml"),
+                "root_directory": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph3")
             },
         ],
     )

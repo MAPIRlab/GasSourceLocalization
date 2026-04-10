@@ -45,7 +45,7 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e",
                 parameters=[
-                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "second_graph")},
+                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph3")},
                     # {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data1")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
