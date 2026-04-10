@@ -254,6 +254,9 @@ namespace GSL
 
         ImGui::Begin("Simulation configuration");
         ImGui::SetNextItemWidth(100);
+        ImGui::InputScalar("Iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.iterationLimit);
+
+        ImGui::SetNextItemWidth(100);
         ImGui::InputScalar("Min Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.minWarmupIterations);
 
         ImGui::SetNextItemWidth(100);

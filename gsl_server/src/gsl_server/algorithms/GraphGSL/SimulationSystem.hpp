@@ -24,6 +24,7 @@ namespace GSL::Graph_internal
             bool cummulativeMap = true;
             float blurSigma = 0.7;
             float noiseSTDev = 0.1;
+            size_t iterationLimit = 2000;
             size_t minWarmupIterations = 500;
             size_t maxWarmupIterations = 2000;
             float normalizationPower = 1.0;
