@@ -45,8 +45,8 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e",
                 parameters=[
-                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "second_graph")},
-                    # {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_data", "data1")},
+                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "second_graph")},
+                    # {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data1")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
 
@@ -169,7 +169,7 @@ def launch_setup(context, *args, **kwargs):
                 {"pose_topic": parse_substitution("$(var robot_name)/amcl_pose")},
                 {"wind_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
                 {"gas_topic": parse_substitution("$(var robot_name)/PID/Sensor_reading")},
-                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "test_data", "data1")},
+                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data1")},
         ],
     )
 
@@ -179,7 +179,7 @@ def launch_setup(context, *args, **kwargs):
         name="rviz",
         # prefix="xterm -e",
         arguments=[
-            "-d" + os.path.join(get_package_share_directory("graphgsl_env"), "launch", "graph.rviz")
+            "-d" + os.path.join(get_package_share_directory("graphgsl_env"), "config", "launch", "graph.rviz")
         ],
     )
     actions = []
