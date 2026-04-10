@@ -1,3 +1,4 @@
+#include "gsl_server/core/Logging.hpp"
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
 #include <random>
 
@@ -99,6 +100,34 @@ namespace GSL::Utils
                 continue;
             vec.at(i) = vec.at(i) / max;
         }
+    }
+
+    void Windsorize(std::vector<float>& vec, float percentile)
+    {
+        GSL_ASSERT(percentile > 0);
+        GSL_ASSERT(percentile < 100);
+
+        // take the value of the nth percentile to avoid outliers messing things up (unless it is 0, which means very few cells even contain any gas)
+        std::vector<float> sorted;
+        sorted.reserve(vec.size());
+        std::copy(vec.begin(), vec.end(), std::back_inserter(sorted));
+        std::sort(sorted.begin(), sorted.end());
+
+        size_t index_nth = (100 - percentile) / 100. * sorted.size();
+        float nth = sorted.at(index_nth);
+        float maxVal = 0;
+
+        if (nth > 0)
+            maxVal = nth;
+        else
+        {
+            // just take the first non-zero value
+            for (size_t i = index_nth; i < sorted.size(); i++)
+                if (sorted.at(i) > 0)
+                    maxVal = sorted.at(i);
+        }
+        for (int i = 0; i < vec.size(); i++)
+            vec[i] = std::clamp(vec[i], 0.f, maxVal);
     }
 
     void LogMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy)

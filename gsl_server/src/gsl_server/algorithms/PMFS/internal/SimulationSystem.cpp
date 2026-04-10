@@ -265,6 +265,6 @@ namespace GSL::PMFS_internal
             .visibilityMap = *visibilityMap};
         sim.Run(hitMap);
 
-        sim.displayImage(hitMap);
+        Simulation::displayImage(Grid2D<float>(hitMap, wind));
     }
 } // namespace GSL::PMFS_internal

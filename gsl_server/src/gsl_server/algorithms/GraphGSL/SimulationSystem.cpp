@@ -5,37 +5,33 @@
 
 namespace GSL::Graph_internal
 {
-    SimulationSystem::Options SimulationSystem::options;
-
     SimulationSystem::SimWithResult SimulationSystem::SimulateFromPoint(const std::shared_ptr<RealNode> realNode, Vector2 point)
     {
         ScopedStopwatch s("sims");
         SimWithResult result;
-        // for (size_t i = 0; i < 200; i++)
-        {
-            result = SimWithResult{};
-            result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
-            result.simulation = std::shared_ptr<Simulation>(new Simulation{
-                .source = SimulationSource(point),
-                .noiseSTDev = options.noiseSTDev,
-                .minWarmupIterations = options.minWarmupIterations,
-                .maxWarmupIterations = options.maxWarmupIterations,
-                .wind = realNode->GetWindMap(),
-                .outlets = SimulationOutlets{
-                    .mask = realNode->GetOutletsMask(),
-                    .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
-                },
-            });
+        result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
+        result.simulation = std::shared_ptr<Simulation>(new Simulation{
+            .source = SimulationSource(point),
+            .noiseSTDev = options.noiseSTDev,
+            .minWarmupIterations = options.minWarmupIterations,
+            .maxWarmupIterations = options.maxWarmupIterations,
+            .wind = realNode->GetWindMap(),
+            .outlets = SimulationOutlets{
+                .mask = realNode->GetOutletsMask(),
+                .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
+            },
+        });
 
-            result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
-            result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
+        result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
+        result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
 
-            Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
-            result.simulation->Run(*result.hitMap, type);
-            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationPower);
-            Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
-            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, 1);
-        }
+        Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
+        result.simulation->Run(*result.hitMap, type);
+
+        Utils::Windsorize(*result.hitMap, 5);
+        Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationPower);
+        Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+        Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, 1);
         return result;
     }
 
@@ -78,14 +74,17 @@ namespace GSL::Graph_internal
 
         if (options.cummulativeMap)
         {
+            Utils::Windsorize(*result.hitMap, 5);
             Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationPower);
             Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
             Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, 1);
         }
         else
-        {
             Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
-        }
+
+        // store the simulation result in the cache
+        //-------------------
+        simulationCache[arc.getUID()] = result;
 
         return result;
     }

@@ -1,4 +1,5 @@
 #include "SimulationSystem.hpp"
+#include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
@@ -124,28 +125,34 @@ namespace GSL
     {
         ImGui::Begin("Simulate Source");
         {
-            std::shared_ptr<Node> node = gsl->graph.GetCorrespondingNode(selectedCoordinates);
-            std::string name = node ? node->id : "Null";
+            auto node = gsl->graph.GetCorrespondingNode(selectedCoordinates);
+            if (selectedNode.node != node)
+            {
+                selectedNode.node = node;
+                selectedNode.combineWeights = std::vector<float>(node->arcs.size(), 0);
+            }
+
+            std::string name = selectedNode.node ? selectedNode.node->id : "Null";
             ImGui::Text("Currently selected node: %s", name.c_str());
 
             ImGui::Checkbox("Simulate point", &simulationOptions.exactPoint);
 
             if (simulationOptions.exactPoint)
                 ImGui::DragFloat2("Selected point", &selectedCoordinates.x, 0.02);
-            else if (node)
+            else if (selectedNode.node)
             {
-                if (node->arcs.size() == 0)
+                if (selectedNode.node->arcs.size() == 0)
                     ImGui::Text("Node has no arcs!");
                 else
                 {
-                    if (simulationOptions.selectedArcIdx > node->arcs.size())
+                    if (simulationOptions.selectedArcIdx > selectedNode.node->arcs.size())
                         simulationOptions.selectedArcIdx = 0;
 
                     ImGui::PushID("node");
-                    if (ImGui::BeginCombo("Arc", node->arcs.at(simulationOptions.selectedArcIdx).to.lock()->id.c_str()))
+                    if (ImGui::BeginCombo("Arc", selectedNode.node->arcs.at(simulationOptions.selectedArcIdx).to.lock()->id.c_str()))
                     {
-                        for (size_t i = 0; i < node->arcs.size(); i++)
-                            if (ImGui::Selectable(node->arcs.at(i).to.lock()->id.c_str()))
+                        for (size_t i = 0; i < selectedNode.node->arcs.size(); i++)
+                            if (ImGui::Selectable(selectedNode.node->arcs.at(i).to.lock()->id.c_str()))
                                 simulationOptions.selectedArcIdx = i;
 
                         ImGui::EndCombo();
@@ -163,28 +170,28 @@ namespace GSL
             ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
             if (ImGui::Button("Run simulation"))
             {
-                auto realNode = As<RealNode>(node);
+                auto realNode = As<RealNode>(selectedNode.node);
                 if (realNode)
                 {
                     // Run
-                    gsl->functionQueue.submit([this, realNode]()
-                                              {
-                                                  simulationOptions.simulationEnabled = false;
-                                                  SimulationSystem::SimWithResult result;
-                                                  if (simulationOptions.exactPoint)
-                                                      result = SimulationSystem::SimulateFromPoint(realNode, selectedCoordinates);
-                                                  else
-                                                      result = SimulationSystem::SimulateFromArc(realNode->arcs.at(simulationOptions.selectedArcIdx));
+                    auto lambda = [this, realNode]()
+                    {
+                        simulationOptions.simulationEnabled = false;
+                        SimulationSystem::SimWithResult result;
+                        if (simulationOptions.exactPoint)
+                            result = gsl->simulationSystem.SimulateFromPoint(realNode, selectedCoordinates);
+                        else
+                            result = gsl->simulationSystem.SimulateFromArc(realNode->arcs.at(simulationOptions.selectedArcIdx));
 
-                                                  // Log results
-                                                  GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
-                                                  for (size_t i = 0; i < result.simulation->outlets->exitsCount.size(); i++)
-                                                      GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i),
-                                                               realNode->arcs.at(i).to.lock()->id);
+                        // Log results
+                        GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
+                        for (size_t i = 0; i < result.simulation->outlets->exitsCount.size(); i++)
+                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i), realNode->arcs.at(i).to.lock()->id);
 
-                                                  result.simulation->displayImage(*result.hitMap, "result", simulationOptions.imageDisplayPower);
-                                                  simulationOptions.simulationEnabled = true;
-                                              });
+                        Simulation::displayImage(Grid2D<float>(*result.hitMap, realNode->GetOccupancy()), "result", simulationOptions.imageDisplayPower);
+                        simulationOptions.simulationEnabled = true;
+                    };
+                    gsl->functionQueue.submit(lambda);
                 }
                 else
                     GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
@@ -192,24 +199,73 @@ namespace GSL
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Image color power", &simulationOptions.imageDisplayPower, 0.05, 0, 10);
+
+            // Combine multiple maps
+            // ------------------------
+            if (ImGui::TreeNode("Arcs"))
+            {
+                if (selectedNode.node)
+                {
+                    for (size_t i = 0; i < selectedNode.node->arcs.size(); i++)
+                    {
+                        const Arc& arc = selectedNode.node->arcs.at(i);
+                        ImGui::SetNextItemWidth(100);
+                        ImGui::DragFloat(fmt::format("{}##{}", arc.to.lock()->id, i).c_str(), &selectedNode.combineWeights.at(i), 0.01, 0, 1);
+                    }
+                }
+                ImGui::TreePop();
+            }
+
+            if (ImGui::Button("Combine results"))
+            {
+                auto lambda = [this]()
+                {
+                    simulationOptions.simulationEnabled = false;
+
+                    auto realNode = As<RealNode>(selectedNode.node);
+                    std::vector<float> combinedMap(realNode->GetOccupancy().metadata.dimensions.x * realNode->GetOccupancy().metadata.dimensions.y, 0);
+                    for (size_t i = 0; i < selectedNode.node->arcs.size(); i++)
+                    {
+                        float weight = selectedNode.combineWeights.at(i);
+                        if (weight <= 0)
+                            continue;
+
+                        const Arc& arc = selectedNode.node->arcs.at(i);
+
+                        if (!gsl->simulationSystem.simulationCache.contains(arc.getUID()))
+                            gsl->simulationSystem.SimulateFromArc(arc);
+
+                        SimulationSystem::SimWithResult result = gsl->simulationSystem.simulationCache.at(arc.getUID());
+                        for (size_t j = 0; j < combinedMap.size(); j++)
+                            combinedMap.at(j) += result.hitMap->at(j) * weight;
+                    }
+
+                    Utils::Windsorize(combinedMap, 5);
+                    Utils::PowerMaxNormalize(combinedMap, realNode->GetOccupancy().data, 1);
+                    Simulation::displayImage(Grid2D<float>(combinedMap, realNode->GetOccupancy()));
+                    simulationOptions.simulationEnabled = true;
+                };
+                gsl->functionQueue.submit(lambda);
+            }
+
             ImGui::EndDisabled();
         }
         ImGui::End();
 
         ImGui::Begin("Simulation configuration");
         ImGui::SetNextItemWidth(100);
-        ImGui::InputScalar("Min Warmup iterations", ImGuiDataType_U64, &SimulationSystem::options.minWarmupIterations);
+        ImGui::InputScalar("Min Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.minWarmupIterations);
 
         ImGui::SetNextItemWidth(100);
-        ImGui::InputScalar("Max Warmup iterations", ImGuiDataType_U64, &SimulationSystem::options.maxWarmupIterations);
+        ImGui::InputScalar("Max Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.maxWarmupIterations);
 
-        ImGui::Checkbox("Cummulative map", &SimulationSystem::options.cummulativeMap);
+        ImGui::Checkbox("Cummulative map", &gsl->simulationSystem.options.cummulativeMap);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Noise sigma", &SimulationSystem::options.noiseSTDev, 0.01, 0, 1.0);
+        ImGui::DragFloat("Noise sigma", &gsl->simulationSystem.options.noiseSTDev, 0.01, 0, 1.0);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Blur sigma", &SimulationSystem::options.blurSigma, 0.01, 0, 2.0);
+        ImGui::DragFloat("Blur sigma", &gsl->simulationSystem.options.blurSigma, 0.01, 0, 2.0);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Normalization power", &SimulationSystem::options.normalizationPower, 0.01, 0, 5.0);
+        ImGui::DragFloat("Normalization power", &gsl->simulationSystem.options.normalizationPower, 0.01, 0, 5.0);
 
         ImGui::End();
     }

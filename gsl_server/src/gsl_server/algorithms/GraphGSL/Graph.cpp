@@ -75,12 +75,14 @@ namespace GSL
                 }
                 otherNode = byName.at(name);
 
-                thisNode->arcs.push_back(Arc{
-                    .from = thisNode,
-                    .to = otherNode,
-                    .weight = 1,
-                    .aabb = aabb,
-                    .spawnPoint = spawnPoint});
+                Arc arc;
+                arc.from = thisNode;
+                arc.to = otherNode;
+                arc.weight = 1;
+                arc.aabb = aabb;
+                arc.spawnPoint = spawnPoint;
+
+                thisNode->arcs.push_back(arc);
             }
 
             thisNode->UpdateArcsMask();

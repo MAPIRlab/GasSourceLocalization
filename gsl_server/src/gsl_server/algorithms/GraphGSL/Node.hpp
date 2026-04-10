@@ -8,11 +8,23 @@ namespace GSL
 {
     struct Arc
     {
+        using ID = size_t;
+
         std::weak_ptr<class Node> from;
         std::weak_ptr<class Node> to;
         float weight;
         AABB2D aabb;
         Vector2 spawnPoint;
+
+        Arc() : uid(GenerateID())
+        {}
+        ID getUID() const { return uid; }
+
+    private:
+        ID uid;
+
+        static inline ID nextID = 0;
+        static ID GenerateID() { return nextID++; }
     };
 
     class Node

@@ -190,31 +190,6 @@ namespace GSL
             for (int i = 0; i < wind.occupancy.size(); i++)
                 hitMap[i] = hitMap[i] / normalizationVal;
         }
-        else
-        {
-            // take the value of the 5th percentile to avoid outliers messing things up (unless it is 0, which means very few cells even contain any gas)
-            std::vector<float> sorted;
-            sorted.reserve(hitMap.size());
-            std::copy(hitMap.begin(), hitMap.end(), std::back_inserter(sorted));
-            std::sort(sorted.begin(), sorted.end());
-
-            size_t index_fifth = 0.95 * sorted.size();
-            float fifth = sorted.at(index_fifth);
-            float maxVal = 0;
-
-            if (fifth > 0)
-                maxVal = fifth;
-            else
-            {
-                // just take the first non-zero value
-                for (size_t i = index_fifth; i < sorted.size(); i++)
-                    if (sorted.at(i) > 0)
-                        maxVal = sorted.at(i);
-            }
-            for (int i = 0; i < wind.occupancy.size(); i++)
-                hitMap[i] = std::clamp(hitMap[i], 0.f, maxVal);
-        }
-
     }
 
     Vector2 SimulationSource::getPoint() const
@@ -301,26 +276,26 @@ namespace GSL
         std::vector<float> hitMap(wind.data.size(), 0.0);
         Run(hitMap);
 
-        displayImage(hitMap);
+        displayImage(Grid2D<float>(hitMap, wind.occupancy, wind.metadata));
     }
 
-    void Simulation::displayImage(const std::vector<float>& hitMap, const std::string& imageName, float raisePower) const
+    void Simulation::displayImage(const Grid2D<float>& hitMap, const std::string& imageName, float raisePower)
     {
-        std::vector<float> hitMapCopy = hitMap;
+        std::vector<float> hitMapCopy = hitMap.data;
         for (float& f : hitMapCopy)
             f = std::pow(f, raisePower);
         cv::Mat asImage(hitMapCopy);
-        asImage = asImage.reshape(1, wind.metadata.dimensions.y);
+        asImage = asImage.reshape(1, hitMap.metadata.dimensions.y);
 
         cv::Mat inColor;
         asImage.convertTo(asImage, CV_8UC1, 255);
         cv::applyColorMap(asImage, inColor, cv::COLORMAP_VIRIDIS);
 
-        for (int j = 0; j < wind.metadata.dimensions.y; j++)
+        for (int j = 0; j < hitMap.metadata.dimensions.y; j++)
         {
-            for (int i = 0; i < wind.metadata.dimensions.x; i++)
+            for (int i = 0; i < hitMap.metadata.dimensions.x; i++)
             {
-                if (!wind.freeAt(i, j))
+                if (!hitMap.freeAt(i, j))
                     inColor.at<cv::Vec3b>(j, i) = cv::Vec3b(80, 80, 80);
             }
         }

@@ -3,6 +3,7 @@
 #include "GraphUI.hpp"
 #include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
+#include "SimulationSystem.hpp"
 
 namespace GSL
 {
@@ -20,6 +21,7 @@ namespace GSL
     private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
+        Graph_internal::SimulationSystem simulationSystem;
 
         struct Pubs
         {

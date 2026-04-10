@@ -1,13 +1,8 @@
 #pragma once
 
 #include "gsl_server/algorithms/Common/Simulation.hpp"
+#include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <vector>
-
-namespace GSL
-{
-    class Arc;
-    class RealNode;
-} // namespace GSL
 
 namespace GSL::Graph_internal
 {
@@ -21,8 +16,8 @@ namespace GSL::Graph_internal
         };
 
     public:
-        static SimWithResult SimulateFromPoint(const std::shared_ptr<RealNode> node, Vector2 point);
-        static SimWithResult SimulateFromArc(const Arc& arc);
+        SimWithResult SimulateFromPoint(const std::shared_ptr<RealNode> node, Vector2 point);
+        SimWithResult SimulateFromArc(const Arc& arc);
 
         struct Options
         {
@@ -33,9 +28,10 @@ namespace GSL::Graph_internal
             size_t maxWarmupIterations = 2000;
             float normalizationPower = 1.0;
         };
-        static Options options;
+        Options options;
 
+        std::map<Arc::ID, SimWithResult> simulationCache;
     private:
-        static inline std::map<std::shared_ptr<RealNode>, std::optional<SimulationBlurMask>> blurMasks;
+        std::map<std::shared_ptr<RealNode>, std::optional<SimulationBlurMask>> blurMasks;
     };
 } // namespace GSL::Graph_internal

@@ -40,6 +40,12 @@ namespace GSL
             float imageDisplayPower = 1;
             bool simulationEnabled = true;
         } simulationOptions;
+
+        struct SelectedNode
+        {
+            std::shared_ptr<class Node> node;
+            std::vector<float> combineWeights;
+        } selectedNode;
     };
 } // namespace GSL
 

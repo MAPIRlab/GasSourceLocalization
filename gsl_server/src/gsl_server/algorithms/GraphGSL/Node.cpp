@@ -111,7 +111,7 @@ namespace GSL
     {
         if (windDirty)
         {
-            gmrf->MAP_estimation_GMRF(50);
+            gmrf->MAP_estimation_GMRF(10);
 
 #pragma omp parallel for
             for (size_t i = 0; i < wind.size(); i++)
