@@ -258,9 +258,10 @@ namespace GSL
 
         ImGui::SetNextItemWidth(100);
         ImGui::InputScalar("Min Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.minWarmupIterations);
-
         ImGui::SetNextItemWidth(100);
         ImGui::InputScalar("Max Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.maxWarmupIterations);
+        ImGui::SetNextItemWidth(100);
+        ImGui::DragFloat("Warmup acceleration", &gsl->simulationSystem.options.warmupTimeAcc, 0.1, 0, 20);
 
         ImGui::Checkbox("Cummulative map", &gsl->simulationSystem.options.cummulativeMap);
         ImGui::SetNextItemWidth(100);

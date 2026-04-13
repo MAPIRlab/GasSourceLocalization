@@ -57,6 +57,7 @@ namespace GSL
         };
         SimulationSource source;
         bool warmup = false;
+        float warmupAcceleration = 2.0;
         size_t timesteps = 200;
         float deltaTime = 0.1;
         float noiseSTDev = 0.1;

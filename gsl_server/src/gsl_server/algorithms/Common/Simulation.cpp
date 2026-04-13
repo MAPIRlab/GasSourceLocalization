@@ -78,7 +78,7 @@ namespace GSL
     void Simulation::_Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type)
     {
         constexpr int numFilamentsIteration = 5;
-        size_t max_filaments = maxWarmupIterations * numFilamentsIteration + timesteps * numFilamentsIteration;
+        size_t max_filaments = maxWarmupIterations * warmupAcceleration * numFilamentsIteration + timesteps * numFilamentsIteration;
 
         // To avoid having to delete filaments from the middle of the vector, which is quite slow, we will ping-pong the active filaments between two vectors
         // at the start of any iteration, one vector (active) will contain all the released filaments and the other one will be empty
@@ -106,7 +106,7 @@ namespace GSL
             int iterationCount = 0;
             while (iterationCount < minWarmupIterations || (!stable && iterationCount < maxWarmupIterations))
             {
-                for (size_t i = 0; i < numFilamentsIteration; i++)
+                for (size_t i = 0; i < numFilamentsIteration * warmupAcceleration; i++)
                 {
                     activeFilamentVec->emplace_back();
                     activeFilamentVec->back().position = source.getPoint();
@@ -122,7 +122,7 @@ namespace GSL
                         continue;
 
                     // move active filaments
-                    moveFilament(filament, indices, deltaTime * 5, noiseSTDev);
+                    moveFilament(filament, indices, deltaTime * warmupAcceleration, noiseSTDev / warmupAcceleration);
 
                     // remove filaments
                     if (filamentIsOutside(filament))

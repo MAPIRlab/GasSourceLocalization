@@ -52,6 +52,7 @@ namespace GSL::Graph_internal
         result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
         result.simulation = std::shared_ptr<Simulation>(new Simulation{
             .source = SimulationSource(sourceAABB),
+            .warmupAcceleration = options.warmupTimeAcc,
             .timesteps = options.iterationLimit,
             .noiseSTDev = options.noiseSTDev,
             .minWarmupIterations = options.minWarmupIterations,
