@@ -201,19 +201,40 @@ namespace GSL
             else
                 color = Utils::create_color(1, 0, 0);
 
-            Marker marker;
-            marker.header.frame_id = "map";
-            marker.type = Marker::SPHERE;
-            marker.scale.x = 0.3;
-            marker.scale.y = 0.3;
-            marker.scale.z = 0.3;
-            marker.color = color;
-            marker.pose.position.x = position.x;
-            marker.pose.position.y = position.y;
-            marker.id = id;
-            id++;
-            array.markers.push_back(marker);
+            // node marker
+            {
+                Marker marker;
+                marker.header.frame_id = "map";
+                marker.type = Marker::SPHERE;
+                marker.scale.x = 0.3;
+                marker.scale.y = 0.3;
+                marker.scale.z = 0.3;
+                marker.color = color;
+                marker.pose.position.x = position.x;
+                marker.pose.position.y = position.y;
+                marker.id = id;
+                id++;
+                array.markers.push_back(marker);
+            }
 
+            // text
+            {
+                visualization_msgs::msg::Marker textMarker;
+                textMarker.header.frame_id = "map";
+                textMarker.id = id++;
+                textMarker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+                textMarker.scale.z = 0.2;
+                textMarker.text = node->id;
+                textMarker.pose.position.x = position.x + 0.5f;
+                textMarker.pose.position.y = position.y + 0.5f;
+                textMarker.pose.position.z = 0.5f;
+
+                textMarker.color.r = 0;
+                textMarker.color.g = 0;
+                textMarker.color.b = 0;
+                textMarker.color.a = 1;
+                array.markers.push_back(textMarker);
+            }
             // draw the arcs
             for (size_t i = 0; i < node->arcs.size(); i++)
             {
