@@ -66,16 +66,14 @@ namespace GSL
         return AsGrid().freeAt(indices);
     }
 
-    bool RealNode::AddObservation(Vector2 location, Vector2 windVector)
+    bool RealNode::AddObservation(Vector2 location, Vector2 windVector, float sigma)
     {
-        constexpr float variance = 0.001; // TODO
-
         float speed = vmath::length(windVector);
         float direction = std::atan2(windVector.y, windVector.x);
         bool accepted = gmrf->insertObservation_GMRF(
             speed,
             direction,
-            variance, variance,
+            sigma, sigma,
             location.x, location.y);
         if (accepted)
             windDirty = true;

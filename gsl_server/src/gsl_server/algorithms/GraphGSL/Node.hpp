@@ -32,7 +32,7 @@ namespace GSL
     public:
         virtual Vector2 GetPosition() = 0;
         virtual bool IsValidPoint(Vector2 location) = 0;
-        virtual bool AddObservation(Vector2 location, Vector2 windVector) = 0;
+        virtual bool AddObservation(Vector2 location, Vector2 windVector, float sigma) = 0;
         virtual bool AddObservation(Vector2 location, float gasObs) = 0;
         virtual void UpdateArcsMask() {}
 
@@ -46,7 +46,7 @@ namespace GSL
         RealNode(Grid2D<Occupancy> grid, gmrfw::CGMRF_map::Parameters gmrf_params);
 
         bool IsValidPoint(Vector2 location) override;
-        bool AddObservation(Vector2 location, Vector2 windVector) override;
+        bool AddObservation(Vector2 location, Vector2 windVector, float sigma) override;
         bool AddObservation(Vector2 location, float gasObs) override;
         void UpdateArcsMask() override;
 
@@ -79,7 +79,7 @@ namespace GSL
         {}
         Vector2 GetPosition() override { return position; }
         bool IsValidPoint(Vector2 location) override { return false; }
-        bool AddObservation(Vector2 location, Vector2 windVector) override { return false; }
+        bool AddObservation(Vector2 location, Vector2 windVector, float sigma) override { return false; }
         bool AddObservation(Vector2 location, float gasObs) override { return false; }
 
     private:

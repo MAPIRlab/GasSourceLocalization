@@ -2,6 +2,7 @@
 #include "Node.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/core/Macros.hpp"
+#include "gsl_server/core/Profiling.hpp"
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -106,7 +107,7 @@ namespace GSL
         bool accepted = false;
         for (auto node : nodes)
         {
-            if (node->AddObservation(position, wind))
+            if (node->AddObservation(position, wind, 0.01))
             {
                 GSL_INFO("Observation accepted into node {}", node->id);
                 accepted = true;
@@ -119,6 +120,8 @@ namespace GSL
 
     void Graph::UpdateAllWindMaps()
     {
+        ScopedStopwatch watch("Updating wind maps");
+
         // to make sure that the observations in one of the nodes also affect the rest of the maps, we can add "virtual" observations to all the neighbouring nodes
         // these observations will have the value of whatever wind vector was predicted by GMRF at the connecting doorway
 
@@ -164,7 +167,7 @@ namespace GSL
                     {
                         Vector2 windVec = windMap.dataAt(indices);
                         count++;
-                        otherNode->AddObservation(windMap.metadata.indicesToCoordinates(indices), windVec); // TODO lower confidence for these virtual measurements?
+                        otherNode->AddObservation(windMap.metadata.indicesToCoordinates(indices), windVec, 1.0);
                     }
 
                 if (count > 0)
