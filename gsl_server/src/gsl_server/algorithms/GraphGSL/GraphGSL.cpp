@@ -52,7 +52,10 @@ namespace GSL
 
         std::string simulatedMeasurementsPath = node->declare_parameter<std::string>("sim_measurements_path", "?");
         if (simulatedMeasurementsPath != "?")
+        {
             SimulateMeasurements(simulatedMeasurementsPath);
+            graph.UpdateAllWindMaps();
+        }
 
         stateMachine.forceSetState(movingState.get());
     }
@@ -71,7 +74,7 @@ namespace GSL
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
         graph.AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
-        graph.UpdateAllWindMaps();
+        // graph.UpdateAllWindMaps();
         // stateMachine.forceSetState(movingState.get());
     }
 

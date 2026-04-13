@@ -8,11 +8,13 @@ namespace GSL
     class SubGrid2D
     {
     public:
-        SubGrid2D(Grid2D<T> grid, Vector2 origin, Vector2 size);
+        SubGrid2D(Grid2D<T> grid, Vector2 origin, Vector2Int dimensions);
 
         const Vector2 origin;
-        const Vector2 size;
+        const Vector2Int dimensions;
 
+        // new methods
+        // ----------------------------
         size_t indexOriginal(size_t col, size_t row)
         {
             size_t x = col + originIndices.x;
@@ -20,16 +22,25 @@ namespace GSL
             return grid.metadata.indexOf(x, y);
         }
 
-        Vector2Int coordsToIndices(const Vector2& coords)
-        {
-            return Vector2Int((coords.x - origin.x) / (grid.metadata.cellSize), (coords.y - origin.y) / (grid.metadata.cellSize));
-        }
-
         size_t indexOriginal(Vector2Int indices)
         {
             return indexOriginal(indices.x, indices.y);
         }
 
+        // metadata substitutions
+        // ----------------------------
+        Vector2Int coordsToIndices(const Vector2& coords)
+        {
+            return Vector2Int((coords.x - origin.x) / (grid.metadata.cellSize), (coords.y - origin.y) / (grid.metadata.cellSize));
+        }
+
+        float cellSize()
+        {
+            return grid.metadata.cellSize;
+        }
+
+        // Grid2D methods
+        // ----------------------------
         T& dataAt(size_t col, size_t row) const
         {
             return grid.data.at(indexOriginal({col, row}));
@@ -67,10 +78,9 @@ namespace GSL
 
     // implementation
     //----------------
-
     template <typename T>
-    SubGrid2D<T>::SubGrid2D(Grid2D<T> grid, Vector2 origin, Vector2 size)
-        : grid(grid), origin(origin), size(size)
+    SubGrid2D<T>::SubGrid2D(Grid2D<T> grid, Vector2 origin, Vector2Int dimensions)
+        : grid(grid), origin(origin), dimensions(dimensions)
     {
         originIndices = grid.metadata.coordinatesToIndices(origin);
     }

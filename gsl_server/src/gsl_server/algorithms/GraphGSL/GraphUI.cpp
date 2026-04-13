@@ -126,7 +126,7 @@ namespace GSL
         ImGui::Begin("Simulate Source");
         {
             auto node = gsl->graph.GetCorrespondingNode(selectedCoordinates);
-            if (selectedNode.node != node)
+            if (node && selectedNode.node != node)
             {
                 selectedNode.node = node;
                 selectedNode.combineWeights = std::vector<float>(node->arcs.size(), 0);

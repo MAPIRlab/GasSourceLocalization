@@ -32,7 +32,6 @@ namespace GSL
     public:
         virtual Vector2 GetPosition() = 0;
         virtual bool IsValidPoint(Vector2 location) = 0;
-        virtual bool AddObservation(Vector2 location, Vector2 windVector, float sigma) = 0;
         virtual bool AddObservation(Vector2 location, float gasObs) = 0;
         virtual void UpdateArcsMask() {}
 
@@ -43,34 +42,29 @@ namespace GSL
     class RealNode : public Node
     {
     public:
-        RealNode(Grid2D<Occupancy> grid, gmrfw::CGMRF_map::Parameters gmrf_params);
+        RealNode(Grid2D<Occupancy> grid);
 
         bool IsValidPoint(Vector2 location) override;
-        bool AddObservation(Vector2 location, Vector2 windVector, float sigma) override;
         bool AddObservation(Vector2 location, float gasObs) override;
         void UpdateArcsMask() override;
 
+        void UpdateWindMap(std::shared_ptr<gmrfw::CGMRF_map> gmrf);
         void SetOccupancy(Grid2D<Occupancy> grid);
         const Grid2D<Occupancy> GetOccupancy();
         const Grid2D<Vector2> GetWindMap();
         const Grid2D<int> GetOutletsMask();
         const std::vector<size_t>& GetOutletsCellCount();
         Vector2 GetPosition() override { return centroid; }
-        bool isDirty() const { return windDirty; }
 
     private:
-        static gmrfw::TOccupancyMap ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata);
         Grid2D<Vector2> AsGrid();
 
-        bool windDirty = false;
         std::vector<Occupancy> occupancy;
         std::vector<int> outletMask;
         std::vector<size_t> numCellsOutlet;
         std::vector<Vector2> wind;
         std::vector<float> gas;
-        std::optional<gmrfw::CGMRF_map> gmrf;
         Grid2DMetadata gridMetadata;
-        gmrfw::CGMRF_map::Parameters gmrf_parameters;
         Vector2 centroid;
     };
 
@@ -81,7 +75,6 @@ namespace GSL
         {}
         Vector2 GetPosition() override { return position; }
         bool IsValidPoint(Vector2 location) override { return false; }
-        bool AddObservation(Vector2 location, Vector2 windVector, float sigma) override { return false; }
         bool AddObservation(Vector2 location, float gasObs) override { return false; }
 
     private:

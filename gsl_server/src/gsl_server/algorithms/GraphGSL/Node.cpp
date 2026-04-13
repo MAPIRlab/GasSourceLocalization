@@ -3,28 +3,9 @@
 namespace GSL
 {
 
-    RealNode::RealNode(Grid2D<Occupancy> grid, gmrfw::CGMRF_map::Parameters gmrf_params)
-        : gmrf_parameters(gmrf_params)
+    RealNode::RealNode(Grid2D<Occupancy> grid)
     {
         SetOccupancy(grid);
-    }
-
-    gmrfw::TOccupancyMap RealNode::ToGMRFOcc(const std::vector<Occupancy>& _occ, const Grid2DMetadata& metadata)
-    {
-        gmrfw::TOccupancyMap occMap;
-
-        std::transform(_occ.begin(), _occ.end(), std::back_inserter(occMap.data), [](const Occupancy value) -> int8_t
-                       {
-                           return static_cast<int8_t>(value);
-                       });
-
-        occMap.width = metadata.dimensions.x;
-        occMap.height = metadata.dimensions.y;
-        occMap.resolution = metadata.cellSize;
-        occMap.origin_x = metadata.origin.x;
-        occMap.origin_y = metadata.origin.y;
-
-        return occMap;
     }
 
     void RealNode::SetOccupancy(Grid2D<Occupancy> grid)
@@ -44,17 +25,10 @@ namespace GSL
 
         // re-create the gmrf map, keeping the history of observations
         std::vector<gmrfw::TobservationGMRF> observations;
-        if (gmrf)
-            observations = gmrf->getObservations_GMRF();
 
-        gmrf.emplace(ToGMRFOcc(occupancy, gridMetadata), gmrf_parameters, false, false);
         gas.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);  // TODO what happens to the gas map on resize?
         wind.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
         outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
-        // windDirty = true; //TODO if we want to actually allow resizing, this would be necesary. Buut it kinda messes up the global update to have everything marked as dirty from the beginning
-
-        if (observations.size() > 0)
-            gmrf->setObservations_GMRF(observations);
     }
 
     bool RealNode::IsValidPoint(Vector2 location)
@@ -64,20 +38,6 @@ namespace GSL
             return false;
 
         return AsGrid().freeAt(indices);
-    }
-
-    bool RealNode::AddObservation(Vector2 location, Vector2 windVector, float sigma)
-    {
-        float speed = vmath::length(windVector);
-        float direction = std::atan2(windVector.y, windVector.x);
-        bool accepted = gmrf->insertObservation_GMRF(
-            speed,
-            direction,
-            sigma, sigma,
-            location.x, location.y);
-        if (accepted)
-            windDirty = true;
-        return accepted;
     }
 
     bool RealNode::AddObservation(Vector2 location, float gasObs)
@@ -109,22 +69,20 @@ namespace GSL
         }
     }
 
+    void RealNode::UpdateWindMap(std::shared_ptr<gmrfw::CGMRF_map> gmrf)
+    {
+#pragma omp parallel for
+        for (size_t i = 0; i < wind.size(); i++)
+        {
+            Vector2 coords = gridMetadata.indexToCoordinates(i);
+            gmrfw::WindVector vec = gmrf->getEstimation(coords.x, coords.y);
+            wind.at(i).x = vec.x;
+            wind.at(i).y = vec.y;
+        }
+    }
+
     const Grid2D<Vector2> RealNode::GetWindMap()
     {
-        if (windDirty)
-        {
-            gmrf->MAP_estimation_GMRF(10);
-
-#pragma omp parallel for
-            for (size_t i = 0; i < wind.size(); i++)
-            {
-                Vector2 coords = gridMetadata.indexToCoordinates(i);
-                gmrfw::WindVector vec = gmrf->getEstimation(coords.x, coords.y);
-                wind.at(i).x = vec.x;
-                wind.at(i).y = vec.y;
-            }
-            windDirty = false;
-        }
         return AsGrid();
     }
 

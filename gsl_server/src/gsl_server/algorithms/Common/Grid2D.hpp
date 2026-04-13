@@ -3,6 +3,7 @@
 #include "Occupancy.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <gsl_server/core/Macros.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
 
@@ -81,12 +82,16 @@ namespace GSL
 
         Grid2D(std::vector<T>& _data, std::vector<Occupancy>& _occupancy, Grid2DMetadata& _metadata)
             : data(_data), occupancy(_occupancy), metadata(_metadata)
-        {}
+        {
+            GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
+        }
 
         template <typename OtherT>
         Grid2D(std::vector<T>& data, const Grid2D<OtherT>& other)
             : data(data), occupancy(other.occupancy), metadata(other.metadata)
-        {}
+        {
+            GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
+        }
 
         T& dataAt(size_t col, size_t row) const
         {

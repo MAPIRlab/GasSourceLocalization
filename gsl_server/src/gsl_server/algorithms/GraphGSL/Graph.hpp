@@ -1,4 +1,5 @@
 #pragma once
+#include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
 #include <filesystem>
 #include <gmrf_wind_core/gmrf_map.h>
@@ -14,6 +15,11 @@ namespace GSL
         std::shared_ptr<class Node> GetCorrespondingNode(Vector2 position);
         void AddObservation(Vector2 position, Vector2 wind, float gasConcentration);
         void UpdateAllWindMaps();
+
+        static gmrfw::TOccupancyMap ToGMRFOcc(const Grid2D<Occupancy> occupancy);
+        std::shared_ptr<gmrfw::CGMRF_map> gmrf;
+        gmrfw::CGMRF_map::Parameters gmrf_parameters;
+        Map2D completeMap;
 
         // visualization
         MarkerArray VisualizeGraph();

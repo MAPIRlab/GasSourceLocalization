@@ -37,7 +37,7 @@ namespace GSL
             else
             {
                 Map2D map = Utils::parseMapData(subfolder / "occupancy.yaml", cellSize);
-                node = std::make_shared<RealNode>(map.AsGrid(), gmrfParams);
+                node = std::make_shared<RealNode>(map.AsGrid());
             }
 
             graph.nodes.push_back(node);
@@ -89,6 +89,10 @@ namespace GSL
             thisNode->UpdateArcsMask();
         }
 
+        graph.gmrf_parameters = gmrfParams;
+        graph.completeMap = Utils::parseMapData(folder / "occupancy.yaml", cellSize);
+        graph.gmrf = std::make_shared<gmrfw::CGMRF_map>(ToGMRFOcc(graph.completeMap.AsGrid()), graph.gmrf_parameters, false, false);
+
         return graph;
     }
 
@@ -104,80 +108,65 @@ namespace GSL
 
     void Graph::AddObservation(Vector2 position, Vector2 wind, float gasConcentration)
     {
+        {
+            constexpr float sigma = 0.01;
+            float speed = vmath::length(wind);
+            float direction = std::atan2(wind.y, wind.x);
+            bool accepted = gmrf->insertObservation_GMRF(
+                speed,
+                direction,
+                sigma, sigma,
+                position.x, position.y);
+
+            if (!accepted)
+                GSL_WARN("Wind GMRF did not accept observation at {}", position);
+        }
+
         bool accepted = false;
         for (auto node : nodes)
         {
-            if (node->AddObservation(position, wind, 0.01))
+            if (node->AddObservation(position, gasConcentration))
             {
                 GSL_INFO("Observation accepted into node {}", node->id);
                 accepted = true;
             }
-            node->AddObservation(position, gasConcentration);
         }
+
         if (!accepted)
-            GSL_INFO("Observation at {} not accepted by any nodes!", position);
+            GSL_WARN("Gas observation at {} not accepted by any nodes!", position);
     }
 
     void Graph::UpdateAllWindMaps()
     {
         ScopedStopwatch watch("Updating wind maps");
 
-        // to make sure that the observations in one of the nodes also affect the rest of the maps, we can add "virtual" observations to all the neighbouring nodes
-        // these observations will have the value of whatever wind vector was predicted by GMRF at the connecting doorway
-
-        std::set<std::string> closedNodes;
-        // would it make a difference to make this a priority queue so that we update nodes in order, based on how close they are to the measurements?
-        std::queue<std::shared_ptr<RealNode>> dirtyNodes;
-
+        gmrf->MAP_estimation_GMRF(10);
         for (auto node : nodes)
         {
             if (!Is<RealNode>(node))
                 continue;
 
             auto realNode = As<RealNode>(node);
-            if (realNode->isDirty())
-            {
-                dirtyNodes.push(realNode);
-                // closedNodes.insert(realNode->id); //allow virtual measurements for nodes that also contain real ones?
-            }
+            realNode->UpdateWindMap(gmrf);
         }
+    }
 
-        while (!dirtyNodes.empty())
-        {
-            auto realNode = dirtyNodes.front();
-            dirtyNodes.pop();
+    gmrfw::TOccupancyMap Graph::ToGMRFOcc(const Grid2D<Occupancy> occupancy)
+    {
+        gmrfw::TOccupancyMap occMap;
 
-            Grid2D<Vector2> windMap = realNode->GetWindMap();
+        std::transform(occupancy.data.begin(), occupancy.data.end(), std::back_inserter(occMap.data), [](const Occupancy value) -> int8_t
+                       {
+                           return static_cast<int8_t>(value);
+                       });
 
-            // add a virtual observation at spawnPoint which is equal to the average wind vector inside the doorway area
-            for (auto arc : realNode->arcs)
-            {
-                if (closedNodes.contains(arc.to.lock()->id) || !Is<RealNode>(arc.to))
-                    continue;
+        occMap.width = occupancy.metadata.dimensions.x;
+        occMap.height = occupancy.metadata.dimensions.y;
+        occMap.resolution = occupancy.metadata.cellSize;
+        occMap.origin_x = occupancy.metadata.origin.x;
+        occMap.origin_y = occupancy.metadata.origin.y;
 
-                Grid2DMetadata metadata = realNode->GetOccupancy().metadata;
-                AABB2DInt aabbIdx{
-                    metadata.coordinatesToIndices(arc.aabb.min),
-                    metadata.coordinatesToIndices(arc.aabb.max)};
-
-                auto otherNode = As<RealNode>(arc.to.lock());
-                size_t count = 0;
-                for (Vector2Int indices : aabbIdx)
-                    if (metadata.indicesInBounds(indices) && realNode->GetOccupancy().freeAt(indices))
-                    {
-                        Vector2 windVec = windMap.dataAt(indices);
-                        count++;
-                        otherNode->AddObservation(windMap.metadata.indicesToCoordinates(indices), windVec, 1.0);
-                    }
-
-                if (count > 0)
-                    dirtyNodes.push(otherNode);
-                else
-                    GSL_WARN("0 free cells in the connection between {} and {}! Probably not right!", realNode->id, arc.to.lock()->id);
-            }
-
-            closedNodes.insert(realNode->id);
-        }
+        return occMap;
     }
 
     MarkerArray Graph::VisualizeGraph()
