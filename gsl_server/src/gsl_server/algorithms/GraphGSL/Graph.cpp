@@ -186,6 +186,14 @@ namespace GSL
             Vector2 position = node->GetPosition();
             if (Is<RealNode>(node))
                 position += As<RealNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+            else
+            {
+                for (const Arc& arc : node->arcs)
+                {
+                    auto otherNode = arc.to.lock();
+                    position += As<RealNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1. / node->arcs.size());
+                }
+            }
 
             ColorRGBA color;
             if (Is<RealNode>(node))
@@ -209,12 +217,38 @@ namespace GSL
             // draw the arcs
             for (size_t i = 0; i < node->arcs.size(); i++)
             {
+                Vector2 otherPos = node->arcs.at(i).aabb.center();
                 auto otherNode = node->arcs.at(i).to.lock();
-                Vector2 otherPos = otherNode->GetPosition();
 
-                if (Is<RealNode>(otherNode))
+                // if both are real, move the doorway node the average of the two
+                // otherwise, just copy the movement of the real one
+                if (Is<RealNode>(node) && Is<RealNode>(otherNode))
+                {
+                    otherPos += As<RealNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
+                    otherPos += As<RealNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
+                }
+                else if (Is<RealNode>(node))
+                    otherPos += As<RealNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+                else
                     otherPos += As<RealNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
 
+                // doorway Marker
+                {
+                    Marker marker;
+                    marker.header.frame_id = "map";
+                    marker.type = Marker::CUBE;
+                    marker.scale.x = 0.3;
+                    marker.scale.y = 0.3;
+                    marker.scale.z = 0.3;
+                    marker.color = Utils::create_color(0, 0, 1);
+                    marker.pose.position.x = otherPos.x;
+                    marker.pose.position.y = otherPos.y;
+                    marker.id = id;
+                    id++;
+                    array.markers.push_back(marker);
+                }
+
+                // arrow marker
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::ARROW;
