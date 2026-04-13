@@ -54,6 +54,7 @@ namespace GSL
         const Grid2D<Occupancy> GetOccupancy();
         const Grid2D<Vector2> GetWindMap();
         const Grid2D<int> GetOutletsMask();
+        const std::vector<size_t>& GetOutletsCellCount();
         Vector2 GetPosition() override { return centroid; }
         bool isDirty() const { return windDirty; }
 
@@ -64,6 +65,7 @@ namespace GSL
         bool windDirty = false;
         std::vector<Occupancy> occupancy;
         std::vector<int> outletMask;
+        std::vector<size_t> numCellsOutlet;
         std::vector<Vector2> wind;
         std::vector<float> gas;
         std::optional<gmrfw::CGMRF_map> gmrf;

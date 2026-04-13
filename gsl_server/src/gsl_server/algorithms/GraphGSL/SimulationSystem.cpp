@@ -60,6 +60,7 @@ namespace GSL::Graph_internal
             .outlets = SimulationOutlets{
                 .mask = realNode->GetOutletsMask(),
                 .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
+                .numCellsOutlet = realNode->GetOutletsCellCount(),
             },
         });
 

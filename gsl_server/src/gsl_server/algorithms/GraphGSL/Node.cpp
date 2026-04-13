@@ -92,6 +92,7 @@ namespace GSL
         std::fill(outletMask.begin(), outletMask.end(), -1);
 
         Grid2D<int> maskGrid(outletMask, occupancy, gridMetadata);
+        numCellsOutlet.resize(arcs.size(), 0);
         for (size_t i = 0; i < arcs.size(); i++)
         {
             const Arc& arc = arcs.at(i);
@@ -101,7 +102,10 @@ namespace GSL
 
             for (Vector2Int indices : aabbIdx)
                 if (maskGrid.metadata.indicesInBounds(indices) && maskGrid.freeAt(indices))
+                {
                     maskGrid.dataAt(indices) = i;
+                    numCellsOutlet.at(i)++;
+                }
         }
     }
 
@@ -127,6 +131,11 @@ namespace GSL
     const Grid2D<int> RealNode::GetOutletsMask()
     {
         return Grid2D<int>(outletMask, occupancy, gridMetadata);
+    }
+
+    const std::vector<size_t>& RealNode::GetOutletsCellCount()
+    {
+        return numCellsOutlet;
     }
 
     Grid2D<Vector2> RealNode::AsGrid()

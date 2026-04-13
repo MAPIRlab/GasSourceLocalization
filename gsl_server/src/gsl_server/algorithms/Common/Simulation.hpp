@@ -38,6 +38,7 @@ namespace GSL
     {
         Grid2D<int> mask;
         std::vector<size_t> exitsCount;
+        std::vector<size_t> numCellsOutlet;
         std::vector<bool> enabled;
     };
 
