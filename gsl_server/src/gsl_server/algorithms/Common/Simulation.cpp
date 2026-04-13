@@ -118,11 +118,11 @@ namespace GSL
                     auto indices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
                     // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
-                    if (!wind.freeAt(indices.x, indices.y))
+                    if (!wind.metadata.indicesInBounds(indices) || !wind.freeAt(indices.x, indices.y))
                         continue;
 
                     // move active filaments
-                    moveFilament(filament, indices, deltaTime * 2, noiseSTDev);
+                    moveFilament(filament, indices, deltaTime * 5, noiseSTDev);
 
                     // remove filaments
                     if (filamentIsOutside(filament))
@@ -136,6 +136,7 @@ namespace GSL
                 activeFilamentVec->clear();
                 std::swap(activeFilamentVec, otherFilamentVec);
             }
+            GSL_INFO("Warmup complete ({} iterations)", iterationCount);
         }
 
         ZoneScopedN("Recording");
@@ -156,7 +157,7 @@ namespace GSL
                 size_t index = wind.metadata.indexOf(indices);
 
                 // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
-                if (!wind.freeAt(indices.x, indices.y))
+                if (!wind.metadata.indicesInBounds(indices) || !wind.freeAt(indices.x, indices.y))
                     continue;
 
                 GSL_ASSERT(wind.metadata.indicesInBounds(indices));
@@ -252,7 +253,9 @@ namespace GSL
             currentPosition += increment;
             index++;
             Vector2Int pair = metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
-            pathIsFree = !metadata.indicesInBounds(pair) || wind.freeAt(pair.x, pair.y);
+            bool isOutside = !metadata.indicesInBounds(pair);
+            bool freeBecauseOutside = !outlets.has_value() && isOutside; // we only consider "out of the map" OK if there are no explicitly defined outlets
+            pathIsFree = freeBecauseOutside || (!isOutside && wind.freeAt(pair.x, pair.y));
             if (!pathIsFree)
                 currentPosition -= increment;
         }
