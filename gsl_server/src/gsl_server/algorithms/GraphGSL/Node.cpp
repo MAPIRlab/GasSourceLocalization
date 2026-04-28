@@ -55,10 +55,10 @@ namespace GSL
         numCellsOutlet.resize(doorways.size(), 0);
         for (size_t i = 0; i < doorways.size(); i++)
         {
-            const DoorwayNode& arc = doorways.at(i);
+            const DoorwayNode& doorway = doorways.at(i);
             AABB2DInt aabbIdx{
-                gridMetadata.coordinatesToIndices(arc.aabb.min),
-                gridMetadata.coordinatesToIndices(arc.aabb.max)};
+                gridMetadata.coordinatesToIndices(doorway.aabb.min),
+                gridMetadata.coordinatesToIndices(doorway.aabb.max)};
 
             for (Vector2Int indices : aabbIdx)
                 if (maskGrid.metadata.indicesInBounds(indices) && maskGrid.freeAt(indices))

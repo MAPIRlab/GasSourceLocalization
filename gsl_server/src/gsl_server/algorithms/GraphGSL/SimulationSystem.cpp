@@ -35,13 +35,13 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    SimulationSystem::SimWithResult SimulationSystem::SimulateFromDoorway(const DoorwayNode& arc)
+    SimulationSystem::SimWithResult SimulationSystem::SimulateFromDoorway(const DoorwayNode& doorway)
     {
         SimWithResult result;
-        auto realNode = As<RoomNode>(arc.from.lock());
+        auto realNode = As<RoomNode>(doorway.from.lock());
         Grid2DMetadata nodeMetadata = realNode->GetOccupancy().metadata;
-        AABB2D sourceAABB(arc.aabb.min,
-                          arc.aabb.max);
+        AABB2D sourceAABB(doorway.aabb.min,
+                          doorway.aabb.max);
         Vector2 maxCoords = nodeMetadata.indicesToCoordinates(nodeMetadata.dimensions, false) - Vector2{0.001, 0.001};
         sourceAABB.min.x = std::clamp(sourceAABB.min.x, nodeMetadata.origin.x, maxCoords.x);
         sourceAABB.min.y = std::clamp(sourceAABB.min.y, nodeMetadata.origin.y, maxCoords.y);
@@ -69,7 +69,7 @@ namespace GSL::Graph_internal
         result.simulation->outlets->enabled.resize(realNode->doorways.size(), true);
 
         for (size_t i = 0; i < realNode->doorways.size(); i++)
-            if (&realNode->doorways.at(i) == &arc)
+            if (&realNode->doorways.at(i) == &doorway)
                 result.simulation->outlets->enabled.at(i) = false;
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
@@ -87,7 +87,7 @@ namespace GSL::Graph_internal
 
         // store the simulation result in the cache
         //-------------------
-        simulationCache[arc.getUID()] = result;
+        simulationCache[doorway.getUID()] = result;
 
         return result;
     }
