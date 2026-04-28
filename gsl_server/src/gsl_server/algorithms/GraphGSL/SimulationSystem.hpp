@@ -16,8 +16,8 @@ namespace GSL::Graph_internal
         };
 
     public:
-        SimWithResult SimulateFromPoint(const std::shared_ptr<RealNode> node, Vector2 point);
-        SimWithResult SimulateFromArc(const Arc& arc);
+        SimWithResult SimulateFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
+        SimWithResult SimulateFromDoorway(const DoorwayNode& arc);
 
         struct Options
         {
@@ -32,8 +32,8 @@ namespace GSL::Graph_internal
         };
         Options options;
 
-        std::map<Arc::ID, SimWithResult> simulationCache;
+        std::map<DoorwayNode::ID, SimWithResult> simulationCache;
     private:
-        std::map<std::shared_ptr<RealNode>, std::optional<SimulationBlurMask>> blurMasks;
+        std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
     };
 } // namespace GSL::Graph_internal

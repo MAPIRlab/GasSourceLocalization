@@ -100,7 +100,7 @@ namespace GSL
 
         for (auto node : gsl->graph.nodes)
         {
-            if (!Is<RealNode>(node))
+            if (!Is<RoomNode>(node))
                 continue;
 
             if (!gsl->graph.selectedForVisualization.contains(node->id))
@@ -129,7 +129,7 @@ namespace GSL
             if (node && selectedNode.node != node)
             {
                 selectedNode.node = node;
-                selectedNode.combineWeights = std::vector<float>(node->arcs.size(), 0);
+                selectedNode.combineWeights = std::vector<float>(node->doorways.size(), 0);
             }
 
             std::string name = selectedNode.node ? selectedNode.node->id : "Null";
@@ -141,18 +141,18 @@ namespace GSL
                 ImGui::DragFloat2("Selected point", &selectedCoordinates.x, 0.02);
             else if (selectedNode.node)
             {
-                if (selectedNode.node->arcs.size() == 0)
+                if (selectedNode.node->doorways.size() == 0)
                     ImGui::Text("Node has no arcs!");
                 else
                 {
-                    if (simulationOptions.selectedArcIdx > selectedNode.node->arcs.size())
+                    if (simulationOptions.selectedArcIdx > selectedNode.node->doorways.size())
                         simulationOptions.selectedArcIdx = 0;
 
                     ImGui::PushID("node");
-                    if (ImGui::BeginCombo("Arc", selectedNode.node->arcs.at(simulationOptions.selectedArcIdx).to.lock()->id.c_str()))
+                    if (ImGui::BeginCombo("Doorway", selectedNode.node->doorways.at(simulationOptions.selectedArcIdx).to.lock()->id.c_str()))
                     {
-                        for (size_t i = 0; i < selectedNode.node->arcs.size(); i++)
-                            if (ImGui::Selectable(selectedNode.node->arcs.at(i).to.lock()->id.c_str()))
+                        for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
+                            if (ImGui::Selectable(selectedNode.node->doorways.at(i).to.lock()->id.c_str()))
                                 simulationOptions.selectedArcIdx = i;
 
                         ImGui::EndCombo();
@@ -163,14 +163,14 @@ namespace GSL
             else
             {
                 ImGui::BeginDisabled();
-                ImGui::BeginCombo("Arc", "No node selected");
+                ImGui::BeginCombo("Doorway", "No node selected");
                 ImGui::EndDisabled();
             }
 
             ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
             if (ImGui::Button("Run simulation"))
             {
-                auto realNode = As<RealNode>(selectedNode.node);
+                auto realNode = As<RoomNode>(selectedNode.node);
                 if (realNode)
                 {
                     // Run
@@ -181,12 +181,12 @@ namespace GSL
                         if (simulationOptions.exactPoint)
                             result = gsl->simulationSystem.SimulateFromPoint(realNode, selectedCoordinates);
                         else
-                            result = gsl->simulationSystem.SimulateFromArc(realNode->arcs.at(simulationOptions.selectedArcIdx));
+                            result = gsl->simulationSystem.SimulateFromDoorway(realNode->doorways.at(simulationOptions.selectedArcIdx));
 
                         // Log results
                         GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
                         for (size_t i = 0; i < result.simulation->outlets->exitsCount.size(); i++)
-                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i), realNode->arcs.at(i).to.lock()->id);
+                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i), realNode->doorways.at(i).to.lock()->id);
 
                         Simulation::displayImage(Grid2D<float>(*result.hitMap, realNode->GetOccupancy()), "result", simulationOptions.imageDisplayPower);
                         simulationOptions.simulationEnabled = true;
@@ -202,15 +202,15 @@ namespace GSL
 
             // Combine multiple maps
             // ------------------------
-            if (ImGui::TreeNode("Arcs"))
+            if (ImGui::TreeNode("Doorways"))
             {
                 if (selectedNode.node)
                 {
-                    for (size_t i = 0; i < selectedNode.node->arcs.size(); i++)
+                    for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
                     {
-                        const Arc& arc = selectedNode.node->arcs.at(i);
+                        const DoorwayNode& doorway = selectedNode.node->doorways.at(i);
                         ImGui::SetNextItemWidth(100);
-                        ImGui::DragFloat(fmt::format("{}##{}", arc.to.lock()->id, i).c_str(), &selectedNode.combineWeights.at(i), 0.01, 0, 1);
+                        ImGui::DragFloat(fmt::format("{}##{}", doorway.to.lock()->id, i).c_str(), &selectedNode.combineWeights.at(i), 0.01, 0, 1);
                     }
                 }
                 ImGui::TreePop();
@@ -222,20 +222,20 @@ namespace GSL
                 {
                     simulationOptions.simulationEnabled = false;
 
-                    auto realNode = As<RealNode>(selectedNode.node);
+                    auto realNode = As<RoomNode>(selectedNode.node);
                     std::vector<float> combinedMap(realNode->GetOccupancy().metadata.dimensions.x * realNode->GetOccupancy().metadata.dimensions.y, 0);
-                    for (size_t i = 0; i < selectedNode.node->arcs.size(); i++)
+                    for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
                     {
                         float weight = selectedNode.combineWeights.at(i);
                         if (weight <= 0)
                             continue;
 
-                        const Arc& arc = selectedNode.node->arcs.at(i);
+                        const DoorwayNode& doorway = selectedNode.node->doorways.at(i);
 
-                        if (!gsl->simulationSystem.simulationCache.contains(arc.getUID()))
-                            gsl->simulationSystem.SimulateFromArc(arc);
+                        if (!gsl->simulationSystem.simulationCache.contains(doorway.getUID()))
+                            gsl->simulationSystem.SimulateFromDoorway(doorway);
 
-                        SimulationSystem::SimWithResult result = gsl->simulationSystem.simulationCache.at(arc.getUID());
+                        SimulationSystem::SimWithResult result = gsl->simulationSystem.simulationCache.at(doorway.getUID());
                         for (size_t j = 0; j < combinedMap.size(); j++)
                             combinedMap.at(j) += result.hitMap->at(j) * weight;
                     }

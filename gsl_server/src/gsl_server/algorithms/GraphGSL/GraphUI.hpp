@@ -43,7 +43,7 @@ namespace GSL
 
         struct SelectedNode
         {
-            std::shared_ptr<class Node> node;
+            std::shared_ptr<class PlaceNode> node;
             std::vector<float> combineWeights;
         } selectedNode;
     };

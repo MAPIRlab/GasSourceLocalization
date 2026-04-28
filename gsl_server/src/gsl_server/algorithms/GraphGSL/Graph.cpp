@@ -17,7 +17,7 @@ namespace GSL
         }
 
         Graph graph;
-        std::map<std::string, std::weak_ptr<Node>> byName;
+        std::map<std::string, std::weak_ptr<PlaceNode>> nodesByName;
 
         // create the nodes
         for (std::filesystem::path subfolder : std::filesystem::directory_iterator(folder))
@@ -25,24 +25,24 @@ namespace GSL
             if (!std::filesystem::is_directory(subfolder))
                 continue;
 
-            std::shared_ptr<Node> node;
+            std::shared_ptr<PlaceNode> node;
             if (std::filesystem::exists(subfolder / "out.yaml"))
             {
                 const YAML::Node yaml = YAML::LoadFile(subfolder / "out.yaml");
                 Vector2 position;
                 position.x = yaml["pos_x"].as<float>();
                 position.y = yaml["pos_y"].as<float>();
-                node = std::make_shared<EmptyNode>(position);
+                node = std::make_shared<OutsideNode>(position);
             }
             else
             {
                 Map2D map = Utils::parseMapData(subfolder / "occupancy.yaml", cellSize);
-                node = std::make_shared<RealNode>(map.AsGrid());
+                node = std::make_shared<RoomNode>(map.AsGrid());
             }
 
             graph.nodes.push_back(node);
             std::string name = subfolder.stem();
-            byName[name] = node;
+            nodesByName[name] = node;
             node->id = name;
         }
 
@@ -51,7 +51,7 @@ namespace GSL
         {
             if (!std::filesystem::is_directory(subfolder))
                 continue;
-            std::shared_ptr<Node> thisNode = byName.at(subfolder.stem()).lock();
+            std::shared_ptr<PlaceNode> thisNode = nodesByName.at(subfolder.stem()).lock();
 
             std::filesystem::path linksFolder = subfolder / "links";
             for (std::filesystem::path linkFile : std::filesystem::directory_iterator(linksFolder))
@@ -67,26 +67,31 @@ namespace GSL
                 spawnPoint.x = yaml["spawn_point_x"].as<float>();
                 spawnPoint.y = yaml["spawn_point_y"].as<float>();
 
-                std::string name = linkFile.stem();
-                std::weak_ptr<Node> otherNode;
-                if (!byName.contains(name))
+                std::string name;
+                if (yaml["name"])
+                    name = yaml["name"].as<std::string>();
+                else
+                    name = linkFile.stem();
+
+                std::weak_ptr<PlaceNode> otherNode;
+                if (!nodesByName.contains(name))
                 {
                     GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", subfolder.stem().c_str(), name, name);
                     CLOSE_PROGRAM;
                 }
-                otherNode = byName.at(name);
+                otherNode = nodesByName.at(name);
 
-                Arc arc;
-                arc.from = thisNode;
-                arc.to = otherNode;
-                arc.weight = 1;
-                arc.aabb = aabb;
-                arc.spawnPoint = spawnPoint;
+                DoorwayNode doorway;
+                doorway.from = thisNode;
+                doorway.to = otherNode;
+                doorway.weight = 1;
+                doorway.aabb = aabb;
+                doorway.spawnPoint = spawnPoint;
 
-                thisNode->arcs.push_back(arc);
+                thisNode->doorways.push_back(doorway);
             }
 
-            thisNode->UpdateArcsMask();
+            thisNode->UpdateDoorwayMask();
         }
 
         graph.gmrf_parameters = gmrfParams;
@@ -96,7 +101,7 @@ namespace GSL
         return graph;
     }
 
-    std::shared_ptr<Node> Graph::GetCorrespondingNode(Vector2 position)
+    std::shared_ptr<PlaceNode> Graph::GetCorrespondingNode(Vector2 position)
     {
         for (auto node : nodes)
         {
@@ -143,10 +148,10 @@ namespace GSL
         gmrf->MAP_estimation_GMRF(10);
         for (auto node : nodes)
         {
-            if (!Is<RealNode>(node))
+            if (!Is<RoomNode>(node))
                 continue;
 
-            auto realNode = As<RealNode>(node);
+            auto realNode = As<RoomNode>(node);
             realNode->UpdateWindMap(gmrf);
         }
     }
@@ -176,19 +181,19 @@ namespace GSL
         for (auto node : nodes)
         {
             Vector2 position = node->GetPosition();
-            if (Is<RealNode>(node))
-                position += As<RealNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+            if (Is<RoomNode>(node))
+                position += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
             else
             {
-                for (const Arc& arc : node->arcs)
+                for (const DoorwayNode& arc : node->doorways)
                 {
                     auto otherNode = arc.to.lock();
-                    position += As<RealNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1. / node->arcs.size());
+                    position += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1. / node->doorways.size());
                 }
             }
 
             ColorRGBA color;
-            if (Is<RealNode>(node))
+            if (Is<RoomNode>(node))
                 color = Utils::create_color(0, 1, 0);
             else
                 color = Utils::create_color(1, 0, 0);
@@ -228,22 +233,22 @@ namespace GSL
                 array.markers.push_back(textMarker);
             }
             // draw the arcs
-            for (size_t i = 0; i < node->arcs.size(); i++)
+            for (size_t i = 0; i < node->doorways.size(); i++)
             {
-                Vector2 otherPos = node->arcs.at(i).aabb.center();
-                auto otherNode = node->arcs.at(i).to.lock();
+                Vector2 otherPos = node->doorways.at(i).aabb.center();
+                auto otherNode = node->doorways.at(i).to.lock();
 
                 // if both are real, move the doorway node the average of the two
                 // otherwise, just copy the movement of the real one
-                if (Is<RealNode>(node) && Is<RealNode>(otherNode))
+                if (Is<RoomNode>(node) && Is<RoomNode>(otherNode))
                 {
-                    otherPos += As<RealNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
-                    otherPos += As<RealNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
+                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
+                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
                 }
-                else if (Is<RealNode>(node))
-                    otherPos += As<RealNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+                else if (Is<RoomNode>(node))
+                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
                 else
-                    otherPos += As<RealNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
 
                 // doorway Marker
                 {
@@ -285,10 +290,10 @@ namespace GSL
         size_t occID = 0;
         for (auto node : nodes)
         {
-            if (!Is<RealNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
                 continue;
 
-            auto realNode = As<RealNode>(node);
+            auto realNode = As<RoomNode>(node);
             Grid2D<Occupancy> occupancy = realNode->GetOccupancy();
 
             Grid2DMetadata vizMetadata = occupancy.metadata;
@@ -307,10 +312,10 @@ namespace GSL
         MarkerArray windArray;
         for (auto node : nodes)
         {
-            if (!Is<RealNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
                 continue;
 
-            auto realNode = As<RealNode>(node);
+            auto realNode = As<RoomNode>(node);
 
             Grid2D<Vector2> windMap = realNode->GetWindMap();
             Grid2DMetadata vizMetadata = windMap.metadata;

@@ -6,17 +6,17 @@
 
 namespace GSL
 {
-    struct Arc
+    struct DoorwayNode
     {
         using ID = size_t;
 
-        std::weak_ptr<class Node> from;
-        std::weak_ptr<class Node> to;
+        std::weak_ptr<class PlaceNode> from;
+        std::weak_ptr<class PlaceNode> to;
         float weight;
         AABB2D aabb;
         Vector2 spawnPoint;
 
-        Arc() : uid(GenerateID())
+        DoorwayNode() : uid(GenerateID())
         {}
         ID getUID() const { return uid; }
 
@@ -27,26 +27,26 @@ namespace GSL
         static ID GenerateID() { return nextID++; }
     };
 
-    class Node
+    class PlaceNode
     {
     public:
         virtual Vector2 GetPosition() = 0;
         virtual bool IsValidPoint(Vector2 location) = 0;
         virtual bool AddObservation(Vector2 location, float gasObs) = 0;
-        virtual void UpdateArcsMask() {}
+        virtual void UpdateDoorwayMask() {}
 
-        std::vector<Arc> arcs;
+        std::vector<DoorwayNode> doorways;
         std::string id;
     };
 
-    class RealNode : public Node
+    class RoomNode : public PlaceNode
     {
     public:
-        RealNode(Grid2D<Occupancy> grid);
+        RoomNode(Grid2D<Occupancy> grid);
 
         bool IsValidPoint(Vector2 location) override;
         bool AddObservation(Vector2 location, float gasObs) override;
-        void UpdateArcsMask() override;
+        void UpdateDoorwayMask() override;
 
         void UpdateWindMap(std::shared_ptr<gmrfw::CGMRF_map> gmrf);
         void SetOccupancy(Grid2D<Occupancy> grid);
@@ -68,10 +68,10 @@ namespace GSL
         Vector2 centroid;
     };
 
-    class EmptyNode : public Node
+    class OutsideNode : public PlaceNode
     {
     public:
-        EmptyNode(Vector2 pos) : position(pos)
+        OutsideNode(Vector2 pos) : position(pos)
         {}
         Vector2 GetPosition() override { return position; }
         bool IsValidPoint(Vector2 location) override { return false; }

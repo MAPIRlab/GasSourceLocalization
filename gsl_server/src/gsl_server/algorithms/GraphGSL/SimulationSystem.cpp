@@ -5,7 +5,7 @@
 
 namespace GSL::Graph_internal
 {
-    SimulationSystem::SimWithResult SimulationSystem::SimulateFromPoint(const std::shared_ptr<RealNode> realNode, Vector2 point)
+    SimulationSystem::SimWithResult SimulationSystem::SimulateFromPoint(const std::shared_ptr<RoomNode> realNode, Vector2 point)
     {
         ScopedStopwatch s("sims");
         SimWithResult result;
@@ -18,12 +18,12 @@ namespace GSL::Graph_internal
             .wind = realNode->GetWindMap(),
             .outlets = SimulationOutlets{
                 .mask = realNode->GetOutletsMask(),
-                .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
+                .exitsCount = std::vector<size_t>(realNode->doorways.size(), 0),
             },
         });
 
-        result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
-        result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
+        result.simulation->outlets->exitsCount.resize(realNode->doorways.size(), 0);
+        result.simulation->outlets->enabled.resize(realNode->doorways.size(), true);
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
@@ -35,10 +35,10 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    SimulationSystem::SimWithResult SimulationSystem::SimulateFromArc(const Arc& arc)
+    SimulationSystem::SimWithResult SimulationSystem::SimulateFromDoorway(const DoorwayNode& arc)
     {
         SimWithResult result;
-        auto realNode = As<RealNode>(arc.from.lock());
+        auto realNode = As<RoomNode>(arc.from.lock());
         Grid2DMetadata nodeMetadata = realNode->GetOccupancy().metadata;
         AABB2D sourceAABB(arc.aabb.min,
                           arc.aabb.max);
@@ -60,16 +60,16 @@ namespace GSL::Graph_internal
             .wind = realNode->GetWindMap(),
             .outlets = SimulationOutlets{
                 .mask = realNode->GetOutletsMask(),
-                .exitsCount = std::vector<size_t>(realNode->arcs.size(), 0),
+                .exitsCount = std::vector<size_t>(realNode->doorways.size(), 0),
                 .numCellsOutlet = realNode->GetOutletsCellCount(),
             },
         });
 
-        result.simulation->outlets->exitsCount.resize(realNode->arcs.size(), 0);
-        result.simulation->outlets->enabled.resize(realNode->arcs.size(), true);
+        result.simulation->outlets->exitsCount.resize(realNode->doorways.size(), 0);
+        result.simulation->outlets->enabled.resize(realNode->doorways.size(), true);
 
-        for (size_t i = 0; i < realNode->arcs.size(); i++)
-            if (&realNode->arcs.at(i) == &arc)
+        for (size_t i = 0; i < realNode->doorways.size(); i++)
+            if (&realNode->doorways.at(i) == &arc)
                 result.simulation->outlets->enabled.at(i) = false;
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;

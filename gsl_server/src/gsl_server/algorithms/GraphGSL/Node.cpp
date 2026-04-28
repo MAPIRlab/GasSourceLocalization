@@ -3,12 +3,12 @@
 namespace GSL
 {
 
-    RealNode::RealNode(Grid2D<Occupancy> grid)
+    RoomNode::RoomNode(Grid2D<Occupancy> grid)
     {
         SetOccupancy(grid);
     }
 
-    void RealNode::SetOccupancy(Grid2D<Occupancy> grid)
+    void RoomNode::SetOccupancy(Grid2D<Occupancy> grid)
     {
         gridMetadata = grid.metadata;
         occupancy = grid.occupancy;
@@ -31,7 +31,7 @@ namespace GSL
         outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
     }
 
-    bool RealNode::IsValidPoint(Vector2 location)
+    bool RoomNode::IsValidPoint(Vector2 location)
     {
         Vector2Int indices = gridMetadata.coordinatesToIndices(location);
         if (!gridMetadata.indicesInBounds(indices))
@@ -40,22 +40,22 @@ namespace GSL
         return AsGrid().freeAt(indices);
     }
 
-    bool RealNode::AddObservation(Vector2 location, float gasObs)
+    bool RoomNode::AddObservation(Vector2 location, float gasObs)
     {
         // TODO
         return IsValidPoint(location);
     }
 
-    void RealNode::UpdateArcsMask()
+    void RoomNode::UpdateDoorwayMask()
     {
         outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
         std::fill(outletMask.begin(), outletMask.end(), -1);
 
         Grid2D<int> maskGrid(outletMask, occupancy, gridMetadata);
-        numCellsOutlet.resize(arcs.size(), 0);
-        for (size_t i = 0; i < arcs.size(); i++)
+        numCellsOutlet.resize(doorways.size(), 0);
+        for (size_t i = 0; i < doorways.size(); i++)
         {
-            const Arc& arc = arcs.at(i);
+            const DoorwayNode& arc = doorways.at(i);
             AABB2DInt aabbIdx{
                 gridMetadata.coordinatesToIndices(arc.aabb.min),
                 gridMetadata.coordinatesToIndices(arc.aabb.max)};
@@ -69,7 +69,7 @@ namespace GSL
         }
     }
 
-    void RealNode::UpdateWindMap(std::shared_ptr<gmrfw::CGMRF_map> gmrf)
+    void RoomNode::UpdateWindMap(std::shared_ptr<gmrfw::CGMRF_map> gmrf)
     {
 #pragma omp parallel for
         for (size_t i = 0; i < wind.size(); i++)
@@ -81,27 +81,27 @@ namespace GSL
         }
     }
 
-    const Grid2D<Vector2> RealNode::GetWindMap()
+    const Grid2D<Vector2> RoomNode::GetWindMap()
     {
         return AsGrid();
     }
 
-    const Grid2D<int> RealNode::GetOutletsMask()
+    const Grid2D<int> RoomNode::GetOutletsMask()
     {
         return Grid2D<int>(outletMask, occupancy, gridMetadata);
     }
 
-    const std::vector<size_t>& RealNode::GetOutletsCellCount()
+    const std::vector<size_t>& RoomNode::GetOutletsCellCount()
     {
         return numCellsOutlet;
     }
 
-    Grid2D<Vector2> RealNode::AsGrid()
+    Grid2D<Vector2> RoomNode::AsGrid()
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);
     }
 
-    const Grid2D<Occupancy> RealNode::GetOccupancy()
+    const Grid2D<Occupancy> RoomNode::GetOccupancy()
     {
         return Grid2D<Occupancy>(occupancy, occupancy, gridMetadata);
     }
