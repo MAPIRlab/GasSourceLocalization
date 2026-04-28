@@ -105,4 +105,13 @@ namespace GSL
     {
         return Grid2D<Occupancy>(occupancy, occupancy, gridMetadata);
     }
+
+    const DoorwayNode& PlaceNode::GetDoorway(std::string_view name)
+    {
+        for (const DoorwayNode& doorway : doorways)
+            if (doorway.GetName() == name)
+                return doorway;
+        GSL_ERROR("Place node {} has no doorway named {}", id, name);
+        throw std::exception();
+    }
 } // namespace GSL

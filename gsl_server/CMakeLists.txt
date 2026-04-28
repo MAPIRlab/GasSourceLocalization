@@ -39,11 +39,10 @@ set(DISABLE_NAVIGATION OFF) # Disables navigation decisions and lets you control
 ##############################################################################
 
 
-include(CMake/SanitizationOptions.cmake)
-include(CMake/HandleConditionals.cmake)
-include(CMake/CommonDependencies.cmake)
-include(src/gsl_server/algorithms/Common/CMakeLists.txt)
-
+include(cmake/SanitizationOptions.cmake)
+include(cmake/HandleConditionals.cmake)
+include(cmake/CommonDependencies.cmake)
+add_subdirectory(third_party/backward-cpp)
 
 #########################
 ## INCLUDES
@@ -62,7 +61,7 @@ include_directories(
 
 #### Server node
 ##############
-add_executable(gsl_actionserver_node src/gsl_server/gsl_server.cpp)
+add_executable(gsl_actionserver_node src/gsl_server/gsl_server.cpp third_party/backward-cpp/backward.cpp)
 ament_target_dependencies(gsl_actionserver_node
     rclcpp
     rclcpp_action
@@ -112,6 +111,8 @@ endif()
 ##########################
 # ALGORITHMS
 ##########################
+
+include(src/gsl_server/algorithms/Common/CMakeLists.txt)
 
 # You can disable the compilation of any of these algorithms by commenting them out here (useful if you don't want to install their dependencies)
 ###############################################################################################################################################

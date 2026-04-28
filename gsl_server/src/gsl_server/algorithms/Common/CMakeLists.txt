@@ -22,4 +22,5 @@ target_link_libraries(GSL_common PUBLIC
     yaml-cpp
     ${CONDITIONAL_TRACY}
     ${CONDITIONAL_IMGUI}
+    Backward::Backward
 )

@@ -12,15 +12,16 @@ namespace GSL
 
         std::weak_ptr<class PlaceNode> from;
         std::weak_ptr<class PlaceNode> to;
-        float weight;
         AABB2D aabb;
         Vector2 spawnPoint;
 
-        DoorwayNode() : uid(GenerateID())
+        DoorwayNode(const std::string& _name) : name(_name), uid(GenerateID())
         {}
         ID getUID() const { return uid; }
+        std::string_view GetName() const { return name; }
 
     private:
+        std::string name; // name is shared between the two directional versions of the doorway
         ID uid;
 
         static inline ID nextID = 0;
@@ -34,6 +35,7 @@ namespace GSL
         virtual bool IsValidPoint(Vector2 location) = 0;
         virtual bool AddObservation(Vector2 location, float gasObs) = 0;
         virtual void UpdateDoorwayMask() {}
+        const DoorwayNode& GetDoorway(std::string_view name);
 
         std::vector<DoorwayNode> doorways;
         std::string id;

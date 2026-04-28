@@ -51,7 +51,8 @@ namespace GSL
         {
             if (!std::filesystem::is_directory(subfolder))
                 continue;
-            std::shared_ptr<PlaceNode> thisNode = nodesByName.at(subfolder.stem()).lock();
+            std::string nameThisPlace = subfolder.stem();
+            std::shared_ptr<PlaceNode> thisNode = nodesByName.at(nameThisPlace).lock();
 
             std::filesystem::path linksFolder = subfolder / "links";
             for (std::filesystem::path linkFile : std::filesystem::directory_iterator(linksFolder))
@@ -67,24 +68,21 @@ namespace GSL
                 spawnPoint.x = yaml["spawn_point_x"].as<float>();
                 spawnPoint.y = yaml["spawn_point_y"].as<float>();
 
-                std::string name;
-                if (yaml["name"])
-                    name = yaml["name"].as<std::string>();
-                else
-                    name = linkFile.stem();
+                std::string nameOtherPlace = yaml["to"].as<std::string>();
 
                 std::weak_ptr<PlaceNode> otherNode;
-                if (!nodesByName.contains(name))
+                if (!nodesByName.contains(nameOtherPlace))
                 {
-                    GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", subfolder.stem().c_str(), name, name);
+                    GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", subfolder.stem().c_str(), nameThisPlace, nameOtherPlace);
                     CLOSE_PROGRAM;
                 }
-                otherNode = nodesByName.at(name);
+                otherNode = nodesByName.at(nameOtherPlace);
 
-                DoorwayNode doorway;
+                std::string nameDoorway = linkFile.stem();
+
+                DoorwayNode doorway(nameDoorway);
                 doorway.from = thisNode;
                 doorway.to = otherNode;
-                doorway.weight = 1;
                 doorway.aabb = aabb;
                 doorway.spawnPoint = spawnPoint;
 

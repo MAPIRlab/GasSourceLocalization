@@ -10,3 +10,6 @@
 [submodule "gsl_server/third_party/DDA"]
 	path = gsl_server/third_party/DDA
 	url = git@github.com:PepeOjeda/DDA.git
+[submodule "gsl_server/third_party/backward-cpp"]
+	path = gsl_server/third_party/backward-cpp
+	url = git@github.com:bombela/backward-cpp.git
