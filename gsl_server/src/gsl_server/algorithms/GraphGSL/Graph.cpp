@@ -185,9 +185,9 @@ namespace GSL
                 position += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
             else
             {
-                for (const DoorwayNode& arc : node->doorways)
+                for (const DoorwayNode& doorway : node->doorways)
                 {
-                    auto otherNode = arc.to.lock();
+                    auto otherNode = doorway.to.lock();
                     position += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1. / node->doorways.size());
                 }
             }
