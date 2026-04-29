@@ -1,4 +1,5 @@
 #include "geometry_msgs/msg/point_stamped.hpp"
+#include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
 #include <filesystem>
 #include <fstream>
@@ -25,8 +26,7 @@ enum class SelectionMode : int
     None = -1,
     New,
     Min,
-    Max,
-    SpawnPoint,
+    Max
 };
 
 class GraphCreator : public rclcpp::Node
@@ -36,6 +36,7 @@ public:
     ~GraphCreator();
 
 private:
+    void OnGraphUpdated();
     void Render();
     void CreateNodeWindow();
     void CreateEmptyNodeWindow();
@@ -44,6 +45,7 @@ private:
     void DrawAABB(std_msgs::msg::ColorRGBA color);
     void DrawPoint(Vector2 point, std_msgs::msg::ColorRGBA color);
 
+    Graph graph;
     Map2D completeMap;
     CreateType currentType = CreateType::RealNode;
     SelectionMode selectionMode = SelectionMode::New;
@@ -58,9 +60,6 @@ private:
     // empty creation
     uint empty_id_number = 0;
     Vector2 emptyPosition;
-
-    // link creation
-    Vector2 spawnPoint;
 
 private:
     void OnClick(const PointStamped::SharedPtr msg);
@@ -101,11 +100,21 @@ GraphCreator::GraphCreator()
 
     static auto mapPub = create_publisher<OccupancyGrid>("map", rclcpp::QoS(1).transient_local());
     mapPub->publish(msg);
+
+    OnGraphUpdated();
 }
 
 GraphCreator::~GraphCreator()
 {
     ImguiGL::Close();
+}
+
+void GraphCreator::OnGraphUpdated()
+{
+    static auto pub = create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
+    graph = Graph::ReadFromDisk(rootDirectory, 0.1, {});
+    MarkerArray marker = graph.VisualizeGraph();
+    pub->publish(marker);
 }
 
 void GraphCreator::Render()
@@ -190,6 +199,7 @@ void GraphCreator::CreateNodeWindow()
             }
 
             GSL_INFO("Created node '{}' at '{}'", node_id, std::filesystem::canonical(rootPath).c_str());
+            OnGraphUpdated();
         }
     }
 
@@ -230,6 +240,7 @@ void GraphCreator::CreateEmptyNodeWindow()
                 yamlFile.close();
             }
             GSL_INFO("Created empty node '{}' at '{}'", node_id, std::filesystem::canonical(rootPath).c_str());
+            OnGraphUpdated();
         }
     }
     ImGui::EndChild();
@@ -251,10 +262,14 @@ void GraphCreator::CreateLinkWindow()
     }
 
     // create two lists of nodes
-    std::vector<std::string> node_names;
+    std::set<std::filesystem::path> sortedSet;
     for (std::filesystem::path path : std::filesystem::directory_iterator(rootDirectory))
         if (std::filesystem::is_directory(path))
-            node_names.push_back(path.stem().c_str());
+            sortedSet.insert(path.stem());
+
+    std::vector<std::string> node_names;
+    for (const auto& path : sortedSet)
+        node_names.push_back(path.c_str());
 
     if (node_names.size() == 0)
     {
@@ -263,7 +278,7 @@ void GraphCreator::CreateLinkWindow()
         return;
     }
 
-    auto selectNode = [&](int& idx, const char* ID)
+    auto selectNode = [&](size_t& idx, const char* ID)
     {
         ImGui::PushID(ID);
         if (ImGui::BeginCombo("Selected Instance", node_names.at(idx).c_str()))
@@ -277,8 +292,10 @@ void GraphCreator::CreateLinkWindow()
         ImGui::PopID();
     };
 
-    static int firstNode = 0;
-    static int secondNode = 0;
+    static size_t firstNode = 0;
+    static size_t secondNode = 0;
+    size_t old_firstNode = firstNode;
+    size_t old_secondNode = secondNode;
 
     if (ImGui::BeginTable("table1", 2))
     {
@@ -294,30 +311,59 @@ void GraphCreator::CreateLinkWindow()
     std::string firstID = node_names.at(firstNode);
     std::string secondID = node_names.at(secondNode);
 
+    static std::string linkName = "";
+    if (old_firstNode != firstNode || old_secondNode != secondNode)
+    {
+        std::array<std::string, 2> namesArray{firstID, secondID};
+        std::sort(namesArray.begin(), namesArray.end());
+        linkName = namesArray.at(0) + "-" + namesArray.at(1);
+    }
+
+    ImGui::InputText("Link name", &linkName);
+
     if (ImGui::Button("Save"))
     {
         // ensure the file structure is correct
         std::filesystem::path rootPath(rootDirectory);
-        std::filesystem::create_directories(rootPath / firstID / "links");
 
-        std::ofstream yamlFile(rootPath / firstID / "links" / fmt::format("{}.yaml", secondID));
-        YAML::Emitter emitter(yamlFile);
-        emitter << YAML::BeginMap;
-        emitter << YAML::Key << "min_x" << YAML::Value << currentAABB.min.x;
-        emitter << YAML::Key << "min_y" << YAML::Value << currentAABB.min.y;
-        emitter << YAML::Key << "max_x" << YAML::Value << currentAABB.max.x;
-        emitter << YAML::Key << "max_y" << YAML::Value << currentAABB.max.y;
+        // first ->second
+        {
+            std::filesystem::create_directories(rootPath / firstID / "links");
 
-        emitter << YAML::Key << "spawn_point_x" << YAML::Value << spawnPoint.x;
-        emitter << YAML::Key << "spawn_point_y" << YAML::Value << spawnPoint.y;
+            std::ofstream yamlFile(rootPath / firstID / "links" / fmt::format("{}.yaml", linkName));
+            YAML::Emitter emitter(yamlFile);
+            emitter << YAML::BeginMap;
+            emitter << YAML::Key << "to" << YAML::Value << secondID;
+            emitter << YAML::Key << "min_x" << YAML::Value << currentAABB.min.x;
+            emitter << YAML::Key << "min_y" << YAML::Value << currentAABB.min.y;
+            emitter << YAML::Key << "max_x" << YAML::Value << currentAABB.max.x;
+            emitter << YAML::Key << "max_y" << YAML::Value << currentAABB.max.y;
 
-        emitter << YAML::EndMap;
-        yamlFile.close();
+            emitter << YAML::EndMap;
+            yamlFile.close();
+        }
+
+        // second -> first
+        {
+            std::filesystem::create_directories(rootPath / secondID / "links");
+
+            std::ofstream yamlFile(rootPath / secondID / "links" / fmt::format("{}.yaml", linkName));
+            YAML::Emitter emitter(yamlFile);
+            emitter << YAML::BeginMap;
+            emitter << YAML::Key << "to" << YAML::Value << firstID;
+            emitter << YAML::Key << "min_x" << YAML::Value << currentAABB.min.x;
+            emitter << YAML::Key << "min_y" << YAML::Value << currentAABB.min.y;
+            emitter << YAML::Key << "max_x" << YAML::Value << currentAABB.max.x;
+            emitter << YAML::Key << "max_y" << YAML::Value << currentAABB.max.y;
+
+            emitter << YAML::EndMap;
+            yamlFile.close();
+        }
         GSL_INFO("Created link beween nodes '{}' and '{}' at '{}'", firstID, secondID, std::filesystem::canonical(rootPath).c_str());
+        OnGraphUpdated();
     }
 
     DrawAABB(Utils::create_color(1, 0, 0, 0.3));
-    DrawPoint(spawnPoint, Utils::create_color(1, 0, 0, 0.3));
 
     ImGui::EndChild();
 }
@@ -341,15 +387,6 @@ void GraphCreator::AABBTable()
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(1);
         ImGui::RadioButton("New", (int*)&selectionMode, (int)SelectionMode::New);
-
-        if (currentType == CreateType::Link)
-        {
-            ImGui::TableNextRow();
-            ImGui::TableSetColumnIndex(0);
-            ImGui::DragFloat2("SpawnPoint", &spawnPoint.x, 0.02f);
-            ImGui::TableSetColumnIndex(1);
-            ImGui::RadioButton("##SpawnPointRadio", (int*)&selectionMode, (int)SelectionMode::SpawnPoint);
-        }
 
         ImGui::EndTable();
     }
@@ -424,12 +461,6 @@ void GraphCreator::OnClick(const PointStamped::SharedPtr msg)
     {
         currentAABB.max.x = msg->point.x;
         currentAABB.max.y = msg->point.y;
-        selectionMode = currentType == CreateType::RealNode ? SelectionMode::New : SelectionMode::SpawnPoint;
-    }
-    else if (selectionMode == SelectionMode::SpawnPoint)
-    {
-        spawnPoint.x = msg->point.x;
-        spawnPoint.y = msg->point.y;
         selectionMode = SelectionMode::New;
     }
 

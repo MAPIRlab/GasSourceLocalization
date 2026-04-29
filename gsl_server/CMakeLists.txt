@@ -89,7 +89,7 @@ if(USE_GUI)
     ament_target_dependencies(graph_creator
         rclcpp
     )
-    target_link_libraries(graph_creator GSL_common)
+    target_link_libraries(graph_creator GraphGSL)
 
 
     #### Observation recorder

@@ -38,9 +38,9 @@ namespace GSL
         IF_GUI(gui.Run());
 
         // publishers
-        pubs.graphPub = node->create_publisher<MarkerArray>("gsl_graph", 1);
-        pubs.occupancyPub = node->create_publisher<MarkerArray>("gsl_occupancy", 1);
-        pubs.windPub = node->create_publisher<MarkerArray>("gsl_wind", 1);
+        pubs.graphPub = node->create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
+        pubs.occupancyPub = node->create_publisher<MarkerArray>("/gsl_occupancy", 1);
+        pubs.windPub = node->create_publisher<MarkerArray>("/gsl_wind", 1);
 
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);

@@ -55,6 +55,12 @@ namespace GSL
             std::shared_ptr<PlaceNode> thisNode = nodesByName.at(nameThisPlace).lock();
 
             std::filesystem::path linksFolder = subfolder / "links";
+            if (!std::filesystem::exists(linksFolder))
+            {
+                GSL_WARN("Node {} has no links folder!", nameThisPlace);
+                continue;
+            }
+
             for (std::filesystem::path linkFile : std::filesystem::directory_iterator(linksFolder))
             {
                 const YAML::Node yaml = YAML::LoadFile(linkFile);
@@ -63,10 +69,6 @@ namespace GSL
                 aabb.min.y = yaml["min_y"].as<float>();
                 aabb.max.x = yaml["max_x"].as<float>();
                 aabb.max.y = yaml["max_y"].as<float>();
-
-                Vector2 spawnPoint;
-                spawnPoint.x = yaml["spawn_point_x"].as<float>();
-                spawnPoint.y = yaml["spawn_point_y"].as<float>();
 
                 std::string nameOtherPlace = yaml["to"].as<std::string>();
 
@@ -84,7 +86,6 @@ namespace GSL
                 doorway.from = thisNode;
                 doorway.to = otherNode;
                 doorway.aabb = aabb;
-                doorway.spawnPoint = spawnPoint;
 
                 thisNode->doorways.push_back(doorway);
             }

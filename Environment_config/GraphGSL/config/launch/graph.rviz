@@ -94,13 +94,13 @@ Visualization Manager:
       Enabled: true
       Name: Graph
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
-        Durability Policy: Volatile
+        Durability Policy: Transient Local
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/gsl_graph
+        Value: /gsl_graph
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
@@ -112,19 +112,19 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/gsl_occupancy
+        Value: /gsl_occupancy
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
       Name: WindMaps
       Namespaces:
-        {}
+        WindVector: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/gsl_wind
+        Value: /gsl_wind
       Value: true
   Enabled: true
   Global Options:
@@ -181,11 +181,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 67.5872802734375
+      Scale: 59.476806640625
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 6.177350997924805
-      Y: 2.6385135650634766
+      X: 6.636020183563232
+      Y: 5.671636581420898
     Saved: ~
 Window Geometry:
   Displays:
@@ -204,4 +204,4 @@ Window Geometry:
     collapsed: true
   Width: 1920
   X: 0
-  Y: 897
+  Y: 5

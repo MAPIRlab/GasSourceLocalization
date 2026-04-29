@@ -11,7 +11,6 @@ namespace GSL
         std::weak_ptr<class PlaceNode> from;
         std::weak_ptr<class PlaceNode> to;
         AABB2D aabb;
-        Vector2 spawnPoint;
 
         DoorwayNode(const std::string& _name) : name(_name) {}
         std::string_view GetName() const { return name; }
