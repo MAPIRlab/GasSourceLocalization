@@ -37,7 +37,8 @@ namespace GSL
     struct SimulationOutlets
     {
         Grid2D<int> mask;
-        std::vector<size_t> exitsCount;
+        size_t totalExitCount = 0;
+        std::vector<size_t> exitsPerOutlet;
         std::vector<size_t> numCellsOutlet;
         std::vector<bool> enabled;
     };

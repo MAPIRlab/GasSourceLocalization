@@ -114,4 +114,20 @@ namespace GSL
         GSL_ERROR("Place node {} has no doorway named {}", id, name);
         throw std::exception();
     }
+
+    size_t DoorwayNode::GetIndex() const
+    {
+        return std::distance(from.lock()->doorways.begin(),
+                             std::find_if(from.lock()->doorways.begin(),
+                                       from.lock()->doorways.end(),
+                                       [this](const DoorwayNode& other)
+                                       {
+                                           return &other == this;
+                                       }));
+    }
+
+    const DoorwayNode& DoorwayNode::OtherSide() const
+    {
+        return to.lock()->GetDoorway(name);
+    }
 } // namespace GSL

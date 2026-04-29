@@ -15,9 +15,19 @@ namespace GSL::Graph_internal
             std::shared_ptr<std::vector<float>> hitMap;
         };
 
+        // gas maps expected in each room, assuming a specific source location
+        struct CompleteMap
+        {
+            std::map<std::shared_ptr<RoomNode>, std::vector<float>> gasMaps;
+        };
+
     public:
-        SimWithResult SimulateFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
-        SimWithResult SimulateFromDoorway(const DoorwayNode& arc);
+        void Reset(); // remove all the cached data and results, get ready to run new simulations
+
+        SimWithResult SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
+        SimWithResult SimulateSingleRoomFromDoorway(const DoorwayNode& arc);
+
+        void SimulateEntireGraphFromRoom(const std::shared_ptr<RoomNode> node);
 
         struct Options
         {
@@ -32,7 +42,9 @@ namespace GSL::Graph_internal
         };
         Options options;
 
-        std::map<DoorwayNode::ID, SimWithResult> simulationCache;
+        std::map<const DoorwayNode*, SimWithResult> simulationCache;
+        std::map<std::shared_ptr<RoomNode>, CompleteMap> gasWithRoomSource;
+
     private:
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
     };

@@ -33,7 +33,8 @@ namespace GSL
             // keep track of how many filaments exit through each outlet
             if (outletNum >= 0 && outlets->enabled.at(outletNum))
             {
-                outlets->exitsCount.at(outletNum)++;
+                outlets->totalExitCount++;
+                outlets->exitsPerOutlet.at(outletNum)++;
                 return true;
             }
         }
@@ -77,7 +78,7 @@ namespace GSL
     template <typename UpdateFunc>
     void Simulation::_Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type)
     {
-        constexpr int numFilamentsIteration = 5;
+        constexpr int numFilamentsIteration = 3;
         size_t max_filaments = maxWarmupIterations * warmupAcceleration * numFilamentsIteration + timesteps * numFilamentsIteration;
 
         // To avoid having to delete filaments from the middle of the vector, which is quite slow, we will ping-pong the active filaments between two vectors
@@ -95,7 +96,7 @@ namespace GSL
 
         // reset the count of how many filaments took each outlet
         if (outlets)
-            std::fill(outlets->exitsCount.begin(), outlets->exitsCount.end(), 0);
+            std::fill(outlets->exitsPerOutlet.begin(), outlets->exitsPerOutlet.end(), 0);
 
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
@@ -110,7 +111,6 @@ namespace GSL
                 {
                     activeFilamentVec->emplace_back();
                     activeFilamentVec->back().position = source.getPoint();
-                    totalEmittedFilaments++;
                 }
 
                 for (Filament& filament : *activeFilamentVec)
@@ -180,7 +180,7 @@ namespace GSL
             {
                 int outletNum = outlets->mask.data.at(i);
                 if (outletNum != -1 && outlets->enabled.at(outletNum))
-                    hitMap.at(i) = outlets->exitsCount.at(outletNum) / (float)outlets->numCellsOutlet.at(outletNum);
+                    hitMap.at(i) = outlets->exitsPerOutlet.at(outletNum) / (float)outlets->numCellsOutlet.at(outletNum);
             }
         }
 

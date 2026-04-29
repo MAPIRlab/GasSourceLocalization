@@ -8,24 +8,19 @@ namespace GSL
 {
     struct DoorwayNode
     {
-        using ID = size_t;
-
         std::weak_ptr<class PlaceNode> from;
         std::weak_ptr<class PlaceNode> to;
         AABB2D aabb;
         Vector2 spawnPoint;
 
-        DoorwayNode(const std::string& _name) : name(_name), uid(GenerateID())
-        {}
-        ID getUID() const { return uid; }
+        DoorwayNode(const std::string& _name) : name(_name) {}
         std::string_view GetName() const { return name; }
+
+        size_t GetIndex() const;
+        const DoorwayNode& OtherSide() const; // the node which represents the other direction through this doorway
 
     private:
         std::string name; // name is shared between the two directional versions of the doorway
-        ID uid;
-
-        static inline ID nextID = 0;
-        static ID GenerateID() { return nextID++; }
     };
 
     class PlaceNode

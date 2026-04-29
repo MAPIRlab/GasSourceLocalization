@@ -179,14 +179,14 @@ namespace GSL
                         simulationOptions.simulationEnabled = false;
                         SimulationSystem::SimWithResult result;
                         if (simulationOptions.exactPoint)
-                            result = gsl->simulationSystem.SimulateFromPoint(realNode, selectedCoordinates);
+                            result = gsl->simulationSystem.SimulateSingleRoomFromPoint(realNode, selectedCoordinates);
                         else
-                            result = gsl->simulationSystem.SimulateFromDoorway(realNode->doorways.at(simulationOptions.selectedArcIdx));
+                            result = gsl->simulationSystem.SimulateSingleRoomFromDoorway(realNode->doorways.at(simulationOptions.selectedArcIdx));
 
                         // Log results
                         GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
-                        for (size_t i = 0; i < result.simulation->outlets->exitsCount.size(); i++)
-                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsCount.at(i), realNode->doorways.at(i).to.lock()->id);
+                        for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
+                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsPerOutlet.at(i), realNode->doorways.at(i).to.lock()->id);
 
                         Simulation::displayImage(Grid2D<float>(*result.hitMap, realNode->GetOccupancy()), "result", simulationOptions.imageDisplayPower);
                         simulationOptions.simulationEnabled = true;
@@ -232,10 +232,10 @@ namespace GSL
 
                         const DoorwayNode& doorway = selectedNode.node->doorways.at(i);
 
-                        if (!gsl->simulationSystem.simulationCache.contains(doorway.getUID()))
-                            gsl->simulationSystem.SimulateFromDoorway(doorway);
+                        if (!gsl->simulationSystem.simulationCache.contains(&doorway))
+                            gsl->simulationSystem.SimulateSingleRoomFromDoorway(doorway);
 
-                        SimulationSystem::SimWithResult result = gsl->simulationSystem.simulationCache.at(doorway.getUID());
+                        SimulationSystem::SimWithResult result = gsl->simulationSystem.simulationCache.at(&doorway);
                         for (size_t j = 0; j < combinedMap.size(); j++)
                             combinedMap.at(j) += result.hitMap->at(j) * weight;
                     }

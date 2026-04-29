@@ -111,6 +111,7 @@ namespace GSL
 
     void Graph::AddObservation(Vector2 position, Vector2 wind, float gasConcentration)
     {
+        // wind
         {
             constexpr float sigma = 0.01;
             float speed = vmath::length(wind);
@@ -125,6 +126,7 @@ namespace GSL
                 GSL_WARN("Wind GMRF did not accept observation at {}", position);
         }
 
+        // gas
         bool accepted = false;
         for (auto node : nodes)
         {
