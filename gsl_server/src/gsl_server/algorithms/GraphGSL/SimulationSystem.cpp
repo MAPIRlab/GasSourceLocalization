@@ -9,45 +9,45 @@ namespace GSL::Graph_internal
     void SimulationSystem::Reset()
     {
         simulationCache.clear();
-        gasWithRoomSource.clear();
+        gasMapsWithRoomSource.clear();
         // blurMasks.clear(); //this can probably be retained (if the graph does not change)
     }
 
-    SimulationSystem::SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> realNode, Vector2 point)
+    SimulationSystem::SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> roomNode, Vector2 point)
     {
         ScopedStopwatch s("sims");
         SimWithResult result;
-        result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
+        result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         result.simulation = std::shared_ptr<Simulation>(new Simulation{
             .source = SimulationSource(point),
             .noiseSTDev = options.noiseSTDev,
             .minWarmupIterations = options.minWarmupIterations,
             .maxWarmupIterations = options.maxWarmupIterations,
-            .wind = realNode->GetWindMap(),
+            .wind = roomNode->GetWindMap(),
             .outlets = SimulationOutlets{
-                .mask = realNode->GetOutletsMask(),
-                .exitsPerOutlet = std::vector<size_t>(realNode->doorways.size(), 0),
+                .mask = roomNode->GetOutletsMask(),
+                .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
             },
         });
 
-        result.simulation->outlets->exitsPerOutlet.resize(realNode->doorways.size(), 0);
-        result.simulation->outlets->enabled.resize(realNode->doorways.size(), true);
+        result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
+        result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
 
         Utils::Windsorize(*result.hitMap, 5);
-        Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationPower);
-        Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
-        Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, 1);
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
+        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         return result;
     }
 
     SimulationSystem::SimWithResult SimulationSystem::SimulateSingleRoomFromDoorway(const DoorwayNode& doorway)
     {
         SimWithResult result;
-        auto realNode = As<RoomNode>(doorway.from.lock());
-        Grid2DMetadata nodeMetadata = realNode->GetOccupancy().metadata;
+        auto roomNode = As<RoomNode>(doorway.from.lock());
+        Grid2DMetadata nodeMetadata = roomNode->GetOccupancy().metadata;
         AABB2D sourceAABB(doorway.aabb.min,
                           doorway.aabb.max);
         Vector2 maxCoords = nodeMetadata.indicesToCoordinates(nodeMetadata.dimensions, false) - Vector2{0.001, 0.001};
@@ -57,7 +57,7 @@ namespace GSL::Graph_internal
         sourceAABB.max.y = std::clamp(sourceAABB.max.y, nodeMetadata.origin.y, maxCoords.y);
 
         // configure the simulation
-        result.hitMap = std::make_shared<std::vector<float>>(realNode->GetOccupancy().data.size(), 0.);
+        result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         result.simulation = std::shared_ptr<Simulation>(new Simulation{
             .source = SimulationSource(sourceAABB),
             .warmupAcceleration = options.warmupTimeAcc,
@@ -65,19 +65,19 @@ namespace GSL::Graph_internal
             .noiseSTDev = options.noiseSTDev,
             .minWarmupIterations = options.minWarmupIterations,
             .maxWarmupIterations = options.maxWarmupIterations,
-            .wind = realNode->GetWindMap(),
+            .wind = roomNode->GetWindMap(),
             .outlets = SimulationOutlets{
-                .mask = realNode->GetOutletsMask(),
-                .exitsPerOutlet = std::vector<size_t>(realNode->doorways.size(), 0),
-                .numCellsOutlet = realNode->GetOutletsCellCount(),
+                .mask = roomNode->GetOutletsMask(),
+                .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
+                .numCellsOutlet = roomNode->GetOutletsCellCount(),
             },
         });
 
-        result.simulation->outlets->exitsPerOutlet.resize(realNode->doorways.size(), 0);
-        result.simulation->outlets->enabled.resize(realNode->doorways.size(), true);
+        result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
+        result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
 
-        for (size_t i = 0; i < realNode->doorways.size(); i++)
-            if (&realNode->doorways.at(i) == &doorway)
+        for (size_t i = 0; i < roomNode->doorways.size(); i++)
+            if (&roomNode->doorways.at(i) == &doorway)
                 result.simulation->outlets->enabled.at(i) = false;
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
@@ -86,12 +86,12 @@ namespace GSL::Graph_internal
         if (options.cummulativeMap)
         {
             Utils::Windsorize(*result.hitMap, 5);
-            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, options.normalizationPower);
-            Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
-            Utils::PowerMaxNormalize(*result.hitMap, realNode->GetOccupancy().occupancy, 1);
+            Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
+            Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
+            Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         }
         else
-            Simulation::blurHitMap(*result.hitMap, options.blurSigma, realNode->GetOccupancy(), blurMasks[realNode]);
+            Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
 
         // store the simulation result in the cache
         //-------------------
@@ -100,7 +100,7 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    void SimulationSystem::SimulateEntireGraphFromRoom(const std::shared_ptr<RoomNode> sourceNode)
+    void SimulationSystem::SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> sourceNode)
     {
         std::queue<const DoorwayNode*> simQueue;
 
@@ -184,6 +184,29 @@ namespace GSL::Graph_internal
 
                 // push the new state on top
                 stateStack.push(next);
+            }
+        }
+
+        // OK, now we've done all that, we can combine the individual simulation maps,
+        // weighted by the amount of gas that should have passed through each doorway
+
+        CompleteMap& map = gasMapsWithRoomSource[sourceNode];
+        for (const auto& node : graph.nodes)
+        {
+            auto room = As<RoomNode>(node);
+            if (!room)
+                continue;
+
+            map.gasMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
+            for (const auto& doorway : node->doorways)
+            {
+                if (!totalGasThroughDoorway.contains(&doorway))
+                    continue;
+
+                float weight = totalGasThroughDoorway.at(&doorway);
+                const auto& localHitmap = simulationCache.at(&doorway).hitMap;
+                for (size_t i = 0; i < localHitmap->size(); i++)
+                    map.gasMaps[room].at(i) += localHitmap->at(i) * weight;
             }
         }
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gsl_server/algorithms/Common/Simulation.hpp"
+#include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <vector>
 
@@ -27,7 +28,7 @@ namespace GSL::Graph_internal
         SimWithResult SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
         SimWithResult SimulateSingleRoomFromDoorway(const DoorwayNode& arc);
 
-        void SimulateEntireGraphFromRoom(const std::shared_ptr<RoomNode> node);
+        void SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> node);
 
         struct Options
         {
@@ -43,7 +44,7 @@ namespace GSL::Graph_internal
         Options options;
 
         std::map<const DoorwayNode*, SimWithResult> simulationCache;
-        std::map<std::shared_ptr<RoomNode>, CompleteMap> gasWithRoomSource;
+        std::map<std::shared_ptr<RoomNode>, CompleteMap> gasMapsWithRoomSource;
 
     private:
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;

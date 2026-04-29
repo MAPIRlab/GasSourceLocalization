@@ -168,27 +168,52 @@ namespace GSL
             }
 
             ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
-            if (ImGui::Button("Run simulation"))
+            if (ImGui::Button("Run single room simulation"))
             {
-                auto realNode = As<RoomNode>(selectedNode.node);
-                if (realNode)
+                auto roomNode = As<RoomNode>(selectedNode.node);
+                if (roomNode)
                 {
                     // Run
-                    auto lambda = [this, realNode]()
+                    auto lambda = [this, roomNode]()
                     {
                         simulationOptions.simulationEnabled = false;
                         SimulationSystem::SimWithResult result;
                         if (simulationOptions.exactPoint)
-                            result = gsl->simulationSystem.SimulateSingleRoomFromPoint(realNode, selectedCoordinates);
+                            result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
                         else
-                            result = gsl->simulationSystem.SimulateSingleRoomFromDoorway(realNode->doorways.at(simulationOptions.selectedArcIdx));
+                            result = gsl->simulationSystem.SimulateSingleRoomFromDoorway(roomNode->doorways.at(simulationOptions.selectedArcIdx));
 
                         // Log results
                         GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
                         for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
-                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsPerOutlet.at(i), realNode->doorways.at(i).to.lock()->id);
+                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsPerOutlet.at(i), roomNode->doorways.at(i).to.lock()->id);
 
-                        Simulation::displayImage(Grid2D<float>(*result.hitMap, realNode->GetOccupancy()), "result", simulationOptions.imageDisplayPower);
+                        Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result", simulationOptions.imageDisplayPower);
+                        simulationOptions.simulationEnabled = true;
+                    };
+                    gsl->functionQueue.submit(lambda);
+                }
+                else
+                    GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
+            }
+
+            if (ImGui::Button("Run whole map simulation"))
+            {
+                auto roomNode = As<RoomNode>(selectedNode.node);
+                if (roomNode)
+                {
+                    // Run
+                    auto lambda = [this, roomNode]()
+                    {
+                        simulationOptions.simulationEnabled = false;
+                        // if (simulationOptions.exactPoint)
+                        //     result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
+                        // else
+                        gsl->simulationSystem.SimulateEntireGraphFromRoom(gsl->graph, roomNode);
+
+                        // Log results
+                        GSL_INFO("Done simulating source in room '{}'", roomNode->id);
+
                         simulationOptions.simulationEnabled = true;
                     };
                     gsl->functionQueue.submit(lambda);
@@ -222,8 +247,8 @@ namespace GSL
                 {
                     simulationOptions.simulationEnabled = false;
 
-                    auto realNode = As<RoomNode>(selectedNode.node);
-                    std::vector<float> combinedMap(realNode->GetOccupancy().metadata.dimensions.x * realNode->GetOccupancy().metadata.dimensions.y, 0);
+                    auto roomNode = As<RoomNode>(selectedNode.node);
+                    std::vector<float> combinedMap(roomNode->GetOccupancy().metadata.dimensions.x * roomNode->GetOccupancy().metadata.dimensions.y, 0);
                     for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
                     {
                         float weight = selectedNode.combineWeights.at(i);
@@ -241,8 +266,8 @@ namespace GSL
                     }
 
                     Utils::Windsorize(combinedMap, 5);
-                    Utils::PowerMaxNormalize(combinedMap, realNode->GetOccupancy().data, 1);
-                    Simulation::displayImage(Grid2D<float>(combinedMap, realNode->GetOccupancy()));
+                    Utils::PowerMaxNormalize(combinedMap, roomNode->GetOccupancy().data, 1);
+                    Simulation::displayImage(Grid2D<float>(combinedMap, roomNode->GetOccupancy()));
                     simulationOptions.simulationEnabled = true;
                 };
                 gsl->functionQueue.submit(lambda);

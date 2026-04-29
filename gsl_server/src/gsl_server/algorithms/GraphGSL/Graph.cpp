@@ -151,8 +151,8 @@ namespace GSL
             if (!Is<RoomNode>(node))
                 continue;
 
-            auto realNode = As<RoomNode>(node);
-            realNode->UpdateWindMap(gmrf);
+            auto roomNode = As<RoomNode>(node);
+            roomNode->UpdateWindMap(gmrf);
         }
     }
 
@@ -293,8 +293,8 @@ namespace GSL
             if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
                 continue;
 
-            auto realNode = As<RoomNode>(node);
-            Grid2D<Occupancy> occupancy = realNode->GetOccupancy();
+            auto roomNode = As<RoomNode>(node);
+            Grid2D<Occupancy> occupancy = roomNode->GetOccupancy();
 
             Grid2DMetadata vizMetadata = occupancy.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
@@ -315,9 +315,9 @@ namespace GSL
             if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
                 continue;
 
-            auto realNode = As<RoomNode>(node);
+            auto roomNode = As<RoomNode>(node);
 
-            Grid2D<Vector2> windMap = realNode->GetWindMap();
+            Grid2D<Vector2> windMap = roomNode->GetWindMap();
             Grid2DMetadata vizMetadata = windMap.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
