@@ -96,6 +96,11 @@ namespace GSL
         return numCellsOutlet;
     }
 
+    AABB2D RoomNode::GetAABB() const
+    {
+        return gridMetadata.GetAABB();
+    }
+
     Grid2D<Vector2> RoomNode::AsGrid()
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);
@@ -119,11 +124,11 @@ namespace GSL
     {
         return std::distance(from.lock()->doorways.begin(),
                              std::find_if(from.lock()->doorways.begin(),
-                                       from.lock()->doorways.end(),
-                                       [this](const DoorwayNode& other)
-                                       {
-                                           return &other == this;
-                                       }));
+                                          from.lock()->doorways.end(),
+                                          [this](const DoorwayNode& other)
+                                          {
+                                              return &other == this;
+                                          }));
     }
 
     const DoorwayNode& DoorwayNode::OtherSide() const

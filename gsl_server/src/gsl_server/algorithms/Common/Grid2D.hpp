@@ -68,6 +68,12 @@ namespace GSL
         {
             return indices.x >= 0 && indices.x < dimensions.x && indices.y >= 0 && indices.y < dimensions.y;
         }
+
+        AABB2D GetAABB() const
+        {
+            return AABB2D{.min = origin,
+                          .max = origin + (Vector2)dimensions * cellSize};
+        }
     };
 
     // Important: Grid is a non-owning struct (contains only references) to make accessing data easier. For an owning alternative, see Map2D below

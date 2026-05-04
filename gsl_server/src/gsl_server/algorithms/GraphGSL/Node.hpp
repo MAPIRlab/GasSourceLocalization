@@ -51,6 +51,7 @@ namespace GSL
         const Grid2D<int> GetOutletsMask();
         const std::vector<size_t>& GetOutletsCellCount();
         Vector2 GetPosition() override { return centroid; }
+        AABB2D GetAABB() const;
 
     private:
         Grid2D<Vector2> AsGrid();
