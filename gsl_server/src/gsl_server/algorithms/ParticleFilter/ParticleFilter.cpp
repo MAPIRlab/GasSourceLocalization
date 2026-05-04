@@ -284,7 +284,7 @@ namespace GSL
                 point.x = p.x;
                 point.y = p.y;
 
-                std_msgs::msg::ColorRGBA color = Utils::valueToColor(p.weight, -10, 0, Utils::valueColorMode::Logarithmic);
+                std_msgs::msg::ColorRGBA color = Utils::valueToColor(p.weight, -10, 0, Utils::ValueColorMode::Logarithmic);
 
                 parts.points.push_back(point);
                 parts.colors.push_back(color);

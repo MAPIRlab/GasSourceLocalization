@@ -243,7 +243,7 @@ namespace GSL::SemanticGrGSL_internal
             colors.push_back(Utils::valueToColor(cell.sourceProb,
                                                  grgsl->settings.colorScaleLimits.x,
                                                  grgsl->settings.colorScaleLimits.y,
-                                                 Utils::valueColorMode::Logarithmic));
+                                                 Utils::ValueColorMode::Logarithmic));
 
         Utils::publishDebugMarkers(markerGrid, "simulatedInfotaxis");
         GSL_INFO("KLD: {}", infoHit);

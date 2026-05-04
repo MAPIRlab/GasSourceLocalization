@@ -32,17 +32,17 @@ namespace GSL::Utils
         points.type = visualization_msgs::msg::Marker::POINTS;
         points.action = visualization_msgs::msg::Marker::ADD;
 
-        points.color = valueToColor(0.5, 0, 1, valueColorMode::Linear);
+        points.color = valueToColor(0.5, 0, 1, ValueColorMode::Linear);
         points.scale.x = scale.x;
         points.scale.y = scale.y;
         return points;
     }
 
-    std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, valueColorMode mode)
+    std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, ValueColorMode mode)
     {
         double r, g, b;
         double range;
-        if (mode == valueColorMode::Logarithmic)
+        if (mode == ValueColorMode::Logarithmic)
         {
             val = std::log10(val);
             range = (std::log10(highLimit) - std::log10(lowLimit)) / 4;

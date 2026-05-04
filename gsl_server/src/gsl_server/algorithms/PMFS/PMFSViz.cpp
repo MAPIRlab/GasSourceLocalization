@@ -36,7 +36,7 @@ namespace GSL
 
                     // CONFIDENCE
                     std_msgs::msg::ColorRGBA colorConfidence =
-                        valueToColor(grid.dataAt(a, b).confidence, 0, 1, Utils::valueColorMode::Linear);
+                        valueToColor(grid.dataAt(a, b).confidence, 0, 1, Utils::ValueColorMode::Linear);
 
                     p.z = settings.markers_height - 0.1;
                     confidenceMarker.points.push_back(p);

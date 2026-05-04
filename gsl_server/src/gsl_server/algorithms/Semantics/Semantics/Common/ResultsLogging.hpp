@@ -28,7 +28,7 @@ namespace GSL::SemanticsResults
             colors[i] = Utils::valueToColor(olfactionOnly.data.at(i),
                                             colorLimits.x,
                                             colorLimits.y,
-                                            Utils::valueColorMode::Logarithmic);
+                                            Utils::ValueColorMode::Logarithmic);
         Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, olfactionOnly.occupancy, olfactionOnly.metadata), "sourceOlfactionOnly");
 
         Vector2 expecOlfOnly = Utils::ExpectedValue(olfactionOnly, 1);

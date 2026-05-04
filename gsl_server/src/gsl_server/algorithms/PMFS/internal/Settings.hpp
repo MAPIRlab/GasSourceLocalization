@@ -52,8 +52,8 @@ namespace GSL::PMFS_internal
     struct VisualizationSettings
     {
         bool headless = false;
-        Utils::valueColorMode hitMode = Utils::valueColorMode::Linear;
-        Utils::valueColorMode sourceMode = Utils::valueColorMode::Logarithmic;
+        Utils::ValueColorMode hitMode = Utils::ValueColorMode::Linear;
+        Utils::ValueColorMode sourceMode = Utils::ValueColorMode::Logarithmic;
 
         // range of values that will be mapped to blue-red
         Vector2 hitLimits = Vector2(0, 1);

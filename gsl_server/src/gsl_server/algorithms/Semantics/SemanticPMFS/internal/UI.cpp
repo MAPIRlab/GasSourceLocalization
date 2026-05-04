@@ -183,17 +183,17 @@ namespace GSL::SemanticPMFS_internal
         ImGui::Begin("Markers");
         {
             auto& settings = pmfs->settings;
-            static int modeHit = settings.visualization.hitMode;
-            static int modeSource = settings.visualization.sourceMode;
+            static int modeHit = (int)settings.visualization.hitMode;
+            static int modeSource = (int)settings.visualization.sourceMode;
             static float hitLimits[2] = {settings.visualization.hitLimits.x, settings.visualization.hitLimits.y};
             static float sourceLimits[2] = {settings.visualization.sourceLimits.x, settings.visualization.sourceLimits.y};
 
             ImGui::Combo("Hit display mode", &modeHit, "Linear\0Logarithmic\0");
-            settings.visualization.hitMode = modeHit == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
+            settings.visualization.hitMode = modeHit == 0 ? Utils::ValueColorMode::Linear : Utils::ValueColorMode::Logarithmic;
             ImGui::InputFloat2("Hit limits", hitLimits, "%.5f");
 
             ImGui::Combo("Source display mode", &modeSource, "Linear\0Logarithmic\0");
-            settings.visualization.sourceMode = modeSource == 0 ? Utils::valueColorMode::Linear : Utils::valueColorMode::Logarithmic;
+            settings.visualization.sourceMode = modeSource == 0 ? Utils::ValueColorMode::Linear : Utils::ValueColorMode::Logarithmic;
             ImGui::InputFloat2("Source limits", sourceLimits, "%.5f");
 
             settings.visualization.hitLimits.x = hitLimits[0];

@@ -30,15 +30,18 @@ namespace GSL::Graph_internal
 
         void SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> node);
 
+        MarkerArray VisualizeCachedResults(std::shared_ptr<RoomNode> sourceRoom);
+
         struct Options
         {
             bool cummulativeMap = true;
+            float deltaTime = 0.2;
             float blurSigma = 0.7;
             float noiseSTDev = 0.1;
-            float warmupTimeAcc = 2.0;
-            size_t iterationLimit = 300;
-            size_t minWarmupIterations = 1000;
-            size_t maxWarmupIterations = 2000;
+            float warmupTimeAcc = 4.0;
+            size_t iterationLimit = 100;
+            size_t minWarmupIterations = 500;
+            size_t maxWarmupIterations = 1000;
             float normalizationPower = 1.0;
         };
         Options options;

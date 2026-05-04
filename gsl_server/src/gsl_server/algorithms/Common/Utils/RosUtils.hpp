@@ -6,8 +6,8 @@
 #include <gsl_server/algorithms/Common/Grid2D.hpp>
 #include <gsl_server/core/Vectors.hpp>
 #include <rclcpp/clock.hpp>
-#include <rclcpp/node.hpp>
 #include <rclcpp/executors.hpp>
+#include <rclcpp/node.hpp>
 #include <string>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
@@ -19,12 +19,12 @@ namespace GSL
     {
         visualization_msgs::msg::Marker emptyMarker(Vector2 scale, rclcpp::Clock::SharedPtr clock);
 
-        enum valueColorMode
+        enum class ValueColorMode
         {
             Linear,
             Logarithmic
         };
-        std_msgs::msg::ColorRGBA valueToColor(double val, double low, double high, valueColorMode mode);
+        std_msgs::msg::ColorRGBA valueToColor(double val, double low, double high, ValueColorMode mode);
         std_msgs::msg::ColorRGBA create_color(float r, float g, float b, float a = 1.0f);
 
         geometry_msgs::msg::Pose compose(const geometry_msgs::msg::Pose& referenceSystem, const geometry_msgs::msg::Pose& pose);

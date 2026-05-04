@@ -225,7 +225,7 @@ namespace GSL
                                        else
                                            colors[index] = Utils::valueToColor(cell.auxWeight,
                                                                                settings.colorScaleLimits.x, settings.colorScaleLimits.y,
-                                                                               Utils::valueColorMode::Linear);
+                                                                               Utils::ValueColorMode::Linear);
                                    },
                                    MapFunctionMode::Parallel);
                 Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, grid.occupancy, grid.metadata), "propagation");
@@ -370,7 +370,7 @@ namespace GSL
                     p.z = 0;
 
                     std_msgs::msg::ColorRGBA color =
-                        Utils::valueToColor(grid.dataAt(col, row).sourceProb, colorScaleLimits.x, colorScaleLimits.y, Utils::valueColorMode::Logarithmic);
+                        Utils::valueToColor(grid.dataAt(col, row).sourceProb, colorScaleLimits.x, colorScaleLimits.y, Utils::ValueColorMode::Logarithmic);
 
                     marker.points.push_back(p);
                     marker.colors.push_back(color);
@@ -415,7 +415,7 @@ namespace GSL
                     p.z = 0;
 
                     std_msgs::msg::ColorRGBA color =
-                        Utils::valueToColor(grid.dataAt(col, row), colorScaleLimits.x, colorScaleLimits.y, Utils::valueColorMode::Logarithmic);
+                        Utils::valueToColor(grid.dataAt(col, row), colorScaleLimits.x, colorScaleLimits.y, Utils::ValueColorMode::Logarithmic);
 
                     marker.points.push_back(p);
                     marker.colors.push_back(color);

@@ -249,7 +249,7 @@ namespace GSL
 
             std::vector<std_msgs::msg::ColorRGBA> colors(mutualInformationGas.size());
             for (size_t i = 0; i < mutualInformationGas.size(); i++)
-                colors[i] = Utils::valueToColor(mutualInformationGas[i], min, maxVal, Utils::valueColorMode::Linear);
+                colors[i] = Utils::valueToColor(mutualInformationGas[i], min, maxVal, Utils::ValueColorMode::Linear);
 
             Utils::publishDebugMarkers(
                 Grid2D<std_msgs::msg::ColorRGBA>(colors, pmfs->navigationOccupancy, pmfs->gridMetadata),
@@ -388,11 +388,11 @@ namespace GSL
                 }
                 else
                 {
-                    explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::valueColorMode::Linear);
+                    explorationColor = Utils::valueToColor(explorationValue(a, b), minExpl, maxExpl, Utils::ValueColorMode::Linear);
                 }
                 varianceColor =
                     Utils::valueToColor(pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence),
-                                        minVar, maxVar, Utils::valueColorMode::Linear);
+                                        minVar, maxVar, Utils::ValueColorMode::Linear);
 
                 explorationMarker.points.push_back(p);
                 explorationMarker.colors.push_back(explorationColor);

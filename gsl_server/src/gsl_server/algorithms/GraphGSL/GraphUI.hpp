@@ -1,6 +1,7 @@
 #pragma once
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include "gsl_server/core/ros_typedefs.hpp"
 #include <rclcpp/subscription.hpp>
 #if USE_GUI
 
@@ -32,6 +33,8 @@ namespace GSL
 
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         Vector2 selectedCoordinates;
+
+        rclcpp::Publisher<MarkerArray>::SharedPtr gasMapsPub;
 
         struct SimulationOptions
         {

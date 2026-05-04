@@ -25,6 +25,8 @@ namespace GSL
                     selectedCoordinates.x = point->point.x;
                     selectedCoordinates.y = point->point.y;
                 });
+
+        gasMapsPub = gsl->node->create_publisher<MarkerArray>("gasMaps", 1);
     }
 
     GraphUI::~GraphUI()
@@ -210,6 +212,8 @@ namespace GSL
                         //     result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
                         // else
                         gsl->simulationSystem.SimulateEntireGraphFromRoom(gsl->graph, roomNode);
+                        MarkerArray markers = gsl->simulationSystem.VisualizeCachedResults(roomNode);
+                        gasMapsPub->publish(markers);
 
                         // Log results
                         GSL_INFO("Done simulating source in room '{}'", roomNode->id);
@@ -221,6 +225,9 @@ namespace GSL
                 else
                     GSL_ERROR("No node corresponds to coords {}", selectedCoordinates);
             }
+
+            if (ImGui::Button("Reset simulations"))
+                gsl->simulationSystem.Reset();
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Image color power", &simulationOptions.imageDisplayPower, 0.05, 0, 10);
@@ -285,6 +292,8 @@ namespace GSL
         ImGui::InputScalar("Min Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.minWarmupIterations);
         ImGui::SetNextItemWidth(100);
         ImGui::InputScalar("Max Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.maxWarmupIterations);
+        ImGui::SetNextItemWidth(100);
+        ImGui::DragFloat("Delta time", &gsl->simulationSystem.options.deltaTime, 0.01, 0, 2);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Warmup acceleration", &gsl->simulationSystem.options.warmupTimeAcc, 0.1, 0, 20);
 

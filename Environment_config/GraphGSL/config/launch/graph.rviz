@@ -94,7 +94,7 @@ Visualization Manager:
       Enabled: true
       Name: Graph
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -125,6 +125,18 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_wind
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: GasMaps
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/gasMaps
       Value: true
   Enabled: true
   Global Options:
