@@ -180,7 +180,7 @@ namespace GSL
             {
                 int outletNum = outlets->mask.data.at(i);
                 if (outletNum != -1 && outlets->enabled.at(outletNum))
-                    hitMap.at(i) = outlets->exitsPerOutlet.at(outletNum) / (float)outlets->numCellsOutlet.at(outletNum);
+                    hitMap.at(i) = outlets->exitsPerOutlet.at(outletNum);
             }
         }
 

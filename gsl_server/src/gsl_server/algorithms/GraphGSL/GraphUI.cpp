@@ -212,7 +212,7 @@ namespace GSL
                         //     result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
                         // else
                         gsl->simulationSystem.SimulateEntireGraphFromRoom(gsl->graph, roomNode);
-                        MarkerArray markers = gsl->simulationSystem.VisualizeCachedResults(roomNode);
+                        MarkerArray markers = gsl->simulationSystem.VisualizeCachedResults(roomNode, gsl->graph.nodeSeparationViz);
                         gasMapsPub->publish(markers);
 
                         // Log results

@@ -14,6 +14,10 @@ namespace GSL::Graph_internal
         {
             std::shared_ptr<Simulation> simulation;
             std::shared_ptr<std::vector<float>> hitMap;
+            float maxBeforeNormalize = 0;
+
+            float NACatOutlet(size_t index);
+            float ProportionInDoorway(size_t index);
         };
 
         // gas maps expected in each room, assuming a specific source location
@@ -26,11 +30,13 @@ namespace GSL::Graph_internal
         void Reset(); // remove all the cached data and results, get ready to run new simulations
 
         SimWithResult SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
+        SimulationSystem::SimWithResult SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
+                                                                   const std::set<const DoorwayNode*>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const DoorwayNode& arc);
 
         void SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> node);
 
-        MarkerArray VisualizeCachedResults(std::shared_ptr<RoomNode> sourceRoom);
+        MarkerArray VisualizeCachedResults(std::shared_ptr<RoomNode> sourceRoom, float nodeSeparationViz);
 
         struct Options
         {
