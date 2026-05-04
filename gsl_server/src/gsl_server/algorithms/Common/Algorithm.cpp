@@ -174,6 +174,14 @@ namespace GSL
     void Algorithm::SimulateMeasurements(std::filesystem::path file)
     {
         GSL_INFO("Reading measurements from file {}", file.c_str());
+
+        if(!std::filesystem::exists(file))
+        {
+            GSL_WARN("File '{}' does not exist. Creating it.", file.c_str());
+            std::ofstream f(file);
+            f.close();
+        }
+
         YAML::Node root = YAML::LoadFile(file);
         for (YAML::Node entry : root)
         {

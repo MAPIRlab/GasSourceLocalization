@@ -136,7 +136,7 @@ namespace GSL::Graph_internal
             if (!Is<RoomNode>(doorway->to))
                 continue;
 
-            GSL_INFO("Simulating {}->{}", doorway->from.lock()->id, doorway->to.lock()->id);
+            GSL_INFO("Simulating {}->{} ({})", doorway->from.lock()->id, doorway->to.lock()->id, doorway->GetName());
             const DoorwayNode* otherSide = &doorway->OtherSide();
             SimWithResult result = SimulateSingleRoomFromDoorway(*otherSide);
 
@@ -264,6 +264,20 @@ namespace GSL::Graph_internal
                 for (size_t i = 0; i < localHitmap->size(); i++)
                     completeGasMap.gasMaps[room].at(i) += localHitmap->at(i) * weight;
             }
+        }
+
+        // normalize by the global maximum!
+        float max = 0;
+        for (const auto& [node, map] : completeGasMap.gasMaps)
+        {
+            float localMax = *std::max_element(map.begin(), map.end());
+            max = std::max(max, localMax);
+        }
+
+        for (auto& [node, map] : completeGasMap.gasMaps)
+        {
+            for (size_t i = 0; i < map.size(); i++)
+                map.at(i) /= max;
         }
     }
 

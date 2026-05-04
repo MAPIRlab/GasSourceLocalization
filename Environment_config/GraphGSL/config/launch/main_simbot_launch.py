@@ -45,8 +45,8 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e",
                 parameters=[
-                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph3")},
-                    {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_3")},
+                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph4")},
+                    {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_4")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
 
@@ -169,7 +169,7 @@ def launch_setup(context, *args, **kwargs):
                 {"pose_topic": parse_substitution("$(var robot_name)/amcl_pose")},
                 {"wind_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
                 {"gas_topic": parse_substitution("$(var robot_name)/PID/Sensor_reading")},
-                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_3")},
+                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_4")},
         ],
     )
 
