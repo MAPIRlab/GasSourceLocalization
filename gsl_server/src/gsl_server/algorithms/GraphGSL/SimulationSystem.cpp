@@ -33,6 +33,7 @@ namespace GSL::Graph_internal
                 .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
             },
         });
+        result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
 
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
@@ -75,6 +76,8 @@ namespace GSL::Graph_internal
                 .numCellsOutlet = roomNode->GetOutletsCellCount(),
             },
         });
+
+        result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
 
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
@@ -129,7 +132,7 @@ namespace GSL::Graph_internal
             const DoorwayNode* doorSource;
             std::stack<const DoorwayNode*> doorways;
         };
-        std::queue<NodeState> stateStack;
+        std::stack<NodeState> stateStack;
 
         SimWithResult result = SimulateSingleRoomFromAABB(sourceNode, sourceNode->GetAABB(), {});
         completeGasMap.gasMaps[sourceNode] = *result.hitMap;
@@ -157,7 +160,7 @@ namespace GSL::Graph_internal
         constexpr float minimumGasThr = 1e-1;
         while (!stateStack.empty())
         {
-            NodeState& current = stateStack.front();
+            NodeState& current = stateStack.top();
 
             // if we cannot keep expanding this node, pop it from the stack
             if (current.remainingGas < minimumGasThr || current.doorways.empty())
@@ -167,28 +170,31 @@ namespace GSL::Graph_internal
                 // otherwise, let's get the next doorway and continue
                 NodeState next;
                 next.doorSource = &current.doorways.top()->OtherSide();
+                current.doorways.pop();
+                if (!Is<RoomNode>(next.doorSource->from))
+                    continue;
 
-                // if no gas exits this room at all (a dead end or other weird edge case), just stop expansion in this direction
+                GSL_INFO("{}->{}", current.doorSource->to.lock()->id, current.doorSource->from.lock()->id);
+
                 SimWithResult result;
-                if(simulationCache.contains(current.doorSource))
+                if (simulationCache.contains(current.doorSource))
                     result = simulationCache.at(current.doorSource);
                 else
                     result = SimulateSingleRoomFromDoorway(*current.doorSource);
 
-                std::shared_ptr<Simulation> simulation = result.simulation;
-                if (simulation->outlets->totalExitCount == 0)
+                // if no gas exits this room at all (a dead end or other weird edge case), just stop expansion in this direction
+                if (result.simulation->outlets->totalExitCount == 0)
                 {
                     stateStack.pop();
                     continue;
                 }
 
-                GSL_INFO("{}->{}", next.doorSource->to.lock()->id, next.doorSource->from.lock()->id);
                 // calculate how much of the gas in the current node makes it to the next node
                 size_t outletIndex = next.doorSource->OtherSide().GetIndex();
                 float gasProportion = result.ProportionInDoorway(outletIndex);
 
-                GSL_INFO("Prop: {}", gasProportion);
                 next.remainingGas = current.remainingGas * gasProportion;
+                GSL_INFO("Remaining: {}", next.remainingGas);
 
                 // update the total amount of gas that passes through the doorway
                 totalGasThroughDoorway[next.doorSource] += next.remainingGas;
@@ -197,10 +203,6 @@ namespace GSL::Graph_internal
                 for (const auto& nextDoorway : next.doorSource->from.lock()->doorways)
                     if (&nextDoorway != next.doorSource)
                         next.doorways.push(&nextDoorway);
-
-                // update the current state
-                current.doorways.pop();
-                current.remainingGas -= next.remainingGas;
 
                 // push the new state on top
                 stateStack.push(next);

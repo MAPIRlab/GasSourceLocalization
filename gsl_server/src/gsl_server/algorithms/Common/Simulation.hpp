@@ -23,6 +23,7 @@ namespace GSL
         const Mode mode;
         const std::optional<AABB2D> aabb;
         const Vector2 point;
+        float numFilamentsSecond = 10;
 
         SimulationSource(const Vector2& _point)
             : mode(Mode::Point), aabb(std::nullopt), point(_point)
@@ -32,6 +33,10 @@ namespace GSL
         {}
 
         Vector2 getPoint() const;
+        size_t FilamentsToEmit(float deltaT);
+
+    private:
+        float emissionCounter = 0;
     };
 
     struct SimulationOutlets

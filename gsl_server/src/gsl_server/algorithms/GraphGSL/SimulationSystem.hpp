@@ -41,6 +41,7 @@ namespace GSL::Graph_internal
         struct Options
         {
             bool cummulativeMap = true;
+            float filamentsPerSecond = 10.0;
             float deltaTime = 0.2;
             float blurSigma = 3.0;
             float noiseSTDev = 0.1;

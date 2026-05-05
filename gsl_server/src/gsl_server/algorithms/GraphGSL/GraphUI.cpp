@@ -292,7 +292,8 @@ namespace GSL
         ImGui::DragFloat("Delta time", &gsl->simulationSystem.options.deltaTime, 0.01, 0, 2);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Warmup acceleration", &gsl->simulationSystem.options.warmupTimeAcc, 0.1, 0, 20);
-
+        ImGui::SetNextItemWidth(100);
+        ImGui::DragFloat("Filaments/second", &gsl->simulationSystem.options.filamentsPerSecond, 0.1, 0, 50);
         ImGui::Checkbox("Cummulative map", &gsl->simulationSystem.options.cummulativeMap);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Noise sigma", &gsl->simulationSystem.options.noiseSTDev, 0.01, 0, 1.0);

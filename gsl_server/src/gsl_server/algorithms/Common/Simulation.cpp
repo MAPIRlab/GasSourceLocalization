@@ -78,8 +78,8 @@ namespace GSL
     template <typename UpdateFunc>
     void Simulation::_Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type)
     {
-        constexpr int numFilamentsIteration = 3;
-        size_t max_filaments = maxWarmupIterations * warmupAcceleration * numFilamentsIteration + timesteps * numFilamentsIteration;
+        size_t max_filaments = maxWarmupIterations * source.numFilamentsSecond * deltaTime * warmupAcceleration // max filaments in warmup
+                               + timesteps * source.numFilamentsSecond * deltaTime;                             // max filaments when recording
 
         // To avoid having to delete filaments from the middle of the vector, which is quite slow, we will ping-pong the active filaments between two vectors
         // at the start of any iteration, one vector (active) will contain all the released filaments and the other one will be empty
@@ -107,7 +107,8 @@ namespace GSL
             int iterationCount = 0;
             while (iterationCount < minWarmupIterations || (!stable && iterationCount < maxWarmupIterations))
             {
-                for (size_t i = 0; i < numFilamentsIteration * warmupAcceleration; i++)
+                size_t emitCount = source.FilamentsToEmit(deltaTime * warmupAcceleration);
+                for (int i = 0; i < emitCount; i++)
                 {
                     activeFilamentVec->emplace_back();
                     activeFilamentVec->back().position = source.getPoint();
@@ -143,7 +144,8 @@ namespace GSL
         // now, we do the thing
         for (int t = 1; t < timesteps + 1; t++)
         {
-            for (int i = 0; i < numFilamentsIteration; i++)
+            size_t emitCount = source.FilamentsToEmit(deltaTime);
+            for (int i = 0; i < emitCount; i++)
             {
                 activeFilamentVec->emplace_back();
                 activeFilamentVec->back().position = source.getPoint();
@@ -204,6 +206,14 @@ namespace GSL
         Vector2 randP(Utils::uniformRandomF(start.x, end.x), Utils::uniformRandomF(start.y, end.y));
         GSL_ASSERT(randP.x >= start.x && randP.x < end.x && randP.y >= start.y && randP.y < end.y);
         return randP;
+    }
+
+    size_t SimulationSource::FilamentsToEmit(float deltaT)
+    {
+        emissionCounter += numFilamentsSecond * deltaT;
+        size_t num = emissionCounter;
+        emissionCounter -= num;
+        return num;
     }
 
     bool Simulation::moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const
