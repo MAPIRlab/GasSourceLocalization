@@ -34,7 +34,6 @@ namespace GSL
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         Vector2 selectedCoordinates;
 
-        rclcpp::Publisher<MarkerArray>::SharedPtr gasMapsPub;
 
         struct SimulationOptions
         {

@@ -36,15 +36,15 @@ namespace GSL::Graph_internal
 
         void SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> node);
 
-        MarkerArray VisualizeCachedResults(std::shared_ptr<RoomNode> sourceRoom, float nodeSeparationViz);
+        MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, float nodeSeparationViz);
 
         struct Options
         {
             bool cummulativeMap = true;
             float deltaTime = 0.2;
-            float blurSigma = 0.7;
+            float blurSigma = 3.0;
             float noiseSTDev = 0.1;
-            float warmupTimeAcc = 4.0;
+            float warmupTimeAcc = 8.0;
             size_t iterationLimit = 100;
             size_t minWarmupIterations = 500;
             size_t maxWarmupIterations = 1000;
@@ -53,7 +53,7 @@ namespace GSL::Graph_internal
         Options options;
 
         std::map<const DoorwayNode*, SimWithResult> simulationCache;
-        std::map<std::shared_ptr<RoomNode>, CompleteMap> gasMapsWithRoomSource;
+        std::map<std::shared_ptr<PlaceNode>, CompleteMap> gasMapsWithRoomSource;
 
     private:
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;

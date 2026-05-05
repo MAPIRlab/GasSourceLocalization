@@ -25,8 +25,6 @@ namespace GSL
                     selectedCoordinates.x = point->point.x;
                     selectedCoordinates.y = point->point.y;
                 });
-
-        gasMapsPub = gsl->node->create_publisher<MarkerArray>("gasMaps", 1);
     }
 
     GraphUI::~GraphUI()
@@ -151,10 +149,10 @@ namespace GSL
                         simulationOptions.selectedArcIdx = 0;
 
                     ImGui::PushID("node");
-                    if (ImGui::BeginCombo("Doorway", selectedNode.node->doorways.at(simulationOptions.selectedArcIdx).to.lock()->id.c_str()))
+                    if (ImGui::BeginCombo("Doorway", selectedNode.node->doorways.at(simulationOptions.selectedArcIdx).GetName().data()))
                     {
                         for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
-                            if (ImGui::Selectable(selectedNode.node->doorways.at(i).to.lock()->id.c_str()))
+                            if (ImGui::Selectable(selectedNode.node->doorways.at(i).GetName().data()))
                                 simulationOptions.selectedArcIdx = i;
 
                         ImGui::EndCombo();
@@ -186,9 +184,9 @@ namespace GSL
                             result = gsl->simulationSystem.SimulateSingleRoomFromDoorway(roomNode->doorways.at(simulationOptions.selectedArcIdx));
 
                         // Log results
-                        GSL_INFO("Emitted {} filaments in total", result.simulation->totalEmittedFilaments);
+                        GSL_INFO("Emitted {} filaments during recording", result.simulation->totalEmittedFilaments);
                         for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
-                            GSL_INFO("{} -> {}", result.simulation->outlets->exitsPerOutlet.at(i), roomNode->doorways.at(i).to.lock()->id);
+                            GSL_INFO("{} -> {}", result.ProportionInDoorway(i), roomNode->doorways.at(i).to.lock()->id);
 
                         Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result", simulationOptions.imageDisplayPower);
                         simulationOptions.simulationEnabled = true;
@@ -212,9 +210,7 @@ namespace GSL
                         //     result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
                         // else
                         gsl->simulationSystem.SimulateEntireGraphFromRoom(gsl->graph, roomNode);
-                        MarkerArray markers = gsl->simulationSystem.VisualizeCachedResults(roomNode, gsl->graph.nodeSeparationViz);
-                        gasMapsPub->publish(markers);
-
+                        gsl->nodeSelectedForVisualization = roomNode;
                         // Log results
                         GSL_INFO("Done simulating source in room '{}'", roomNode->id);
 
@@ -242,7 +238,7 @@ namespace GSL
                     {
                         const DoorwayNode& doorway = selectedNode.node->doorways.at(i);
                         ImGui::SetNextItemWidth(100);
-                        ImGui::DragFloat(fmt::format("{}##{}", doorway.to.lock()->id, i).c_str(), &selectedNode.combineWeights.at(i), 0.01, 0, 1);
+                        ImGui::DragFloat(fmt::format("{}##{}", doorway.GetName(), i).c_str(), &selectedNode.combineWeights.at(i), 0.01, 0, 1);
                     }
                 }
                 ImGui::TreePop();

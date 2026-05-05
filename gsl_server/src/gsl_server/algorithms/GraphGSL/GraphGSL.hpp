@@ -1,9 +1,9 @@
 #pragma once
 #include "Graph.hpp"
 #include "GraphUI.hpp"
+#include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
-#include "SimulationSystem.hpp"
 
 namespace GSL
 {
@@ -28,7 +28,9 @@ namespace GSL
             rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr occupancyPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr windPub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr gasMapsPub;
         } pubs;
+        std::shared_ptr<PlaceNode> nodeSelectedForVisualization;
 
         Utils::Time::Countdown visualizationCD;
         bool drawGraph = true;

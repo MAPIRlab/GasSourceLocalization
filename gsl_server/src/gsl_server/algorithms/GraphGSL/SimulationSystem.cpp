@@ -116,42 +116,6 @@ namespace GSL::Graph_internal
     void SimulationSystem::SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> sourceNode)
     {
         CompleteMap& completeGasMap = gasMapsWithRoomSource[sourceNode];
-
-        std::queue<const DoorwayNode*> simQueue;
-
-        // add the doorways that exit the source room as a starting point
-        for (const auto& doorway : sourceNode->doorways)
-            simQueue.push(&doorway);
-
-        // follow the gas from doorway to doorway, caching the simulations
-        while (!simQueue.empty())
-        {
-            const DoorwayNode* doorway = simQueue.front();
-            simQueue.pop();
-
-            // if this simulation is already cached, skip
-            if (simulationCache.contains(&doorway->OtherSide()))
-                continue;
-
-            if (!Is<RoomNode>(doorway->to))
-                continue;
-
-            GSL_INFO("Simulating {}->{} ({})", doorway->from.lock()->id, doorway->to.lock()->id, doorway->GetName());
-            const DoorwayNode* otherSide = &doorway->OtherSide();
-            SimWithResult result = SimulateSingleRoomFromDoorway(*otherSide);
-
-            const auto& doorways = doorway->to.lock()->doorways;
-            for (size_t i = 0; i < doorways.size(); i++)
-            {
-                // only simulate next room if there is gas entering it
-                if (simulationCache.at(otherSide).simulation->outlets->exitsPerOutlet.at(i) == 0)
-                    continue;
-
-                const DoorwayNode* nextDoorway = &doorways.at(i);
-                simQueue.push(nextDoorway);
-            }
-        }
-
         std::map<const DoorwayNode*, float> totalGasThroughDoorway;
 
         // now, we need to get the final gas maps by combining the individual doorway simulations
@@ -165,7 +129,7 @@ namespace GSL::Graph_internal
             const DoorwayNode* doorSource;
             std::stack<const DoorwayNode*> doorways;
         };
-        std::stack<NodeState> stateStack;
+        std::queue<NodeState> stateStack;
 
         SimWithResult result = SimulateSingleRoomFromAABB(sourceNode, sourceNode->GetAABB(), {});
         completeGasMap.gasMaps[sourceNode] = *result.hitMap;
@@ -186,15 +150,14 @@ namespace GSL::Graph_internal
                 if (&nextDoorway != nextRoom.doorSource)
                     nextRoom.doorways.push(&nextDoorway);
 
-            GSL_ASSERT(simulationCache.contains(nextRoom.doorSource));
             totalGasThroughDoorway[nextRoom.doorSource] = nextRoom.remainingGas;
             stateStack.push(nextRoom);
         }
 
-        constexpr float minimumGasThr = 1e-2;
+        constexpr float minimumGasThr = 1e-1;
         while (!stateStack.empty())
         {
-            NodeState& current = stateStack.top();
+            NodeState& current = stateStack.front();
 
             // if we cannot keep expanding this node, pop it from the stack
             if (current.remainingGas < minimumGasThr || current.doorways.empty())
@@ -206,7 +169,12 @@ namespace GSL::Graph_internal
                 next.doorSource = &current.doorways.top()->OtherSide();
 
                 // if no gas exits this room at all (a dead end or other weird edge case), just stop expansion in this direction
-                SimWithResult result = simulationCache.at(current.doorSource);
+                SimWithResult result;
+                if(simulationCache.contains(current.doorSource))
+                    result = simulationCache.at(current.doorSource);
+                else
+                    result = SimulateSingleRoomFromDoorway(*current.doorSource);
+
                 std::shared_ptr<Simulation> simulation = result.simulation;
                 if (simulation->outlets->totalExitCount == 0)
                 {
@@ -214,12 +182,13 @@ namespace GSL::Graph_internal
                     continue;
                 }
 
+                GSL_INFO("{}->{}", next.doorSource->to.lock()->id, next.doorSource->from.lock()->id);
                 // calculate how much of the gas in the current node makes it to the next node
                 size_t outletIndex = next.doorSource->OtherSide().GetIndex();
                 float gasProportion = result.ProportionInDoorway(outletIndex);
 
+                GSL_INFO("Prop: {}", gasProportion);
                 next.remainingGas = current.remainingGas * gasProportion;
-                GSL_INFO("{}->{}   -   {}", next.doorSource->to.lock()->id, next.doorSource->from.lock()->id, next.remainingGas);
 
                 // update the total amount of gas that passes through the doorway
                 totalGasThroughDoorway[next.doorSource] += next.remainingGas;
@@ -281,7 +250,7 @@ namespace GSL::Graph_internal
         }
     }
 
-    MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<RoomNode> sourceRoom, float nodeSeparationViz)
+    MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, float nodeSeparationViz)
     {
         MarkerArray array;
         CompleteMap& map = gasMapsWithRoomSource[sourceRoom];
