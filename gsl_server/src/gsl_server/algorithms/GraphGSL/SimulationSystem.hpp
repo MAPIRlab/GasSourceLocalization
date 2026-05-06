@@ -34,14 +34,14 @@ namespace GSL::Graph_internal
                                                                    const std::set<const DoorwayNode*>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const DoorwayNode& arc);
 
-        void SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> node);
+        void SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<PlaceNode> node);
 
         MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, float nodeSeparationViz);
 
         struct Options
         {
             bool cummulativeMap = true;
-            float filamentsPerSecond = 10.0;
+            float filamentsPerSecond = 2.0;
             float deltaTime = 0.2;
             float blurSigma = 3.0;
             float noiseSTDev = 0.1;
@@ -55,6 +55,8 @@ namespace GSL::Graph_internal
 
         std::map<const DoorwayNode*, SimWithResult> simulationCache;
         std::map<std::shared_ptr<PlaceNode>, CompleteMap> gasMapsWithRoomSource;
+
+        Graph* graph;
 
     private:
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;

@@ -33,6 +33,7 @@ namespace GSL
         graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
         float artificialSeparation = node->declare_parameter<float>("node_separation_mult", 1);
         graph.nodeSeparationViz = artificialSeparation;
+        simulationSystem.graph = &graph;
 
         // GUI
         IF_GUI(gui.Run());

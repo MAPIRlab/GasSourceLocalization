@@ -116,26 +116,37 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    void SimulationSystem::SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<RoomNode> sourceNode)
+    void SimulationSystem::SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<PlaceNode> sourceNode)
     {
         CompleteMap& completeGasMap = gasMapsWithRoomSource[sourceNode];
         std::map<const DoorwayNode*, float> totalGasThroughDoorway;
 
-        // now, we need to get the final gas maps by combining the individual doorway simulations
+        // we need to get the final gas maps by combining the individual doorway simulations
         // this mainly means that we need to calculate the weights for the linear combination
         // given that a specific doorway may have been reached through more than one path in the graph, this is not a trivial task
         // we are going to do an exhaustive graph traversal, starting at the source node,
         // and we'll keep adding weight to the doorway based on how much gas reaches it through the specific path we are considering
         struct NodeState
         {
-            float remainingGas;
+            float gasAtInlet;
             const DoorwayNode* doorSource;
             std::stack<const DoorwayNode*> doorways;
         };
         std::stack<NodeState> stateStack;
 
-        SimWithResult result = SimulateSingleRoomFromAABB(sourceNode, sourceNode->GetAABB(), {});
-        completeGasMap.gasMaps[sourceNode] = *result.hitMap;
+        std::vector<float> weightDoorwaysSourceNode(sourceNode->doorways.size(), 0);
+        if (Is<RoomNode>(sourceNode))
+        {
+            auto roomNode = As<RoomNode>(sourceNode);
+            SimWithResult result = SimulateSingleRoomFromAABB(roomNode, roomNode->GetAABB(), {});
+            completeGasMap.gasMaps[roomNode] = *result.hitMap;
+            for (size_t i = 0; i < sourceNode->doorways.size(); i++)
+                weightDoorwaysSourceNode.at(i) = result.ProportionInDoorway(i);
+        }
+        else
+            for (size_t i = 0; i < sourceNode->doorways.size(); i++)
+                weightDoorwaysSourceNode.at(i) = 1. / sourceNode->doorways.size();
+
         for (size_t i = 0; i < sourceNode->doorways.size(); i++)
         {
             const DoorwayNode& doorway = sourceNode->doorways.at(i);
@@ -145,15 +156,15 @@ namespace GSL::Graph_internal
 
             NodeState nextRoom;
             nextRoom.doorSource = &doorway.OtherSide();
-            nextRoom.remainingGas = result.ProportionInDoorway(i);
+            nextRoom.gasAtInlet = weightDoorwaysSourceNode.at(i);
 
-            GSL_INFO("{}->{}   -   {}", doorway.from.lock()->id, doorway.to.lock()->id, nextRoom.remainingGas);
+            GSL_INFO("{}->{}   -   {}", doorway.from.lock()->id, doorway.to.lock()->id, nextRoom.gasAtInlet);
 
             for (const auto& nextDoorway : doorway.to.lock()->doorways)
                 if (&nextDoorway != nextRoom.doorSource)
                     nextRoom.doorways.push(&nextDoorway);
 
-            totalGasThroughDoorway[nextRoom.doorSource] = nextRoom.remainingGas;
+            totalGasThroughDoorway[nextRoom.doorSource] = nextRoom.gasAtInlet;
             stateStack.push(nextRoom);
         }
 
@@ -163,7 +174,7 @@ namespace GSL::Graph_internal
             NodeState& current = stateStack.top();
 
             // if we cannot keep expanding this node, pop it from the stack
-            if (current.remainingGas < minimumGasThr || current.doorways.empty())
+            if (current.gasAtInlet < minimumGasThr || current.doorways.empty())
                 stateStack.pop();
             else
             {
@@ -193,11 +204,11 @@ namespace GSL::Graph_internal
                 size_t outletIndex = next.doorSource->OtherSide().GetIndex();
                 float gasProportion = result.ProportionInDoorway(outletIndex);
 
-                next.remainingGas = current.remainingGas * gasProportion;
-                GSL_INFO("Remaining: {}", next.remainingGas);
+                next.gasAtInlet = current.gasAtInlet * gasProportion;
+                GSL_INFO("Remaining: {}", next.gasAtInlet);
 
                 // update the total amount of gas that passes through the doorway
-                totalGasThroughDoorway[next.doorSource] += next.remainingGas;
+                totalGasThroughDoorway[next.doorSource] += next.gasAtInlet;
 
                 // fill in the doorways of the next state node
                 for (const auto& nextDoorway : next.doorSource->from.lock()->doorways)
@@ -221,14 +232,8 @@ namespace GSL::Graph_internal
             completeGasMap.gasMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
             for (const auto& doorway : node->doorways)
             {
-                if (!totalGasThroughDoorway.contains(&doorway))
+                if (!totalGasThroughDoorway.contains(&doorway) || !simulationCache.contains(&doorway))
                     continue;
-
-                if (!simulationCache.contains(&doorway))
-                {
-                    GSL_ASSERT(totalGasThroughDoorway.at(&doorway) < minimumGasThr);
-                    continue;
-                }
 
                 float weight = totalGasThroughDoorway.at(&doorway);
                 const auto& localHitmap = simulationCache.at(&doorway).hitMap;
@@ -257,17 +262,28 @@ namespace GSL::Graph_internal
         MarkerArray array;
         CompleteMap& map = gasMapsWithRoomSource[sourceRoom];
         size_t i = 0;
-        for (const auto& [room, result] : map.gasMaps)
+        for (const auto& node : graph->nodes)
         {
-            std::vector<ColorRGBA> colors(result.size());
-            for (size_t i = 0; i < result.size(); i++)
-                colors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear);
+            const auto room = As<RoomNode>(node);
+            if (!room)
+                continue;
 
             Grid2D<Occupancy> occupancy = room->GetOccupancy();
+            std::vector<ColorRGBA> colors(occupancy.data.size());
+            if (map.gasMaps.contains(room))
+            {
+                const auto& result = map.gasMaps.at(room);
+                for (size_t i = 0; i < result.size(); i++)
+                    colors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear);
+            }
+            else
+                for (size_t i = 0; i < colors.size(); i++)
+                    colors.at(i) = Utils::valueToColor(0, 0, 1, Utils::ValueColorMode::Linear);
+
             Grid2DMetadata vizMetadata = occupancy.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
-            Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, occupancy.occupancy, vizMetadata));
+            Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, occupancy.occupancy, vizMetadata), 0.1);
             marker.id = i++;
             array.markers.push_back(marker);
         }
