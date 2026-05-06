@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gsl_server/algorithms/Common/Utils/ColorMaps.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
 #include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/quaternion.hpp>
@@ -24,7 +25,7 @@ namespace GSL
             Linear,
             Logarithmic
         };
-        std_msgs::msg::ColorRGBA valueToColor(double val, double low, double high, ValueColorMode mode);
+        std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, ValueColorMode mode, Colors::ColorMaps colormap = Colors::ColorMaps::Viridis);
         std_msgs::msg::ColorRGBA create_color(float r, float g, float b, float a = 1.0f);
 
         geometry_msgs::msg::Pose compose(const geometry_msgs::msg::Pose& referenceSystem, const geometry_msgs::msg::Pose& pose);

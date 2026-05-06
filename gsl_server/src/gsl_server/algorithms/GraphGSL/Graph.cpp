@@ -210,6 +210,7 @@ namespace GSL
                 marker.color = color;
                 marker.pose.position.x = position.x;
                 marker.pose.position.y = position.y;
+                marker.pose.position.z = 0.5f;
                 marker.id = id;
                 id++;
                 array.markers.push_back(marker);
@@ -225,7 +226,7 @@ namespace GSL
                 textMarker.text = node->id;
                 textMarker.pose.position.x = position.x + 0.5f;
                 textMarker.pose.position.y = position.y + 0.5f;
-                textMarker.pose.position.z = 0.5f;
+                textMarker.pose.position.z = 1.f;
 
                 textMarker.color.r = 0;
                 textMarker.color.g = 0;
@@ -262,6 +263,7 @@ namespace GSL
                     marker.color = Utils::create_color(0, 0, 1);
                     marker.pose.position.x = otherPos.x;
                     marker.pose.position.y = otherPos.y;
+                    marker.pose.position.z = 0.5f;
                     marker.id = id;
                     id++;
                     array.markers.push_back(marker);

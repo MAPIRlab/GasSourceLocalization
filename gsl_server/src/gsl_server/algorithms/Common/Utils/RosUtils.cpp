@@ -38,45 +38,9 @@ namespace GSL::Utils
         return points;
     }
 
-    std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, ValueColorMode mode)
+    std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, ValueColorMode mode, Colors::ColorMaps colormap)
     {
-        double r, g, b;
-        double range;
-        if (mode == ValueColorMode::Logarithmic)
-        {
-            val = std::log10(val);
-            range = (std::log10(highLimit) - std::log10(lowLimit)) / 4;
-            lowLimit = std::log10(lowLimit);
-        }
-        else
-        {
-            range = (highLimit - lowLimit) / 4;
-        }
-
-        if (val < lowLimit + range)
-        {
-            r = 0;
-            g = lerp(0, 1, (val - lowLimit) / (range));
-            b = 1;
-        }
-        else if (val < lowLimit + 2 * range)
-        {
-            r = 0;
-            g = 1;
-            b = lerp(1, 0, (val - (lowLimit + range)) / (range));
-        }
-        else if (val < lowLimit + 3 * range)
-        {
-            r = (val - (lowLimit + 2 * range)) / (range);
-            g = 1;
-            b = 0;
-        }
-        else
-        {
-            r = 1;
-            g = lerp(1, 0, (val - (lowLimit + 3 * range)) / (range));
-            b = 0;
-        }
+        auto [r, g, b] = Colors::SampleColorMap(val, colormap);
         return create_color(r, g, b, 1);
     }
 
@@ -310,7 +274,7 @@ namespace GSL::Utils
                     if (module <= max_module)
                         marker.color = create_color(0.7, 0.7, 0.7);
                     else
-                        marker.color = create_color(1, 0, 0); 
+                        marker.color = create_color(1, 0, 0);
 
                     // Push Arrow to array
                     arrow_array.markers.push_back(marker);
