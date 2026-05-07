@@ -134,14 +134,23 @@ namespace GSL::Graph_internal
         };
         std::stack<NodeState> stateStack;
 
+        // handle the source node first, separately from the main traversal algorithm (since it doesn't have a doorway inlet)
         std::vector<float> weightDoorwaysSourceNode(sourceNode->doorways.size(), 0);
         if (Is<RoomNode>(sourceNode))
         {
             auto roomNode = As<RoomNode>(sourceNode);
+#define SIMULATE_SOURCE_ROOM 0
+#if SIMULATE_SOURCE_ROOM
             SimWithResult result = SimulateSingleRoomFromAABB(roomNode, roomNode->GetAABB(), {});
             completeGasMap.gasMaps[roomNode] = *result.hitMap;
             for (size_t i = 0; i < sourceNode->doorways.size(); i++)
                 weightDoorwaysSourceNode.at(i) = result.ProportionInDoorway(i);
+#else
+
+            completeGasMap.gasMaps[roomNode] = std::vector<float>(roomNode->GetOccupancy().data.size(), 1);
+            for (size_t i = 0; i < sourceNode->doorways.size(); i++)
+                weightDoorwaysSourceNode.at(i) = 1;
+#endif
         }
         else
             for (size_t i = 0; i < sourceNode->doorways.size(); i++)
@@ -167,6 +176,8 @@ namespace GSL::Graph_internal
             totalGasThroughDoorway[nextRoom.doorSource] = nextRoom.gasAtInlet;
             stateStack.push(nextRoom);
         }
+
+        // now, we start traversing the graph
 
         constexpr float minimumGasThr = 1e-1;
         while (!stateStack.empty())
@@ -274,11 +285,11 @@ namespace GSL::Graph_internal
             {
                 const auto& result = map.gasMaps.at(room);
                 for (size_t i = 0; i < result.size(); i++)
-                    colors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear);
+                    colors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
             }
             else
                 for (size_t i = 0; i < colors.size(); i++)
-                    colors.at(i) = Utils::valueToColor(0, 0, 1, Utils::ValueColorMode::Linear);
+                    colors.at(i) = Utils::valueToColor(0, 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
 
             Grid2DMetadata vizMetadata = occupancy.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
