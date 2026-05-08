@@ -2,6 +2,7 @@
 file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 
 find_package(gmrf_wind_mapping REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 # Create the library
 add_library(GraphGSL ${SOURCES})
@@ -16,6 +17,7 @@ ament_target_dependencies(GraphGSL
 # Link other dependencies
 target_link_libraries(GraphGSL  
     GSL_common
+    Eigen3::Eigen
 )
 add_compile_definitions(ENABLE_GraphGSL=1)
 

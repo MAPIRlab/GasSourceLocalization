@@ -12,6 +12,7 @@ namespace GSL
 
     protected:
         void OnEnterState(State* previous) override;
+        void OnUpdate() override;
         IF_GUI(void RenderUI() override;)
         bool paused;
     };

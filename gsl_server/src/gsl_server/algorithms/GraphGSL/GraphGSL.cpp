@@ -3,6 +3,7 @@
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include "NACCompare.hpp"
 
 namespace GSL
 {
@@ -60,6 +61,12 @@ namespace GSL
         }
 
         stateMachine.forceSetState(movingState.get());
+
+        // std::vector<float> simulated = {0, 0.1, 0.2, 0.4, 1.0, 3.0};
+        // std::vector<float> observed = {0, 0.2, 0.4, 0.7, 3.0, 1.0};
+        // float scale = LeastSquaresScale(simulated, observed);
+        // GSL_INFO("Best scale: {:.2f}", scale);
+        // GSL_INFO("Loss evaluation: {:.2f}", LossFunction(simulated, observed, scale));
     }
 
     void GraphGSL::OnUpdate()

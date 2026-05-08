@@ -14,31 +14,16 @@ void GSL::ManualNavigationState::chooseGoalAndMove()
 
 void GSL::ManualNavigationState::OnEnterState(State* previous)
 {
-#if USE_GUI
-    GSL_INFO("Entering Manual Driving, use the 'Continue' button to resume algorithm execution");
     paused = true;
-    rclcpp::Rate rate(20);
-    while (paused)
+}
+
+void GSL::ManualNavigationState::OnUpdate()
+{
+    if (!paused)
     {
-        algorithm->OnUpdate();
-        rate.sleep();
+        GSL_INFO("Resuming execution");
+        algorithm->OnCompleteNavigation(GSLResult::Success, previousState);
     }
-    
-#else
-    auto exec = Utils::createExecutor(algorithm->node);
-    std::jthread spinThread([&]()
-                            {
-                                exec->spin();
-                            });
-
-    GSL_INFO("Entering Manual Driving, press [enter] to resume algorithm execution");
-    std::cin.get();
-    exec->cancel();
-    spinThread.join();
-#endif
-
-    GSL_INFO("Resuming execution");
-    algorithm->OnCompleteNavigation(GSLResult::Success, previousState);
 }
 
 #if USE_GUI
