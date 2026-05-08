@@ -56,7 +56,10 @@ namespace GSL
         rclcpp::executors::SingleThreadedExecutor::SharedPtr createExecutor(rclcpp::Node::SharedPtr node);
         void ClearMarkers(rclcpp::Publisher<MarkerArray>::SharedPtr pub);
         Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid, float height = 0);
-        MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors, float height = 0, std::optional<float> saturateLength = std::nullopt);
+        MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors,
+                                        float height = 0,
+                                        float size = 0.05,
+                                        std::optional<float> saturateLength = std::nullopt);
         Marker createPointsOccupancyMarker(const Grid2D<Occupancy> occupancy);
         void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic);
     }; // namespace Utils

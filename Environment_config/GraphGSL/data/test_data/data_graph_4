@@ -7,7 +7,7 @@
     qw: 1
   wind:
     direction: -0.343023837
-    speed: 0.3
+    speed: 0.5
     frame: anemometer
   gas:
     concentration: 0
@@ -20,7 +20,7 @@
     qw: 1
   wind:
     direction: 0.00842683855
-    speed: 0.3
+    speed: 0.5
     frame: anemometer
   gas:
     concentration: 0
@@ -33,7 +33,7 @@
     qw: 1
   wind:
     direction: 0.5593068
-    speed: 0.3
+    speed: 0.5
     frame: anemometer
   gas:
     concentration: 0
@@ -46,7 +46,7 @@
     qw: 1
   wind:
     direction: -0.105983645
-    speed: 0.3
+    speed: 0.5
     frame: anemometer
   gas:
     concentration: 0
@@ -59,7 +59,20 @@
     qw: 1
   wind:
     direction: 0.0475825667
-    speed: 0.3
+    speed: 0.5
+    frame: anemometer
+  gas:
+    concentration: 0
+- pose:
+    x: 0.39230048656463623
+    y: 8.3565635681152344
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -0.321750313
+    speed: 0.5
     frame: anemometer
   gas:
     concentration: 0

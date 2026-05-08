@@ -45,6 +45,7 @@ namespace GSL
         size_t totalExitCount = 0;
         std::vector<size_t> exitsPerOutlet;
         std::vector<size_t> numCellsOutlet;
+        std::vector<size_t> lastUpdateTime;
         std::vector<bool> enabled;
     };
 
@@ -76,9 +77,6 @@ namespace GSL
         std::optional<SimulationOutlets> outlets;
 
         void Run(std::vector<float>& hitMap, Type type = Simulation::Type::HitFrequency);
-        bool moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
-        bool filamentIsOutside(const Filament& filament);
-        bool moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const;
 
         void makeSimulationImage();
         static void displayImage(const Grid2D<float>& hitMap, const std::string& imageName = "simResult", float raisePower = 1);
@@ -87,6 +85,12 @@ namespace GSL
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
 
     private:
+        bool moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
+        bool moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const;
+        
+        template <typename UpdateFunc>
+        bool filamentIsOutside(const Filament& filament, size_t currentTimestep, UpdateFunc updateFunc);
+
         template <typename UpdateFunc>
         void _Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type);
     };

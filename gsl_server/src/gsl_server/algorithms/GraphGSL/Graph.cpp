@@ -326,7 +326,7 @@ namespace GSL
             Grid2DMetadata vizMetadata = windMap.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
-            MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0, 0.5);
+            MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05, 0.5);
             MergeWindMarkers(windArray, windMarker);
         }
         return windArray;

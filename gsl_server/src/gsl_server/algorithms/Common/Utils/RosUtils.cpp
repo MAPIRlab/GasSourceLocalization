@@ -124,9 +124,7 @@ namespace GSL::Utils
         msg.info.height = grid.metadata.dimensions.y;
 
         std::transform(grid.occupancy.begin(), grid.occupancy.end(), std::back_inserter(msg.data), [](const Occupancy value) -> int8_t
-                       {
-                           return static_cast<int8_t>(value);
-                       });
+                       { return static_cast<int8_t>(value); });
         return msg;
     }
 
@@ -225,7 +223,10 @@ namespace GSL::Utils
         return points;
     }
 
-    MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors, float height, std::optional<float> saturateLength)
+    MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors,
+                                    float height,
+                                    float size,
+                                    std::optional<float> saturateLength)
     {
         MarkerArray arrow_array;
         // Add an ARROW marker for each node
@@ -267,8 +268,8 @@ namespace GSL::Utils
                     marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
                     // shape
                     marker.scale.x = vectors.metadata.cellSize * std::clamp(module / max_module, 0., 1.); // arrow length,
-                    marker.scale.y = 0.03;                                                                // arrow width
-                    marker.scale.z = 0.03;                                                                // arrow height
+                    marker.scale.y = size;                                                                // arrow width
+                    marker.scale.z = size;                                                                // arrow height
 
                     // if we have a manually specified speed to correspond to the max arrow length, but this exceeds it, give it a different color
                     if (module <= max_module)

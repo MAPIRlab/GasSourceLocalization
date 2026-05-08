@@ -18,7 +18,8 @@ namespace GSL
         return moveAlongPath(filament.position, indices, newPos);
     }
 
-    bool Simulation::filamentIsOutside(const Filament& filament)
+    template <typename UpdateFunc>
+    bool Simulation::filamentIsOutside(const Filament& filament, size_t currentTimestep, UpdateFunc updateFunc)
     {
         Vector2Int newIndices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
@@ -33,8 +34,7 @@ namespace GSL
             // keep track of how many filaments exit through each outlet
             if (outletNum >= 0 && outlets->enabled.at(outletNum))
             {
-                outlets->totalExitCount++;
-                outlets->exitsPerOutlet.at(outletNum)++;
+                updateFunc.OnReachOutlet(outlets, outletNum, currentTimestep);
                 return true;
             }
         }
@@ -59,6 +59,16 @@ namespace GSL
                     updated[index] = t;
                 }
             }
+
+            void OnReachOutlet(std::optional<SimulationOutlets>& outlets, size_t outletNum, size_t currentTimestep)
+            {
+                outlets->totalExitCount++;
+                if (outlets->lastUpdateTime.at(outletNum) < currentTimestep)
+                {
+                    outlets->exitsPerOutlet.at(outletNum)++;
+                    outlets->lastUpdateTime.at(outletNum) = currentTimestep;
+                }
+            }
         };
 
         struct CummulativeFunc
@@ -66,6 +76,12 @@ namespace GSL
             void Update(std::vector<float>& hitMap, std::vector<uint16_t>& updated, size_t index, size_t t) const
             {
                 hitMap[index]++;
+            }
+
+            void OnReachOutlet(std::optional<SimulationOutlets>& outlets, size_t outletNum, size_t currentTimestep)
+            {
+                outlets->totalExitCount++;
+                outlets->exitsPerOutlet.at(outletNum)++;
             }
         };
 
@@ -91,6 +107,8 @@ namespace GSL
         filaments2.reserve(max_filaments);
         std::vector<Filament>* activeFilamentVec = &filaments1;
         std::vector<Filament>* otherFilamentVec = &filaments2;
+
+        outlets->lastUpdateTime.resize(outlets->enabled.size(), 0);
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
@@ -126,7 +144,7 @@ namespace GSL
                     moveFilament(filament, indices, deltaTime * warmupAcceleration, noiseSTDev / warmupAcceleration);
 
                     // remove filaments
-                    if (filamentIsOutside(filament))
+                    if (filamentIsOutside(filament, 0, updateFunc))
                         stable = true;
                     else
                         otherFilamentVec->push_back(filament);
@@ -169,7 +187,7 @@ namespace GSL
                 moveFilament(filament, indices, deltaTime, noiseSTDev);
 
                 // remove filaments
-                if (!filamentIsOutside(filament))
+                if (!filamentIsOutside(filament, t, updateFunc))
                     otherFilamentVec->push_back(filament);
             }
             activeFilamentVec->clear();
