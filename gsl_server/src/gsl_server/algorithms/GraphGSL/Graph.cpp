@@ -20,7 +20,11 @@ namespace GSL
         std::map<std::string, std::weak_ptr<PlaceNode>> nodesByName;
 
         // create the nodes
+        std::set<std::filesystem::path> orderedPaths;
         for (std::filesystem::path subfolder : std::filesystem::directory_iterator(folder))
+            orderedPaths.insert(subfolder);
+
+        for (const auto& subfolder : orderedPaths)
         {
             if (!std::filesystem::is_directory(subfolder))
                 continue;
@@ -100,14 +104,14 @@ namespace GSL
         return graph;
     }
 
-    std::shared_ptr<PlaceNode> Graph::GetCorrespondingNode(Vector2 position)
+    size_t Graph::GetCorrespondingNodeIdx(Vector2 position)
     {
-        for (auto node : nodes)
+        for (size_t i = 0; i < nodes.size(); i++)
         {
-            if (node->IsValidPoint(position))
-                return node;
+            if (nodes.at(i)->IsValidPoint(position))
+                return i;
         }
-        return nullptr;
+        return 0;
     }
 
     void Graph::AddObservation(Vector2 position, Vector2 wind, float gasConcentration)
@@ -162,9 +166,7 @@ namespace GSL
         gmrfw::TOccupancyMap occMap;
 
         std::transform(occupancy.data.begin(), occupancy.data.end(), std::back_inserter(occMap.data), [](const Occupancy value) -> int8_t
-                       {
-                           return static_cast<int8_t>(value);
-                       });
+                       { return static_cast<int8_t>(value); });
 
         occMap.width = occupancy.metadata.dimensions.x;
         occMap.height = occupancy.metadata.dimensions.y;

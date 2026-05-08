@@ -1,7 +1,6 @@
 #pragma once
 #include "geometry_msgs/msg/point_stamped.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
-#include "gsl_server/core/ros_typedefs.hpp"
 #include <rclcpp/subscription.hpp>
 #if USE_GUI
 
@@ -45,9 +44,9 @@ namespace GSL
 
         struct SelectedNode
         {
-            std::shared_ptr<class PlaceNode> node;
+            size_t nodeIndex;
             std::vector<float> combineWeights;
-        } selectedNode;
+        } selectedNodeData;
     };
 } // namespace GSL
 

@@ -8,6 +8,7 @@
 #include "GraphUI.hpp"
 #include "gsl_server/algorithms/GraphGSL/GraphGSL.hpp"
 #include "imgui_gl/imgui_gl.h"
+#include "imgui_gl/utils.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <implot/implot.h>
 #include <rclcpp/rclcpp.hpp>
@@ -24,6 +25,13 @@ namespace GSL
                 {
                     selectedCoordinates.x = point->point.x;
                     selectedCoordinates.y = point->point.y;
+                    size_t nodeIndex = gsl->graph.GetCorrespondingNodeIdx(selectedCoordinates);
+                    if (selectedNodeData.nodeIndex != nodeIndex)
+                    {
+                        selectedNodeData.nodeIndex = nodeIndex;
+                        auto node = gsl->graph.nodes.at(nodeIndex);
+                        selectedNodeData.combineWeights = std::vector<float>(node->doorways.size(), 0);
+                    }
                 });
     }
 
@@ -125,38 +133,29 @@ namespace GSL
     {
         ImGui::Begin("Simulate Source");
         {
-            auto node = gsl->graph.GetCorrespondingNode(selectedCoordinates);
-            if (node && selectedNode.node != node)
-            {
-                selectedNode.node = node;
-                selectedNode.combineWeights = std::vector<float>(node->doorways.size(), 0);
-            }
+            ImGui::ComboSelect("Selected Node", gsl->graph.nodes, selectedNodeData.nodeIndex, [](auto& node)
+                               { return node->id.data(); });
 
-            std::string name = selectedNode.node ? selectedNode.node->id : "Null";
+            auto node = gsl->graph.nodes.at(selectedNodeData.nodeIndex);
+            std::string name = node ? node->id : "Null";
             ImGui::Text("Currently selected node: %s", name.c_str());
 
             ImGui::Checkbox("Simulate point", &simulationOptions.exactPoint);
 
             if (simulationOptions.exactPoint)
                 ImGui::DragFloat2("Selected point", &selectedCoordinates.x, 0.02);
-            else if (selectedNode.node)
+            else if (node)
             {
-                if (selectedNode.node->doorways.size() == 0)
+                if (node->doorways.size() == 0)
                     ImGui::Text("Node has no arcs!");
                 else
                 {
-                    if (simulationOptions.selectedArcIdx > selectedNode.node->doorways.size())
+                    if (simulationOptions.selectedArcIdx > node->doorways.size())
                         simulationOptions.selectedArcIdx = 0;
 
                     ImGui::PushID("node");
-                    if (ImGui::BeginCombo("Doorway", selectedNode.node->doorways.at(simulationOptions.selectedArcIdx).GetName().data()))
-                    {
-                        for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
-                            if (ImGui::Selectable(selectedNode.node->doorways.at(i).GetName().data()))
-                                simulationOptions.selectedArcIdx = i;
-
-                        ImGui::EndCombo();
-                    }
+                    ImGui::ComboSelect("Doorway", node->doorways, simulationOptions.selectedArcIdx, [](auto& door)
+                                       { return door.GetName().data(); });
                     ImGui::PopID();
                 }
             }
@@ -170,7 +169,7 @@ namespace GSL
             ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
             if (ImGui::Button("Run single room simulation"))
             {
-                auto roomNode = As<RoomNode>(selectedNode.node);
+                auto roomNode = As<RoomNode>(node);
                 if (roomNode)
                 {
                     // Run
@@ -199,20 +198,14 @@ namespace GSL
 
             if (ImGui::Button("Run whole map simulation"))
             {
-                auto roomNode = As<RoomNode>(selectedNode.node);
-                if (roomNode)
+                if (node)
                 {
-                    // Run
-                    auto lambda = [this, roomNode]()
+                    auto lambda = [this, node]()
                     {
                         simulationOptions.simulationEnabled = false;
-                        // if (simulationOptions.exactPoint)
-                        //     result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
-                        // else
-                        gsl->simulationSystem.SimulateEntireGraphFromRoom(gsl->graph, roomNode);
-                        gsl->nodeSelectedForVisualization = roomNode;
-                        // Log results
-                        GSL_INFO("Done simulating source in room '{}'", roomNode->id);
+                        gsl->simulationSystem.SimulateEntireGraphFromRoom(gsl->graph, node);
+                        gsl->nodeSelectedForVisualization = node;
+                        GSL_INFO("Done simulating source in room '{}'", node->id);
 
                         simulationOptions.simulationEnabled = true;
                     };
@@ -232,13 +225,13 @@ namespace GSL
             // ------------------------
             if (ImGui::TreeNode("Doorways"))
             {
-                if (selectedNode.node)
+                if (node)
                 {
-                    for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
+                    for (size_t i = 0; i < node->doorways.size(); i++)
                     {
-                        const DoorwayNode& doorway = selectedNode.node->doorways.at(i);
+                        const DoorwayNode& doorway = node->doorways.at(i);
                         ImGui::SetNextItemWidth(100);
-                        ImGui::DragFloat(fmt::format("{}##{}", doorway.GetName(), i).c_str(), &selectedNode.combineWeights.at(i), 0.01, 0, 1);
+                        ImGui::DragFloat(fmt::format("{}##{}", doorway.GetName(), i).c_str(), &selectedNodeData.combineWeights.at(i), 0.01, 0, 1);
                     }
                 }
                 ImGui::TreePop();
@@ -248,17 +241,18 @@ namespace GSL
             {
                 auto lambda = [this]()
                 {
+                    auto node = gsl->graph.nodes.at(selectedNodeData.nodeIndex);
                     simulationOptions.simulationEnabled = false;
 
-                    auto roomNode = As<RoomNode>(selectedNode.node);
+                    auto roomNode = As<RoomNode>(node);
                     std::vector<float> combinedMap(roomNode->GetOccupancy().metadata.dimensions.x * roomNode->GetOccupancy().metadata.dimensions.y, 0);
-                    for (size_t i = 0; i < selectedNode.node->doorways.size(); i++)
+                    for (size_t i = 0; i < node->doorways.size(); i++)
                     {
-                        float weight = selectedNode.combineWeights.at(i);
+                        float weight = selectedNodeData.combineWeights.at(i);
                         if (weight <= 0)
                             continue;
 
-                        const DoorwayNode& doorway = selectedNode.node->doorways.at(i);
+                        const DoorwayNode& doorway = node->doorways.at(i);
 
                         if (!gsl->simulationSystem.simulationCache.contains(&doorway))
                             gsl->simulationSystem.SimulateSingleRoomFromDoorway(doorway);

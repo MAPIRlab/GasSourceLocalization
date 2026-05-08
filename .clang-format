@@ -16,5 +16,5 @@ KeepEmptyLinesAtTheStartOfBlocks: false
 AlwaysBreakTemplateDeclarations: No
 AllowShortLoopsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
-AllowShortLambdasOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: Inline
 AllowShortFunctionsOnASingleLine: Inline
