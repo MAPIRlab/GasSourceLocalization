@@ -18,3 +18,4 @@ AllowShortLoopsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLambdasOnASingleLine: Inline
 AllowShortFunctionsOnASingleLine: Inline
+PackConstructorInitializers: BinPack

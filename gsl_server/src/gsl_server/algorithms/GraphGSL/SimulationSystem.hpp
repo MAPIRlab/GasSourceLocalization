@@ -46,9 +46,9 @@ namespace GSL::Graph_internal
             float blurSigma = 3.0;
             float noiseSTDev = 0.1;
             float warmupTimeAcc = 8.0;
-            size_t iterationLimit = 100;
-            size_t minWarmupIterations = 500;
-            size_t maxWarmupIterations = 1000;
+            size_t iterationLimit = 200;
+            size_t minWarmupIterations = 1000;
+            size_t maxWarmupIterations = 2000;
             float normalizationPower = 1.0;
         };
         Options options;

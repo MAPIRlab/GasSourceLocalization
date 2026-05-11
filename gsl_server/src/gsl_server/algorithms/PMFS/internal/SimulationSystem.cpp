@@ -19,17 +19,6 @@ namespace GSL::PMFS_internal
     namespace NQA = Utils::NQA;
     using HashSet = std::unordered_set<Vector2Int>;
 
-    static void weighted_incremental_variance(double value, double weight, double& mean, double& weight_sum, double& weight_squared_sum,
-                                              double& variance)
-    {
-        // Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
-        weight_sum = weight_sum + weight;
-        weight_squared_sum = weight_squared_sum + weight * weight;
-        double mean_old = mean;
-        mean = mean_old + (weight / weight_sum) * (value - mean_old);
-        variance = variance + weight * (value - mean_old) * (value - mean);
-    }
-
     // create the occupancy Quadtree
     void SimulationSystem::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
     {
@@ -76,14 +65,7 @@ namespace GSL::PMFS_internal
             scores[leafIndex].leaf = &localCopyLeaves[leafIndex];
 
         // this is used to calculate how much the state of this cell depends on where the source is. It is used for the movemente strategy
-        struct VarianceCalculationData
-        {
-            double mean = 0;
-            double weight_sum = 0;
-            double weight_squared_sum = 0;
-            double variance = 0;
-        };
-        std::vector<VarianceCalculationData> varianceCalculationData(measuredHitProb.data.size());
+        std::vector<Utils::RunningVariance> varianceCalculationData(measuredHitProb.data.size());
 
         int numberOfSimulations = 0;
         resultsFirstLevel.clear();
@@ -104,12 +86,8 @@ namespace GSL::PMFS_internal
                 for (int cell = 0; cell < result.hitMap.size(); cell++)
                 {
                     auto& var = varianceCalculationData[cell];
-                    weighted_incremental_variance(result.hitMap[cell],
-                                                  result.sourceProb,
-                                                  var.mean,
-                                                  var.weight_sum,
-                                                  var.weight_squared_sum,
-                                                  var.variance);
+                    var.Update(result.hitMap[cell],
+                               result.sourceProb);
                 }
             }
         }
@@ -133,9 +111,7 @@ namespace GSL::PMFS_internal
         while (scores.size() > 0)
         {
             std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2)
-                      {
-                          return result1.score > result2.score;
-                      });
+                      { return result1.score > result2.score; });
 
             // subdivide the good cells and add the children to the list of cells to simulate
             std::vector<LeafScore> newLevel;

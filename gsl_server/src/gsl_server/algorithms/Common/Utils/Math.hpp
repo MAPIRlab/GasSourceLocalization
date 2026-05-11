@@ -86,10 +86,27 @@ namespace GSL::Utils
         uint16_t m_index;
         std::array<float, Size> m_precalculatedTable;
     };
-
+    
+    // See Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
+    struct RunningVariance
+    {
+        double mean = 0;
+        double weight_sum = 0;
+        double weight_squared_sum = 0;
+        double variance = 0;
+        
+        void Update(float value, float weight)
+        {
+            weight_sum = weight_sum + weight;
+            weight_squared_sum = weight_squared_sum + weight * weight;
+            double mean_old = mean;
+            mean = mean_old + (weight / weight_sum) * (value - mean_old);
+            variance = variance + weight * (value - mean_old) * (value - mean);
+        }
+    };
 } // namespace GSL::Utils
 
-// Definitions
+// Template Definitions
 //--------------
 template <typename CollectionIterator>
 inline float GSL::Utils::getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
