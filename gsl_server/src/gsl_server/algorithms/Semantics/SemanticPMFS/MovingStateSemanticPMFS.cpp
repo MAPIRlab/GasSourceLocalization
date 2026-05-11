@@ -60,7 +60,6 @@ namespace GSL
 
         // Find the cell with the highest estimated information value
         //------------------------------------------------------
-        calculateMutualInformationGas();
         NavigateToPose::Goal goal;
 
         // We have a small random chance of using the explorationValue instead of the proper information value even in the second phase
