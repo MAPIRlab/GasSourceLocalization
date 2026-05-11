@@ -23,30 +23,6 @@ namespace GSL::PMFS_internal
         {
             return Utils::logOddsToProbability(logOdds);
         }
-
-
-        // New, experimental idea:
-        // don't work with p(H_i), but with p(f_i) -- which is essentially p(p(H_i))
-        static constexpr size_t numBuckets = 5;
-        std::array<double, numBuckets> frequencyDistribution()
-        {
-            // TODO make this not horrible
-
-            std::array<double, numBuckets> probs;
-            double probOfMode = Utils::lerp(1. / numBuckets, 1, confidence);
-            double probOthers = (1 - probOfMode) / (numBuckets - 1);
-            probs.fill(probOthers);
-
-            double probabilityOfHit = probability();
-            size_t indexOfMode = std::min<size_t>(probabilityOfHit * numBuckets, numBuckets - 1);
-            probs[indexOfMode] = probOfMode;
-            return probs;
-        }
-
-        static float frequencyOfBucket(uint index)
-        {
-            return (0.5f + index) / numBuckets;
-        }
     };
 
 } // namespace GSL::PMFS_internal

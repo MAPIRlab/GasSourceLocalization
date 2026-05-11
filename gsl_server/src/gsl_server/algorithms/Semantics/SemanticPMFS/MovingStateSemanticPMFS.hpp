@@ -46,7 +46,6 @@ namespace GSL
 
         NavigateToPose::Goal indexToGoal(int i, int j);
         void Fail() override;
-        void calculateMutualInformationGas();
 
         struct Publishers
         {

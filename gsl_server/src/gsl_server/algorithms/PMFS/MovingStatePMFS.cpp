@@ -1,7 +1,6 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/Navigation.hpp"
-#include "gsl_server/core/Profiling.hpp"
 #include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
 #include <algorithm>
 #include <angles/angles.h>
@@ -62,7 +61,6 @@ namespace GSL
 
         // Find the cell with the highest estimated information value
         //------------------------------------------------------
-        calculateMutualInformationGas();
         NavigateToPose::Goal goal;
 
         // We have a small random chance of using the explorationValue instead of the proper information value even in the second phase
@@ -115,150 +113,6 @@ namespace GSL
         publishMarkers();
 
         sendGoal(goal);
-    }
-
-    // Calculating this is a bit complex, specially if you want to do it in a reasonable amount of time
-    // The main idea is to evaluate how much information about the source a specific cell gives by considering the case in which you know its hit frequency perfectly (confidence of 1)
-    // You calculate the source prob distribution in that hypothetical case, and take the change in entropy with respect to the current entropy
-    // The thing is, you can set the confidence to 1, but with what hit frequency?
-    // Well, we can calculate a probability distribution for the hit frequency from the *current* confidence, and use that to then calculate the expected value of the entropy reduction
-    // And that's what this does. There is some additional complexity in making it run fast (explained below), where we avoid re-comparing entire maps after modifying a single cell
-
-    // Also, for speed reasons we are currently using the result of the coarsest simulation level instead of the final source distribution.
-    // Could probably be changed without it becoming too slow. Probably.
-    void MovingStatePMFS::calculateMutualInformationGas()
-    {
-        ScopedStopwatch watch("MutualInformation");
-        ZoneScopedN("MutualInformation");
-
-        // normalize the current source probs
-        {
-            double sum = 0;
-            for (const auto& simResult : pmfs->simulations.resultsFirstLevel)
-            {
-                if (!simResult.valid)
-                    continue;
-                sum += simResult.sourceProb;
-            }
-            for (auto& simResult : pmfs->simulations.resultsFirstLevel)
-                simResult.sourceProb /= sum;
-        }
-
-        // get the probability of each hit frequency in each cell, according to the current p(h_i) and the confidence value
-        constexpr size_t discretizationLevels = PMFS_internal::HitProbability::numBuckets;
-        std::vector<std::array<double, discretizationLevels>> probF(pmfs->hitProbability.size());
-        for (size_t i = 0; i < probF.size(); i++)
-            probF[i] = pmfs->hitProbability[i].frequencyDistribution();
-
-        // use the hit frequency probabilities to calculate the conditional entropy
-        std::vector<double> conditionalEntropy(pmfs->sourceProbability.size(), 0.0);
-        {
-            ZoneScopedN("ConditionalEntropy");
-
-            // The cell index needs to be the outer loop, because we need to normalize the source probabilities given knowledge of this cell
-#pragma omp parallel for
-            for (size_t i = 0; i < conditionalEntropy.size(); i++)
-            {
-                if (pmfs->occupancy[i] != Occupancy::Free)
-                    continue;
-
-                // iterate over the list of possible hit frequency values for this one cell
-                for (size_t bucket = 0; bucket < discretizationLevels; bucket++)
-                {
-                    double probabilityOfFreq = probF[i][bucket];
-                    double freq = (bucket + 0.5) * (1. / discretizationLevels);
-
-                    // We need to normalize the source probabilities before calculating the entropy
-                    //-----------------------------------------------------
-
-                    // store the source probs for later normalization
-                    std::vector<long double> sourceProbs(pmfs->simulations.resultsFirstLevel.size(), 0.0);
-                    long double sum = 0; // for normalizing
-
-                    for (size_t simulationIndex = 0; simulationIndex < pmfs->simulations.resultsFirstLevel.size(); simulationIndex++)
-                    {
-                        const auto& simResult = pmfs->simulations.resultsFirstLevel[simulationIndex];
-                        if (!simResult.valid)
-                            continue;
-
-                        // instead of calculating the source probability by comparing the two maps (the simulated one, and the measured one with a single cell modified),
-                        // we use the already calculated source prob. If we divide p(s_k | f) by the current p(s_k | f_i) and then multiply by the modified p(s_k | f_i*),
-                        // we get the same result but avoid re-comparing all the untouched cells
-
-                        // current p(s_k | f_i)
-                        double probGivenThisCell = pmfs->simulations.probabilityFromSingleCell(pmfs->hitProbability[i], simResult.hitMap[i]);
-
-                        PMFS_internal::HitProbability localCopy = pmfs->hitProbability[i];
-                        localCopy.setProbability(freq);
-                        localCopy.confidence = 1;
-                        double probWithNewFreq = pmfs->simulations.probabilityFromSingleCell(localCopy, simResult.hitMap[i]);
-
-                        // source prob after modifying this cell in the map
-                        // we store it in a vector because we need to normalize before calculating the entropy
-                        sourceProbs[simulationIndex] = (simResult.sourceProb / probGivenThisCell) * probWithNewFreq;
-                        sum += sourceProbs[simulationIndex];
-                    }
-
-                    // calculate the entropy for this particular conditional
-                    double entropyThisFreq = 0;
-                    for (size_t simulationIndex = 0; simulationIndex < pmfs->simulations.resultsFirstLevel.size(); simulationIndex++)
-                    {
-                        const auto& simResult = pmfs->simulations.resultsFirstLevel[simulationIndex];
-                        if (!simResult.valid)
-                            continue;
-
-                        long double sourceProbWithFreq = sourceProbs[simulationIndex] / sum;
-                        entropyThisFreq -= sourceProbWithFreq * std::log(sourceProbWithFreq);
-                    }
-
-                    // the conditional entropy is an expected value, so multiply by the probability of this frequency and add to a running total
-                    conditionalEntropy[i] += probabilityOfFreq * entropyThisFreq;
-                }
-            }
-        }
-
-        // calculate the mutual information: H(S) - H(S|F)
-        {
-            mutualInformationGas.clear();
-            mutualInformationGas.resize(pmfs->sourceProbability.size(), 0.0);
-            double entropyS = 0;
-            for (size_t i = 0; i < pmfs->sourceProbability.size(); i++)
-            {
-                if (pmfs->occupancy[i] != Occupancy::Free)
-                    continue;
-                double p = pmfs->sourceProbability[i];
-                entropyS -= p * std::log(p);
-            }
-
-            for (size_t i = 0; i < conditionalEntropy.size(); i++)
-            {
-                if (pmfs->occupancy[i] != Occupancy::Free)
-                    continue;
-                mutualInformationGas[i] = entropyS - conditionalEntropy[i];
-            }
-        }
-
-        // visualization with rviz markers
-        {
-            double min = DBL_MAX;
-            for (size_t i = 0; i < mutualInformationGas.size(); i++)
-            {
-                if (pmfs->occupancy[i] != Occupancy::Free)
-                    continue;
-                min = std::min(min, mutualInformationGas[i]);
-            }
-
-            auto maxVal = *std::max_element(mutualInformationGas.begin(), mutualInformationGas.end());
-            GSL_INFO("Max mutual info: {:.3f}", maxVal);
-
-            std::vector<std_msgs::msg::ColorRGBA> colors(mutualInformationGas.size());
-            for (size_t i = 0; i < mutualInformationGas.size(); i++)
-                colors[i] = Utils::valueToColor(mutualInformationGas[i], min, maxVal, Utils::ValueColorMode::Linear);
-
-            Utils::publishDebugMarkers(
-                Grid2D<std_msgs::msg::ColorRGBA>(colors, pmfs->occupancy, pmfs->gridMetadata),
-                "MutualInformation");
-        }
     }
 
     double MovingStatePMFS::explorationValue(int i, int j)

@@ -230,20 +230,7 @@ namespace GSL::PMFS_internal
 
     double SimulationSystem::probabilityFromSingleCell(HitProbability hitProb, double simulated) const
     {
-#define FREQUENCY_DISTRIBUTION_METHOD 0
-#if FREQUENCY_DISTRIBUTION_METHOD
-        auto frequencyDistribution = hitProb.frequencyDistribution();
-        double result = 0;
-        for (int freqIndex = 0; freqIndex < frequencyDistribution.size(); freqIndex++)
-        {
-            float measured = HitProbability::frequencyOfBucket(freqIndex);
-            result += frequencyDistribution[freqIndex] * probabilitySingleFrequency(measured, simulated);
-            GSL_ASSERT(!std::isnan(result));
-        }
-        return result;
-#else
         return Utils::lerp(1, probabilitySingleFrequency(hitProb.probability(), simulated), hitProb.confidence);
-#endif
     }
 
     double SimulationSystem::probabilitySingleFrequency(double measured, double simulated) const
