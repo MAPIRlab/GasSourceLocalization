@@ -76,26 +76,36 @@ namespace GSL
         }
     };
 
-    // Important: Grid is a non-owning struct (contains only references) to make accessing data easier. For an owning alternative, see Map2D below
     // A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa
-    // If you want to represent an occupancy map without additional data, you can use a Grid2D<Occupancy> and have both .occupancy and .data point to the same vector
-    template <typename T>
+    // If you want to represent an occupancy map without additional data, you can use a Grid2D<Occupancy, false> and have both .occupancy and .data point to the same vector
+    // Important: By default, Grid2D is a non-owning struct (contains only references) to make accessing data easier. The second (optional) template parameter changes this behavior
+    // To pass an owning grid into a function that expects a default (non-owning) one, you can use the AsNonOwning() conversion method
+    template <typename T, bool Owning = false>
     struct Grid2D
     {
-        std::vector<T>& data;
-        std::vector<Occupancy>& occupancy;
-        Grid2DMetadata& metadata;
+        using DataT = std::conditional<Owning, std::vector<T>, std::vector<T>&>::type;
+        using OccupancyT = std::conditional<Owning, std::vector<Occupancy>, std::vector<Occupancy>&>::type;
+        using MetadataT = std::conditional<Owning, Grid2DMetadata, Grid2DMetadata&>::type;
+
+        DataT data;
+        OccupancyT occupancy;
+        MetadataT metadata;
 
         Grid2D(std::vector<T>& _data, std::vector<Occupancy>& _occupancy, Grid2DMetadata& _metadata)
             : data(_data), occupancy(_occupancy), metadata(_metadata)
         {
+            static_assert(!(Owning && std::is_same<T, Occupancy>::value),
+                          "Don't use Grid2D<Occupancy, true>! This will create two copies of the occupancy array. Use Map2D instead.");
             GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
         }
 
-        template <typename OtherT>
-        Grid2D(std::vector<T>& data, const Grid2D<OtherT>& other)
+        // Important! If this is an owning grid, it will copy *both* the the data and the occupancy/metadata
+        template <typename OtherT, bool OtherOwning>
+        Grid2D(std::vector<T>& data, const Grid2D<OtherT, OtherOwning>& other)
             : data(data), occupancy(other.occupancy), metadata(other.metadata)
         {
+            static_assert(!(Owning && std::is_same<T, Occupancy>::value),
+                          "Don't use Grid2D<Occupancy, true>! This will create two copies of the occupancy array. Use Map2D instead.");
             GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
         }
 
@@ -130,9 +140,10 @@ namespace GSL
         }
 
         Grid2D<Occupancy> AsOccupancy() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
+        Grid2D<T> AsNonOwning() { return Grid2D<T, false>(data, occupancy, metadata); }
     };
 
-    // unlike a Grid, a Map is an owning struct
+    // unlike a Grid, a Map is an always-owning struct
     // it only contains occupancy information, no additional data
     // can be used conveniently through the AsGrid() method
     struct Map2D
