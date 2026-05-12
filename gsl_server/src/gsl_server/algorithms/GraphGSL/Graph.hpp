@@ -24,12 +24,13 @@ namespace GSL
         // visualization
         MarkerArray VisualizeGraph();
         MarkerArray VisualizeOccupancy();
+        MarkerArray VisualizeGasReadings();
         MarkerArray VisualizeWind();
 
     public:
         std::vector<std::shared_ptr<class PlaceNode>> nodes;
         std::map<std::string, bool> selectedForVisualization;
-        float nodeSeparationViz = 1; //multiplier for the origin of each node (for visualization only) Makes it easier to see which area corresponds to which node
+        float nodeSeparationViz = 1; // multiplier for the origin of each node (for visualization only) Makes it easier to see which area corresponds to which node
 
     private:
         void MergeWindMarkers(MarkerArray& all, const MarkerArray& _new);

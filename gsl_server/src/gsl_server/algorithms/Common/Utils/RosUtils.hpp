@@ -56,6 +56,10 @@ namespace GSL
         rclcpp::executors::SingleThreadedExecutor::SharedPtr createExecutor(rclcpp::Node::SharedPtr node);
         void ClearMarkers(rclcpp::Publisher<MarkerArray>::SharedPtr pub);
         Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid, float height = 0);
+        Marker createPointsMarker(Grid2D<float> grid, float min, float max,
+                                  ValueColorMode mode = ValueColorMode::Linear,
+                                  Colors::ColorMaps colormap = Colors::ColorMaps::Viridis,
+                                  float height = 0);
         MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors,
                                         float height = 0,
                                         float size = 0.05,

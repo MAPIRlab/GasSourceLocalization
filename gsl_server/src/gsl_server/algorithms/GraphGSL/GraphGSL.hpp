@@ -28,7 +28,8 @@ namespace GSL
             rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr occupancyPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr windPub;
-            rclcpp::Publisher<MarkerArray>::SharedPtr gasMapsPub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr simGasMapsPub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr measuredGasMapsPub;
         } pubs;
         std::shared_ptr<PlaceNode> nodeSelectedForVisualization;
 

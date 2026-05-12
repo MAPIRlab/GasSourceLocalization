@@ -42,7 +42,8 @@ namespace GSL
         pubs.graphPub = node->create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
         pubs.occupancyPub = node->create_publisher<MarkerArray>("/gsl_occupancy", 1);
         pubs.windPub = node->create_publisher<MarkerArray>("/gsl_wind", 1);
-        pubs.gasMapsPub = node->create_publisher<MarkerArray>("gasMaps", 1);
+        pubs.simGasMapsPub = node->create_publisher<MarkerArray>("simGasMaps", 1);
+        pubs.measuredGasMapsPub = node->create_publisher<MarkerArray>("measuredGasMaps", 1);
 
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);
@@ -106,7 +107,8 @@ namespace GSL
 
         pubs.occupancyPub->publish(graph.VisualizeOccupancy());
         pubs.windPub->publish(graph.VisualizeWind());
-        pubs.gasMapsPub->publish(simulationSystem.VisualizeCachedResults(nodeSelectedForVisualization, graph.nodeSeparationViz));
+        pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
+        pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(nodeSelectedForVisualization, graph.nodeSeparationViz));
     }
 
 } // namespace GSL

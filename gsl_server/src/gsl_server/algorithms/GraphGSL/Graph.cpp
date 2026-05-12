@@ -135,7 +135,7 @@ namespace GSL
         bool accepted = false;
         for (auto node : nodes)
         {
-            if (node->AddObservation(position, gasConcentration))
+            if (node->AddObservation(position, wind, gasConcentration))
             {
                 GSL_INFO("Observation accepted into node {}", node->id);
                 accepted = true;
@@ -310,6 +310,44 @@ namespace GSL
             occArray.markers.push_back(occMarker);
         }
         return occArray;
+    }
+
+    MarkerArray Graph::VisualizeGasReadings()
+    {
+        MarkerArray array;
+        size_t id = 0;
+
+        std::vector<Grid2D<float, true>> grids;
+
+        for (auto node : nodes)
+        {
+            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+                continue;
+            auto roomNode = As<RoomNode>(node);
+            Grid2D<KernelDMVW::KernelCell> grid = roomNode->GetGasMap();
+            std::vector<float> concentrations;
+            std::ranges::transform(grid.data, std::back_inserter(concentrations), [](auto& cell)
+                                   { return cell.ExpectedConcentration(); });
+
+            Grid2DMetadata vizMetadata = grid.metadata;
+            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+            grids.emplace_back(concentrations, grid.occupancy, vizMetadata);
+        }
+
+        // find the global max
+        float max = 0;
+        for (const auto& grid : grids)
+            max = std::max(max, *std::max_element(grid.data.begin(), grid.data.end()));
+
+        for (auto& grid : grids)
+        {
+            Marker marker = Utils::createPointsMarker(grid.AsNonOwning(), 0, max,
+                                                      Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Magma, 0.2);
+            marker.id = id++;
+            array.markers.push_back(marker);
+        }
+
+        return array;
     }
 
     MarkerArray Graph::VisualizeWind()

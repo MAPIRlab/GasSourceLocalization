@@ -40,7 +40,8 @@ namespace GSL::Utils
 
     std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, ValueColorMode mode, Colors::ColorMaps colormap)
     {
-        auto [r, g, b] = Colors::SampleColorMap(val, colormap);
+        float t = (val-lowLimit) / (highLimit-lowLimit);
+        auto [r, g, b] = Colors::SampleColorMap(t, colormap);
         return create_color(r, g, b, 1);
     }
 
@@ -193,7 +194,7 @@ namespace GSL::Utils
         pub->publish(marker);
     }
 
-    Marker createPointsMarker(Grid2D<std_msgs::msg::ColorRGBA> grid, float height)
+    Marker createPointsMarker(Grid2D<ColorRGBA> grid, float height)
     {
         Marker points;
         points.header.frame_id = "map";
@@ -221,6 +222,15 @@ namespace GSL::Utils
             }
         }
         return points;
+    }
+
+    Marker createPointsMarker(Grid2D<float> grid, float min, float max, ValueColorMode mode, Colors::ColorMaps colormap, float height)
+    {
+        std::vector<ColorRGBA> colors(grid.data.size());
+        for (size_t i = 0; i < grid.data.size(); i++)
+            if (grid.occupancy.at(i))
+                colors.at(i) = Utils::valueToColor(grid.data.at(i), min, max, ValueColorMode::Linear);
+        return createPointsMarker(Grid2D<ColorRGBA>(colors, grid), height);
     }
 
     MarkerArray createArrowsMarkers(Grid2D<Vector2> vectors,

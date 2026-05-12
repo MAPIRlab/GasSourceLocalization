@@ -4,6 +4,7 @@ namespace GSL
 {
 
     RoomNode::RoomNode(Grid2D<Occupancy> grid)
+        : gasMap(grid, KernelDMVW::GasMap::Params{})
     {
         SetOccupancy(grid);
     }
@@ -26,7 +27,6 @@ namespace GSL
         // re-create the gmrf map, keeping the history of observations
         std::vector<gmrfw::TobservationGMRF> observations;
 
-        gas.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);  // TODO what happens to the gas map on resize?
         wind.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
         outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
     }
@@ -37,12 +37,12 @@ namespace GSL
         if (!gridMetadata.indicesInBounds(indices))
             return false;
 
-        return AsGrid().freeAt(indices);
+        return WindAsGrid().freeAt(indices);
     }
 
-    bool RoomNode::AddObservation(Vector2 location, float gasObs)
+    bool RoomNode::AddObservation(Vector2 location, Vector2 wind, float gasObs)
     {
-        // TODO
+        gasMap.AddReading(gasObs, wind, location);
         return IsValidPoint(location);
     }
 
@@ -83,7 +83,12 @@ namespace GSL
 
     const Grid2D<Vector2> RoomNode::GetWindMap()
     {
-        return AsGrid();
+        return WindAsGrid();
+    }
+
+    const Grid2D<KernelDMVW::KernelCell> RoomNode::GetGasMap()
+    {
+        return gasMap.GetMap();
     }
 
     const Grid2D<int> RoomNode::GetOutletsMask()
@@ -101,7 +106,7 @@ namespace GSL
         return gridMetadata.GetAABB();
     }
 
-    Grid2D<Vector2> RoomNode::AsGrid()
+    Grid2D<Vector2> RoomNode::WindAsGrid()
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);
     }

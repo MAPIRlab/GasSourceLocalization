@@ -10,7 +10,7 @@
     speed: 0.5
     frame: anemometer
   gas:
-    concentration: 0
+    concentration: 3.0
 - pose:
     x: 0.34990599751472473
     y: 2.668571949005127
@@ -23,7 +23,7 @@
     speed: 0.5
     frame: anemometer
   gas:
-    concentration: 0
+    concentration: 3.0
 - pose:
     x: 4.4927983283996582
     y: 2.03645920753479
@@ -36,7 +36,7 @@
     speed: 0.5
     frame: anemometer
   gas:
-    concentration: 0
+    concentration: 3.0
 - pose:
     x: 13.739995956420898
     y: 7.4957923889160156
@@ -49,7 +49,7 @@
     speed: 0.5
     frame: anemometer
   gas:
-    concentration: 0
+    concentration: 5.0
 - pose:
     x: 13.727970123291016
     y: 2.5054328441619873
@@ -62,7 +62,7 @@
     speed: 0.5
     frame: anemometer
   gas:
-    concentration: 0
+    concentration: 3.0
 - pose:
     x: 0.39230048656463623
     y: 8.3565635681152344
@@ -75,4 +75,4 @@
     speed: 0.5
     frame: anemometer
   gas:
-    concentration: 0
+    concentration: 3.0

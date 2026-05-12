@@ -10,6 +10,8 @@ namespace GSL::KernelDMVW
         double omega = 0;      // intermediate step for the confidence value, goes from 0 to +infinity
         double confidence = 0; // 0-1
         Utils::RunningVariance meanAndVariance;
+
+        float ExpectedConcentration(float defaultValue = 0.f) { return std::lerp(defaultValue, meanAndVariance.mean, confidence); }
     };
 
     class GasMap
@@ -17,17 +19,19 @@ namespace GSL::KernelDMVW
     public:
         struct Params
         {
-            float kernelSigma = 1.0;           // controls the falloff of the weight as a function of distance
-            float kernelStretchConstant = 1.0; // how much the default sigma is modified by the wind
-            float sigmaOmega = 1.0;            // Controls how much confidence you gain from one measurement
+            float kernelSigma = 0.5;               // controls the falloff of the weight as a function of distance
+            float kernelStretchConstant = 0.5;     // how much the default sigma is modified by the wind
+            float sigmaOmega = 0.3;                // Controls how much confidence you gain from one measurement
+            float omegaConcentrationSpatial = 3.0; // how much the confidence spreads to other cells
         };
         GasMap(Grid2D<Occupancy> occupancyMap, const Params& parameters);
         void AddReading(float concentration, Vector2 wind, Vector2 position);
-        const Grid2D<KernelCell> GetMap() { return grid; }
+        const Grid2D<KernelCell> GetMap() { return Grid2D<KernelCell>(cells, occupancy, metadata); }
 
     private:
         std::vector<KernelCell> cells;
-        Grid2D<KernelCell> grid;
+        Grid2DMetadata metadata;
+        std::vector<Occupancy> occupancy;
         Params params;
     };
 } // namespace GSL::KernelDMVW
