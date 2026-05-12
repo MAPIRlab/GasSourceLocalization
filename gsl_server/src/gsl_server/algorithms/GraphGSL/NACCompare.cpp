@@ -1,7 +1,7 @@
 #include "NACCompare.hpp"
 #include <eigen3/Eigen/Dense>
 
-namespace GSL
+namespace GSL::NAC
 {
     static Eigen::MatrixXf inverseCovariance(const std::vector<float>& uncertainty)
     {

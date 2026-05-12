@@ -1,7 +1,10 @@
 #include "GraphGSL.hpp"
+#include "NACCompare.hpp"
 #include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
+#include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <fmt/ranges.h>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
 namespace GSL
@@ -109,6 +112,57 @@ namespace GSL
         pubs.windPub->publish(graph.VisualizeWind());
         pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
         pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(nodeSelectedForVisualization, graph.nodeSeparationViz));
+    }
+
+    void GraphGSL::EvaluateSourceProbabilities()
+    {
+        simulationSystem.Reset();
+
+        // simulate all possible room sources
+        for (const auto& node : graph.nodes)
+            simulationSystem.SimulateEntireGraphFromRoom(graph, node);
+
+        // get the measured concentration maps
+        std::map<std::shared_ptr<RoomNode>, Grid2D<KernelDMVW::KernelCell>> measuredMaps;
+        for (auto& node : graph.nodes)
+        {
+            auto room = As<RoomNode>(node);
+            if (!room)
+                continue;
+            measuredMaps.insert({room, room->GetGasMap()});
+        }
+
+        std::map<std::shared_ptr<PlaceNode>, float> resultLoss;
+
+        for (const auto& [sourceRoom, simCompleteMap] : simulationSystem.gasMapsWithRoomSource)
+        {
+            // scaling
+            std::vector<float> measured;
+            std::vector<float> simulated;
+            std::vector<float> uncertainty;
+            //TODO this is wrong! need to take into account all the maps, even if they did not appear in the simulation!!
+            for (const auto& [room, simLocalMap] : simCompleteMap.gasMaps)
+            {
+                Grid2D<KernelDMVW::KernelCell> measuredLocal = measuredMaps.at(room);
+                for (size_t i = 0; i < measuredLocal.data.size(); i++)
+                {
+                    if (!measuredLocal.occupancy.at(i))
+                        continue;
+                    KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
+                    if (cell.confidence < 0.05)
+                        continue;
+
+                    measured.push_back(cell.meanAndVariance.mean);
+                    simulated.push_back(simLocalMap.at(i));
+                    uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
+                }
+            }
+            float scale = NAC::LeastSquaresScale(simulated, measured, uncertainty);
+            resultLoss[sourceRoom] = NAC::LossFunction(simulated, measured, uncertainty, scale);
+        }
+
+        for (const auto& [sourceRoom, simCompleteMap] : simulationSystem.gasMapsWithRoomSource)
+            GSL_INFO("{}: {:.2f}", sourceRoom->id, resultLoss.at(sourceRoom));
     }
 
 } // namespace GSL

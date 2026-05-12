@@ -109,6 +109,12 @@ namespace GSL
             GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
         }
 
+        // marked as explicit because this can convert between owning and non-owning and that's a bit dangerous
+        template <bool OtherOwning>
+        explicit Grid2D(const Grid2D<T, OtherOwning>& other)
+            : data(other.data), occupancy(other.occupancy), metadata(other.metadata)
+        {}
+
         T& dataAt(size_t col, size_t row) const
         {
             return data.at(metadata.indexOf(col, row));

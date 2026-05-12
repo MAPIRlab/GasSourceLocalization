@@ -118,9 +118,9 @@ namespace GSL::Graph_internal
 
     void SimulationSystem::SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<PlaceNode> sourceNode)
     {
-        //todo the way the weighting is currently done assumes that the concentration at the inlet is the maximum
-        //todo however, this isn't necessarily the case. If there is a higher concentration somewhere else in the map,
-        // todo such that the normalized concentration at the doorway is less than 1, that should be taken into account when scaling the map
+        // todo the way the weighting is currently done assumes that the concentration at the inlet is the maximum
+        // todo however, this isn't necessarily the case. If there is a higher concentration somewhere else in the map,
+        //  todo such that the normalized concentration at the doorway is less than 1, that should be taken into account when scaling the map
 
         CompleteMap& completeGasMap = gasMapsWithRoomSource[sourceNode];
         std::map<const DoorwayNode*, float> totalGasThroughDoorway;
@@ -275,7 +275,10 @@ namespace GSL::Graph_internal
     MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, float nodeSeparationViz)
     {
         MarkerArray array;
-        CompleteMap& map = gasMapsWithRoomSource[sourceRoom];
+        if (!gasMapsWithRoomSource.contains(sourceRoom))
+            return array;
+
+        CompleteMap& map = gasMapsWithRoomSource.at(sourceRoom);
         size_t i = 0;
         for (const auto& node : graph->nodes)
         {

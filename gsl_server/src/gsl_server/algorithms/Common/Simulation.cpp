@@ -53,10 +53,10 @@ namespace GSL
             void Update(std::vector<float>& hitMap, std::vector<uint16_t>& updated, size_t index, size_t t) const
             {
                 // mark as updated so it doesn't count multiple filaments in the same timestep
-                if (updated[index] < t)
+                if (updated.at(index) < t)
                 {
-                    hitMap[index]++;
-                    updated[index] = t;
+                    hitMap.at(index)++;
+                    updated.at(index) = t;
                 }
             }
 
@@ -75,7 +75,7 @@ namespace GSL
         {
             void Update(std::vector<float>& hitMap, std::vector<uint16_t>& updated, size_t index, size_t t) const
             {
-                hitMap[index]++;
+                hitMap.at(index)++;
             }
 
             void OnReachOutlet(std::optional<SimulationOutlets>& outlets, size_t outletNum, size_t currentTimestep)
@@ -209,7 +209,7 @@ namespace GSL
             float normalizationVal = timesteps;
             // convert the total hit count into relative frequency
             for (int i = 0; i < wind.occupancy.size(); i++)
-                hitMap[i] = hitMap[i] / normalizationVal;
+                hitMap.at(i) = hitMap.at(i) / normalizationVal;
         }
     }
 

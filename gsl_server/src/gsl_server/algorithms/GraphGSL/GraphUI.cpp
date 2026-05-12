@@ -270,6 +270,11 @@ namespace GSL
                 gsl->functionQueue.submit(lambda);
             }
 
+            if (ImGui::Button("Evaluate Source Probs"))
+            {
+                gsl->functionQueue.submit([this]()
+                                          { gsl->EvaluateSourceProbabilities(); });
+            }
             ImGui::EndDisabled();
         }
         ImGui::End();

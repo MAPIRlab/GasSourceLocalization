@@ -19,6 +19,9 @@ namespace GSL
         void Visualize();
 
     private:
+        void EvaluateSourceProbabilities();    
+
+    private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
