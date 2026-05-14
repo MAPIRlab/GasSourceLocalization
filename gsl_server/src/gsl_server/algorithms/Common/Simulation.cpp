@@ -12,6 +12,7 @@ namespace GSL
 
     bool Simulation::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
     {
+        filament.mostRecentOutlet = outlets->mask.dataAt(indices);
         Vector2 velocity = wind.dataAt(indices.x, indices.y) + Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
 
         Vector2 newPos = filament.position + deltaTime * velocity;
@@ -24,19 +25,17 @@ namespace GSL
         Vector2Int newIndices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
         if (!wind.metadata.indicesInBounds(newIndices))
-            return true;
-
-        // if we have manually defined outlets (other than the edges of the map)
-        if (outlets)
         {
-            int outletNum = outlets->mask.dataAt(newIndices);
-
-            // keep track of how many filaments exit through each outlet
-            if (outletNum >= 0 && outlets->enabled.at(outletNum))
+            // if we have manually defined outlets
+            if (outlets)
             {
-                updateFunc.OnReachOutlet(outlets, outletNum, currentTimestep);
-                return true;
+                int outletNum = filament.mostRecentOutlet;
+
+                // keep track of how many filaments exit through each outlet
+                if (outletNum >= 0 && outlets->enabled.at(outletNum))
+                    updateFunc.OnReachOutlet(outlets, outletNum, currentTimestep);
             }
+            return true;
         }
 
         return false;
@@ -122,7 +121,7 @@ namespace GSL
             ZoneScopedN("Warmup");
 
             bool stable = false;
-            int iterationCount = 0;
+            size_t iterationCount = 0;
             while (iterationCount < minWarmupIterations || (!stable && iterationCount < maxWarmupIterations))
             {
                 size_t emitCount = source.FilamentsToEmit(deltaTime * warmupAcceleration);
@@ -160,10 +159,10 @@ namespace GSL
 
         ZoneScopedN("Recording");
         // now, we do the thing
-        for (int t = 1; t < timesteps + 1; t++)
+        for (size_t t = 1; t < timesteps + 1; t++)
         {
             size_t emitCount = source.FilamentsToEmit(deltaTime);
-            for (int i = 0; i < emitCount; i++)
+            for (size_t i = 0; i < emitCount; i++)
             {
                 activeFilamentVec->emplace_back();
                 activeFilamentVec->back().position = source.getPoint();
@@ -192,16 +191,6 @@ namespace GSL
             }
             activeFilamentVec->clear();
             std::swap(activeFilamentVec, otherFilamentVec);
-        }
-
-        if (outlets)
-        {
-            for (size_t i = 0; i < outlets->mask.data.size(); i++)
-            {
-                int outletNum = outlets->mask.data.at(i);
-                if (outletNum != -1 && outlets->enabled.at(outletNum))
-                    hitMap.at(i) = outlets->exitsPerOutlet.at(outletNum);
-            }
         }
 
         if (type == Type::HitFrequency)
@@ -282,7 +271,7 @@ namespace GSL
             index++;
             Vector2Int pair = metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
             bool isOutside = !metadata.indicesInBounds(pair);
-            bool freeBecauseOutside = !outlets.has_value() && isOutside; // we only consider "out of the map" OK if there are no explicitly defined outlets
+            bool freeBecauseOutside = isOutside; // we only consider "out of the map" OK if there are no explicitly defined outlets
             pathIsFree = freeBecauseOutside || (!isOutside && wind.freeAt(pair.x, pair.y));
             if (!pathIsFree)
                 currentPosition -= increment;

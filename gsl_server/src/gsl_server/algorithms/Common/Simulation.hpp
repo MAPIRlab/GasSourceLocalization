@@ -10,6 +10,7 @@ namespace GSL
     struct Filament
     {
         Vector2 position;
+        int mostRecentOutlet = -1;
     };
 
     struct SimulationSource
@@ -87,7 +88,7 @@ namespace GSL
     private:
         bool moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const;
         bool moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const;
-        
+
         template <typename UpdateFunc>
         bool filamentIsOutside(const Filament& filament, size_t currentTimestep, UpdateFunc updateFunc);
 
