@@ -140,9 +140,21 @@ namespace GSL
             std::vector<float> measured;
             std::vector<float> simulated;
             std::vector<float> uncertainty;
-            //TODO this is wrong! need to take into account all the maps, even if they did not appear in the simulation!!
-            for (const auto& [room, simLocalMap] : simCompleteMap.gasMaps)
+            for (const auto& node : graph.nodes)
             {
+                auto room = As<RoomNode>(node);
+                if (!room)
+                    continue;
+
+                // if the room never appeared in the simulation, that means there should be no gas in it
+                std::vector<float> simLocalMap;
+                if (simCompleteMap.gasMaps.contains(room))
+                    simLocalMap = simCompleteMap.gasMaps.at(room);
+                else
+                    simLocalMap.resize(room->GetOccupancy().data.size(), 0);
+
+                // add any relevant cells to the comparison arrays
+                // we skip the cells with very low measurement confidence for optimization, since they shouldn't really affect the result anyways
                 Grid2D<KernelDMVW::KernelCell> measuredLocal = measuredMaps.at(room);
                 for (size_t i = 0; i < measuredLocal.data.size(); i++)
                 {
@@ -157,12 +169,31 @@ namespace GSL
                     uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
                 }
             }
-            float scale = NAC::LeastSquaresScale(simulated, measured, uncertainty);
-            resultLoss[sourceRoom] = NAC::LossFunction(simulated, measured, uncertainty, scale);
+            float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
+            float loss = NAC::LossFunction(measured, simulated, uncertainty, scale);
+            GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
+            resultLoss[sourceRoom] = loss;
         }
 
-        for (const auto& [sourceRoom, simCompleteMap] : simulationSystem.gasMapsWithRoomSource)
-            GSL_INFO("{}: {:.2f}", sourceRoom->id, resultLoss.at(sourceRoom));
+        // calculate the probabilities from the loss evaluation
+        std::map<std::shared_ptr<PlaceNode>, float> scores;
+        float scoresSum = 0;
+        for (auto& [room, loss] : resultLoss)
+            if (!std::isnan(loss))
+            {
+                scores[room] =  1.f/loss;
+                GSL_INFO("{:.2f} -> {:.2f}", loss, scores[room]);
+                scoresSum += scores[room];
+            }
+            else
+                scores[room] = 0;
+
+        for (const auto& [room, score] : scores)
+        {
+            float prob = score / scoresSum;
+
+            GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
+        }
     }
 
 } // namespace GSL
