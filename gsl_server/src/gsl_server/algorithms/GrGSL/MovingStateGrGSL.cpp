@@ -33,7 +33,7 @@ namespace GSL
                 for (int col = startC; col <= endC; col++)
                 {
                     Vector2Int colRow(col, row);
-                    if (closedMoveSet.find(colRow) == closedMoveSet.end() && grid.freeAt(colRow) && grid.dataAt(colRow).distance < 5)
+                    if (closedMoveSet.find(colRow) == closedMoveSet.end() && grid.occupancyAt(colRow) && grid.dataAt(colRow).distance < 5)
                     {
                         openMoveSet.insert(colRow);
                     }
@@ -77,7 +77,7 @@ namespace GSL
                 for (int col = startC; col <= endC; col++)
                 {
                     Vector2Int colRow(col, row);
-                    if (grid.freeAt(colRow))
+                    if (grid.occupancyAt(colRow))
                     {
                         openMoveSet.erase(colRow);
                         closedMoveSet.insert(colRow);

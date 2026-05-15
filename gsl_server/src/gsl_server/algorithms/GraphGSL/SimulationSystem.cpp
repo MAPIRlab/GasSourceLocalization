@@ -31,6 +31,7 @@ namespace GSL::Graph_internal
             .outlets = SimulationOutlets{
                 .mask = roomNode->GetOutletsMask(),
                 .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
+                .numCellsOutlet = roomNode->GetOutletsCellCount(),
             },
         });
         result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
@@ -116,13 +117,17 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    void SimulationSystem::SimulateEntireGraphFromRoom(const Graph& graph, const std::shared_ptr<PlaceNode> sourceNode)
+    void SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, Vector2 sourcePoint)
     {
-        // todo the way the weighting is currently done assumes that the concentration at the inlet is the maximum
-        // todo however, this isn't necessarily the case. If there is a higher concentration somewhere else in the map,
-        //  todo such that the normalized concentration at the doorway is less than 1, that should be taken into account when scaling the map
+        // create an entry for this simulation in the results data structure
+        std::vector<CompleteMap>& maps = gasMapsWithRoomSource[sourceNode];
+        maps.push_back(CompleteMap{.sourcePoint = sourcePoint});
+        // run the simulation
+        _SimulateEntireGraph(sourceNode, maps.back());
+    }
 
-        CompleteMap& completeGasMap = gasMapsWithRoomSource[sourceNode];
+    void SimulationSystem::_SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, CompleteMap& completeGasMap)
+    {
         std::map<const DoorwayNode*, float> totalGasThroughDoorway;
 
         // we need to get the final gas maps by combining the individual doorway simulations
@@ -143,20 +148,12 @@ namespace GSL::Graph_internal
         if (Is<RoomNode>(sourceNode))
         {
             auto roomNode = As<RoomNode>(sourceNode);
-#define SIMULATE_SOURCE_ROOM 0
-#if SIMULATE_SOURCE_ROOM
-            SimWithResult result = SimulateSingleRoomFromAABB(roomNode, roomNode->GetAABB(), {});
+            SimWithResult result = SimulateSingleRoomFromPoint(roomNode, completeGasMap.sourcePoint);
             completeGasMap.gasMaps[roomNode] = *result.hitMap;
             for (size_t i = 0; i < sourceNode->doorways.size(); i++)
                 weightDoorwaysSourceNode.at(i) = result.ProportionInDoorway(i);
-#else
-
-            completeGasMap.gasMaps[roomNode] = std::vector<float>(roomNode->GetOccupancy().data.size(), 1);
-            for (size_t i = 0; i < sourceNode->doorways.size(); i++)
-                weightDoorwaysSourceNode.at(i) = 1;
-#endif
         }
-        else
+        else // if the source is an outside node, just use the doorways themselves as the starting point
             for (size_t i = 0; i < sourceNode->doorways.size(); i++)
                 weightDoorwaysSourceNode.at(i) = 1. / sourceNode->doorways.size();
 
@@ -238,7 +235,7 @@ namespace GSL::Graph_internal
         // OK, now we've done all that, we can combine the individual simulation maps,
         // weighted by the amount of gas that should have passed through each doorway
 
-        for (const auto& node : graph.nodes)
+        for (const auto& node : graph->nodes)
         {
             auto room = As<RoomNode>(node);
             if (!room || node == sourceNode)
@@ -250,10 +247,15 @@ namespace GSL::Graph_internal
                 if (!totalGasThroughDoorway.contains(&doorway) || !simulationCache.contains(&doorway))
                     continue;
 
+                const SimWithResult& result = simulationCache.at(&doorway);
                 float weight = totalGasThroughDoorway.at(&doorway);
-                const auto& localHitmap = simulationCache.at(&doorway).hitMap;
-                for (size_t i = 0; i < localHitmap->size(); i++)
-                    completeGasMap.gasMaps[room].at(i) += localHitmap->at(i) * weight;
+
+                // adjust for the fact that the normalized concentration at the inlet might not be 1
+                float concentrationInlet = result.ProportionInDoorway(doorway.GetIndex());
+                weight /= concentrationInlet;
+
+                for (size_t i = 0; i < result.hitMap->size(); i++)
+                    completeGasMap.gasMaps[room].at(i) += result.hitMap->at(i) * weight;
             }
         }
 
@@ -272,14 +274,27 @@ namespace GSL::Graph_internal
         }
     }
 
-    MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, float nodeSeparationViz)
+    MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz)
     {
         MarkerArray array;
         if (!gasMapsWithRoomSource.contains(sourceRoom))
             return array;
 
-        CompleteMap& map = gasMapsWithRoomSource.at(sourceRoom);
-        size_t i = 0;
+        CompleteMap& map = gasMapsWithRoomSource.at(sourceRoom).at(simulationIndex);
+
+        // create a marker for the source location
+        {
+            Marker sourceMarker;
+            sourceMarker.header.frame_id = "map";
+            sourceMarker.type = Marker::SPHERE;
+            sourceMarker.scale.set__x(0.1).set__y(0.1).set__z(0.1);
+            sourceMarker.pose.position.set__x(map.sourcePoint.x).set__y(map.sourcePoint.y).set__z(0.3);
+            sourceMarker.id = 0;
+            sourceMarker.color = Utils::create_color(0, 0, 0);
+            array.markers.push_back(sourceMarker);
+        }
+
+        size_t i = 1;
         for (const auto& node : graph->nodes)
         {
             const auto room = As<RoomNode>(node);
@@ -308,7 +323,7 @@ namespace GSL::Graph_internal
         return array;
     }
 
-    float SimulationSystem::SimWithResult::NACatOutlet(size_t index)
+    float SimulationSystem::SimWithResult::NACatOutlet(size_t index) const
     {
         const auto& mask = simulation->outlets->mask;
 
@@ -320,7 +335,7 @@ namespace GSL::Graph_internal
         return sum / simulation->outlets->numCellsOutlet.at(index);
     }
 
-    float SimulationSystem::SimWithResult::ProportionInDoorway(size_t index)
+    float SimulationSystem::SimWithResult::ProportionInDoorway(size_t index) const
     {
         // return std::clamp((float)simulation->outlets->exitsPerOutlet.at(index) / maxBeforeNormalize, 0.f, 1.f);
         return NACatOutlet(index);

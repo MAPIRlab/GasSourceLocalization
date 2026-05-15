@@ -125,11 +125,6 @@ namespace GSL
             return occupancy.at(metadata.indexOf(col, row));
         }
 
-        bool freeAt(size_t col, size_t row) const
-        {
-            return occupancyAt(col, row) == Occupancy::Free;
-        }
-
         T& dataAt(const Vector2Int& indices) const
         {
             return data.at(metadata.indexOf(indices));
@@ -140,9 +135,14 @@ namespace GSL
             return occupancy.at(metadata.indexOf(indices));
         }
 
-        bool freeAt(const Vector2Int& indices) const
+        T& dataAt(const Vector2& coords) const
         {
-            return occupancyAt(indices) == Occupancy::Free;
+            return dataAt(metadata.coordinatesToIndices(coords));
+        }
+
+        Occupancy& occupancyAt(const Vector2& coords) const
+        {
+            return occupancyAt(metadata.coordinatesToIndices(coords));
         }
 
         Grid2D<Occupancy> AsOccupancy() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
@@ -243,7 +243,7 @@ namespace GSL
                 for (size_t j = 0; j < cropped.metadata.dimensions.y; j++)
                 {
                     cropped.AsGrid().occupancyAt(i, j) = grid.occupancyAt(Vector2Int(i, j) + offset);
-                    if (cropped.AsGrid().freeAt(i, j))
+                    if (cropped.AsGrid().occupancyAt(i, j))
                         cropped.metadata.numFreeCells++;
                 }
 

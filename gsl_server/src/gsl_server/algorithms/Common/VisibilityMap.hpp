@@ -143,7 +143,7 @@ namespace GSL
             for (int j = 0; j < grid.metadata.dimensions.y; j++)
             {
                 Vector2Int ij(i, j);
-                if (!grid.freeAt(i, j))
+                if (!grid.occupancyAt(i, j))
                 {
                     emplace(ij, {});
                     continue;

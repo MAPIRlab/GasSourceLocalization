@@ -141,7 +141,7 @@ namespace GSL
             {
                 Vector2Int p = *activePropagationSet.begin();
 
-                if (hitProb.freeAt(p.x, p.y))
+                if (hitProb.occupancyAt(p.x, p.y))
                     total += hitProb.dataAt(p.x, p.y).auxWeight;
 
                 activePropagationSet.erase(activePropagationSet.begin());
@@ -157,7 +157,7 @@ namespace GSL
                 {
                     for (int j = oC; j <= fC; j++)
                     {
-                        if (hitProb.freeAt(i, j))
+                        if (hitProb.occupancyAt(i, j))
                             calculateNewAuxWeight(i, j, p);
                     }
                 }
@@ -212,7 +212,7 @@ namespace GSL
         std::vector<std::vector<uint8_t>> occupancyMap(grid.metadata.dimensions.x, std::vector<uint8_t>(grid.metadata.dimensions.y));
         for (int i = 0; i < occupancyMap.size(); i++)
             for (int j = 0; j < occupancyMap[0].size(); j++)
-                occupancyMap[i][j] = grid.freeAt(i, j) ? 1 : 0;
+                occupancyMap[i][j] = grid.occupancyAt(i, j) ? 1 : 0;
 
         // precomputed visibility map
         visibilityMap.Populate(grid.AsOccupancy());
@@ -248,7 +248,7 @@ namespace GSL
         {
             for (int j = 0; j < grid.metadata.dimensions.y; j++)
             {
-                if (!grid.freeAt(i, j) || grid.dataAt(i, j).auxWeight == -1)
+                if (!grid.occupancyAt(i, j) || grid.dataAt(i, j).auxWeight == -1)
                 {
                     grid.dataAt(i, j).logOdds = DBL_MIN;
                     grid.occupancyAt(i, j) = Occupancy::Obstacle;

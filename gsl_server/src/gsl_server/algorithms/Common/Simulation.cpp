@@ -33,9 +33,15 @@ namespace GSL
 
                 // keep track of how many filaments exit through each outlet
                 if (outletNum >= 0 && outlets->enabled.at(outletNum))
+                {
                     updateFunc.OnReachOutlet(outlets, outletNum, currentTimestep);
+                    return true;
+                }
+                else
+                    return false; // if the outlet is disabled, don't count this filament as exiting (don't stop the warmup prematurely)
             }
-            return true;
+            else
+                return true;
         }
 
         return false;
@@ -136,7 +142,7 @@ namespace GSL
                     auto indices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
                     // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
-                    if (!wind.metadata.indicesInBounds(indices) || !wind.freeAt(indices.x, indices.y))
+                    if (!wind.metadata.indicesInBounds(indices) || !wind.occupancyAt(indices.x, indices.y))
                         continue;
 
                     // move active filaments
@@ -176,7 +182,7 @@ namespace GSL
                 size_t index = wind.metadata.indexOf(indices);
 
                 // this can happen as a result of sources with imprecisely defined shapes. Don't worry about performance, we would have had to check later anyways
-                if (!wind.metadata.indicesInBounds(indices) || !wind.freeAt(indices.x, indices.y))
+                if (!wind.metadata.indicesInBounds(indices) || !wind.occupancyAt(indices.x, indices.y))
                     continue;
 
                 GSL_ASSERT(wind.metadata.indicesInBounds(indices));
@@ -229,7 +235,7 @@ namespace GSL
 
         // try to avoid doing the raycast by looking at the pre-computed visibilityMap
         if (indexOrigin == indexEnd || //
-            (wind.metadata.indicesInBounds(indexEnd) && wind.freeAt(indexEnd.x, indexEnd.y) &&
+            (wind.metadata.indicesInBounds(indexEnd) && wind.occupancyAt(indexEnd.x, indexEnd.y) &&
              visibilityMap.has_value() &&
              visibilityMap->get().isVisible(indexOrigin, indexEnd) == Visibility::Visible))
         {
@@ -272,7 +278,7 @@ namespace GSL
             Vector2Int pair = metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
             bool isOutside = !metadata.indicesInBounds(pair);
             bool freeBecauseOutside = isOutside; // we only consider "out of the map" OK if there are no explicitly defined outlets
-            pathIsFree = freeBecauseOutside || (!isOutside && wind.freeAt(pair.x, pair.y));
+            pathIsFree = freeBecauseOutside || (!isOutside && wind.occupancyAt(pair.x, pair.y));
             if (!pathIsFree)
                 currentPosition -= increment;
         }
@@ -315,7 +321,7 @@ namespace GSL
         {
             for (int i = 0; i < hitMap.metadata.dimensions.x; i++)
             {
-                if (!hitMap.freeAt(i, j))
+                if (!hitMap.occupancyAt(i, j))
                     inColor.at<cv::Vec3b>(j, i) = cv::Vec3b(80, 80, 80);
             }
         }
@@ -354,7 +360,7 @@ namespace GSL
             {
                 for (int i = 0; i < occupancy.metadata.dimensions.x; i++)
                 {
-                    if (occupancy.freeAt(i, j))
+                    if (occupancy.occupancyAt(i, j))
                         freeSpaceMask.at<float>(j, i) = 1;
                 }
             }

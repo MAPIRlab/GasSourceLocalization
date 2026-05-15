@@ -118,7 +118,7 @@ namespace GSL
     {
         // wind
         {
-            constexpr float sigma = 0.01;
+            constexpr float sigma = 0.0001;
             float speed = vmath::length(wind);
             float direction = std::atan2(wind.y, wind.x);
             bool accepted = gmrf->insertObservation_GMRF(
@@ -166,7 +166,9 @@ namespace GSL
         gmrfw::TOccupancyMap occMap;
 
         std::transform(occupancy.data.begin(), occupancy.data.end(), std::back_inserter(occMap.data), [](const Occupancy value) -> int8_t
-                       { return static_cast<int8_t>(value); });
+                       {
+                           return static_cast<int8_t>(value);
+                       });
 
         occMap.width = occupancy.metadata.dimensions.x;
         occMap.height = occupancy.metadata.dimensions.y;
@@ -327,7 +329,9 @@ namespace GSL
             Grid2D<KernelDMVW::KernelCell> grid = roomNode->GetGasMap();
             std::vector<float> concentrations;
             std::ranges::transform(grid.data, std::back_inserter(concentrations), [](auto& cell)
-                                   { return cell.ExpectedConcentration(); });
+                                   {
+                                       return cell.ExpectedConcentration();
+                                   });
 
             Grid2DMetadata vizMetadata = grid.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
@@ -378,5 +382,45 @@ namespace GSL
             marker.id += startingID;
             all.markers.push_back(marker);
         }
+    }
+
+    MarkerArray Graph::VisualizeMapSegmentation()
+    {
+        MarkerArray array;
+        size_t id = 0;
+        for (auto node : nodes)
+        {
+            auto roomNode = As<RoomNode>(node);
+            if (!roomNode)
+                continue;
+
+            for (int i = 0; i < roomNode->GetQuadtreeLeaves().size(); i++)
+            {
+                Grid2DMetadata gridMetadata = roomNode->GetOccupancy().metadata;
+                gridMetadata.origin = gridMetadata.origin * nodeSeparationViz;
+                const AABB2DInt& leaf = roomNode->GetQuadtreeLeaves().at(i);
+                Vector2Int size = leaf.max - leaf.min;
+                Marker mark;
+                mark.header.frame_id = "map";
+                mark.type = Marker::CUBE;
+                Vector2 worldSpaceScale = (Vector2(size.x, size.y)) * gridMetadata.cellSize;
+
+                auto coords = gridMetadata.indicesToCoordinates(leaf.min.x, leaf.min.y, false) + (worldSpaceScale * 0.5f);
+
+                Point p;
+                p.x = coords.x;
+                p.y = coords.y;
+                p.z = 0;
+                mark.pose.position = p;
+                mark.id = id++;
+                mark.scale.x = worldSpaceScale.x - gridMetadata.cellSize * 0.2;
+                mark.scale.y = worldSpaceScale.y - gridMetadata.cellSize * 0.2;
+                mark.scale.z = 0.01;
+
+                mark.color = Utils::create_color(1, 1, 1, 1);
+                array.markers.push_back(mark);
+            }
+        }
+        return array;
     }
 } // namespace GSL

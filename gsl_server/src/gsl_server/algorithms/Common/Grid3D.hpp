@@ -99,11 +99,6 @@ namespace GSL
         {
             return occupancy[metadata.indexOf(i, j, h)];
         }
-
-        bool freeAt(size_t i, size_t j, size_t h) const
-        {
-            return occupancyAt(i, j, h) == Occupancy::Free;
-        }
     };
 
 } // namespace GSL

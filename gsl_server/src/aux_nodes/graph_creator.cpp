@@ -192,7 +192,7 @@ void GraphCreator::CreateNodeWindow()
                 for (int row = cropped.metadata.dimensions.y - 1; row >= 0; row--)
                 {
                     for (int col = 0; col < cropped.metadata.dimensions.x; col++)
-                        file << (cropped.AsGrid().freeAt(col, row) ? 1 : 0) << " ";
+                        file << (cropped.AsGrid().occupancyAt(col, row) ? 1 : 0) << " ";
                     file << "\n";
                 }
                 file.close();

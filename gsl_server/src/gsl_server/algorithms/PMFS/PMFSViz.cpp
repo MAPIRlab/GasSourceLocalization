@@ -17,7 +17,7 @@ namespace GSL
         {
             for (int a = 0; a < grid.metadata.dimensions.x; a++)
             {
-                if (grid.freeAt(a, b))
+                if (grid.occupancyAt(a, b))
                 {
                     auto coords = grid.metadata.indicesToCoordinates(a, b);
                     Point p;
@@ -58,7 +58,7 @@ namespace GSL
         {
             for (int a = 0; a < grid.metadata.dimensions.x; a++)
             {
-                if (grid.freeAt(a, b))
+                if (grid.occupancyAt(a, b))
                 {
                     auto coords = grid.metadata.indicesToCoordinates(a, b);
                     Point p;
@@ -104,7 +104,6 @@ namespace GSL
             p.x = coords.x;
             p.y = coords.y;
             p.z = 0;
-            // mark.points.push_back(p);
             mark.pose.position = p;
             mark.id = i;
             mark.scale.x = worldSpaceScale.x - gridMetadata.cellSize * 0.2;

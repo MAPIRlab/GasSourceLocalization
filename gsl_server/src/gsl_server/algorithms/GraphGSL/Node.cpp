@@ -1,4 +1,5 @@
 #include "Node.hpp"
+#include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
 
 namespace GSL
 {
@@ -29,6 +30,19 @@ namespace GSL
 
         wind.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
         outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
+
+        // quadtree decomposition
+        std::vector<std::vector<uint8_t>> as2D(gridMetadata.dimensions.x, std::vector<uint8_t>(gridMetadata.dimensions.y));
+        for (size_t i = 0; i < gridMetadata.dimensions.x; i++)
+            for (size_t j = 0; j < gridMetadata.dimensions.y; j++)
+                as2D.at(i).at(j) = grid.occupancyAt(i, j);
+
+        Utils::NQA::Quadtree quadtree(as2D);
+        std::vector<Utils::NQA::Node> leaves = quadtree.fusedLeaves(50);
+        std::ranges::transform(leaves, std::back_inserter(quadtreeLeaves), [](const Utils::NQA::Node& leaf)
+                               {
+                                   return AABB2DInt{leaf.origin, leaf.origin + leaf.size};
+                               });
     }
 
     bool RoomNode::IsValidPoint(Vector2 location)
@@ -37,7 +51,7 @@ namespace GSL
         if (!gridMetadata.indicesInBounds(indices))
             return false;
 
-        return WindAsGrid().freeAt(indices);
+        return WindAsGrid().occupancyAt(indices);
     }
 
     bool RoomNode::AddObservation(Vector2 location, Vector2 wind, float gasObs)
@@ -61,7 +75,7 @@ namespace GSL
                 gridMetadata.coordinatesToIndices(doorway.aabb.max)};
 
             for (Vector2Int indices : aabbIdx)
-                if (maskGrid.metadata.indicesInBounds(indices) && maskGrid.freeAt(indices))
+                if (maskGrid.metadata.indicesInBounds(indices) && maskGrid.occupancyAt(indices))
                 {
                     maskGrid.dataAt(indices) = i;
                     numCellsOutlet.at(i)++;
@@ -106,14 +120,39 @@ namespace GSL
         return gridMetadata.GetAABB();
     }
 
+    std::vector<Vector2> RoomNode::RepresentativePoints() const
+    {
+        constexpr size_t num = 2;
+
+        AABB2D aabb = GetAABB();
+        Vector2 step = aabb.size() / num;
+
+        std::vector<Vector2> points;
+
+        for (size_t i = 0; i < num; i++)
+            for (size_t j = 0; j < num; j++)
+            {
+                Vector2 p = aabb.min + Vector2(step.x * i, step.y * j);
+                if (GetOccupancy().occupancyAt(p))
+                    points.push_back(p);
+            }
+        return points;
+    }
+
     Grid2D<Vector2> RoomNode::WindAsGrid()
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);
     }
 
-    const Grid2D<Occupancy> RoomNode::GetOccupancy()
+    const Grid2D<Occupancy> RoomNode::GetOccupancy() const
     {
-        return Grid2D<Occupancy>(occupancy, occupancy, gridMetadata);
+        // this is a little funky because the Grid class holds modifyable references, so even though we are returning a *const* grid, the references *inside* the object are not const
+        // therefore, we have to do a cast to non-const (through the pointer, to avoid copies) before constructing the grid
+        const Grid2D<Occupancy> grid(
+            *(std::vector<Occupancy>*)&occupancy,
+            *(std::vector<Occupancy>*)&occupancy,
+            *(Grid2DMetadata*)&gridMetadata);
+        return grid;
     }
 
     const DoorwayNode& PlaceNode::GetDoorway(std::string_view name)

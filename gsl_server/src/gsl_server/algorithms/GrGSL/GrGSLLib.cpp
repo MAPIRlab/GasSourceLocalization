@@ -91,7 +91,7 @@ namespace GSL
                 for (int col = startC; col <= endC; col++)
                 {
                     Vector2Int colRow{col, row};
-                    if (!grid.freeAt(colRow))
+                    if (!grid.occupancyAt(colRow))
                         continue;
 
                     // the cells that the robot is in always gets the same probability as the best direction
@@ -210,7 +210,7 @@ namespace GSL
                 // 8-neighbour propagation
                 for (int col = startC; col <= endC; col++)
                     for (int row = startR; row <= endR; row++)
-                        if (grid.freeAt(col, row))
+                        if (grid.occupancyAt(col, row))
                             calculateWeight(grid, {col, row}, activeCell, openPropagationSet, closedPropagationSet, activePropagationSet);
             }
 
@@ -361,7 +361,7 @@ namespace GSL
         {
             for (int col = 0; col < grid.metadata.dimensions.x; col++)
             {
-                if (grid.freeAt(col, row))
+                if (grid.occupancyAt(col, row))
                 {
                     auto coords = grid.metadata.indicesToCoordinates(col, row);
                     Point p;
@@ -406,7 +406,7 @@ namespace GSL
         {
             for (int col = 0; col < grid.metadata.dimensions.x; col++)
             {
-                if (grid.freeAt(col, row))
+                if (grid.occupancyAt(col, row))
                 {
                     auto coords = grid.metadata.indicesToCoordinates(col, row);
                     Point p;

@@ -26,6 +26,7 @@ namespace GSL
         MarkerArray VisualizeOccupancy();
         MarkerArray VisualizeGasReadings();
         MarkerArray VisualizeWind();
+        MarkerArray VisualizeMapSegmentation();
 
     public:
         std::vector<std::shared_ptr<class PlaceNode>> nodes;

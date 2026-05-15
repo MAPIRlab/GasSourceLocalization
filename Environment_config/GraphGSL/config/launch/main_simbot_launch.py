@@ -52,7 +52,7 @@ def launch_setup(context, *args, **kwargs):
 
                     {"GMRF_lambdaPrior_advection": 100.0},             # Advection constraint -> neighboring cells should have similar wind values in the direction of the wind
                     {"GMRF_lambdaPrior_mass_conservation": 1000.0},    # Mass conservation law -> divergence of the wind field is zero
-                    {"GMRF_lambdaPrior_diffusion": 10.0},              # Diffusion constraint -> neighboring cells should have similar wind values in all directions
+                    {"GMRF_lambdaPrior_diffusion": 100.0},              # Diffusion constraint -> neighboring cells should have similar wind values in all directions
                     {"GMRF_lambdaPrior_obstacles": 2000.0},            # Obstacles --> cells close to obstacles has only tangencial wind
                 ],
                 on_exit=Shutdown()

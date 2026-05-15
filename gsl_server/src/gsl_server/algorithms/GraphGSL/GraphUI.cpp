@@ -133,10 +133,15 @@ namespace GSL
     {
         ImGui::Begin("Simulate Source");
         {
+            size_t previousIndex = selectedNodeData.nodeIndex;
             ImGui::ComboSelect("Selected Node", gsl->graph.nodes, selectedNodeData.nodeIndex, [](auto& node)
-                               { return node->id.data(); });
-
+                               {
+                                   return node->id.data();
+                               });
             auto node = gsl->graph.nodes.at(selectedNodeData.nodeIndex);
+            if (selectedNodeData.nodeIndex != previousIndex)
+                selectedCoordinates = node->GetPosition();
+
             std::string name = node ? node->id : "Null";
             ImGui::Text("Currently selected node: %s", name.c_str());
 
@@ -155,7 +160,9 @@ namespace GSL
 
                     ImGui::PushID("node");
                     ImGui::ComboSelect("Doorway", node->doorways, simulationOptions.selectedArcIdx, [](auto& door)
-                                       { return door.GetName().data(); });
+                                       {
+                                           return door.GetName().data();
+                                       });
                     ImGui::PopID();
                 }
             }
@@ -203,8 +210,12 @@ namespace GSL
                     auto lambda = [this, node]()
                     {
                         simulationOptions.simulationEnabled = false;
-                        gsl->simulationSystem.SimulateEntireGraphFromRoom(gsl->graph, node);
-                        gsl->nodeSelectedForVisualization = node;
+                        Vector2 pos = selectedCoordinates;
+                        if (!Is<RoomNode>(node))
+                            pos = node->GetPosition();
+                        gsl->simulationSystem.SimulateEntireGraph(node, pos);
+                        gsl->simulationViz.selectedNode = node;
+                        gsl->simulationViz.simulationIndex = gsl->simulationSystem.gasMapsWithRoomSource.at(node).size() - 1;
                         GSL_INFO("Done simulating source in room '{}'", node->id);
 
                         simulationOptions.simulationEnabled = true;
@@ -273,7 +284,9 @@ namespace GSL
             if (ImGui::Button("Evaluate Source Probs"))
             {
                 gsl->functionQueue.submit([this]()
-                                          { gsl->EvaluateSourceProbabilities(); });
+                                          {
+                                              gsl->EvaluateSourceProbabilities();
+                                          });
             }
             ImGui::EndDisabled();
         }

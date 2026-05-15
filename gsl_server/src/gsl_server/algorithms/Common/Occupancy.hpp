@@ -18,17 +18,22 @@ namespace GSL
         Occupancy() : value(Unknown) {}
         Occupancy(decltype(value) value) : value(value) {} // allow implicit conversion from the enum to the struct type
 
-        inline operator bool() const
+        operator bool() const
         {
             return value == Free;
         }
 
-        inline bool operator==(decltype(value) other) const
+        bool operator==(decltype(value) other) const
         {
             return other == value;
         }
 
-        explicit inline operator int8_t() const
+        bool operator==(Occupancy other) const
+        {
+            return other.value == value;
+        }
+
+        explicit operator int8_t() const
         {
             return static_cast<int8_t>(value);
         }

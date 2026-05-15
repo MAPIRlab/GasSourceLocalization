@@ -210,7 +210,7 @@ namespace GSL::GrGSL_internal
     {
         std::string queryResult;
 
-        queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.freeAt(x, y)) +
+        queryResult = fmt::format("Cell {0},{1}:\n", x, y) + fmt::format("free:{} \n", grid.occupancyAt(x, y)) +
                       fmt::format("auxWeight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).auxWeight)) +
                       fmt::format("weight:{} \n", Utils::logOddsToProbability(grid.dataAt(x, y).sourceProb));
 

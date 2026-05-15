@@ -212,7 +212,7 @@ namespace GSL
         {
             for (int a = 0; a < gridMetadata.dimensions.x; a++)
             {
-                if (!grid.freeAt(a, b))
+                if (!grid.occupancyAt(a, b))
                     continue;
                 maxExpl = std::max(maxExpl, explorationValue(a, b));
                 maxVar = std::max(maxVar, pmfs->simulations.varianceOfHitProb[gridMetadata.indexOf({a, b})] * (1 - grid.dataAt(a, b).confidence));
@@ -226,7 +226,7 @@ namespace GSL
         {
             for (int a = 0; a < gridMetadata.dimensions.x; a++)
             {
-                if (!grid.freeAt(a, b))
+                if (!grid.occupancyAt(a, b))
                     continue;
                 auto coords = gridMetadata.indicesToCoordinates(a, b);
                 Point p;

@@ -47,6 +47,7 @@ namespace GSL
         pubs.windPub = node->create_publisher<MarkerArray>("/gsl_wind", 1);
         pubs.simGasMapsPub = node->create_publisher<MarkerArray>("simGasMaps", 1);
         pubs.measuredGasMapsPub = node->create_publisher<MarkerArray>("measuredGasMaps", 1);
+        pubs.quadtreePub = node->create_publisher<MarkerArray>("quadtree", 1);
 
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);
@@ -64,14 +65,6 @@ namespace GSL
         }
 
         stateMachine.forceSetState(movingState.get());
-
-        // std::vector<float> simulated = {0, 0.1, 0.2, 0.4, 1.0, 3.0};
-        // std::vector<float> observed =    {0, 0.2, 0.4, 0.7, 3.0, 1.0};
-        // std::vector<float> uncertainty = {0.5,  0.5,   0.5,   0.5,   0.5,   0.5};
-        // float scale = LeastSquaresScale(simulated, observed, uncertainty);
-        // GSL_INFO("Best scale: {:.2f}", scale);
-        // float evaluation =  LossFunction(simulated, observed, uncertainty, scale);
-        // GSL_INFO("Loss evaluation: {:.2f}", evaluation);
     }
 
     void GraphGSL::OnUpdate()
@@ -101,26 +94,17 @@ namespace GSL
         return wind;
     }
 
-    void GraphGSL::Visualize()
-    {
-        if (drawGraph)
-            pubs.graphPub->publish(graph.VisualizeGraph());
-        else
-            Utils::ClearMarkers(pubs.graphPub);
-
-        pubs.occupancyPub->publish(graph.VisualizeOccupancy());
-        pubs.windPub->publish(graph.VisualizeWind());
-        pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
-        pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(nodeSelectedForVisualization, graph.nodeSeparationViz));
-    }
-
     void GraphGSL::EvaluateSourceProbabilities()
     {
         simulationSystem.Reset();
 
         // simulate all possible room sources
         for (const auto& node : graph.nodes)
-            simulationSystem.SimulateEntireGraphFromRoom(graph, node);
+        {
+            auto roomNode = As<RoomNode>(node);
+            for (Vector2 point : node->RepresentativePoints())
+                simulationSystem.SimulateEntireGraph(node, point);
+        }
 
         // get the measured concentration maps
         std::map<std::shared_ptr<RoomNode>, Grid2D<KernelDMVW::KernelCell>> measuredMaps;
@@ -134,45 +118,46 @@ namespace GSL
 
         std::map<std::shared_ptr<PlaceNode>, float> resultLoss;
 
-        for (const auto& [sourceRoom, simCompleteMap] : simulationSystem.gasMapsWithRoomSource)
+        for (const auto& [sourceRoom, completeMaps] : simulationSystem.gasMapsWithRoomSource)
         {
-            // scaling
-            std::vector<float> measured;
-            std::vector<float> simulated;
-            std::vector<float> uncertainty;
-            for (const auto& node : graph.nodes)
+            for (auto& simCompleteMap : completeMaps)
             {
-                auto room = As<RoomNode>(node);
-                if (!room)
-                    continue;
-
-                // if the room never appeared in the simulation, that means there should be no gas in it
-                std::vector<float> simLocalMap;
-                if (simCompleteMap.gasMaps.contains(room))
-                    simLocalMap = simCompleteMap.gasMaps.at(room);
-                else
-                    simLocalMap.resize(room->GetOccupancy().data.size(), 0);
-
-                // add any relevant cells to the comparison arrays
-                // we skip the cells with very low measurement confidence for optimization, since they shouldn't really affect the result anyways
-                Grid2D<KernelDMVW::KernelCell> measuredLocal = measuredMaps.at(room);
-                for (size_t i = 0; i < measuredLocal.data.size(); i++)
+                // scaling
+                std::vector<float> measured;
+                std::vector<float> simulated;
+                std::vector<float> uncertainty;
+                for (const auto& node : graph.nodes)
                 {
-                    if (!measuredLocal.occupancy.at(i))
-                        continue;
-                    KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
-                    if (cell.confidence < 0.05)
+                    auto room = As<RoomNode>(node);
+                    if (!room)
                         continue;
 
-                    measured.push_back(cell.meanAndVariance.mean);
-                    simulated.push_back(simLocalMap.at(i));
-                    uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
+                    const std::vector<float>& simLocalMap = simCompleteMap.gasMaps.at(room);
+
+                    // add any relevant cells to the comparison arrays
+                    // we skip the cells with very low measurement confidence for optimization, since they shouldn't really affect the result anyways
+                    Grid2D<KernelDMVW::KernelCell> measuredLocal = measuredMaps.at(room);
+                    for (size_t i = 0; i < measuredLocal.data.size(); i++)
+                    {
+                        if (!measuredLocal.occupancy.at(i))
+                            continue;
+                        KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
+                        if (cell.confidence < 0.05)
+                            continue;
+
+                        measured.push_back(cell.meanAndVariance.mean);
+                        simulated.push_back(simLocalMap.at(i));
+                        uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
+                    }
                 }
+                float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
+                float loss = NAC::LossFunction(measured, simulated, uncertainty, scale);
+                GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
+                if (resultLoss.contains(sourceRoom))
+                    resultLoss.at(sourceRoom) = std::min(resultLoss.at(sourceRoom), loss);
+                else
+                    resultLoss[sourceRoom] = loss;
             }
-            float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
-            float loss = NAC::LossFunction(measured, simulated, uncertainty, scale);
-            GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
-            resultLoss[sourceRoom] = loss;
         }
 
         // calculate the probabilities from the loss evaluation
@@ -181,7 +166,7 @@ namespace GSL
         for (auto& [room, loss] : resultLoss)
             if (!std::isnan(loss))
             {
-                scores[room] =  1.f/loss;
+                scores[room] = 1.f / loss;
                 GSL_INFO("{:.2f} -> {:.2f}", loss, scores[room]);
                 scoresSum += scores[room];
             }
@@ -194,6 +179,20 @@ namespace GSL
 
             GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
         }
+    }
+
+    void GraphGSL::Visualize()
+    {
+        if (drawGraph)
+            pubs.graphPub->publish(graph.VisualizeGraph());
+        else
+            Utils::ClearMarkers(pubs.graphPub);
+
+        pubs.occupancyPub->publish(graph.VisualizeOccupancy());
+        pubs.windPub->publish(graph.VisualizeWind());
+        pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
+        pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(simulationViz.selectedNode, simulationViz.simulationIndex, graph.nodeSeparationViz));
+        pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());
     }
 
 } // namespace GSL

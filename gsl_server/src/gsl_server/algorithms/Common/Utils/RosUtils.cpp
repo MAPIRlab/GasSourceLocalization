@@ -208,7 +208,7 @@ namespace GSL::Utils
         {
             for (int col = 0; col < grid.metadata.dimensions.x; col++)
             {
-                if (grid.freeAt(col, row))
+                if (grid.occupancyAt(col, row))
                 {
                     auto coords = grid.metadata.indicesToCoordinates(col, row);
                     Point p;

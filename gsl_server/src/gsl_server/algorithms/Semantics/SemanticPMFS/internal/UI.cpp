@@ -264,7 +264,7 @@ namespace GSL::SemanticPMFS_internal
         if (variable == Variable::HitProb)
         {
             Grid2D<HitProbability> grid(pmfs->hitProbability, pmfs->simulationOccupancy, pmfs->gridMetadata);
-            queryResult = fmt::format("Cell {0},{1}:\n", indices.x, indices.y) + fmt::format("free:{} \n", grid.freeAt(indices.x, indices.y)) +
+            queryResult = fmt::format("Cell {0},{1}:\n", indices.x, indices.y) + fmt::format("free:{} \n", grid.occupancyAt(indices.x, indices.y)) +
                           fmt::format("Hit probability:{:.3f} \n", Utils::logOddsToProbability(grid.dataAt(indices.x, indices.y).logOdds));
         }
         else if (variable == Variable::SourceProb)

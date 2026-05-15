@@ -51,7 +51,7 @@ namespace GSL
             return grid.occupancy.at(indexOriginal(col, row));
         }
 
-        bool freeAt(size_t col, size_t row) const
+        bool occupancyAt(size_t col, size_t row) const
         {
             return occupancyAt(col, row) == Occupancy::Free;
         }
@@ -66,7 +66,7 @@ namespace GSL
             return grid.occupancy.at(indexOriginal(indices));
         }
 
-        bool freeAt(const Vector2Int& indices) const
+        bool occupancyAt(const Vector2Int& indices) const
         {
             return occupancyAt(indices) == Occupancy::Free;
         }

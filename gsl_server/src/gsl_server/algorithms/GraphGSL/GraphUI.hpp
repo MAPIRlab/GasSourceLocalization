@@ -33,7 +33,6 @@ namespace GSL
         rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr clickedPointSub;
         Vector2 selectedCoordinates;
 
-
         struct SimulationOptions
         {
             bool exactPoint = false;
@@ -46,6 +45,7 @@ namespace GSL
         {
             size_t nodeIndex;
             std::vector<float> combineWeights;
+            size_t simVizIndex = 0;
         } selectedNodeData;
     };
 } // namespace GSL

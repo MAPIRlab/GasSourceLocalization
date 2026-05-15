@@ -33,8 +33,14 @@ namespace GSL
             rclcpp::Publisher<MarkerArray>::SharedPtr windPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr simGasMapsPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr measuredGasMapsPub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePub;
         } pubs;
-        std::shared_ptr<PlaceNode> nodeSelectedForVisualization;
+
+        struct SimulationViz
+        {
+            std::shared_ptr<PlaceNode> selectedNode;
+            size_t simulationIndex;
+        } simulationViz;
 
         Utils::Time::Countdown visualizationCD;
         bool drawGraph = true;

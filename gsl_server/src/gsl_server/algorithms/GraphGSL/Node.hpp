@@ -26,11 +26,12 @@ namespace GSL
     class PlaceNode
     {
     public:
-        virtual Vector2 GetPosition() = 0;
+        virtual Vector2 GetPosition() const = 0;
         virtual bool IsValidPoint(Vector2 location) = 0;
         virtual bool AddObservation(Vector2 location, Vector2 wind, float gasObs) = 0;
         virtual void UpdateDoorwayMask() {}
         const DoorwayNode& GetDoorway(std::string_view name);
+        virtual std::vector<Vector2> RepresentativePoints() const { return {GetPosition()}; }
 
         std::vector<DoorwayNode> doorways;
         std::string id;
@@ -47,13 +48,15 @@ namespace GSL
 
         void UpdateWindMap(std::shared_ptr<gmrfw::CGMRF_map> gmrf);
         void SetOccupancy(Grid2D<Occupancy> grid);
-        const Grid2D<Occupancy> GetOccupancy();
+        const Grid2D<Occupancy> GetOccupancy() const;
         const Grid2D<Vector2> GetWindMap();
         const Grid2D<KernelDMVW::KernelCell> GetGasMap();
         const Grid2D<int> GetOutletsMask();
         const std::vector<size_t>& GetOutletsCellCount();
-        Vector2 GetPosition() override { return centroid; }
+        Vector2 GetPosition() const override { return centroid; }
         AABB2D GetAABB() const;
+        const std::vector<AABB2DInt>& GetQuadtreeLeaves() const { return quadtreeLeaves; }
+        std::vector<Vector2> RepresentativePoints() const override;
 
     private:
         Grid2D<Vector2> WindAsGrid();
@@ -62,10 +65,11 @@ namespace GSL
         std::vector<int> outletMask;
         std::vector<size_t> numCellsOutlet;
         std::vector<Vector2> wind;
-        
+
         KernelDMVW::GasMap gasMap;
         Grid2DMetadata gridMetadata;
         Vector2 centroid;
+        std::vector<AABB2DInt> quadtreeLeaves;
     };
 
     class OutsideNode : public PlaceNode
@@ -73,7 +77,7 @@ namespace GSL
     public:
         OutsideNode(Vector2 pos) : position(pos)
         {}
-        Vector2 GetPosition() override { return position; }
+        Vector2 GetPosition() const override { return position; }
         bool IsValidPoint(Vector2 location) override { return false; }
         bool AddObservation(Vector2 location, Vector2 wind, float gasObs) override { return false; }
 
