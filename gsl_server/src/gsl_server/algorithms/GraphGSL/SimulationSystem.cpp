@@ -251,6 +251,7 @@ namespace GSL::Graph_internal
                 float weight = totalGasThroughDoorway.at(&doorway);
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
+                //TODO debug this!!!
                 float concentrationInlet = result.ProportionInDoorway(doorway.GetIndex());
                 weight /= concentrationInlet;
 
