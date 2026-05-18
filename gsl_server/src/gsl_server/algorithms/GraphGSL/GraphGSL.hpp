@@ -1,6 +1,7 @@
 #pragma once
 #include "Graph.hpp"
 #include "GraphUI.hpp"
+#include "NaiveSimulationSystem.hpp"
 #include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
@@ -19,13 +20,19 @@ namespace GSL
         void Visualize();
 
     private:
-        void EvaluateSourceProbabilities();    
+        void EvaluateSourceProbabilities();
 
     private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
 
+#define ENABLE_NAIVE_EVALUATION 1
+#if ENABLE_NAIVE_EVALUATION
+        void EvaluateSourceProbabilitiesNaive();
+        Graph_internal::NaiveSimulationSystem naiveSimulationSystem;
+        std::shared_ptr<RoomNode> entireMap;
+#endif
         struct Pubs
         {
             rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;

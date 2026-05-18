@@ -39,6 +39,9 @@ namespace GSL
         graph.nodeSeparationViz = artificialSeparation;
         simulationSystem.graph = &graph;
 
+#if ENABLE_NAIVE_EVALUATION
+        entireMap = std::make_shared<RoomNode>(graph.completeMap.AsGrid());
+#endif
         // GUI
         IF_GUI(gui.Run());
 
@@ -82,6 +85,11 @@ namespace GSL
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
         graph.AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
+
+#if ENABLE_NAIVE_EVALUATION
+        entireMap->AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
+#endif
+
         // graph.UpdateAllWindMaps();
         // stateMachine.forceSetState(movingState.get());
     }
@@ -192,6 +200,84 @@ namespace GSL
             GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
         }
     }
+
+#if ENABLE_NAIVE_EVALUATION
+    void GraphGSL::EvaluateSourceProbabilitiesNaive()
+    {
+        entireMap->UpdateWindMap(graph.gmrf);
+        std::vector<Graph_internal::CompleteMap> completeMaps;
+        
+        {
+            ScopedStopwatch watch("Evaluation (naive)");
+            // simulate all possible room sources
+            std::vector<Vector2> simsToRun;
+            for (const auto& node : graph.nodes)
+            {
+                auto roomNode = As<RoomNode>(node);
+                for (Vector2 point : node->RepresentativePoints())
+                    simsToRun.push_back(point);
+            }
+            
+#pragma omp parallel for
+            for (const auto& sourcePoint : simsToRun)
+            {
+                Graph_internal::SimWithResult result = naiveSimulationSystem.SimulateSourceFromPoint(entireMap, sourcePoint);
+                #pragma omp critical
+                {
+                    completeMaps.push_back(naiveSimulationSystem.AsCompleteMap(entireMap, result));
+                }
+            }
+        }
+
+        std::map<Vector2*, float> resultLoss;
+
+        for (auto& simCompleteMap : completeMaps)
+        {
+            // scaling
+            std::vector<float> measured;
+            std::vector<float> simulated;
+            std::vector<float> uncertainty;
+            
+            // add any relevant cells to the comparison arrays
+            // we skip the cells with very low measurement confidence for optimization, since they shouldn't really affect the result anyways
+            Grid2D<KernelDMVW::KernelCell> measuredLocal = entireMap->GetGasMap();
+            for (size_t i = 0; i < measuredLocal.data.size(); i++)
+            {
+                if (!measuredLocal.occupancy.at(i))
+                    continue;
+                KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
+                if (cell.confidence < 0.05)
+                    continue;
+
+                measured.push_back(cell.meanAndVariance.mean);
+                simulated.push_back(simCompleteMap.gasMaps.begin()->second.at(i));
+                uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
+            }
+            float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
+            float loss = NAC::LossFunction(measured, simulated, uncertainty, scale);
+            resultLoss[&simCompleteMap.sourcePoint] = loss;
+        }
+
+        // calculate the probabilities from the loss evaluation
+        std::map<Vector2*, float> scores;
+        float scoresSum = 0;
+        for (auto& [sourcePoint, loss] : resultLoss)
+            if (!std::isnan(loss))
+            {
+                scores[sourcePoint] = 1.f / loss;
+                scoresSum += scores[sourcePoint];
+            }
+            else
+                scores[sourcePoint] = 0;
+
+        for (const auto& [sourcePoint, score] : scores)
+        {
+            float prob = score / scoresSum;
+
+            GSL_INFO("\tp({}) = {:.2f}", *sourcePoint, prob);
+        }
+    }
+#endif
 
     void GraphGSL::Visualize()
     {

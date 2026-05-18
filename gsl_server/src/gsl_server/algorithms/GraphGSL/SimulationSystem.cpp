@@ -2,7 +2,6 @@
 #include "Node.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
-#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include <stack>
 
 namespace GSL::Graph_internal
@@ -14,7 +13,7 @@ namespace GSL::Graph_internal
         // blurMasks.clear(); //this can probably be retained (if the graph does not change)
     }
 
-    SimulationSystem::SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> roomNode, Vector2 point)
+    SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> roomNode, Vector2 point)
     {
         ScopedStopwatch s("sims");
         SimWithResult result;
@@ -49,8 +48,8 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    SimulationSystem::SimWithResult SimulationSystem::SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
-                                                                                 const std::set<const DoorwayNode*>& blockedDoorways)
+    SimWithResult SimulationSystem::SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
+                                                               const std::set<const DoorwayNode*>& blockedDoorways)
     {
         SimWithResult result;
         Grid2DMetadata nodeMetadata = roomNode->GetOccupancy().metadata;
@@ -103,7 +102,7 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    SimulationSystem::SimWithResult SimulationSystem::SimulateSingleRoomFromDoorway(const DoorwayNode& doorway)
+    SimWithResult SimulationSystem::SimulateSingleRoomFromDoorway(const DoorwayNode& doorway)
     {
         auto roomNode = As<RoomNode>(doorway.from.lock());
         GSL_ASSERT_MSG(roomNode, "Tried to do simulation in place node which is not a room: {}", doorway.from.lock()->id);
@@ -116,8 +115,11 @@ namespace GSL::Graph_internal
     void SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, Vector2 sourcePoint)
     {
         // create an entry for this simulation in the results data structure
+        mtx.lock();
         std::deque<CompleteMap>& maps = gasMapsWithRoomSource[sourceNode];
         maps.push_back(CompleteMap{.sourcePoint = sourcePoint});
+        mtx.unlock();
+
         // run the simulation
         _SimulateEntireGraph(sourceNode, maps.back());
     }
@@ -281,76 +283,18 @@ namespace GSL::Graph_internal
 
     MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz)
     {
-        MarkerArray array;
         if (!gasMapsWithRoomSource.contains(sourceRoom))
-            return array;
+            return MarkerArray{};
 
         auto& gasMaps = gasMapsWithRoomSource.at(sourceRoom);
         if (simulationIndex >= gasMaps.size())
-            return array;
+            return MarkerArray{};
 
         CompleteMap& map = gasMaps.at(simulationIndex);
-
-        // create a marker for the source location
-        {
-            Marker sourceMarker;
-            sourceMarker.header.frame_id = "map";
-            sourceMarker.type = Marker::SPHERE;
-            sourceMarker.scale.set__x(0.1).set__y(0.1).set__z(0.1);
-            sourceMarker.pose.position.set__x(map.sourcePoint.x).set__y(map.sourcePoint.y).set__z(0.3);
-            sourceMarker.id = 0;
-            sourceMarker.color = Utils::create_color(0, 0, 0);
-            array.markers.push_back(sourceMarker);
-        }
-
-        size_t i = 1;
-        for (const auto& node : graph->nodes)
-        {
-            const auto room = As<RoomNode>(node);
-            if (!room)
-                continue;
-
-            Grid2D<Occupancy> occupancy = room->GetOccupancy();
-            std::vector<ColorRGBA> colors(occupancy.data.size());
-            if (map.gasMaps.contains(room))
-            {
-                const auto& result = map.gasMaps.at(room);
-                for (size_t i = 0; i < result.size(); i++)
-                    colors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
-            }
-            else
-                for (size_t i = 0; i < colors.size(); i++)
-                    colors.at(i) = Utils::valueToColor(0, 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
-
-            Grid2DMetadata vizMetadata = occupancy.metadata;
-            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
-
-            Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, occupancy.occupancy, vizMetadata), 0.1);
-            marker.id = i++;
-            array.markers.push_back(marker);
-        }
-        return array;
+        return VisualizeCompleteMap(map, graph->nodes, nodeSeparationViz);
     }
 
-    float SimulationSystem::SimWithResult::NACatOutlet(size_t index) const
-    {
-        const auto& mask = simulation->outlets->mask;
-
-        float sum = 0;
-        for (size_t i = 0; i < mask.data.size(); i++)
-            if (mask.occupancy.at(i) && mask.data.at(i) == index)
-                sum += hitMap->at(i);
-
-        return sum / simulation->outlets->numCellsOutlet.at(index);
-    }
-
-    float SimulationSystem::SimWithResult::ProportionInDoorway(size_t index) const
-    {
-        // return std::clamp((float)simulation->outlets->exitsPerOutlet.at(index) / maxBeforeNormalize, 0.f, 1.f);
-        return NACatOutlet(index);
-    }
-
-    SimulationSystem::SimWithResult SimulationSystem::SimulationCache::Get(const DoorwayNode* doorway)
+    SimWithResult SimulationSystem::SimulationCache::Get(const DoorwayNode* doorway)
     {
         if (SyncContains(simulations, doorway))
             return simulations.at(doorway);

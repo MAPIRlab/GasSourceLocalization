@@ -147,7 +147,7 @@ namespace GSL
 
             if (node && gsl->simulationSystem.gasMapsWithRoomSource.contains(node))
             {
-                std::deque<SimulationSystem::CompleteMap>& gasMaps = gsl->simulationSystem.gasMapsWithRoomSource.at(node);
+                std::deque<CompleteMap>& gasMaps = gsl->simulationSystem.gasMapsWithRoomSource.at(node);
                 ImGui::SetNextItemWidth(120);
                 ImGui::ComboSelect("Visualize simulation", gasMaps, gsl->simulationViz.simulationIndex,
                                    [](const auto& map)
@@ -193,6 +193,18 @@ namespace GSL
                                               simulationOptions.simulationEnabled = true;
                                           });
             }
+#if ENABLE_NAIVE_EVALUATION
+            if (ImGui::Button("naive Source Probs"))
+            {
+                gsl->functionQueue.submit([this]()
+                                          {
+                                              simulationOptions.simulationEnabled = false;
+                                              gsl->EvaluateSourceProbabilitiesNaive();
+                                              simulationOptions.simulationEnabled = true;
+                                          });
+            }
+#endif
+
             ImGui::EndDisabled();
         }
         ImGui::End();
@@ -269,7 +281,7 @@ namespace GSL
                 auto lambda = [this, roomNode]()
                 {
                     simulationOptions.simulationEnabled = false;
-                    SimulationSystem::SimWithResult result;
+                    SimWithResult result;
                     if (simulationOptions.exactPoint)
                         result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
                     else
@@ -322,7 +334,7 @@ namespace GSL
 
                     const DoorwayNode& doorway = node->doorways.at(i);
 
-                    SimulationSystem::SimWithResult result = gsl->simulationSystem.simulationCache.Get(&doorway);
+                    SimWithResult result = gsl->simulationSystem.simulationCache.Get(&doorway);
                     for (size_t j = 0; j < combinedMap.size(); j++)
                         combinedMap.at(j) += result.hitMap->at(j) * weight;
                 }
