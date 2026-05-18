@@ -212,9 +212,13 @@ namespace GSL::Graph_internal
                     continue;
                 }
 
+                // adjust for the fact that the normalized concentration at the inlet might not be 1
+                float concentrationInlet = result.ProportionInDoorway(current.doorSource->GetIndex());
+                float weight = 1.f / concentrationInlet;
+
                 // calculate how much of the gas in the current node makes it to the next node
                 size_t outletIndex = next.doorSource->OtherSide().GetIndex();
-                float gasProportion = result.ProportionInDoorway(outletIndex);
+                float gasProportion = weight * result.ProportionInDoorway(outletIndex);
 
                 next.gasAtInlet = current.gasAtInlet * gasProportion;
                 GSL_INFO("Remaining: {}", next.gasAtInlet);
@@ -251,7 +255,6 @@ namespace GSL::Graph_internal
                 float weight = totalGasThroughDoorway.at(&doorway);
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
-                //TODO debug this!!!
                 float concentrationInlet = result.ProportionInDoorway(doorway.GetIndex());
                 weight /= concentrationInlet;
 
