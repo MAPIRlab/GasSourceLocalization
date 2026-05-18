@@ -90,3 +90,16 @@
     frame: anemometer
   gas:
     concentration: 0
+- pose:
+    x: 19.816097259521484
+    y: 4.7824826240539551
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -0.00498915324
+    speed: 0.625
+    frame: anemometer
+  gas:
+    concentration: 0

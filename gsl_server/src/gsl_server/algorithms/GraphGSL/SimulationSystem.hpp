@@ -60,6 +60,7 @@ namespace GSL::Graph_internal
             SimWithResult Get(const DoorwayNode* doorway);
             void Clear();
             bool Contains(const DoorwayNode* doorway) { return simulations.contains(doorway); }
+            bool IsRunning(const DoorwayNode* doorway);
 
         private:
             template <typename T, typename U>

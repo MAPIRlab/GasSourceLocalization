@@ -4,6 +4,7 @@
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <execution>
 #include <fmt/ranges.h>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
@@ -108,8 +109,8 @@ namespace GSL
                 for (Vector2 point : node->RepresentativePoints())
                     simsToRun.push_back({node, point});
             }
-            
-            #pragma omp parallel for
+
+#pragma omp parallel for
             for (const auto& [node, point] : simsToRun)
                 simulationSystem.SimulateEntireGraph(node, point);
         }
@@ -126,8 +127,12 @@ namespace GSL
 
         std::map<std::shared_ptr<PlaceNode>, float> resultLoss;
 
-        for (const auto& [sourceRoom, completeMaps] : simulationSystem.gasMapsWithRoomSource)
+        // clang-format off
+        std::for_each(std::execution::par, simulationSystem.gasMapsWithRoomSource.begin(), 
+        simulationSystem.gasMapsWithRoomSource.end(), [&](const auto& pair)
         {
+            //clang-format on
+            auto& [sourceRoom, completeMaps] = pair;
             for (auto& simCompleteMap : completeMaps)
             {
                 // scaling
@@ -166,7 +171,7 @@ namespace GSL
                 else
                     resultLoss[sourceRoom] = loss;
             }
-        }
+        });
 
         // calculate the probabilities from the loss evaluation
         std::map<std::shared_ptr<PlaceNode>, float> scores;

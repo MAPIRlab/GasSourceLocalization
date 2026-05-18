@@ -186,6 +186,15 @@ namespace GSL::Graph_internal
                 stateStack.pop();
             else
             {
+                // parallelization optimization: if this simulation is already running on another thread,
+                // move this state to the back of the queue and keep going on a different direction
+                // if (simulationCache.IsRunning(current.doorSource))
+                // {
+                //     stateQueue.push(current);
+                //     stateQueue.pop();
+                //     continue;
+                // }
+
                 // otherwise, let's get the next doorway and continue
                 NodeState next;
                 next.doorSource = &current.doorways.top()->OtherSide();
@@ -373,6 +382,11 @@ namespace GSL::Graph_internal
     {
         simulations.clear();
         simsInFlight.clear();
+    }
+
+    bool SimulationSystem::SimulationCache::IsRunning(const DoorwayNode* doorway)
+    {
+        return SyncContains(simsInFlight, doorway);
     }
 
     template <typename T, typename U>

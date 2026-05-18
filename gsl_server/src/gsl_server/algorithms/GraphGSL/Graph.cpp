@@ -346,7 +346,7 @@ namespace GSL
         for (auto& grid : grids)
         {
             Marker marker = Utils::createPointsMarker(grid.AsNonOwning(), 0, max,
-                                                      Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Magma, 0.2);
+                                                      Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma, 0.2);
             marker.id = id++;
             array.markers.push_back(marker);
         }

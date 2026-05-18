@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(gsl_server)
 
 # enabling debug mode disables optimizations and activates a bunch of assertions in the code.
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 
 set(CMAKE_CXX_FLAGS "-g -glldb -Wpedantic -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${CMAKE_CXX_FLAGS}")
@@ -116,12 +116,12 @@ include(src/gsl_server/algorithms/Common/CMakeLists.txt)
 
 # You can disable the compilation of any of these algorithms by commenting them out here (useful if you don't want to install their dependencies)
 ###############################################################################################################################################
-include(src/gsl_server/algorithms/PlumeTracking/CMakeLists.txt)
-include(src/gsl_server/algorithms/Spiral/CMakeLists.txt)
-include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
-include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
-include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
-include(src/gsl_server/algorithms/Semantics/CMakeLists.txt) # There is further modularity inside of this file!
+# include(src/gsl_server/algorithms/PlumeTracking/CMakeLists.txt)
+# include(src/gsl_server/algorithms/Spiral/CMakeLists.txt)
+# include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
+# include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
+# include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
+# include(src/gsl_server/algorithms/Semantics/CMakeLists.txt) # There is further modularity inside of this file!
 include(src/gsl_server/algorithms/GraphGSL/CMakeLists.txt)
 
 

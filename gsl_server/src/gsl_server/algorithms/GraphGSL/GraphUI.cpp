@@ -170,7 +170,7 @@ namespace GSL
                             pos = node->GetPosition();
                         gsl->simulationSystem.SimulateEntireGraph(node, pos);
                         GSL_INFO("Done simulating source in room '{}'", node->id);
-
+                        gsl->simulationViz.simulationIndex = gsl->simulationSystem.gasMapsWithRoomSource.at(node).size() - 1;
                         simulationOptions.simulationEnabled = true;
                     };
                     gsl->functionQueue.submit(lambda);
@@ -231,7 +231,6 @@ namespace GSL
         auto node = gsl->graph.nodes.at(selectedNodeData.nodeIndex);
 
         ImGui::Checkbox("Simulate point", &simulationOptions.exactPoint);
-        ImGui::DragFloat("Image color power", &simulationOptions.imageDisplayPower, 0.05, 0, 10);
 
         if (simulationOptions.exactPoint)
             ImGui::DragFloat2("Selected point", &selectedCoordinates.x, 0.02);
@@ -281,7 +280,7 @@ namespace GSL
                     for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
                         GSL_INFO("{} -> {}", result.ProportionInDoorway(i), roomNode->doorways.at(i).to.lock()->id);
 
-                    Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result", simulationOptions.imageDisplayPower);
+                    Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");
                     simulationOptions.simulationEnabled = true;
                 };
                 gsl->functionQueue.submit(lambda);

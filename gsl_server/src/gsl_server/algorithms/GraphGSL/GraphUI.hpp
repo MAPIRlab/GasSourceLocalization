@@ -39,13 +39,12 @@ namespace GSL
         {
             bool exactPoint = false;
             size_t selectedArcIdx = 0;
-            float imageDisplayPower = 1;
             bool simulationEnabled = true;
         } simulationOptions;
 
         struct SelectedNode
         {
-            size_t nodeIndex;
+            size_t nodeIndex = std::numeric_limits<size_t>::max();
             std::vector<float> combineWeights;
             size_t simVizIndex = 0;
         } selectedNodeData;
