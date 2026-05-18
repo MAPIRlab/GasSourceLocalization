@@ -3,7 +3,6 @@
 #include "gsl_server/algorithms/Common/Simulation.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
-#include <stack>
 #include <vector>
 
 namespace GSL::Graph_internal
@@ -44,6 +43,7 @@ namespace GSL::Graph_internal
         };
 
     public:
+        SimulationSystem() : simulationCache(this) {}
         void Reset(); // remove all the cached data and results, get ready to run new simulations
 
         SimWithResult SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
@@ -53,20 +53,31 @@ namespace GSL::Graph_internal
         MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
         void SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, Vector2 sourcePoint);
 
+        class SimulationCache
+        {
+        public:
+            SimulationCache(SimulationSystem* simSys) : simSys(simSys) {}
+            SimWithResult Get(const DoorwayNode* doorway);
+            void Clear();
+            bool Contains(const DoorwayNode* doorway) { return simulations.contains(doorway); }
 
-        std::map<const DoorwayNode*, SimWithResult> simulationCache;
-        std::map<std::shared_ptr<PlaceNode>, std::vector<CompleteMap>> gasMapsWithRoomSource;
+        private:
+            template <typename T, typename U>
+            bool SyncContains(const T&, const U&);
+
+            std::map<const DoorwayNode*, SimWithResult> simulations;
+            std::set<const DoorwayNode*> simsInFlight;
+            std::mutex mtx;
+            SimulationSystem* simSys;
+        } simulationCache;
+
+        std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;
 
     private:
-        struct NodeState
-        {
-            float gasAtInlet;
-            const DoorwayNode* doorSource;
-            std::stack<const DoorwayNode*> doorways;
-        };
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
 
         void _SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, CompleteMap& completeMap);
     };
+
 } // namespace GSL::Graph_internal

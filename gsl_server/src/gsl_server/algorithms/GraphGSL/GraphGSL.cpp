@@ -98,11 +98,19 @@ namespace GSL
     {
         simulationSystem.Reset();
 
-        // simulate all possible room sources
-        for (const auto& node : graph.nodes)
         {
-            auto roomNode = As<RoomNode>(node);
-            for (Vector2 point : node->RepresentativePoints())
+            ScopedStopwatch watch("evaluation");
+            // simulate all possible room sources
+            std::vector<std::pair<std::shared_ptr<PlaceNode>, Vector2>> simsToRun;
+            for (const auto& node : graph.nodes)
+            {
+                auto roomNode = As<RoomNode>(node);
+                for (Vector2 point : node->RepresentativePoints())
+                    simsToRun.push_back({node, point});
+            }
+            
+            #pragma omp parallel for
+            for (const auto& [node, point] : simsToRun)
                 simulationSystem.SimulateEntireGraph(node, point);
         }
 
@@ -152,7 +160,7 @@ namespace GSL
                 }
                 float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
                 float loss = NAC::LossFunction(measured, simulated, uncertainty, scale);
-                GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
+                // GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
                 if (resultLoss.contains(sourceRoom))
                     resultLoss.at(sourceRoom) = std::min(resultLoss.at(sourceRoom), loss);
                 else
@@ -167,7 +175,6 @@ namespace GSL
             if (!std::isnan(loss))
             {
                 scores[room] = 1.f / loss;
-                GSL_INFO("{:.2f} -> {:.2f}", loss, scores[room]);
                 scoresSum += scores[room];
             }
             else

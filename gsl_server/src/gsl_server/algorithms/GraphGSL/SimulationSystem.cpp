@@ -9,7 +9,7 @@ namespace GSL::Graph_internal
 {
     void SimulationSystem::Reset()
     {
-        simulationCache.clear();
+        simulationCache.Clear();
         gasMapsWithRoomSource.clear();
         // blurMasks.clear(); //this can probably be retained (if the graph does not change)
     }
@@ -110,17 +110,13 @@ namespace GSL::Graph_internal
         Grid2DMetadata nodeMetadata = roomNode->GetOccupancy().metadata;
         SimWithResult result = SimulateSingleRoomFromAABB(roomNode, doorway.aabb, {&doorway});
 
-        // store the simulation result in the cache
-        //-------------------
-        simulationCache[&doorway] = result;
-
         return result;
     }
 
     void SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, Vector2 sourcePoint)
     {
         // create an entry for this simulation in the results data structure
-        std::vector<CompleteMap>& maps = gasMapsWithRoomSource[sourceNode];
+        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[sourceNode];
         maps.push_back(CompleteMap{.sourcePoint = sourcePoint});
         // run the simulation
         _SimulateEntireGraph(sourceNode, maps.back());
@@ -199,11 +195,7 @@ namespace GSL::Graph_internal
 
                 GSL_INFO("{}->{}", current.doorSource->to.lock()->id, current.doorSource->from.lock()->id);
 
-                SimWithResult result;
-                if (simulationCache.contains(current.doorSource))
-                    result = simulationCache.at(current.doorSource);
-                else
-                    result = SimulateSingleRoomFromDoorway(*current.doorSource);
+                SimWithResult result = simulationCache.Get(current.doorSource);
 
                 // if no gas exits this room at all (a dead end or other weird edge case), just stop expansion in this direction
                 if (result.simulation->outlets->totalExitCount == 0)
@@ -248,10 +240,10 @@ namespace GSL::Graph_internal
             completeGasMap.gasMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
             for (const auto& doorway : node->doorways)
             {
-                if (!totalGasThroughDoorway.contains(&doorway) || !simulationCache.contains(&doorway))
+                if (!totalGasThroughDoorway.contains(&doorway) || !simulationCache.Contains(&doorway))
                     continue;
 
-                const SimWithResult& result = simulationCache.at(&doorway);
+                const SimWithResult& result = simulationCache.Get(&doorway);
                 float weight = totalGasThroughDoorway.at(&doorway);
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
@@ -284,7 +276,11 @@ namespace GSL::Graph_internal
         if (!gasMapsWithRoomSource.contains(sourceRoom))
             return array;
 
-        CompleteMap& map = gasMapsWithRoomSource.at(sourceRoom).at(simulationIndex);
+        auto& gasMaps = gasMapsWithRoomSource.at(sourceRoom);
+        if (simulationIndex >= gasMaps.size())
+            return array;
+
+        CompleteMap& map = gasMaps.at(simulationIndex);
 
         // create a marker for the source location
         {
@@ -343,6 +339,47 @@ namespace GSL::Graph_internal
     {
         // return std::clamp((float)simulation->outlets->exitsPerOutlet.at(index) / maxBeforeNormalize, 0.f, 1.f);
         return NACatOutlet(index);
+    }
+
+    SimulationSystem::SimWithResult SimulationSystem::SimulationCache::Get(const DoorwayNode* doorway)
+    {
+        if (SyncContains(simulations, doorway))
+            return simulations.at(doorway);
+
+        if (SyncContains(simsInFlight, doorway))
+        {
+            while (SyncContains(simsInFlight, doorway))
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+            return simulations.at(doorway);
+        }
+        else
+        {
+            // run the simulation and add it to the cache
+            {
+                std::scoped_lock lock(mtx);
+                simsInFlight.insert(doorway);
+            }
+            SimWithResult result = simSys->SimulateSingleRoomFromDoorway(*doorway);
+            {
+                std::scoped_lock lock(mtx);
+                simulations[doorway] = result;
+                simsInFlight.erase(doorway);
+            }
+            return result;
+        }
+    }
+
+    void SimulationSystem::SimulationCache::Clear()
+    {
+        simulations.clear();
+        simsInFlight.clear();
+    }
+
+    template <typename T, typename U>
+    bool SimulationSystem::SimulationCache::SyncContains(const T& collection, const U& element)
+    {
+        std::scoped_lock lock(mtx);
+        return collection.contains(element);
     }
 
 } // namespace GSL::Graph_internal

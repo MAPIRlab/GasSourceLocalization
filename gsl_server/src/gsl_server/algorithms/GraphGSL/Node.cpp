@@ -125,12 +125,12 @@ namespace GSL
         constexpr size_t num = 2;
 
         AABB2D aabb = GetAABB();
-        Vector2 step = aabb.size() / num;
+        Vector2 step = aabb.size() / (num + 1);
 
         std::vector<Vector2> points;
 
-        for (size_t i = 0; i < num; i++)
-            for (size_t j = 0; j < num; j++)
+        for (size_t i = 1; i <= num; i++)
+            for (size_t j = 1; j <= num; j++)
             {
                 Vector2 p = aabb.min + Vector2(step.x * i, step.y * j);
                 if (GetOccupancy().occupancyAt(p))
