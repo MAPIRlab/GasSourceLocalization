@@ -47,7 +47,7 @@ namespace GSL::Utils
 
     void LogMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy);
     void PowerMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float power = 1);
-    void Windsorize(std::vector<float>& vec, float percentile = 5);
+    void Winsorize(std::vector<float>& vec, float percentile = 5);
 
     float EquallyDistributed01F();
 

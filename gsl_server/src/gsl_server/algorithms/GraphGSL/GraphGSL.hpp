@@ -31,7 +31,10 @@ namespace GSL
 #if ENABLE_NAIVE_EVALUATION
         void EvaluateSourceProbabilitiesNaive();
         Graph_internal::NaiveSimulationSystem naiveSimulationSystem;
-        std::shared_ptr<RoomNode> entireMap;
+        std::shared_ptr<RoomNode> naiveEntireMap;
+        std::vector<Graph_internal::CompleteMap> naiveCompleteMaps;
+        rclcpp::Publisher<MarkerArray>::SharedPtr naiveMapsPub;
+        size_t naiveSimulationIndex;
 #endif
         struct Pubs
         {

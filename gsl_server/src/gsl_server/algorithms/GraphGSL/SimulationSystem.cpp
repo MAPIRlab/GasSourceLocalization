@@ -291,7 +291,7 @@ namespace GSL::Graph_internal
             return MarkerArray{};
 
         CompleteMap& map = gasMaps.at(simulationIndex);
-        return VisualizeCompleteMap(map, graph->nodes, nodeSeparationViz);
+        return VisualizeCompleteMap(map, graph->nodes, nodeSeparationViz, 0.1);
     }
 
     SimWithResult SimulationSystem::SimulationCache::Get(const DoorwayNode* doorway)

@@ -102,7 +102,7 @@ namespace GSL::Utils
         }
     }
 
-    void Windsorize(std::vector<float>& vec, float percentile)
+    void Winsorize(std::vector<float>& vec, float percentile)
     {
         GSL_ASSERT(percentile > 0);
         GSL_ASSERT(percentile < 100);

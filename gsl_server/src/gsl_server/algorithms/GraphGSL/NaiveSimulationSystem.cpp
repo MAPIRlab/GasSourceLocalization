@@ -4,6 +4,9 @@
 
 namespace GSL::Graph_internal
 {
+    NaiveSimulationSystem::NaiveSimulationSystem(Options& options)
+        : options(options) {}
+        
     SimWithResult NaiveSimulationSystem::SimulateSourceFromPoint(const std::shared_ptr<PlaceNode> entireMap, const Vector2& sourcePoint)
     {
         auto roomNode = As<RoomNode>(entireMap);
@@ -33,7 +36,7 @@ namespace GSL::Graph_internal
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
 
-        Utils::Windsorize(*result.hitMap, 5);
+        Utils::Winsorize(*result.hitMap, 5);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
         Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
@@ -42,13 +45,10 @@ namespace GSL::Graph_internal
 
     CompleteMap NaiveSimulationSystem::AsCompleteMap(const std::shared_ptr<PlaceNode> entireMap, SimWithResult result)
     {
-        CompleteMap completeMap
-        {
+        CompleteMap completeMap{
             .sourcePoint = result.simulation->source.getPoint(),
-            .gasMaps = { 
-                {As<RoomNode>(entireMap), *result.hitMap} 
-            }
-        };
+            .gasMaps = {
+                {As<RoomNode>(entireMap), *result.hitMap}}};
         return completeMap;
     }
-} // namespace GSL
+} // namespace GSL::Graph_internal

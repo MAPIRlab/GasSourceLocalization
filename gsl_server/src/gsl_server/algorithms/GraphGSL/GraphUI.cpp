@@ -203,6 +203,11 @@ namespace GSL
                                               simulationOptions.simulationEnabled = true;
                                           });
             }
+            ImGui::SetNextItemWidth(120);
+            ImGui::ComboSelect("Naive simulation viz", gsl->naiveCompleteMaps, gsl->naiveSimulationIndex, [](auto& map)
+                               {
+                                   return fmt::format("{}", map.sourcePoint);
+                               });
 #endif
 
             ImGui::EndDisabled();
@@ -339,7 +344,7 @@ namespace GSL
                         combinedMap.at(j) += result.hitMap->at(j) * weight;
                 }
 
-                Utils::Windsorize(combinedMap, 5);
+                Utils::Winsorize(combinedMap, 5);
                 Utils::PowerMaxNormalize(combinedMap, roomNode->GetOccupancy().data, 1);
                 Simulation::displayImage(Grid2D<float>(combinedMap, roomNode->GetOccupancy()));
                 simulationOptions.simulationEnabled = true;

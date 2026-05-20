@@ -13,7 +13,7 @@ namespace GSL::Graph_internal
         float filamentsPerSecond = 2.0;
         float deltaTime = 0.2;
         float blurSigma = 3.0;
-        float noiseSTDev = 0.2;
+        float noiseSTDev = 0.25;
         float warmupTimeAcc = 8.0;
         size_t iterationLimit = 200;
         size_t minWarmupIterations = 2000;
@@ -25,7 +25,6 @@ namespace GSL::Graph_internal
     {
         std::shared_ptr<Simulation> simulation;
         std::shared_ptr<std::vector<float>> hitMap;
-        float maxBeforeNormalize = 0;
 
         float NACatOutlet(size_t index) const;
         float ProportionInDoorway(size_t index) const;
@@ -38,7 +37,7 @@ namespace GSL::Graph_internal
         std::map<std::shared_ptr<RoomNode>, std::vector<float>> gasMaps;
     };
 
-    inline MarkerArray VisualizeCompleteMap(const CompleteMap& map, const std::vector<std::shared_ptr<PlaceNode>>& nodes, float nodeSeparationViz)
+    inline MarkerArray VisualizeCompleteMap(const CompleteMap& map, const std::vector<std::shared_ptr<PlaceNode>>& nodes, float nodeSeparationViz, float height)
     {
         MarkerArray array;
 
@@ -76,7 +75,7 @@ namespace GSL::Graph_internal
             Grid2DMetadata vizMetadata = occupancy.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
-            Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, occupancy.occupancy, vizMetadata), 0.1);
+            Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, occupancy.occupancy, vizMetadata), height);
             marker.id = i++;
             array.markers.push_back(marker);
         }
