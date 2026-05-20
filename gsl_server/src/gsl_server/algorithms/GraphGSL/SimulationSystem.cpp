@@ -41,9 +41,6 @@ namespace GSL::Graph_internal
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
 
-        Utils::Windsorize(*result.hitMap, 5);
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
-        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         return result;
     }
@@ -89,16 +86,7 @@ namespace GSL::Graph_internal
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
 
-        if (options.cummulativeMap)
-        {
-            Utils::Windsorize(*result.hitMap, 5);
-            result.maxBeforeNormalize = *std::max_element(result.hitMap->begin(), result.hitMap->end());
-            Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
-            Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
-            Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
-        }
-        else
-            Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         return result;
     }
 
@@ -178,7 +166,7 @@ namespace GSL::Graph_internal
 
         // now, we start traversing the graph
 
-        constexpr float minimumGasThr = 1e-1;
+        constexpr float minimumGasThr = 1e-5;
         while (!stateStack.empty())
         {
             NodeState& current = stateStack.top();
@@ -188,15 +176,6 @@ namespace GSL::Graph_internal
                 stateStack.pop();
             else
             {
-                // parallelization optimization: if this simulation is already running on another thread,
-                // move this state to the back of the queue and keep going on a different direction
-                // if (simulationCache.IsRunning(current.doorSource))
-                // {
-                //     stateQueue.push(current);
-                //     stateQueue.pop();
-                //     continue;
-                // }
-
                 // otherwise, let's get the next doorway and continue
                 NodeState next;
                 next.doorSource = &current.doorways.top()->OtherSide();
@@ -241,7 +220,6 @@ namespace GSL::Graph_internal
 
         // OK, now we've done all that, we can combine the individual simulation maps,
         // weighted by the amount of gas that should have passed through each doorway
-
         for (const auto& node : graph->nodes)
         {
             auto room = As<RoomNode>(node);
@@ -265,6 +243,26 @@ namespace GSL::Graph_internal
                     completeGasMap.gasMaps[room].at(i) += result.hitMap->at(i) * weight;
             }
         }
+
+        // append all the hitmaps in completeGasMap.gasMaps
+        std::vector<float> appendedHitMap;
+        for (const auto& [node, map] : completeGasMap.gasMaps)
+            std::ranges::transform(map, std::back_inserter(appendedHitMap), std::identity{});
+        std::vector<Occupancy> appendedOccupancy;
+        for (const auto& [node, map] : completeGasMap.gasMaps)
+            std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
+
+        // normalize by the global maximum!
+        Utils::Winsorize(appendedHitMap, 5);
+        Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
+
+        size_t globalIndex = 0;
+        for (auto& [node, map] : completeGasMap.gasMaps)
+            for (size_t i = 0; i < map.size(); i++)
+                map.at(i) = appendedHitMap.at(globalIndex++);
+
+        for (auto& [node, map] : completeGasMap.gasMaps)
+            Simulation::blurHitMap(map, options.blurSigma, node->GetOccupancy(), blurMasks[node]);
 
         // normalize by the global maximum!
         float max = 0;

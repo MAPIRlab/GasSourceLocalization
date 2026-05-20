@@ -5,7 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Grid1/Line Style1
-        - /Quadtree1
+        - /Naive maps1/Topic1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 725
   - Class: rviz_common/Selection
@@ -131,7 +131,7 @@ Visualization Manager:
       Enabled: true
       Name: SimGasMaps
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -163,6 +163,18 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /PioneerP3DX/quadtree
       Value: false
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Naive maps
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /gsl_naive_maps
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -218,7 +230,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 77.1060791015625
+      Scale: 52.545631408691406
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
       X: 7.679996967315674
