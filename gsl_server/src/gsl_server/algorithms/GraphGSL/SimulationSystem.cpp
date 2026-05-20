@@ -46,7 +46,7 @@ namespace GSL::Graph_internal
     }
 
     SimWithResult SimulationSystem::SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
-                                                               const std::set<std::shared_ptr<const DoorwayNode>>& blockedDoorways)
+                                                               const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways)
     {
         SimWithResult result;
         Grid2DMetadata nodeMetadata = roomNode->GetOccupancy().metadata;
@@ -95,7 +95,7 @@ namespace GSL::Graph_internal
         auto roomNode = As<RoomNode>(doorway->from.lock());
         GSL_ASSERT_MSG(roomNode, "Tried to do simulation in place node which is not a room: {}", doorway->from.lock()->id);
         Grid2DMetadata nodeMetadata = roomNode->GetOccupancy().metadata;
-        SimWithResult result = SimulateSingleRoomFromAABB(roomNode, doorway->aabb, {doorway});
+        SimWithResult result = SimulateSingleRoomFromAABB(roomNode, doorway->aabb, doorway->samePhysicalDoorway);
 
         return result;
     }
@@ -157,7 +157,7 @@ namespace GSL::Graph_internal
             GSL_INFO("{}->{}   -   {}", doorway->from.lock()->id, doorway->to.lock()->id, nextRoom.gasAtInlet);
 
             for (const auto& nextDoorway : doorway->to.lock()->doorways)
-                if (nextDoorway.get() != nextRoom.doorSource.get())
+                if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
                     nextRoom.doorways.push(nextDoorway);
 
             totalGasThroughDoorway[nextRoom.doorSource] = nextRoom.gasAtInlet;
@@ -204,13 +204,15 @@ namespace GSL::Graph_internal
 
                 next.gasAtInlet = current.gasAtInlet * gasProportion;
                 GSL_INFO("Remaining: {}", next.gasAtInlet);
+                if (next.gasAtInlet < minimumGasThr)
+                    continue;
 
                 // update the total amount of gas that passes through the doorway
                 totalGasThroughDoorway[next.doorSource] += next.gasAtInlet;
 
                 // fill in the doorways of the next state node
                 for (const auto nextDoorway : next.doorSource->from.lock()->doorways)
-                    if (nextDoorway.get() != next.doorSource.get())
+                    if (!next.doorSource->samePhysicalDoorway.contains(nextDoorway))
                         next.doorways.push(nextDoorway);
 
                 // push the new state on top

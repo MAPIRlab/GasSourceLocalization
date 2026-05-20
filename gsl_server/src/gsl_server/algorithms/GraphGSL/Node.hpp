@@ -12,7 +12,7 @@ namespace GSL
         std::weak_ptr<class PlaceNode> from;
         std::weak_ptr<class PlaceNode> to;
         AABB2D aabb;
-        std::vector<std::shared_ptr<DoorwayNode>> samePhysicalDoorway;
+        std::set<std::shared_ptr<DoorwayNode>> samePhysicalDoorway;
 
         DoorwayNode(const std::string& _name) : name(_name) {}
         std::string_view GetName() const { return name; }

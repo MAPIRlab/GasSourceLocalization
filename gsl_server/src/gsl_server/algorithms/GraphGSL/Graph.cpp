@@ -93,6 +93,7 @@ namespace GSL
                     doorway->from = thisNode;
                     doorway->to = otherNode;
                     doorway->aabb = aabb;
+                    doorway->samePhysicalDoorway={doorway};
                     thisNode->doorways.push_back(doorway);
                 }
                 else
@@ -100,7 +101,10 @@ namespace GSL
                     // the doorway is too large, let's split it into smaller chunks
                     Vector2Int subdivisions = Vector2Int(aabb.size() / maxDoorwaySize) + Vector2Int{1, 1};
                     Vector2 step(aabb.size().x / subdivisions.x, aabb.size().y / subdivisions.y);
-                    
+
+                    // keep track of which doorway nodes are generated from a single physical doorway
+                    std::set<std::shared_ptr<DoorwayNode>> samePhysicalDoorway;
+
                     size_t ind = 0;
                     for (int i = 0; i < subdivisions.x; i++)
                     {
@@ -113,8 +117,13 @@ namespace GSL
                             doorway->aabb.min = aabb.min + Vector2(i * step.x, j * step.y);
                             doorway->aabb.max = aabb.min + Vector2((i + 1) * step.x, (j + 1) * step.y);
                             thisNode->doorways.push_back(doorway);
+                            samePhysicalDoorway.insert(doorway);
                         }
                     }
+
+                    // link them all together, so they can be blocked as one in the simulations
+                    for (const auto& doorway : samePhysicalDoorway)
+                        doorway->samePhysicalDoorway = samePhysicalDoorway;
                 }
             }
 
