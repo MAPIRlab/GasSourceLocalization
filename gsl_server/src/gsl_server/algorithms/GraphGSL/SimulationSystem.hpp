@@ -17,8 +17,8 @@ namespace GSL::Graph_internal
 
         SimWithResult SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
         SimWithResult SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
-                                                                   const std::set<const DoorwayNode*>& blockedDoorways);
-        SimWithResult SimulateSingleRoomFromDoorway(const DoorwayNode& arc);
+                                                 const std::set<std::shared_ptr<const DoorwayNode>>& blockedDoorways);
+        SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
         MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
         void SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, Vector2 sourcePoint);
 
@@ -31,17 +31,17 @@ namespace GSL::Graph_internal
         {
         public:
             SimulationCache(SimulationSystem* simSys) : simSys(simSys) {}
-            SimWithResult Get(const DoorwayNode* doorway);
+            SimWithResult Get(std::shared_ptr<const DoorwayNode> doorway);
             void Clear();
-            bool Contains(const DoorwayNode* doorway) { return simulations.contains(doorway); }
-            bool IsRunning(const DoorwayNode* doorway);
+            bool Contains(const std::shared_ptr<const DoorwayNode> doorway) { return simulations.contains(doorway); }
+            bool IsRunning(const std::shared_ptr<const DoorwayNode> doorway);
 
         private:
             template <typename T, typename U>
             bool SyncContains(const T&, const U&);
 
-            std::map<const DoorwayNode*, SimWithResult> simulations;
-            std::set<const DoorwayNode*> simsInFlight;
+            std::map<std::shared_ptr<const DoorwayNode>, SimWithResult> simulations;
+            std::set<std::shared_ptr<const DoorwayNode>> simsInFlight;
             std::mutex mtx;
             SimulationSystem* simSys;
         } simulationCache;

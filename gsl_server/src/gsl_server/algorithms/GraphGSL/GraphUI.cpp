@@ -264,7 +264,7 @@ namespace GSL
                 ImGui::SetNextItemWidth(120);
                 ImGui::ComboSelect("Doorway", node->doorways, simulationOptions.selectedArcIdx, [](auto& door)
                                    {
-                                       return door.GetName();
+                                       return door->GetName();
                                    });
                 ImGui::PopID();
             }
@@ -295,7 +295,7 @@ namespace GSL
                     // Log results
                     GSL_INFO("Emitted {} filaments during recording", result.simulation->totalEmittedFilaments);
                     for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
-                        GSL_INFO("{} -> {}", result.ProportionInDoorway(i), roomNode->doorways.at(i).to.lock()->id);
+                        GSL_INFO("{} -> {}", result.ProportionInDoorway(i), roomNode->doorways.at(i)->to.lock()->id);
 
                     Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");
                     simulationOptions.simulationEnabled = true;
@@ -314,9 +314,9 @@ namespace GSL
             {
                 for (size_t i = 0; i < node->doorways.size(); i++)
                 {
-                    const DoorwayNode& doorway = node->doorways.at(i);
+                    const auto doorway = node->doorways.at(i);
                     ImGui::SetNextItemWidth(100);
-                    ImGui::DragFloat(fmt::format("{}##{}", doorway.GetName(), i).c_str(), &selectedNodeData.combineWeights.at(i), 0.01, 0, 1);
+                    ImGui::DragFloat(fmt::format("{}##{}", doorway->GetName(), i).c_str(), &selectedNodeData.combineWeights.at(i), 0.01, 0, 1);
                 }
             }
             ImGui::TreePop();
@@ -337,9 +337,9 @@ namespace GSL
                     if (weight <= 0)
                         continue;
 
-                    const DoorwayNode& doorway = node->doorways.at(i);
+                    const auto doorway = node->doorways.at(i);
 
-                    SimWithResult result = gsl->simulationSystem.simulationCache.Get(&doorway);
+                    SimWithResult result = gsl->simulationSystem.simulationCache.Get(doorway);
                     for (size_t j = 0; j < combinedMap.size(); j++)
                         combinedMap.at(j) += result.hitMap->at(j) * weight;
                 }

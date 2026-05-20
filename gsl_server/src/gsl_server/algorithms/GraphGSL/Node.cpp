@@ -69,10 +69,10 @@ namespace GSL
         numCellsOutlet.resize(doorways.size(), 0);
         for (size_t i = 0; i < doorways.size(); i++)
         {
-            const DoorwayNode& doorway = doorways.at(i);
+            const std::shared_ptr<DoorwayNode> doorway = doorways.at(i);
             AABB2DInt aabbIdx{
-                gridMetadata.coordinatesToIndices(doorway.aabb.min),
-                gridMetadata.coordinatesToIndices(doorway.aabb.max)};
+                gridMetadata.coordinatesToIndices(doorway->aabb.min),
+                gridMetadata.coordinatesToIndices(doorway->aabb.max)};
 
             for (Vector2Int indices : aabbIdx)
                 if (maskGrid.metadata.indicesInBounds(indices) && maskGrid.occupancyAt(indices))
@@ -155,10 +155,10 @@ namespace GSL
         return grid;
     }
 
-    const DoorwayNode& PlaceNode::GetDoorway(std::string_view name)
+    const std::shared_ptr<DoorwayNode> PlaceNode::GetDoorway(std::string_view name)
     {
-        for (const DoorwayNode& doorway : doorways)
-            if (doorway.GetName() == name)
+        for (const std::shared_ptr<DoorwayNode> doorway : doorways)
+            if (doorway->GetName() == name)
                 return doorway;
         GSL_ERROR("Place node {} has no doorway named {}", id, name);
         throw std::exception();
@@ -169,13 +169,13 @@ namespace GSL
         return std::distance(from.lock()->doorways.begin(),
                              std::find_if(from.lock()->doorways.begin(),
                                           from.lock()->doorways.end(),
-                                          [this](const DoorwayNode& other)
+                                          [this](const std::shared_ptr<DoorwayNode>& other)
                                           {
-                                              return &other == this;
+                                              return other.get() == this;
                                           }));
     }
 
-    const DoorwayNode& DoorwayNode::OtherSide() const
+    const std::shared_ptr<DoorwayNode> DoorwayNode::OtherSide() const
     {
         return to.lock()->GetDoorway(name);
     }

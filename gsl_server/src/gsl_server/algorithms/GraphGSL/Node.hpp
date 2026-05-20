@@ -12,12 +12,13 @@ namespace GSL
         std::weak_ptr<class PlaceNode> from;
         std::weak_ptr<class PlaceNode> to;
         AABB2D aabb;
+        std::vector<std::shared_ptr<DoorwayNode>> samePhysicalDoorway;
 
         DoorwayNode(const std::string& _name) : name(_name) {}
         std::string_view GetName() const { return name; }
 
         size_t GetIndex() const;
-        const DoorwayNode& OtherSide() const; // the node which represents the other direction through this doorway
+        const std::shared_ptr<DoorwayNode> OtherSide() const; // the node which represents the other direction through this doorway
 
     private:
         std::string name; // name is shared between the two directional versions of the doorway
@@ -30,10 +31,10 @@ namespace GSL
         virtual bool IsValidPoint(Vector2 location) = 0;
         virtual bool AddObservation(Vector2 location, Vector2 wind, float gasObs) = 0;
         virtual void UpdateDoorwayMask() {}
-        const DoorwayNode& GetDoorway(std::string_view name);
+        const std::shared_ptr<DoorwayNode> GetDoorway(std::string_view name);
         virtual std::vector<Vector2> RepresentativePoints() const { return {GetPosition()}; }
 
-        std::vector<DoorwayNode> doorways;
+        std::vector<std::shared_ptr<DoorwayNode>> doorways;
         std::string id;
     };
 

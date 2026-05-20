@@ -84,14 +84,38 @@ namespace GSL
                 }
                 otherNode = nodesByName.at(nameOtherPlace);
 
-                std::string nameDoorway = linkFile.stem();
+                constexpr float maxDoorwaySize = 1.0;
+                if (aabb.size().x < maxDoorwaySize && aabb.size().y < maxDoorwaySize)
+                {
+                    std::string nameDoorway = linkFile.stem();
 
-                DoorwayNode doorway(nameDoorway);
-                doorway.from = thisNode;
-                doorway.to = otherNode;
-                doorway.aabb = aabb;
-
-                thisNode->doorways.push_back(doorway);
+                    auto doorway = std::make_shared<DoorwayNode>(nameDoorway);
+                    doorway->from = thisNode;
+                    doorway->to = otherNode;
+                    doorway->aabb = aabb;
+                    thisNode->doorways.push_back(doorway);
+                }
+                else
+                {
+                    // the doorway is too large, let's split it into smaller chunks
+                    Vector2Int subdivisions = Vector2Int(aabb.size() / maxDoorwaySize) + Vector2Int{1, 1};
+                    Vector2 step(aabb.size().x / subdivisions.x, aabb.size().y / subdivisions.y);
+                    
+                    size_t ind = 0;
+                    for (int i = 0; i < subdivisions.x; i++)
+                    {
+                        for (int j = 0; j < subdivisions.y; j++)
+                        {
+                            std::string nameDoorway = fmt::format("{}_{}", linkFile.stem().c_str(), ind++);
+                            auto doorway = std::make_shared<DoorwayNode>(nameDoorway);
+                            doorway->from = thisNode;
+                            doorway->to = otherNode;
+                            doorway->aabb.min = aabb.min + Vector2(i * step.x, j * step.y);
+                            doorway->aabb.max = aabb.min + Vector2((i + 1) * step.x, (j + 1) * step.y);
+                            thisNode->doorways.push_back(doorway);
+                        }
+                    }
+                }
             }
 
             thisNode->UpdateDoorwayMask();
@@ -190,9 +214,9 @@ namespace GSL
                 position += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
             else
             {
-                for (const DoorwayNode& doorway : node->doorways)
+                for (const auto doorway : node->doorways)
                 {
-                    auto otherNode = doorway.to.lock();
+                    auto otherNode = doorway->to.lock();
                     position += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1. / node->doorways.size());
                 }
             }
@@ -241,8 +265,8 @@ namespace GSL
             // draw the arcs
             for (size_t i = 0; i < node->doorways.size(); i++)
             {
-                Vector2 otherPos = node->doorways.at(i).aabb.center();
-                auto otherNode = node->doorways.at(i).to.lock();
+                Vector2 otherPos = node->doorways.at(i)->aabb.center();
+                auto otherNode = node->doorways.at(i)->to.lock();
 
                 // if both are real, move the doorway node the average of the two
                 // otherwise, just copy the movement of the real one
