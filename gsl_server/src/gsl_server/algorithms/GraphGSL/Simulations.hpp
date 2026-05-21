@@ -20,14 +20,13 @@ namespace GSL::Graph_internal
         size_t maxWarmupIterations = 4000;
         float normalizationPower = 0.5;
     };
-
+    
     struct SimWithResult
     {
         std::shared_ptr<Simulation> simulation;
         std::shared_ptr<std::vector<float>> hitMap;
 
-        float NACatOutlet(size_t index) const;
-        float ProportionInDoorway(size_t index) const;
+        float ProportionInDoorway(size_t index, const std::vector<float>* map = nullptr) const;
     };
 
     // gas maps expected in each room, assuming a specific source location
@@ -82,21 +81,16 @@ namespace GSL::Graph_internal
         return array;
     }
 
-    inline float SimWithResult::NACatOutlet(size_t index) const
+    inline float SimWithResult::ProportionInDoorway(size_t index, const std::vector<float>* map) const
     {
         const auto& mask = simulation->outlets->mask;
+        const auto& localHitMap = map ? *map : *hitMap;
 
         float sum = 0;
         for (size_t i = 0; i < mask.data.size(); i++)
             if (mask.occupancy.at(i) && mask.data.at(i) == index)
-                sum += hitMap->at(i);
+                sum += localHitMap.at(i);
 
         return sum / simulation->outlets->numCellsOutlet.at(index);
-    }
-
-    inline float SimWithResult::ProportionInDoorway(size_t index) const
-    {
-        // return std::clamp((float)simulation->outlets->exitsPerOutlet.at(index) / maxBeforeNormalize, 0.f, 1.f);
-        return NACatOutlet(index);
     }
 } // namespace GSL::Graph_internal
