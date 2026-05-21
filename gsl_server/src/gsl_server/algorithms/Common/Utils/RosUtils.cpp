@@ -229,7 +229,7 @@ namespace GSL::Utils
         std::vector<ColorRGBA> colors(grid.data.size());
         for (size_t i = 0; i < grid.data.size(); i++)
             if (grid.occupancy.at(i))
-                colors.at(i) = Utils::valueToColor(grid.data.at(i), min, max, ValueColorMode::Linear);
+                colors.at(i) = Utils::valueToColor(grid.data.at(i), min, max, ValueColorMode::Linear, colormap);
         return createPointsMarker(Grid2D<ColorRGBA>(colors, grid), height);
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <algorithm>
 #include <array>
+#include <cmath>
 
 namespace GSL::Utils::Colors
 {
@@ -1325,7 +1326,10 @@ namespace GSL::Utils::Colors
     {
         const auto& colormap = GetColorMap(map);
         t = std::clamp(t, 0.f, 1.f);
-        return colormap.at(t * (colormap.size()-1));
+        if(std::isfinite(t))
+            return colormap.at(t * (colormap.size()-1));
+        else
+            return {0.f, 0.f, 0.f};
     }
 
 } // namespace GSL::Utils::Colors
