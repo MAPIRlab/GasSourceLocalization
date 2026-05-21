@@ -4,6 +4,8 @@
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include <stack>
 
+#define NORMALIZE_AT_END 0
+
 namespace GSL::Graph_internal
 {
     void SimulationSystem::Reset()
@@ -40,7 +42,12 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-
+#if NORMALIZE_AT_END
+#else
+        Utils::Winsorize(*result.hitMap, 5);
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
+        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
+#endif
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         return result;
     }
@@ -85,7 +92,12 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-
+#if NORMALIZE_AT_END
+#else
+        Utils::Winsorize(*result.hitMap, 5);
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
+        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
+#endif
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         return result;
     }
@@ -166,7 +178,7 @@ namespace GSL::Graph_internal
 
         // now, we start traversing the graph
 
-        constexpr float minimumGasThr = 1e-2;
+        constexpr float minimumGasThr = 1e-6;
         while (!stateStack.empty())
         {
             NodeState& current = stateStack.top();
@@ -255,6 +267,7 @@ namespace GSL::Graph_internal
             std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
 
         // normalize by the global maximum!
+#if NORMALIZE_AT_END
         Utils::Winsorize(appendedHitMap, 5);
         Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
 
@@ -265,7 +278,7 @@ namespace GSL::Graph_internal
 
         for (auto& [node, map] : completeGasMap.gasMaps)
             Simulation::blurHitMap(map, options.blurSigma, node->GetOccupancy(), blurMasks[node]);
-
+#endif
         // normalize by the global maximum!
         float max = 0;
         for (const auto& [node, map] : completeGasMap.gasMaps)
