@@ -2,7 +2,6 @@
 
 #include "Simulations.hpp"
 #include "gsl_server/algorithms/Common/Simulation.hpp"
-#include "gsl_server/algorithms/Common/Utils/Synchronization.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 
@@ -50,13 +49,6 @@ namespace GSL::Graph_internal
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
 
         void _SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, CompleteMap& completeMap);
-
-        struct GraphCacheEntry
-        {
-            bool complete = false;
-            std::map<std::shared_ptr<const DoorwayNode>, float> gasProportion;
-        };
-        Utils::Synced<std::map<std::shared_ptr<const DoorwayNode>, GraphCacheEntry>> graphCache;
     };
 
 } // namespace GSL::Graph_internal

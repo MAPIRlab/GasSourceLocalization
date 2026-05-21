@@ -4,8 +4,6 @@
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include <stack>
 
-#define NORMALIZE_AT_END 0
-
 namespace GSL::Graph_internal
 {
     void SimulationSystem::Reset()
@@ -42,13 +40,8 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-#if NORMALIZE_AT_END
-#else
-        Utils::Winsorize(*result.hitMap, 5);
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
-        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
-#endif
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
+        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         return result;
     }
 
@@ -92,13 +85,8 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-#if NORMALIZE_AT_END
-#else
-        Utils::Winsorize(*result.hitMap, 5);
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
-        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
-#endif
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
+        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         return result;
     }
 
@@ -166,8 +154,6 @@ namespace GSL::Graph_internal
             nextRoom.doorSource = doorway->OtherSide();
             nextRoom.gasAtInlet = weightDoorwaysSourceNode.at(i);
 
-            GSL_INFO("{}->{}   -   {}", doorway->from.lock()->id, doorway->to.lock()->id, nextRoom.gasAtInlet);
-
             for (const auto& nextDoorway : doorway->to.lock()->doorways)
                 if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
                     nextRoom.doorways.push(nextDoorway);
@@ -195,16 +181,7 @@ namespace GSL::Graph_internal
                 if (!Is<RoomNode>(next.doorSource->from))
                     continue;
 
-                GSL_INFO("{}->{}", current.doorSource->to.lock()->id, current.doorSource->from.lock()->id);
-
                 SimWithResult result = simulationCache.Get(current.doorSource);
-
-                // if no gas exits this room at all (a dead end or other weird edge case), just stop expansion in this direction
-                if (result.simulation->outlets->totalExitCount == 0)
-                {
-                    stateStack.pop();
-                    continue;
-                }
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
                 float concentrationInlet = result.ProportionInDoorway(current.doorSource->GetIndex());
@@ -214,8 +191,11 @@ namespace GSL::Graph_internal
                 size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
                 float gasProportion = weight * result.ProportionInDoorway(outletIndex);
 
+                // if no gas exits this room at all (a dead end or other weird edge case), just stop expansion in this direction
+                if (gasProportion == 0 || !std::isfinite(gasProportion))
+                    continue;
+
                 next.gasAtInlet = current.gasAtInlet * gasProportion;
-                GSL_INFO("Remaining: {}", next.gasAtInlet);
                 if (next.gasAtInlet < minimumGasThr)
                     continue;
 
@@ -266,8 +246,7 @@ namespace GSL::Graph_internal
         for (const auto& [node, map] : completeGasMap.gasMaps)
             std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
 
-        // normalize by the global maximum!
-#if NORMALIZE_AT_END
+        // post process the maps
         Utils::Winsorize(appendedHitMap, 5);
         Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
 
@@ -278,7 +257,7 @@ namespace GSL::Graph_internal
 
         for (auto& [node, map] : completeGasMap.gasMaps)
             Simulation::blurHitMap(map, options.blurSigma, node->GetOccupancy(), blurMasks[node]);
-#endif
+
         // normalize by the global maximum!
         float max = 0;
         for (const auto& [node, map] : completeGasMap.gasMaps)
