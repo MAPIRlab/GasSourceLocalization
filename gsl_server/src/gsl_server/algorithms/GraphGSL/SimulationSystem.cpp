@@ -238,39 +238,65 @@ namespace GSL::Graph_internal
             }
         }
 
-        // append all the hitmaps in completeGasMap.gasMaps
-        std::vector<float> appendedHitMap;
-        for (const auto& [node, map] : completeGasMap.gasMaps)
-            std::ranges::transform(map, std::back_inserter(appendedHitMap), std::identity{});
-        std::vector<Occupancy> appendedOccupancy;
-        for (const auto& [node, map] : completeGasMap.gasMaps)
-            std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
-
         // post process the maps
-        Utils::Winsorize(appendedHitMap, 5);
-        Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
-
-        size_t globalIndex = 0;
-        for (auto& [node, map] : completeGasMap.gasMaps)
-            for (size_t i = 0; i < map.size(); i++)
-                map.at(i) = appendedHitMap.at(globalIndex++);
-
-        for (auto& [node, map] : completeGasMap.gasMaps)
-            Simulation::blurHitMap(map, options.blurSigma, node->GetOccupancy(), blurMasks[node]);
-
-        // normalize by the global maximum!
-        float max = 0;
-        for (const auto& [node, map] : completeGasMap.gasMaps)
         {
-            float localMax = *std::max_element(map.begin(), map.end());
-            max = std::max(max, localMax);
+            // append all the hitmaps in completeGasMap.gasMaps
+            std::vector<float> appendedHitMap;
+            for (const auto& [node, map] : completeGasMap.gasMaps)
+                std::ranges::transform(map, std::back_inserter(appendedHitMap), std::identity{});
+            std::vector<Occupancy> appendedOccupancy;
+            for (const auto& [node, map] : completeGasMap.gasMaps)
+                std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
+
+            Utils::Winsorize(appendedHitMap, 5);
+            Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
+
+            size_t globalIndex = 0;
+            for (auto& [node, map] : completeGasMap.gasMaps)
+                for (size_t i = 0; i < map.size(); i++)
+                    map.at(i) = appendedHitMap.at(globalIndex++);
+
+            // // normalize by the global maximum!
+            float max = 0;
+            for (const auto& [node, map] : completeGasMap.gasMaps)
+            {
+                auto max_it = std::max_element(map.begin(), map.end());
+                float localMax = *max_it;
+                GSL_ASSERT(localMax == 0 || node->GetOccupancy().occupancy.at(std::distance(map.begin(), max_it)));
+                max = std::max(max, localMax);
+            }
+
+            for (auto& [node, map] : completeGasMap.gasMaps)
+            {
+                for (size_t i = 0; i < map.size(); i++)
+                    map.at(i) /= max;
+            }
         }
 
-        for (auto& [node, map] : completeGasMap.gasMaps)
-        {
-            for (size_t i = 0; i < map.size(); i++)
-                map.at(i) /= max;
-        }
+        // todo this is just a debugging assertion
+        // for (const auto& node : graph->nodes)
+        // {
+        //     auto room = As<RoomNode>(node);
+        //     if (!room || !completeGasMap.gasMaps.contains(room))
+        //         continue;
+        //     const std::vector<float>& roomGasMap = completeGasMap.gasMaps.at(room);
+
+        //     for (const auto doorway : node->doorways)
+        //     {
+        //         auto otherRoom = As<RoomNode>(doorway->to.lock());
+        //         if (!otherRoom || !completeGasMap.gasMaps.contains(otherRoom))
+        //             continue;
+        //         const std::vector<float>& otherRoomGasMap = completeGasMap.gasMaps.at(otherRoom);
+
+        //         SimWithResult result = simulationCache.Get(doorway);
+        //         float gas1 = result.ProportionInDoorway(doorway->GetIndex(), &roomGasMap);
+
+        //         SimWithResult otherResult = simulationCache.Get(doorway->OtherSide());
+        //         float gas2 = otherResult.ProportionInDoorway(doorway->OtherSide()->GetIndex(), &otherRoomGasMap);
+
+        //         GSL_ASSERT(Utils::approx(gas1, gas2, 1e-1));
+        //     }
+        // }
     }
 
     MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz)

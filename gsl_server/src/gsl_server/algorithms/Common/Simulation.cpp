@@ -370,7 +370,11 @@ namespace GSL
 
         for (int i = 0; i < occupancy.metadata.dimensions.y; i++)
             for (int j = 0; j < occupancy.metadata.dimensions.x; j++)
-                if (blurredMask->mask.at<float>(i, j) > 0)
+            {
+                if (!occupancy.occupancyAt(j, i))
+                    asImage.at<float>(i, j) = 0;
+                else if (blurredMask->mask.at<float>(i, j) > 0)
                     asImage.at<float>(i, j) = Utils::clamp(asImage.at<float>(i, j) / blurredMask->mask.at<float>(i, j), 0, 1);
+            }
     }
 } // namespace GSL
