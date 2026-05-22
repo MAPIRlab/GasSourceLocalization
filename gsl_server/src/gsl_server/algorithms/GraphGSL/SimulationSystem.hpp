@@ -10,6 +10,7 @@ namespace GSL::Graph_internal
     class SimulationSystem
     {
     public:
+        void blurTest(std::vector<Vector2Int> points);
         SimulationSystem() : simulationCache(this) {}
         void Reset(); // remove all the cached data and results, get ready to run new simulations
 
