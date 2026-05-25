@@ -34,7 +34,7 @@ namespace GSL
         // graph creation
         std::filesystem::path path =
             rclnode->declare_parameter<std::string>("graph_path",
-                                                 std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph");
+                                                    std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph");
         graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
         float artificialSeparation = rclnode->declare_parameter<float>("node_separation_mult", 1);
         graph.nodeSeparationViz = artificialSeparation;
@@ -113,17 +113,20 @@ namespace GSL
         {
             ScopedStopwatch watch("evaluation");
             // simulate all possible room sources
-            std::vector<std::pair<std::shared_ptr<PlaceNode>, Vector2>> simsToRun;
+            std::vector<std::shared_ptr<DoorwayNode>> simsToRun;
             for (const auto& node : graph.nodes)
             {
                 auto roomNode = As<RoomNode>(node);
-                for (Vector2 point : node->RepresentativePoints())
-                    simsToRun.push_back({node, point});
+                if (!roomNode)
+                    continue;
+
+                for (auto doorway : roomNode->doorways)
+                    simsToRun.push_back(doorway);
             }
 
 #pragma omp parallel for
-            for (const auto& [node, point] : simsToRun)
-                simulationSystem.SimulateEntireGraph(node, point);
+            for (const auto& doorway : simsToRun)
+                simulationSystem.SimulateEntireGraph(doorway);
         }
 
         // get the measured concentration maps
@@ -136,30 +139,28 @@ namespace GSL
             measuredMaps.insert({room, room->GetGasMap()});
         }
 
-        // clang-format off
-        std::for_each(std::execution::par, simulationSystem.gasMapsWithRoomSource.begin(), 
-        simulationSystem.gasMapsWithRoomSource.end(), [&](const auto& pair)
+        for (auto sourceNode : graph.nodes)
         {
-            auto& [sourceRoom, completeMaps] = pair;
-            for (auto& simCompleteMap : completeMaps)
+            std::vector<std::vector<float>> simulated;
+
+            // while we fill a row of the matrix for each simulation out of this node, we only want one copy of the measurements and their uncertainty
+            // if we are done recording those, skip them on the next iteration
+            bool fillMeasurements = true;
+            std::vector<float> measured;
+            std::vector<float> uncertainty;
+            std::vector<float> confidence;
+
+            for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
             {
-                // scaling
-                std::vector<float> measured;
-                std::vector<float> simulated;
-                std::vector<float> uncertainty;
-                std::vector<float> confidence;
-                for (const auto& node : graph.nodes)
+                simulated.push_back(std::vector<float>());
+                auto source = As<Graph_internal::DoorwaySource>(simulation.source);
+                for (const auto& [room, localSimMap] : simulation.gasMaps)
                 {
-                    auto room = As<RoomNode>(node);
-                    if (!room)
+                    if (room == sourceNode)
                         continue;
-
-                    const std::vector<float>& simLocalMap = simCompleteMap.gasMaps.at(room);
-
-                    // add any relevant cells to the comparison arrays
-                    // we skip the cells with very low measurement confidence for optimization, since they shouldn't really affect the result anyways
-                    Grid2D<KernelDMVW::KernelCell> measuredLocal = measuredMaps.at(room);
-                    for (size_t i = 0; i < measuredLocal.data.size(); i++)
+                    
+                    Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
+                    for (size_t i = 0; i < localSimMap.size(); i++)
                     {
                         if (!measuredLocal.occupancy.at(i))
                             continue;
@@ -167,23 +168,24 @@ namespace GSL
                         if (cell.confidence < 0.05)
                             continue;
 
-                        constexpr float maxUncertainty = 100.0f;
-                        measured.push_back(cell.meanAndVariance.mean);
-                        simulated.push_back(simLocalMap.at(i));
-                        uncertainty.push_back( maxUncertainty * (1 - measuredLocal.data.at(i).confidence));
-                        confidence.push_back(measuredLocal.data.at(i).confidence);
+                        simulated.back().push_back(localSimMap.at(i));
+                        if (fillMeasurements)
+                        {
+                            measured.push_back(cell.meanAndVariance.mean);
+                            uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
+                            confidence.push_back(cell.confidence);
+                        }
                     }
                 }
-                float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
-                float loss = NAC::LossFunction(measured, simulated, confidence, scale);
-                GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
-                if (resultLoss.contains(sourceRoom))
-                    resultLoss.at(sourceRoom) = std::min(resultLoss.at(sourceRoom), loss);
-                else
-                    resultLoss[sourceRoom] = loss;
+
+                fillMeasurements = false;
             }
-        });
-        // clang-format on
+
+            std::vector<float> weights = NAC::LeastSquaresDoorwayCombination(measured, simulated, uncertainty);
+            resultLoss[sourceNode] = NAC::ResidualDoorways(measured, simulated, confidence, weights);
+        }
+
+        CalculateProbs();
     }
 
     void GraphGSL::CalculateProbs()
@@ -238,7 +240,7 @@ namespace GSL
             }
         }
 
-        std::map<Vector2*, float> resultLoss;
+        std::map<std::shared_ptr<Graph_internal::Source>, float> resultLoss;
 
         for (auto& simCompleteMap : naiveCompleteMaps)
         {
@@ -263,12 +265,12 @@ namespace GSL
                 uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
             }
             float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
-            float loss = NAC::LossFunction(measured, simulated, uncertainty, scale);
-            resultLoss[&simCompleteMap.sourcePoint] = loss;
+            float loss = NAC::Residual(measured, simulated, uncertainty, scale);
+            resultLoss[simCompleteMap.source] = loss;
         }
 
         // calculate the probabilities from the loss evaluation
-        std::map<Vector2*, float> scores;
+        std::map<std::shared_ptr<Graph_internal::Source>, float> scores;
         constexpr float sigma = 100;
         float scoresSum = 0;
         for (auto& [sourcePoint, loss] : resultLoss)
@@ -280,11 +282,11 @@ namespace GSL
             else
                 scores[sourcePoint] = 0;
 
-        for (const auto& [sourcePoint, score] : scores)
+        for (const auto& [source, score] : scores)
         {
             float prob = score / scoresSum;
 
-            GSL_INFO("\tp({}) = {:.2f}", *sourcePoint, prob);
+            GSL_INFO("\tp({}) = {:.2f}", source->GetPoint(), prob);
         }
     }
 #endif

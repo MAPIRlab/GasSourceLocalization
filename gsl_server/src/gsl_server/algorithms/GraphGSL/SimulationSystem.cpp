@@ -99,78 +99,115 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    void SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, Vector2 sourcePoint)
+    void SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint)
     {
         // create an entry for this simulation in the results data structure
         mtx.lock();
-        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[sourceNode];
-        maps.push_back(CompleteMap{.sourcePoint = sourcePoint});
+        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[firstNodeInSim];
+        maps.push_back(CompleteMap{.source = std::make_shared<PointSource>(sourcePoint)});
         mtx.unlock();
 
         // run the simulation
-        _SimulateEntireGraph(sourceNode, maps.back());
+        _SimulateEntireGraph(firstNodeInSim, maps.back());
     }
 
-    void SimulationSystem::_SimulateEntireGraph(const std::shared_ptr<PlaceNode> sourceNode, CompleteMap& completeGasMap)
+    void SimulationSystem::SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway)
     {
-        std::map<std::shared_ptr<const DoorwayNode>, float> totalGasThroughDoorway;
+        // create an entry for this simulation in the results data structure
+        mtx.lock();
+        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[sourceDoorway->to.lock()];
+        maps.push_back(CompleteMap{.source = std::make_shared<DoorwaySource>(sourceDoorway)});
+        mtx.unlock();
 
+        // run the simulation
+        _SimulateEntireGraph(sourceDoorway->to.lock(), maps.back());
+    }
+
+    void SimulationSystem::_SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, CompleteMap& completeGasMap)
+    {
         // we need to get the final gas maps by combining the individual doorway simulations
         // this mainly means that we need to calculate the weights for the linear combination
         // given that a specific doorway may have been reached through more than one path in the graph, this is not a trivial task
         // we are going to do an exhaustive graph traversal, starting at the source node,
         // and we'll keep adding weight to the doorway based on how much gas reaches it through the specific path we are considering
-        struct NodeState
-        {
-            float gasAtInlet;
-            std::shared_ptr<const DoorwayNode> doorSource;
-            std::stack<std::shared_ptr<const DoorwayNode>> doorways;
-        };
-        std::stack<NodeState> stateStack;
 
-        // handle the source node first, separately from the main traversal algorithm (since it doesn't have a doorway inlet)
-        std::vector<float> weightDoorwaysSourceNode(sourceNode->doorways.size(), 0);
-        if (Is<RoomNode>(sourceNode))
+        std::deque<NodeState> stateStack;
+        if (Is<PointSource>(completeGasMap.source))
         {
-            auto roomNode = As<RoomNode>(sourceNode);
-            SimWithResult result = SimulateSingleRoomFromPoint(roomNode, completeGasMap.sourcePoint);
-            completeGasMap.gasMaps[roomNode] = *result.hitMap;
-            for (size_t i = 0; i < sourceNode->doorways.size(); i++)
-                weightDoorwaysSourceNode.at(i) = result.ProportionInDoorway(i);
+            // handle the source node first, separately from the main traversal algorithm (since it doesn't have a doorway inlet)
+            std::vector<float> weightDoorwaysfirstNodeInSim(firstNodeInSim->doorways.size(), 0);
+            if (Is<RoomNode>(firstNodeInSim))
+            {
+                auto roomNode = As<RoomNode>(firstNodeInSim);
+                SimWithResult result = SimulateSingleRoomFromPoint(roomNode, completeGasMap.source->GetPoint());
+                completeGasMap.gasMaps[roomNode] = *result.hitMap;
+                for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
+                    weightDoorwaysfirstNodeInSim.at(i) = result.ProportionInDoorway(i);
+            }
+            else // if the source is an outside node, just use the doorways themselves as the starting point
+                for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
+                    weightDoorwaysfirstNodeInSim.at(i) = 1. / firstNodeInSim->doorways.size();
+
+            for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
+            {
+                const std::shared_ptr<DoorwayNode> doorway = firstNodeInSim->doorways.at(i);
+
+                if (!Is<RoomNode>(doorway->to.lock()))
+                    continue;
+
+                NodeState nextRoom;
+                nextRoom.doorSource = doorway->OtherSide();
+                nextRoom.gasAtInlet = weightDoorwaysfirstNodeInSim.at(i);
+
+                for (const auto& nextDoorway : doorway->to.lock()->doorways)
+                    if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
+                        nextRoom.doorways.push(nextDoorway);
+
+                stateStack.push_back(nextRoom);
+            }
         }
-        else // if the source is an outside node, just use the doorways themselves as the starting point
-            for (size_t i = 0; i < sourceNode->doorways.size(); i++)
-                weightDoorwaysSourceNode.at(i) = 1. / sourceNode->doorways.size();
-
-        for (size_t i = 0; i < sourceNode->doorways.size(); i++)
+        else
         {
-            const std::shared_ptr<DoorwayNode> doorway = sourceNode->doorways.at(i);
+            auto roomNode = As<RoomNode>(firstNodeInSim);
+            if (roomNode)
+            {
+                completeGasMap.gasMaps[roomNode] = std::vector<float>(roomNode->GetOccupancy().data.size(), 1);
+                for (size_t i = 0; i < roomNode->GetOccupancy().data.size(); i++)
+                {
+                    if (!roomNode->GetOccupancy().data.at(i))
+                        completeGasMap.gasMaps[roomNode].at(i) = 0;
+                }
+            }
 
-            if (!Is<RoomNode>(doorway->to.lock()))
-                continue;
-
-            NodeState nextRoom;
-            nextRoom.doorSource = doorway->OtherSide();
-            nextRoom.gasAtInlet = weightDoorwaysSourceNode.at(i);
-
-            for (const auto& nextDoorway : doorway->to.lock()->doorways)
+            auto source = As<DoorwaySource>(completeGasMap.source);
+            NodeState nextRoom{.gasAtInlet = 1.f, .doorSource = source->doorway};
+            for (const auto& nextDoorway : source->doorway->from.lock()->doorways)
                 if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
                     nextRoom.doorways.push(nextDoorway);
-
-            totalGasThroughDoorway[nextRoom.doorSource] = nextRoom.gasAtInlet;
-            stateStack.push(nextRoom);
+            stateStack.push_back(nextRoom);
         }
 
         // now, we start traversing the graph
+        PropagateSimThroughGraph(stateStack, completeGasMap, firstNodeInSim);
+    }
+
+    void SimulationSystem::PropagateSimThroughGraph(std::deque<NodeState>& stateStack, CompleteMap& completeGasMap, const std::shared_ptr<PlaceNode> firstNodeInSim)
+    {
+        std::map<std::shared_ptr<const DoorwayNode>, float> totalGasThroughDoorway;
+
+        for (const auto& node : stateStack)
+        {
+            totalGasThroughDoorway[node.doorSource] = node.gasAtInlet;
+        }
 
         constexpr float minimumGasThr = 1e-6;
         while (!stateStack.empty())
         {
-            NodeState& current = stateStack.top();
+            NodeState& current = stateStack.back();
 
             // if we cannot keep expanding this node, pop it from the stack
             if (current.gasAtInlet < minimumGasThr || current.doorways.empty())
-                stateStack.pop();
+                stateStack.pop_back();
             else
             {
                 // otherwise, let's get the next doorway and continue
@@ -207,7 +244,7 @@ namespace GSL::Graph_internal
                         next.doorways.push(nextDoorway);
 
                 // push the new state on top
-                stateStack.push(next);
+                stateStack.push_back(next);
             }
         }
 
@@ -216,7 +253,7 @@ namespace GSL::Graph_internal
         for (const auto& node : graph->nodes)
         {
             auto room = As<RoomNode>(node);
-            if (!room || node == sourceNode)
+            if (!room || node == firstNodeInSim)
                 continue;
 
             completeGasMap.gasMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
@@ -274,31 +311,6 @@ namespace GSL::Graph_internal
                     map.at(i) /= max;
             }
         }
-
-        // todo this is just a debugging assertion
-        // for (const auto& node : graph->nodes)
-        // {
-        //     auto room = As<RoomNode>(node);
-        //     if (!room || !completeGasMap.gasMaps.contains(room))
-        //         continue;
-        //     const std::vector<float>& roomGasMap = completeGasMap.gasMaps.at(room);
-
-        //     for (const auto doorway : node->doorways)
-        //     {
-        //         auto otherRoom = As<RoomNode>(doorway->to.lock());
-        //         if (!otherRoom || !completeGasMap.gasMaps.contains(otherRoom))
-        //             continue;
-        //         const std::vector<float>& otherRoomGasMap = completeGasMap.gasMaps.at(otherRoom);
-
-        //         SimWithResult result = simulationCache.Get(doorway);
-        //         float gas1 = result.ProportionInDoorway(doorway->GetIndex(), &roomGasMap);
-
-        //         SimWithResult otherResult = simulationCache.Get(doorway->OtherSide());
-        //         float gas2 = otherResult.ProportionInDoorway(doorway->OtherSide()->GetIndex(), &otherRoomGasMap);
-
-        //         GSL_ASSERT(Utils::approx(gas1, gas2, 1e-1));
-        //     }
-        // }
     }
 
     MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz)
@@ -360,20 +372,18 @@ namespace GSL::Graph_internal
         return collection.contains(element);
     }
 
-
-
     void SimulationSystem::blurTest(std::vector<Vector2Int> points)
     {
         size_t sizeX = 25;
         size_t sizeY = 25;
 
-        std::vector<float> map(sizeX*sizeY, 0);
+        std::vector<float> map(sizeX * sizeY, 0);
         for (const auto& point : points)
         {
-            map.at(sizeY*point.y + point.x) += 1; // Set the center cell to 1
+            map.at(sizeY * point.y + point.x) += 1; // Set the center cell to 1
         }
 
-        std::vector<Occupancy> occupancy_data(sizeX*sizeY, Occupancy::Free);
+        std::vector<Occupancy> occupancy_data(sizeX * sizeY, Occupancy::Free);
 
         Grid2DMetadata metadata = Grid2DMetadata{.dimensions = Vector2Int(sizeX, sizeY)};
         Grid2D<Occupancy> occupancy{occupancy_data, occupancy_data, metadata};

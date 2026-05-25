@@ -19,7 +19,7 @@ namespace GSL
     GraphUI::GraphUI(GraphGSL* _gsl) : gsl(_gsl)
     {
         clickedPointSub =
-            gsl->node->create_subscription<geometry_msgs::msg::PointStamped>(
+            gsl->rclnode->create_subscription<geometry_msgs::msg::PointStamped>(
                 "/clicked_point", 1,
                 [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
                 {
@@ -152,7 +152,7 @@ namespace GSL
                 ImGui::ComboSelect("Visualize simulation", gasMaps, gsl->simulationViz.simulationIndex,
                                    [](const auto& map)
                                    {
-                                       return fmt::format("{}", map.sourcePoint);
+                                       return fmt::format("{}", map.source->GetPoint());
                                    });
             }
 
@@ -207,7 +207,7 @@ namespace GSL
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Naive simulation viz", gsl->naiveCompleteMaps, gsl->naiveSimulationIndex, [](auto& map)
                                {
-                                   return fmt::format("{}", map.sourcePoint);
+                                   return fmt::format("{}", map.source->GetPoint());
                                });
 #endif
 

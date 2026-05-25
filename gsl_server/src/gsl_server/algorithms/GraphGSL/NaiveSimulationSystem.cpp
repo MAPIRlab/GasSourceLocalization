@@ -46,7 +46,7 @@ namespace GSL::Graph_internal
     CompleteMap NaiveSimulationSystem::AsCompleteMap(const std::shared_ptr<PlaceNode> entireMap, SimWithResult result)
     {
         CompleteMap completeMap{
-            .sourcePoint = result.simulation->source.getPoint(),
+            .source = std::make_shared<Graph_internal::PointSource>(result.simulation->source.getPoint()),
             .gasMaps = {
                 {As<RoomNode>(entireMap), *result.hitMap}}};
         return completeMap;

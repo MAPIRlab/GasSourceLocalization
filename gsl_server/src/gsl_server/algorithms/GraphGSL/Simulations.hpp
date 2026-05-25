@@ -20,7 +20,7 @@ namespace GSL::Graph_internal
         size_t maxWarmupIterations = 4000;
         float normalizationPower = 0.5;
     };
-    
+
     struct SimWithResult
     {
         std::shared_ptr<Simulation> simulation;
@@ -29,10 +29,33 @@ namespace GSL::Graph_internal
         float ProportionInDoorway(size_t index, const std::vector<float>* map = nullptr) const;
     };
 
+    struct Source
+    {
+        virtual Vector2 GetPoint() = 0;
+    };
+    struct PointSource : public Source
+    {
+        explicit PointSource(Vector2 point) : point(point) {}
+        Vector2 point;
+        Vector2 GetPoint() override
+        {
+            return point;
+        }
+    };
+    struct DoorwaySource : public Source
+    {
+        explicit DoorwaySource(std::shared_ptr<DoorwayNode> doorway) : doorway(doorway) {}
+        std::shared_ptr<DoorwayNode> doorway;
+        Vector2 GetPoint() override
+        {
+            return doorway->aabb.center();
+        }
+    };
+
     // gas maps expected in each room, assuming a specific source location
     struct CompleteMap
     {
-        Vector2 sourcePoint;
+        std::shared_ptr<Source> source;
         std::map<std::shared_ptr<RoomNode>, std::vector<float>> gasMaps;
     };
 
@@ -46,7 +69,7 @@ namespace GSL::Graph_internal
             sourceMarker.header.frame_id = "map";
             sourceMarker.type = Marker::SPHERE;
             sourceMarker.scale.set__x(0.2).set__y(0.2).set__z(0.2);
-            sourceMarker.pose.position.set__x(map.sourcePoint.x).set__y(map.sourcePoint.y).set__z(0.3);
+            sourceMarker.pose.position.set__x(map.source->GetPoint().x).set__y(map.source->GetPoint().y).set__z(0.3);
             sourceMarker.id = 0;
             sourceMarker.color = Utils::create_color(1, 1, 1);
             array.markers.push_back(sourceMarker);

@@ -11,8 +11,17 @@ namespace GSL::NAC
                             const std::vector<float>& uncertainty);
 
     // Evaluate the solution
-    float LossFunction(const std::vector<float>& simulated,
-                       const std::vector<float>& observed,
-                       const std::vector<float>& confidence,
-                       float scale);
+    float Residual(const std::vector<float>& simulated,
+                   const std::vector<float>& observed,
+                   const std::vector<float>& confidence,
+                   float scale);
+
+    std::vector<float> LeastSquaresDoorwayCombination(const std::vector<float>& observed,
+                                                      const std::vector<std::vector<float>>& simulated,
+                                                      const std::vector<float>& uncertainty);
+
+    float ResidualDoorways(const std::vector<float>& observed,
+                            const std::vector<std::vector<float>>& simulated,
+                            const std::vector<float>& confidence,
+                            const std::vector<float>& weights);
 } // namespace GSL::NAC
