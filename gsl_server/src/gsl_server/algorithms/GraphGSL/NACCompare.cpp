@@ -39,15 +39,18 @@ namespace GSL::NAC
 
     float LossFunction(const std::vector<float>& observed,
                        const std::vector<float>& simulated,
-                       const std::vector<float>& uncertainty,
+                       const std::vector<float>& confidence,
                        float scale)
     {
-        Eigen::Matrix<float, Eigen::Dynamic, 1> error(observed.size(), 1);
+        float sum = 0;
+
         for (size_t i = 0; i < observed.size(); i++)
-            error(i) = observed.at(i) - scale * simulated.at(i);
+        {
+            float diff = observed.at(i) - scale * simulated.at(i);
+            float error = diff * diff;
+            sum += std::lerp(0.0f, error, confidence.at(i));
+        }
 
-        Eigen::MatrixXf Q_inv = inverseCovariance(uncertainty);
-
-        return error.transpose() * Q_inv * error;
+        return sum;
     }
-} // namespace GSL
+} // namespace GSL::NAC

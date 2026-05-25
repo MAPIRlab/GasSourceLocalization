@@ -182,8 +182,6 @@ namespace GSL
             if (ImGui::Button("Reset simulations"))
                 gsl->simulationSystem.Reset();
 
-            ImGui::SetNextItemWidth(100);
-
             if (ImGui::Button("Evaluate Source Probs"))
             {
                 gsl->functionQueue.submit([this]()
@@ -193,6 +191,9 @@ namespace GSL
                                               simulationOptions.simulationEnabled = true;
                                           });
             }
+            ImGui::SetNextItemWidth(100);
+            ImGui::InputFloat("Likelihood Sigma", &gsl->likelihoodSigma);
+
 #if ENABLE_NAIVE_EVALUATION
             if (ImGui::Button("naive Source Probs"))
             {

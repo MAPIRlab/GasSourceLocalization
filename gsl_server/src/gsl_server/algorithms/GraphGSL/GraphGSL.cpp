@@ -136,8 +136,6 @@ namespace GSL
             measuredMaps.insert({room, room->GetGasMap()});
         }
 
-        std::map<std::shared_ptr<PlaceNode>, float> resultLoss;
-
         // clang-format off
         std::for_each(std::execution::par, simulationSystem.gasMapsWithRoomSource.begin(), 
         simulationSystem.gasMapsWithRoomSource.end(), [&](const auto& pair)
@@ -149,6 +147,7 @@ namespace GSL
                 std::vector<float> measured;
                 std::vector<float> simulated;
                 std::vector<float> uncertainty;
+                std::vector<float> confidence;
                 for (const auto& node : graph.nodes)
                 {
                     auto room = As<RoomNode>(node);
@@ -168,14 +167,16 @@ namespace GSL
                         if (cell.confidence < 0.05)
                             continue;
 
+                        constexpr float maxUncertainty = 100.0f;
                         measured.push_back(cell.meanAndVariance.mean);
                         simulated.push_back(simLocalMap.at(i));
-                        uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
+                        uncertainty.push_back( maxUncertainty * (1 - measuredLocal.data.at(i).confidence));
+                        confidence.push_back(measuredLocal.data.at(i).confidence);
                     }
                 }
                 float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
-                float loss = NAC::LossFunction(measured, simulated, uncertainty, scale);
-                // GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
+                float loss = NAC::LossFunction(measured, simulated, confidence, scale);
+                GSL_INFO("{}: scale {:.4f}  -- Loss {:.4f}", sourceRoom->id, scale, loss);
                 if (resultLoss.contains(sourceRoom))
                     resultLoss.at(sourceRoom) = std::min(resultLoss.at(sourceRoom), loss);
                 else
@@ -183,14 +184,18 @@ namespace GSL
             }
         });
         // clang-format on
+    }
 
+    void GraphGSL::CalculateProbs()
+    {
+        GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
         // calculate the probabilities from the loss evaluation
-        std::map<std::shared_ptr<PlaceNode>, float> scores;
-        float scoresSum = 0;
+        std::map<std::shared_ptr<PlaceNode>, double> scores;
+        double scoresSum = 0;
         for (auto& [room, loss] : resultLoss)
             if (!std::isnan(loss))
             {
-                scores[room] = 1.f / loss;
+                scores[room] = std::exp(-loss / likelihoodSigma);
                 scoresSum += scores[room];
             }
             else
@@ -198,7 +203,7 @@ namespace GSL
 
         for (const auto& [room, score] : scores)
         {
-            float prob = score / scoresSum;
+            double prob = score / scoresSum;
 
             GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
         }
@@ -264,11 +269,12 @@ namespace GSL
 
         // calculate the probabilities from the loss evaluation
         std::map<Vector2*, float> scores;
+        constexpr float sigma = 100;
         float scoresSum = 0;
         for (auto& [sourcePoint, loss] : resultLoss)
             if (!std::isnan(loss))
             {
-                scores[sourcePoint] = 1.f / loss;
+                scores[sourcePoint] = std::exp(-loss / sigma);
                 scoresSum += scores[sourcePoint];
             }
             else

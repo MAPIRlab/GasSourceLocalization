@@ -18,6 +18,7 @@ namespace GSL
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override; // called from StopAndMeasure once we have enough data for this position
         Vector2 windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
         void Visualize();
+        void CalculateProbs();
 
     private:
         void EvaluateSourceProbabilities();
@@ -26,6 +27,8 @@ namespace GSL
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
+        std::map<std::shared_ptr<PlaceNode>, float> resultLoss; //TODO move this into the function
+        float likelihoodSigma = 100;
 
 #define ENABLE_NAIVE_EVALUATION 1
 #if ENABLE_NAIVE_EVALUATION

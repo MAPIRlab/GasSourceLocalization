@@ -13,6 +13,6 @@ namespace GSL::NAC
     // Evaluate the solution
     float LossFunction(const std::vector<float>& simulated,
                        const std::vector<float>& observed,
-                       const std::vector<float>& uncertainty,
+                       const std::vector<float>& confidence,
                        float scale);
-} // namespace GSL
+} // namespace GSL::NAC

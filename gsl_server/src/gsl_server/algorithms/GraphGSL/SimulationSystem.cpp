@@ -6,29 +6,6 @@
 
 namespace GSL::Graph_internal
 {
-    void SimulationSystem::blurTest(std::vector<Vector2Int> points)
-    {
-        size_t sizeX = 25;
-        size_t sizeY = 25;
-
-        std::vector<float> map(sizeX*sizeY, 0);
-        for (const auto& point : points)
-        {
-            map.at(sizeY*point.y + point.x) += 1; // Set the center cell to 1
-        }
-
-        std::vector<Occupancy> occupancy_data(sizeX*sizeY, Occupancy::Free);
-
-        Grid2DMetadata metadata = Grid2DMetadata{.dimensions = Vector2Int(sizeX, sizeY)};
-        Grid2D<Occupancy> occupancy{occupancy_data, occupancy_data, metadata};
-
-        std::optional<SimulationBlurMask> mask = std::nullopt;
-        Simulation::blurHitMap(map, 1, occupancy, mask);
-
-        float total = std::accumulate(map.begin(), map.end(), 0.0f);
-        GSL_INFO("Total gas: {}", total);
-    }
-
     void SimulationSystem::Reset()
     {
         simulationCache.Clear();
@@ -38,7 +15,6 @@ namespace GSL::Graph_internal
 
     SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> roomNode, Vector2 point)
     {
-        ScopedStopwatch s("sims");
         SimWithResult result;
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         result.simulation = std::shared_ptr<Simulation>(new Simulation{
@@ -382,6 +358,31 @@ namespace GSL::Graph_internal
     {
         std::scoped_lock lock(mtx);
         return collection.contains(element);
+    }
+
+
+
+    void SimulationSystem::blurTest(std::vector<Vector2Int> points)
+    {
+        size_t sizeX = 25;
+        size_t sizeY = 25;
+
+        std::vector<float> map(sizeX*sizeY, 0);
+        for (const auto& point : points)
+        {
+            map.at(sizeY*point.y + point.x) += 1; // Set the center cell to 1
+        }
+
+        std::vector<Occupancy> occupancy_data(sizeX*sizeY, Occupancy::Free);
+
+        Grid2DMetadata metadata = Grid2DMetadata{.dimensions = Vector2Int(sizeX, sizeY)};
+        Grid2D<Occupancy> occupancy{occupancy_data, occupancy_data, metadata};
+
+        std::optional<SimulationBlurMask> mask = std::nullopt;
+        Simulation::blurHitMap(map, 1, occupancy, mask);
+
+        float total = std::accumulate(map.begin(), map.end(), 0.0f);
+        GSL_INFO("Total gas: {}", total);
     }
 
 } // namespace GSL::Graph_internal
