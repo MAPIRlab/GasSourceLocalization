@@ -10,7 +10,7 @@ namespace GSL
 {
 
     Algorithm::Algorithm(std::shared_ptr<rclcpp::Node> _node)
-        : node(_node), tfBuffer(node->get_clock())
+        : rclnode(_node), tfBuffer(rclnode->get_clock())
     {}
 
     Algorithm::~Algorithm()
@@ -23,26 +23,26 @@ namespace GSL
         // Subscribers
         //------------
         using namespace std::placeholders;
-        localizationSub = node->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
+        localizationSub = rclnode->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
                                                                                std::bind(&Algorithm::localizationCallback, this, _1));
         rclcpp::Rate rate(1);
         while (resultLogging.robotPosesVector.size() == 0)
         {
             rate.sleep();
-            rclcpp::spin_some(node);
+            rclcpp::spin_some(rclnode);
             GSL_INFO("Waiting to hear from localization topic: {}", localizationSub->get_topic_name());
         }
 
-        gasSub = node->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
+        gasSub = rclnode->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
                                                                            std::bind(&Algorithm::gasCallback, this, _1));
 
         GSL_INFO("Gas sensor topic: '{}'", gasSub->get_topic_name());
-        windSub = node->create_subscription<olfaction_msgs::msg::Anemometer>(
+        windSub = rclnode->create_subscription<olfaction_msgs::msg::Anemometer>(
             getParam<std::string>("anemometer_topic", "Anemometer/WindSensor_reading"), 1, std::bind(&Algorithm::windCallback, this, _1));
         GSL_INFO("Wind sensor topic: '{}'", windSub->get_topic_name());
 
         // extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
-        static auto exit_timer = node->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), // extra time to make sure this only happens if the node is deadlocked
+        static auto exit_timer = rclnode->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), // extra time to make sure this only happens if the node is deadlocked
                                                          []()
                                                          {
                                                              rclcpp::shutdown();
@@ -50,7 +50,7 @@ namespace GSL
                                                              CLOSE_PROGRAM;
                                                          });
 
-        startTime = node->now();
+        startTime = rclnode->now();
 
         GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
     }
@@ -70,7 +70,7 @@ namespace GSL
 
     void Algorithm::OnUpdate()
     {
-        rclcpp::spin_some(node);
+        rclcpp::spin_some(rclnode);
         stateMachine.getCurrentState()->OnUpdate();
         // Run anything that was submitted to main thread from the UI or a callback
         functionQueue.run();
@@ -78,7 +78,7 @@ namespace GSL
 
     bool Algorithm::HasEnded()
     {
-        if ((node->now() - startTime).seconds() > resultLogging.maxSearchTime)
+        if ((rclnode->now() - startTime).seconds() > resultLogging.maxSearchTime)
         {
             saveResultsToFile(GSLResult::Failure);
             return true;
@@ -204,7 +204,7 @@ namespace GSL
     GSLResult Algorithm::checkSourceFound()
     {
         // 1. Check that working time < max allowed time for search
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
             // Report failure, we were too slow
@@ -231,7 +231,7 @@ namespace GSL
 
     void Algorithm::saveResultsToFile(GSLResult result)
     {
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         double search_t = time_spent.seconds();
 
         // 2. Search distance
@@ -251,7 +251,7 @@ namespace GSL
         {
             PoseStamped sourcePositionGT;
             sourcePositionGT.header.frame_id = "map";
-            sourcePositionGT.header.stamp = node->now();
+            sourcePositionGT.header.stamp = rclnode->now();
             sourcePositionGT.pose.position.x = resultLogging.sourcePositionGT.x;
             sourcePositionGT.pose.position.y = resultLogging.sourcePositionGT.y;
 
@@ -333,7 +333,7 @@ namespace GSL
         NavigateToPose::Goal goal;
         geometry_msgs::msg::PoseStamped p;
         p.header.frame_id = "map";
-        p.header.stamp = node->now();
+        p.header.stamp = rclnode->now();
         double randomPoseDistance = 0.5;
 
         constexpr int safetyLimit = 10;
@@ -387,7 +387,7 @@ namespace GSL
 
         constexpr double rewrite_distance = 0.5;
         if (forceUpdate || resultLogging.proximityResult.empty() || dist < (resultLogging.proximityResult.back().distance - rewrite_distance))
-            resultLogging.proximityResult.push_back({(node->now() - startTime).seconds(), dist});
+            resultLogging.proximityResult.push_back({(rclnode->now() - startTime).seconds(), dist});
     }
 
 } // namespace GSL

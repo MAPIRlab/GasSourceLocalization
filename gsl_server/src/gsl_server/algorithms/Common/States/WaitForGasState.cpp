@@ -13,12 +13,12 @@ namespace GSL
     void WaitForGasState::OnEnterState(State* previous)
     {
         GSL_TRACE("Entering WaitForGas");
-        startTime = algorithm->node->now();
+        startTime = algorithm->rclnode->now();
     }
 
     void WaitForGasState::OnUpdate()
     {
-        if ((algorithm->node->now() - startTime).seconds() > maxWaitTime)
+        if ((algorithm->rclnode->now() - startTime).seconds() > maxWaitTime)
         {
             GSL_WARN("Timed out while waiting for gas, going exploring");
             NavigateToPose::Goal goal;

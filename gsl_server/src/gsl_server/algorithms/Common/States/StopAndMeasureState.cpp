@@ -13,7 +13,7 @@ namespace GSL
     void StopAndMeasureState::OnEnterState(State* previous)
     {
         GSL_TRACE("Entering StopAndMeasure");
-        time_stopped = algorithm->node->now();
+        time_stopped = algorithm->rclnode->now();
         gas_v.clear();
         windSpeed_v.clear();
         windDirection_v.clear();
@@ -21,7 +21,7 @@ namespace GSL
 
     void StopAndMeasureState::OnUpdate()
     {
-        double timeSoFar = (algorithm->node->now() - time_stopped).seconds();
+        double timeSoFar = (algorithm->rclnode->now() - time_stopped).seconds();
         if (timeSoFar >= measure_time)
         {
             GSL_INFO("{} gas measurements, {} wind measurements over {:.2f} seconds", gas_v.size(), windSpeed_v.size(), timeSoFar);

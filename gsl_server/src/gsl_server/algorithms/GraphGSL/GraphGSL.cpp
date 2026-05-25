@@ -22,21 +22,21 @@ namespace GSL
     {
         Algorithm::Initialize();
 
-        float cellSize = node->declare_parameter<float>("cell_size", 0.15);
+        float cellSize = rclnode->declare_parameter<float>("cell_size", 0.15);
 
         // GMRF
         gmrfParams.cell_size = cellSize;
-        gmrfParams.lambdaPrior_advection = node->declare_parameter<float>("GMRF_lambdaPrior_advection");
-        gmrfParams.lambdaPrior_diffusion = node->declare_parameter<float>("GMRF_lambdaPrior_diffusion");
-        gmrfParams.lambdaPrior_mass_conservation = node->declare_parameter<float>("GMRF_lambdaPrior_mass_conservation");
-        gmrfParams.lambdaPrior_obstacles = node->declare_parameter<float>("GMRF_lambdaPrior_obstacles");
+        gmrfParams.lambdaPrior_advection = rclnode->declare_parameter<float>("GMRF_lambdaPrior_advection");
+        gmrfParams.lambdaPrior_diffusion = rclnode->declare_parameter<float>("GMRF_lambdaPrior_diffusion");
+        gmrfParams.lambdaPrior_mass_conservation = rclnode->declare_parameter<float>("GMRF_lambdaPrior_mass_conservation");
+        gmrfParams.lambdaPrior_obstacles = rclnode->declare_parameter<float>("GMRF_lambdaPrior_obstacles");
 
         // graph creation
         std::filesystem::path path =
-            node->declare_parameter<std::string>("graph_path",
+            rclnode->declare_parameter<std::string>("graph_path",
                                                  std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph");
         graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
-        float artificialSeparation = node->declare_parameter<float>("node_separation_mult", 1);
+        float artificialSeparation = rclnode->declare_parameter<float>("node_separation_mult", 1);
         graph.nodeSeparationViz = artificialSeparation;
         simulationSystem.graph = &graph;
 
@@ -47,14 +47,14 @@ namespace GSL
         IF_GUI(gui.Run());
 
         // publishers
-        pubs.graphPub = node->create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
-        pubs.occupancyPub = node->create_publisher<MarkerArray>("/gsl_occupancy", 1);
-        pubs.windPub = node->create_publisher<MarkerArray>("/gsl_wind", 1);
-        pubs.simGasMapsPub = node->create_publisher<MarkerArray>("simGasMaps", 1);
-        pubs.measuredGasMapsPub = node->create_publisher<MarkerArray>("measuredGasMaps", 1);
-        pubs.quadtreePub = node->create_publisher<MarkerArray>("quadtree", 1);
+        pubs.graphPub = rclnode->create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
+        pubs.occupancyPub = rclnode->create_publisher<MarkerArray>("/gsl_occupancy", 1);
+        pubs.windPub = rclnode->create_publisher<MarkerArray>("/gsl_wind", 1);
+        pubs.simGasMapsPub = rclnode->create_publisher<MarkerArray>("simGasMaps", 1);
+        pubs.measuredGasMapsPub = rclnode->create_publisher<MarkerArray>("measuredGasMaps", 1);
+        pubs.quadtreePub = rclnode->create_publisher<MarkerArray>("quadtree", 1);
 #if ENABLE_NAIVE_EVALUATION
-        naiveMapsPub = node->create_publisher<MarkerArray>("/gsl_naive_maps", 1);
+        naiveMapsPub = rclnode->create_publisher<MarkerArray>("/gsl_naive_maps", 1);
 #endif
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);
@@ -64,7 +64,7 @@ namespace GSL
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<ManualNavigationState>(this);
 
-        std::string simulatedMeasurementsPath = node->declare_parameter<std::string>("sim_measurements_path", "?");
+        std::string simulatedMeasurementsPath = rclnode->declare_parameter<std::string>("sim_measurements_path", "?");
         if (simulatedMeasurementsPath != "?")
         {
             SimulateMeasurements(simulatedMeasurementsPath);

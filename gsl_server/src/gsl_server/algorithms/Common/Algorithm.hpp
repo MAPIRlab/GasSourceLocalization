@@ -43,10 +43,10 @@ namespace GSL
 
         template <typename T> T getParam(const std::string& name, T defaultValue)
         {
-            if (node->has_parameter(name))
-                return node->get_parameter_or<T>(name, defaultValue);
+            if (rclnode->has_parameter(name))
+                return rclnode->get_parameter_or<T>(name, defaultValue);
             else
-                return node->declare_parameter<T>(name, defaultValue);
+                return rclnode->declare_parameter<T>(name, defaultValue);
         }
 
         Vector2 currentCoordinates() {return Vector2(currentRobotPose.pose.pose.position.x, currentRobotPose.pose.pose.position.y);}
@@ -89,7 +89,7 @@ namespace GSL
 
         double thresholdGas, thresholdWind;
 
-        std::shared_ptr<rclcpp::Node> node;
+        std::shared_ptr<rclcpp::Node> rclnode;
 
         BufferWrapper tfBuffer;
 
