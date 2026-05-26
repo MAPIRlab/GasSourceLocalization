@@ -20,7 +20,7 @@ namespace GSL::Utils::NQA
         {
             std::shared_ptr<Node> currentNode = nodeStack.top();
             nodeStack.pop();
-            currentNode->initialize(map);
+            currentNode->SubdivideIfNeeded(map);
 
             if (currentNode->isLeaf())
                 leaves.push_back(currentNode);
@@ -48,7 +48,7 @@ namespace GSL::Utils::NQA
         children[3] = nullptr;
     }
 
-    bool Node::initialize(const std::vector<std::vector<uint8_t>>& map)
+    bool Node::SubdivideIfNeeded(const std::vector<std::vector<uint8_t>>& map)
     {
         value = map[origin.x][origin.y];
 
@@ -68,11 +68,11 @@ namespace GSL::Utils::NQA
         }
 
         if (!leaf)
-            leaf = !subdivide(); // if subdivision fails: bad luck, you are still a leaf. Should never happen.
+            leaf = !ForceSubdivide(); // if subdivision fails: bad luck, you are still a leaf. Should never happen.
         return leaf;
     }
 
-    bool Node::subdivide()
+    bool Node::ForceSubdivide()
     {
         if (!isLeaf() || (size.x < 2 && size.y < 2))
             return false;

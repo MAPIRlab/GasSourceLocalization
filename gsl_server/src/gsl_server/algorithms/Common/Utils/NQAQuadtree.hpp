@@ -24,8 +24,8 @@ namespace GSL::Utils::NQA
 
         static std::shared_ptr<Node> createNode(Vector2Int _origin, Vector2Int _size);
 
-        bool subdivide(); // returns false if it is not a leaf or is too small to subdivide
-        bool initialize(const std::vector<std::vector<uint8_t>>& _map);
+        bool SubdivideIfNeeded(const std::vector<std::vector<uint8_t>>& _map);
+        bool ForceSubdivide(); // returns false if it is not a leaf or is too small to subdivide
         bool isLeaf() {return children[0] == nullptr && children[1] == nullptr && children[2] == nullptr && children[3] == nullptr;}
     private:
     };

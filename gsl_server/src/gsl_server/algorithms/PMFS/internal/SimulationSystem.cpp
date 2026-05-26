@@ -120,7 +120,7 @@ namespace GSL::PMFS_internal
             for (int leafIndex = 0; leafIndex < scores.size() * refineFraction; leafIndex++)
             {
                 NQA::Node* leaf = scores[leafIndex].leaf;
-                leaf->subdivide();
+                leaf->ForceSubdivide();
                 for (int childI = 0; childI < 4; childI++)
                     if (leaf->children[childI])
                         newLevel.push_back({0, (leaf->children[childI]).get()});
