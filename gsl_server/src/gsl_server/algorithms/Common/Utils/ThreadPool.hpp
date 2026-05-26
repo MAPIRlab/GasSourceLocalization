@@ -5,7 +5,7 @@
 #include <functional>
 #include <mutex>
 #include <optional>
-#include <rclcpp/utilities.hpp> // only for rclcpp::ok() Can easily be removed if not using ROS
+#include <rclcpp/utilities.hpp> // only for rclcpp::ok(). Can easily be removed if not using ROS
 #include <thread>
 #include <vector>
 
@@ -16,7 +16,7 @@ public:
     ~ThreadPool();
 
     void QueueJob(const std::function<void()>& job);
-    void Stop();   // does not stop jobs which aleady started, but prevents new jobs from being started
+    void Stop();   // does not stop jobs which aleady started, but prevents new jobs from being started and empties the queue
     bool IsBusy(); // returns true if any job is running or queued
     void Wait();
 
