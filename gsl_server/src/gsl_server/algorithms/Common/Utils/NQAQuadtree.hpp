@@ -12,30 +12,22 @@ namespace GSL::Utils::NQA
 
     struct Node
     {
-        friend class Quadtree;
-        Node(Quadtree* qt, GSL::Vector2Int _origin, GSL::Vector2Int _size, const std::vector<std::vector<uint8_t>>& map);
+        Node(Vector2Int _origin, Vector2Int _size);
 
         GSL::Vector2Int origin;
         GSL::Vector2Int size;
 
-        Node* parent;
-        Quadtree* quadtree;
-
-        bool isLeaf;
         uint8_t value; // all "cells" (or pixels, or whatever) in this node have the same value in the image
 
         //children are arranged in this order: top-left, top-right, bottom-left, bottom-right
         std::array<std::shared_ptr<Node>, 4> children;
 
-        static std::shared_ptr<Node> createNode(Quadtree* qt, GSL::Vector2Int _origin, GSL::Vector2Int _size,
-                                                const std::vector<std::vector<uint8_t>>& map);
+        static std::shared_ptr<Node> createNode(Vector2Int _origin, Vector2Int _size);
 
         bool subdivide(); // returns false if it is not a leaf or is too small to subdivide
-
-
+        bool initialize(const std::vector<std::vector<uint8_t>>& _map);
+        bool isLeaf() {return children[0] == nullptr && children[1] == nullptr && children[2] == nullptr && children[3] == nullptr;}
     private:
-        const std::vector<std::vector<uint8_t>>& map;
-        bool initialize();
     };
 
     class Quadtree

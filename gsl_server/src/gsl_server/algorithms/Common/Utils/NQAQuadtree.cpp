@@ -1,33 +1,46 @@
-#include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
-#include <unordered_map>
-#include <unordered_set>
-#include <list>
-#include <set>
 #include <cmath>
 #include <float.h>
+#include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
+#include <list>
+#include <set>
+#include <stack>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace GSL::Utils::NQA
 {
     using namespace GSL;
     Quadtree::Quadtree(const std::vector<std::vector<uint8_t>>& _map) : map(_map)
     {
-        root = Node::createNode(this, Vector2Int(0, 0), Vector2Int(map.size(), map[0].size()), map);
-        root->parent = nullptr;
+        root = Node::createNode(Vector2Int(0, 0), Vector2Int(map.size(), map[0].size()));
+
+        std::stack<std::shared_ptr<Node>> nodeStack;
+        nodeStack.push(root);
+        while (!nodeStack.empty())
+        {
+            std::shared_ptr<Node> currentNode = nodeStack.top();
+            nodeStack.pop();
+            currentNode->initialize(map);
+
+            if (currentNode->isLeaf())
+                leaves.push_back(currentNode);
+            else
+            {
+                for (const auto& child : currentNode->children)
+                    if (child)
+                        nodeStack.push(child);
+            }
+        }
     }
 
-    std::shared_ptr<Node> Node::createNode(Quadtree* qt, Vector2Int _origin, Vector2Int _size, const std::vector<std::vector<uint8_t>>& _map)
+    std::shared_ptr<Node> Node::createNode(Vector2Int _origin, Vector2Int _size)
     {
-        std::shared_ptr<Node> noderef{new Node(qt, _origin, _size, _map)};
-
-        noderef->isLeaf = noderef->initialize();
-        if (noderef->isLeaf && qt)
-            qt->leaves.emplace_back(noderef);
-
+        std::shared_ptr<Node> noderef{new Node(_origin, _size)};
         return noderef;
     }
 
-    Node::Node(Quadtree* qt, Vector2Int _origin, Vector2Int _size, const std::vector<std::vector<uint8_t>>& _map)
-        : quadtree(qt), origin(_origin), size(_size), isLeaf(true), value(-1), map(_map)
+    Node::Node(Vector2Int _origin, Vector2Int _size)
+        : origin(_origin), size(_size), value(-1)
     {
         children[0] = nullptr;
         children[1] = nullptr;
@@ -35,7 +48,7 @@ namespace GSL::Utils::NQA
         children[3] = nullptr;
     }
 
-    bool Node::initialize()
+    bool Node::initialize(const std::vector<std::vector<uint8_t>>& map)
     {
         value = map[origin.x][origin.y];
 
@@ -61,7 +74,7 @@ namespace GSL::Utils::NQA
 
     bool Node::subdivide()
     {
-        if (!isLeaf || (size.x < 2 && size.y < 2))
+        if (!isLeaf() || (size.x < 2 && size.y < 2))
             return false;
 
         // unlike a proper quadtree, we can have a node that only has two children, rather than four. This can happen if we have a non-square cell
@@ -95,8 +108,7 @@ namespace GSL::Utils::NQA
                 children[0] = nullptr;
             else
             {
-                children[0] = Node::createNode(quadtree, newOrigin, newSize, map);
-                children[0]->parent = this;
+                children[0] = Node::createNode(newOrigin, newSize);
             }
         }
         // top right
@@ -106,8 +118,7 @@ namespace GSL::Utils::NQA
                 children[1] = nullptr;
             else
             {
-                children[1] = Node::createNode(quadtree, newOrigin, size / 2, map);
-                children[1]->parent = this;
+                children[1] = Node::createNode(newOrigin, size / 2);
             }
         }
         // bottom left
@@ -121,8 +132,7 @@ namespace GSL::Utils::NQA
             if (size.x == 1)
                 newSize.x = 1;
 
-            children[2] = Node::createNode(quadtree, newOrigin, newSize, map);
-            children[2]->parent = this;
+            children[2] = Node::createNode(newOrigin, newSize);
         }
         // bottom right
         {
@@ -135,13 +145,8 @@ namespace GSL::Utils::NQA
             if (size.x == 1)
                 children[3] = nullptr;
             else
-            {
-                children[3] = Node::createNode(quadtree, newOrigin, newSize, map);
-                children[3]->parent = this;
-            }
+                children[3] = Node::createNode(newOrigin, newSize);
         }
-
-        isLeaf = false;
 
         return true;
     }
@@ -157,7 +162,7 @@ namespace GSL::Utils::NQA
             auto locked = leaves[i].lock();
             if (locked->value == 1)
             {
-                free_leaves.emplace_back(nullptr, locked->origin, locked->size, locked->map);
+                free_leaves.emplace_back(locked->origin, locked->size);
                 free_leaves.back().value = 1;
             }
         }
@@ -170,7 +175,7 @@ namespace GSL::Utils::NQA
             {
                 if (map[i][j] != 1)
                     continue;
-                free_leaves.emplace_back(nullptr, Vector2Int{i, j}, Vector2Int{1, 1}, map);
+                free_leaves.emplace_back(Vector2Int{i, j}, Vector2Int{1, 1});
                 free_leaves.back().value = 1;
             }
         }
@@ -185,7 +190,7 @@ namespace GSL::Utils::NQA
             Node* leaf = &(*itr);
             Vector2Int start = leaf->origin;
             Vector2Int end = leaf->origin + leaf->size;
-            #pragma omp parallel for collapse(2)
+#pragma omp parallel for collapse(2)
             for (int r = start.x; r < end.x; r++)
             {
                 for (int c = start.y; c < end.y; c++)
@@ -199,7 +204,7 @@ namespace GSL::Utils::NQA
         std::unordered_map<Node*, std::unordered_set<Node*>> allNeighbours;
         allNeighbours.reserve(leaves.size());
         {
-            auto checkAndAdd = [](Node * current, Node * neighbour, std::unordered_set<Node*>& neighboursSet)
+            auto checkAndAdd = [](Node* current, Node* neighbour, std::unordered_set<Node*>& neighboursSet)
             {
                 if (current == nullptr || neighbour == nullptr)
                     return;
@@ -230,7 +235,7 @@ namespace GSL::Utils::NQA
             for (Node& node : free_leaves)
                 to_be_evaluated.insert(&node);
 
-            auto sizeFused = [](Node * a, Node * b, Vector2Int & outOrigin, Vector2Int & outSize)
+            auto sizeFused = [](Node* a, Node* b, Vector2Int& outOrigin, Vector2Int& outSize)
             {
                 int minX = std::min(a->origin.x, b->origin.x);
                 int minY = std::min(a->origin.y, b->origin.y);
@@ -241,13 +246,13 @@ namespace GSL::Utils::NQA
                 outSize = Vector2Int{maxX, maxY} - outOrigin;
             };
 
-            auto fuse = [&free_leaves, &allNeighbours, &deletedNodes, &to_be_evaluated, this, sizeFused](Node * a, Node * b)
+            auto fuse = [&free_leaves, &allNeighbours, &deletedNodes, &to_be_evaluated, this, sizeFused](Node* a, Node* b)
             {
                 Vector2Int origin;
                 Vector2Int size;
                 sizeFused(a, b, origin, size);
 
-                free_leaves.emplace_back(nullptr, origin, size, this->map);
+                free_leaves.emplace_back(origin, size);
                 Node* fused = &free_leaves.back();
                 fused->value = 1;
 
@@ -288,9 +293,9 @@ namespace GSL::Utils::NQA
                 {
                     // if(can be fused)
                     if ((current->origin.x == neighbour->origin.x && current->size.x == neighbour->size.x &&
-                            (current->size.y + neighbour->size.y) <= maxSize) ||
-                            (current->origin.y == neighbour->origin.y && current->size.y == neighbour->size.y &&
-                             (current->size.x + neighbour->size.x) <= maxSize))
+                         (current->size.y + neighbour->size.y) <= maxSize) ||
+                        (current->origin.y == neighbour->origin.y && current->size.y == neighbour->size.y &&
+                         (current->size.x + neighbour->size.x) <= maxSize))
                     {
                         Vector2Int origin;
                         Vector2Int size;
