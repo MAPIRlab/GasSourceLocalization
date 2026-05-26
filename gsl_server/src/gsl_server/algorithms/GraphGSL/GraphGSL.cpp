@@ -3,8 +3,8 @@
 #include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
+#include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
-#include <execution>
 #include <fmt/ranges.h>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
@@ -106,10 +106,10 @@ namespace GSL
         return wind;
     }
 
-    void GraphGSL::EvaluateSourceProbabilities()
+    void GraphGSL::EvaluateRoomProbabilities()
     {
         simulationSystem.Reset();
-
+        ThreadPool pool;
         {
             ScopedStopwatch watch("evaluation");
             // simulate all possible room sources
@@ -121,13 +121,14 @@ namespace GSL
                     continue;
 
                 for (auto doorway : roomNode->doorways)
-                    simsToRun.push_back(doorway);
+                    pool.QueueJob([&, doorway]()
+                                  {
+                                      simulationSystem.SimulateEntireGraph(doorway);
+                                  });
             }
-
-#pragma omp parallel for
-            for (const auto& doorway : simsToRun)
-                simulationSystem.SimulateEntireGraph(doorway);
+            pool.Wait();
         }
+        std::map<std::shared_ptr<PlaceNode>, float> resultLoss;
 
         // get the measured concentration maps
         std::map<std::shared_ptr<RoomNode>, Grid2D<KernelDMVW::KernelCell>> measuredMaps;
@@ -139,7 +140,8 @@ namespace GSL
             measuredMaps.insert({room, room->GetGasMap()});
         }
 
-        for (auto sourceNode : graph.nodes)
+        std::mutex mtx;
+        auto loop_body = [&](const auto& sourceNode)
         {
             std::vector<std::vector<float>> simulated;
 
@@ -158,7 +160,7 @@ namespace GSL
                 {
                     if (room == sourceNode)
                         continue;
-                    
+
                     Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
                     for (size_t i = 0; i < localSimMap.size(); i++)
                     {
@@ -182,14 +184,24 @@ namespace GSL
             }
 
             std::vector<float> weights = NAC::LeastSquaresDoorwayCombination(measured, simulated, uncertainty);
+            mtx.lock();
             resultLoss[sourceNode] = NAC::ResidualDoorways(measured, simulated, confidence, weights);
-        }
+            mtx.unlock();
+        };
 
-        CalculateProbs();
+        for (const auto& node : graph.nodes)
+            pool.QueueJob([&]()
+                          {
+                              loop_body(node);
+                          });
+        pool.Wait();
+
+        CalculateProbs(resultLoss);
     }
 
-    void GraphGSL::CalculateProbs()
+    void GraphGSL::CalculateProbs(const std::map<std::shared_ptr<PlaceNode>, float>& resultLoss)
     {
+        roomSourceProbabilities.clear();
         GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
         // calculate the probabilities from the loss evaluation
         std::map<std::shared_ptr<PlaceNode>, double> scores;
@@ -206,13 +218,13 @@ namespace GSL
         for (const auto& [room, score] : scores)
         {
             double prob = score / scoresSum;
-
+            roomSourceProbabilities[room] = prob;
             GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
         }
     }
 
 #if ENABLE_NAIVE_EVALUATION
-    void GraphGSL::EvaluateSourceProbabilitiesNaive()
+    void GraphGSL::EvaluateRoomProbabilitiesNaive()
     {
         naiveEntireMap->UpdateWindMap(graph.gmrf);
         naiveCompleteMaps.clear();

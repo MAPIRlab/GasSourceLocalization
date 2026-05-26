@@ -74,6 +74,12 @@ namespace GSL
             return AABB2D{.min = origin,
                           .max = origin + (Vector2)dimensions * cellSize};
         }
+
+        AABB2D indicesToCoordinates(const AABB2DInt& aabb) const
+        {
+            return AABB2D{.min = indicesToCoordinates(aabb.min),
+                          .max = indicesToCoordinates(aabb.max)};
+        }
     };
 
     // A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa

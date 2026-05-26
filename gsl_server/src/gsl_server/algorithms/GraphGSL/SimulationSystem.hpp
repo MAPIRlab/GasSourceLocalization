@@ -2,6 +2,7 @@
 
 #include "Simulations.hpp"
 #include "gsl_server/algorithms/Common/Simulation.hpp"
+#include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <stack>
@@ -19,10 +20,13 @@ namespace GSL::Graph_internal
         SimWithResult SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
                                                  const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
-        MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
+        void SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool);
         void SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint);
         void SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
-
+        
+        MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
+        
+        
         std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;
         Options options;

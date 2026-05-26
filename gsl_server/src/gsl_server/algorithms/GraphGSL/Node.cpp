@@ -38,7 +38,7 @@ namespace GSL
                 as2D.at(i).at(j) = grid.occupancyAt(i, j);
 
         Utils::NQA::Quadtree quadtree(as2D);
-        std::vector<Utils::NQA::Node> leaves = quadtree.fusedLeaves(50);
+        std::vector<Utils::NQA::Node> leaves = quadtree.fusedLeaves(7);
         std::ranges::transform(leaves, std::back_inserter(quadtreeLeaves), [](const Utils::NQA::Node& leaf)
                                {
                                    return AABB2DInt{leaf.origin, leaf.origin + leaf.size};

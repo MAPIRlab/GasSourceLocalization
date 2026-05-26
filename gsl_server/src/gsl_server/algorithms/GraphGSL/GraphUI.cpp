@@ -187,7 +187,7 @@ namespace GSL
                 gsl->functionQueue.submit([this]()
                                           {
                                               simulationOptions.simulationEnabled = false;
-                                              gsl->EvaluateSourceProbabilities();
+                                              gsl->EvaluateRoomProbabilities();
                                               simulationOptions.simulationEnabled = true;
                                           });
             }
@@ -195,12 +195,12 @@ namespace GSL
             ImGui::InputFloat("Likelihood Sigma", &gsl->likelihoodSigma);
 
 #if ENABLE_NAIVE_EVALUATION
-            if (ImGui::Button("naive Source Probs"))
+            if (ImGui::Button("Naive Source Probs"))
             {
                 gsl->functionQueue.submit([this]()
                                           {
                                               simulationOptions.simulationEnabled = false;
-                                              gsl->EvaluateSourceProbabilitiesNaive();
+                                              gsl->EvaluateRoomProbabilitiesNaive();
                                               simulationOptions.simulationEnabled = true;
                                           });
             }

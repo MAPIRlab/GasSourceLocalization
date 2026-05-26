@@ -111,20 +111,19 @@ namespace GSL::PMFS_internal
         while (scores.size() > 0)
         {
             std::sort(scores.begin(), scores.end(), [](LeafScore result1, LeafScore result2)
-                      { return result1.score > result2.score; });
+                      {
+                          return result1.score > result2.score;
+                      });
 
             // subdivide the good cells and add the children to the list of cells to simulate
             std::vector<LeafScore> newLevel;
             for (int leafIndex = 0; leafIndex < scores.size() * refineFraction; leafIndex++)
             {
                 NQA::Node* leaf = scores[leafIndex].leaf;
-                bool hasChildren = leaf->subdivide();
-                if (hasChildren)
-                {
-                    for (int childI = 0; childI < 4; childI++)
-                        if (leaf->children[childI])
-                            newLevel.push_back({0, (leaf->children[childI]).get()});
-                }
+                leaf->subdivide();
+                for (int childI = 0; childI < 4; childI++)
+                    if (leaf->children[childI])
+                        newLevel.push_back({0, (leaf->children[childI]).get()});
             }
             scores = newLevel;
 

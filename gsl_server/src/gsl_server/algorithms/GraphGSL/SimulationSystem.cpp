@@ -99,6 +99,18 @@ namespace GSL::Graph_internal
         return result;
     }
 
+    void SimulationSystem::SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool)
+    {
+        for (const AABB2DInt& aabbI : roomNode->GetQuadtreeLeaves())
+        {
+            AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(aabbI);
+            pool.QueueJob([roomNode, aabb, this]()
+                          {
+                              SimulateSingleRoomFromAABB(roomNode, aabb, {});
+                          });
+        }
+    }
+
     void SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint)
     {
         // create an entry for this simulation in the results data structure
