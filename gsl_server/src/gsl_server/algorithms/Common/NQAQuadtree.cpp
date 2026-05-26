@@ -1,13 +1,13 @@
 #include <cmath>
 #include <float.h>
-#include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
+#include <gsl_server/algorithms/Common/NQAQuadtree.hpp>
 #include <list>
 #include <set>
 #include <stack>
 #include <unordered_map>
 #include <unordered_set>
 
-namespace GSL::Utils::NQA
+namespace GSL::NQA
 {
     using namespace GSL;
     Quadtree::Quadtree(const std::vector<std::vector<uint8_t>>& _map) : map(_map)

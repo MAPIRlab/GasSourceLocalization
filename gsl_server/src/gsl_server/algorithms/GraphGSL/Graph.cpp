@@ -431,7 +431,7 @@ namespace GSL
             {
                 Grid2DMetadata gridMetadata = roomNode->GetOccupancy().metadata;
                 gridMetadata.origin = gridMetadata.origin * nodeSeparationViz;
-                const AABB2DInt& leaf = roomNode->GetQuadtreeLeaves().at(i);
+                const AABB2DInt& leaf = roomNode->GetQuadtreeLeaves().at(i).getAABB();
                 Vector2Int size = leaf.max - leaf.min;
                 Marker mark;
                 mark.header.frame_id = "map";

@@ -1,5 +1,5 @@
 #include "Node.hpp"
-#include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
+#include <gsl_server/algorithms/Common/NQAQuadtree.hpp>
 
 namespace GSL
 {
@@ -37,12 +37,8 @@ namespace GSL
             for (size_t j = 0; j < gridMetadata.dimensions.y; j++)
                 as2D.at(i).at(j) = grid.occupancyAt(i, j);
 
-        Utils::NQA::Quadtree quadtree(as2D);
-        std::vector<Utils::NQA::Node> leaves = quadtree.fusedLeaves(7);
-        std::ranges::transform(leaves, std::back_inserter(quadtreeLeaves), [](const Utils::NQA::Node& leaf)
-                               {
-                                   return AABB2DInt{leaf.origin, leaf.origin + leaf.size};
-                               });
+        NQA::Quadtree quadtree(as2D);
+        std::vector<NQA::Node> quadtreeLeaves = quadtree.fusedLeaves(7);
     }
 
     bool RoomNode::IsValidPoint(Vector2 location)

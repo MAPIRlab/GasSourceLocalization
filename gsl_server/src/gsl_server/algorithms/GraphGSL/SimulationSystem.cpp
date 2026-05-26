@@ -101,9 +101,9 @@ namespace GSL::Graph_internal
 
     void SimulationSystem::SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool)
     {
-        for (const AABB2DInt& aabbI : roomNode->GetQuadtreeLeaves())
+        for (const auto& nqaNode : roomNode->GetQuadtreeLeaves())
         {
-            AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(aabbI);
+            AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
             pool.QueueJob([roomNode, aabb, this]()
                           {
                               SimulateSingleRoomFromAABB(roomNode, aabb, {});

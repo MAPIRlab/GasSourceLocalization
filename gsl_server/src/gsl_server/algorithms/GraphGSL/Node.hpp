@@ -1,6 +1,7 @@
 #pragma once
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/KernelDMVW/KernelDMVW.hpp"
+#include "gsl_server/algorithms/Common/NQAQuadtree.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
 #include <gmrf_wind_core/gmrf_map.h>
 #include <gsl_server/core/Vectors.hpp>
@@ -56,7 +57,7 @@ namespace GSL
         const std::vector<size_t>& GetOutletsCellCount();
         Vector2 GetPosition() const override { return centroid; }
         AABB2D GetAABB() const;
-        const std::vector<AABB2DInt>& GetQuadtreeLeaves() const { return quadtreeLeaves; }
+        const std::vector<NQA::Node>& GetQuadtreeLeaves() const { return quadtreeLeaves; }
         std::vector<Vector2> RepresentativePoints() const override;
 
     private:
@@ -70,7 +71,7 @@ namespace GSL
         KernelDMVW::GasMap gasMap;
         Grid2DMetadata gridMetadata;
         Vector2 centroid;
-        std::vector<AABB2DInt> quadtreeLeaves;
+        std::vector<NQA::Node> quadtreeLeaves;
     };
 
     class OutsideNode : public PlaceNode

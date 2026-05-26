@@ -1,6 +1,6 @@
 #pragma once
 #include <gsl_server/algorithms/Common/Simulation.hpp>
-#include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
+#include <gsl_server/algorithms/Common/NQAQuadtree.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>
 #include <gsl_server/algorithms/Common/VisibilityMap.hpp>

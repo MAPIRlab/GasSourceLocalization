@@ -1,4 +1,5 @@
 #pragma once
+#include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
 #include <vector>
 #include <memory>
 #include <gsl_server/core/Vectors.hpp>
@@ -6,7 +7,7 @@
 // NQA Quadtree stands for Not Quite A Quadtree, as we are allowing some nodes to have 2 children rather than 4 under special circumstances
 // Why? Well, why not?
 
-namespace GSL::Utils::NQA
+namespace GSL::NQA
 {
     class Quadtree;
 
@@ -27,6 +28,7 @@ namespace GSL::Utils::NQA
         bool SubdivideIfNeeded(const std::vector<std::vector<uint8_t>>& _map);
         bool ForceSubdivide(); // returns false if it is not a leaf or is too small to subdivide
         bool isLeaf() {return children[0] == nullptr && children[1] == nullptr && children[2] == nullptr && children[3] == nullptr;}
+        AABB2DInt getAABB() const { return AABB2DInt{origin, origin + size}; }
     private:
     };
 

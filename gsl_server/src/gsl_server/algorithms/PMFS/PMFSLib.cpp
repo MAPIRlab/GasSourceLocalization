@@ -4,7 +4,7 @@
 #include <DDA/DDA.h>
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>
-#include <gsl_server/algorithms/Common/Utils/NQAQuadtree.hpp>
+#include <gsl_server/algorithms/Common/NQAQuadtree.hpp>
 #include <gsl_server/algorithms/PMFS/PMFSLib.hpp>
 #include <gsl_server/core/Logging.hpp>
 #include <vector>
