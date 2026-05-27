@@ -150,9 +150,12 @@ namespace GSL
                 std::deque<CompleteMap>& gasMaps = gsl->simulationSystem.gasMapsWithRoomSource.at(node);
                 ImGui::SetNextItemWidth(120);
                 ImGui::ComboSelect("Visualize simulation", gasMaps, gsl->simulationViz.simulationIndex,
-                                   [](const auto& map)
+                                   [](const CompleteMap& map)
                                    {
-                                       return fmt::format("{}", map.source->GetPoint());
+                                       if (Is<DoorwaySource>(map.source))
+                                           return fmt::format("{}", As<DoorwaySource>(map.source)->doorway->GetName());
+                                       else
+                                           return fmt::format("{}", map.source->GetPoint());
                                    });
             }
 

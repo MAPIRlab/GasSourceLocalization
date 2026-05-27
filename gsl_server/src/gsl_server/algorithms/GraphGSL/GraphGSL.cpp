@@ -227,7 +227,6 @@ namespace GSL
 
     void GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
     {
-        FrameMarkStart("a");
         ZoneScopedN("Room level");
         ScopedStopwatch watch("Evaluation (source probabilities in room)");
         ThreadPool pool;
@@ -290,7 +289,6 @@ namespace GSL
             }
         } while (!queue.empty());
         GSL_INFO("Ran {} simulations at the geometric level", numSimulations);
-        FrameMarkStart("b");
     }
 
     float GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
@@ -327,54 +325,8 @@ namespace GSL
     void GraphGSL::EvaluateRoomProbabilitiesNaive()
     {
         naiveEntireMap->UpdateWindMap(graph.gmrf);
-        naiveCompleteMaps.clear();
-
-        // run the simulations
-        {
-            ScopedStopwatch watch("Evaluation (naive)");
-            ThreadPool pool;
-            for (const auto& node : graph.nodes)
-            {
-                auto roomNode = As<RoomNode>(node);
-                for (Vector2 point : node->RepresentativePoints())
-                    if (naiveEntireMap->IsValidPoint(point))
-                    {
-                        auto job = [point, this]()
-                        {
-                            naiveSimulationSystem.SimulateSourceFromPoint(naiveEntireMap, point);
-                        };
-                        pool.QueueJob(job);
-                    }
-            }
-            pool.Wait();
-        }
-
-        // evaluate the results
-        std::map<std::shared_ptr<Graph_internal::Source>, float> resultLoss;
-        for (auto& simCompleteMap : naiveCompleteMaps)
-        {
-            float loss = ResidualSingleSimulation(simCompleteMap);
-            resultLoss[simCompleteMap.source] = loss;
-        }
-
-        // calculate the probabilities from the loss evaluation
-        std::map<std::shared_ptr<Graph_internal::Source>, float> scores;
-        constexpr float sigma = 100;
-        double scoresSum = 0;
-        for (auto& [source, loss] : resultLoss)
-            if (!std::isnan(loss))
-            {
-                scores[source] = std::exp(-loss / likelihoodSigma);
-                scoresSum += scores[source];
-            }
-            else
-                scores[source] = 0;
-
-        for (const auto& [source, score] : scores)
-        {
-            double prob = score / scoresSum;
-            GSL_INFO("\tp({}) = {:.2f}", source->GetPoint(), prob);
-        }
+        // TODO store the results for visualization?
+        EvaluateSourceProbabilitiesInRooms({naiveEntireMap});
     }
 #endif
 

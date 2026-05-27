@@ -31,7 +31,7 @@ namespace GSL::Graph_internal
                 .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
                 .numCellsOutlet = roomNode->GetOutletsCellCount(),
             }});
-        result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
+        // result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
         result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
 
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
@@ -72,7 +72,7 @@ namespace GSL::Graph_internal
             },
         });
 
-        result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
+        // result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
         result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
 
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
