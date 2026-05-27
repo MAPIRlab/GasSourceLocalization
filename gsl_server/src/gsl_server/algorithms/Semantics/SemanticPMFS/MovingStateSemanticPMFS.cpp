@@ -14,9 +14,9 @@ namespace GSL
     {
         pmfs = dynamic_cast<SemanticPMFS*>(_algorithm);
 
-        publishers.explorationValue = pmfs->node->create_publisher<Marker>("explorationValue", 1);
-        publishers.varianceHit = pmfs->node->create_publisher<Marker>("varianceHit", 1);
-        publishers.movementSets = pmfs->node->create_publisher<Marker>("movementSets", 1);
+        publishers.explorationValue = pmfs->rclnode->create_publisher<Marker>("explorationValue", 1);
+        publishers.varianceHit = pmfs->rclnode->create_publisher<Marker>("varianceHit", 1);
+        publishers.movementSets = pmfs->rclnode->create_publisher<Marker>("movementSets", 1);
     }
 
     void MovingStateSemanticPMFS::chooseGoalAndMove()
@@ -152,7 +152,7 @@ namespace GSL
     {
         NavigateToPose::Goal goal;
         goal.pose.header.frame_id = "map";
-        goal.pose.header.stamp = pmfs->node->now();
+        goal.pose.header.stamp = pmfs->rclnode->now();
 
         Vector2 pos = pmfs->gridMetadata.indicesToCoordinates(i, j);
         Vector2 coordR(pmfs->currentRobotPose.pose.pose.position.x, pmfs->currentRobotPose.pose.pose.position.y);
@@ -195,7 +195,7 @@ namespace GSL
         Grid2DMetadata& gridMetadata = pmfs->gridMetadata;
         Grid2D<PMFS_internal::HitProbability> grid(pmfs->hitProbability, pmfs->navigationOccupancy, gridMetadata);
 
-        Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->node->get_clock());
+        Marker explorationMarker = Utils::emptyMarker({0.2, 0.2}, pmfs->rclnode->get_clock());
 
         Marker varianceMarker = explorationMarker;
 

@@ -15,11 +15,11 @@ namespace GSL
                                 const PMFS_internal::PublishersAndSubscribers& pubs);
         static void ShowSourceProb(Grid2D<double> sourceProb, const PMFS_internal::VisualizationSettings& settings,
                                    const PMFS_internal::PublishersAndSubscribers& pubs);
-        static void DebugMapSegmentation(const std::vector<Utils::NQA::Node>& QTleaves, const PMFS_internal::PublishersAndSubscribers& pubs,
-                                         const Grid2DMetadata& gridMetadata);
+        static void DebugMapSegmentation(const std::vector<NQA::Node>& QTleaves,
+                                         const PMFS_internal::PublishersAndSubscribers& pubs, const Grid2DMetadata& gridMetadata);
 
-        static void VisualizeCoarseToFine(const std::vector<Utils::NQA::Node*>& activeNodes,
-                                          const std::vector<Utils::NQA::Node*>& oldNodes,
+        static void VisualizeCoarseToFine(const std::vector<NQA::Node*>& activeNodes,
+                                          const std::vector<NQA::Node*>& oldNodes,
                                           std::string_view topic,
                                           const Grid2DMetadata& gridMetadata);
 

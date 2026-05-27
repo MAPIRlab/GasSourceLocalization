@@ -20,9 +20,9 @@ namespace GSL::Graph_internal
         SimWithResult SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
                                                  const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
-        void SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool);
-        void SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint);
-        void SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
+        void SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool, std::vector<std::pair<NQA::Node, CompleteMap*>>& results);
+        CompleteMap& SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint);
+        CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
         
         MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
         

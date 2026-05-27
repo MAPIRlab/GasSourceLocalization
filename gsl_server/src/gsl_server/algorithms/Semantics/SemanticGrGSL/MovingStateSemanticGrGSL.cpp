@@ -10,7 +10,7 @@ namespace GSL
         : MovingState(_algorithm)
     {
         grgsl = dynamic_cast<SemanticGrGSL*>(algorithm);
-        clientWind = grgsl->node->create_client<WindEstimation>("/WindEstimation");
+        clientWind = grgsl->rclnode->create_client<WindEstimation>("/WindEstimation");
     }
 
     void MovingStateSemanticGrGSL::chooseGoalAndMove()
@@ -139,7 +139,7 @@ namespace GSL
         std::mutex mtx;
         double ent = -DBL_MAX;
         double maxDist = 0;
-        rclcpp::Time tstart = grgsl->node->now();
+        rclcpp::Time tstart = grgsl->rclnode->now();
         if (!wind.empty())
         {
 #pragma omp parallel for
@@ -167,7 +167,7 @@ namespace GSL
         else
             GSL_ERROR("Set of open nodes is empty! Are you certain the source is reachable?");
 
-        double timeInfotaxis = (grgsl->node->now() - tstart).seconds();
+        double timeInfotaxis = (grgsl->rclnode->now() - tstart).seconds();
         GSL_INFO("Time infotaxis: {}", timeInfotaxis);
         GSL_INFO("Number of considered cells: {}", wind.size());
 
@@ -179,7 +179,7 @@ namespace GSL
     {
         NavigateToPose::Goal goal;
         goal.pose.header.frame_id = "map";
-        goal.pose.header.stamp = grgsl->node->now();
+        goal.pose.header.stamp = grgsl->rclnode->now();
 
         Vector2 pos = grgsl->gridMetadata.indicesToCoordinates(i, j);
         Vector2 coordR = Vector2(grgsl->currentRobotPose.pose.pose.position.x, grgsl->currentRobotPose.pose.pose.position.y);
@@ -224,7 +224,7 @@ namespace GSL
 
         std::vector<WindVector> result(indices.size());
         auto future = clientWind->async_send_request(request);
-        auto future_result = rclcpp::spin_until_future_complete(grgsl->node, future, std::chrono::seconds(1));
+        auto future_result = rclcpp::spin_until_future_complete(grgsl->rclnode, future, std::chrono::seconds(1));
         if (future_result == rclcpp::FutureReturnCode::SUCCESS)
         {
             auto response = future.get();

@@ -17,7 +17,7 @@ namespace GSL
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
         movingState = std::make_unique<MovingStatePlumeTracking>(this);
         stateMachine.forceSetState(waitForMapState.get());
-        startTime = node->now();
+        startTime = rclnode->now();
     }
 
     void PlumeTracking::declareParameters()
@@ -72,7 +72,7 @@ namespace GSL
         for (int i = 0; i < safetyLimit; i++)
         {
             goal.pose.header.frame_id = "map";
-            goal.pose.header.stamp = node->now();
+            goal.pose.header.stamp = rclnode->now();
 
             goal.pose.pose.position.x = currentRobotPose.pose.pose.position.x + current_step * cos(upwind_dir);
             goal.pose.pose.position.y = currentRobotPose.pose.pose.position.y + current_step * sin(upwind_dir);

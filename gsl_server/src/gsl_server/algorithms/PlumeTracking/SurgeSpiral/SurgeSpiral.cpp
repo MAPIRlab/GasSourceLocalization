@@ -25,7 +25,7 @@ namespace GSL
         double yaw = Utils::getYaw(initial.orientation);
         NavigateToPose::Goal goal;
         goal.pose.header.frame_id = "map";
-        goal.pose.header.stamp = node->now();
+        goal.pose.header.stamp = rclnode->now();
         if (spiral_iter % 2 == 0)
         {
             spiralStepSize += spiralStep_increment;

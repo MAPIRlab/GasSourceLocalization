@@ -99,40 +99,47 @@ namespace GSL::Graph_internal
         return result;
     }
 
-    void SimulationSystem::SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool)
+    void SimulationSystem::SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool, std::vector<std::pair<NQA::Node, CompleteMap*>>& results)
     {
         for (const auto& nqaNode : roomNode->GetQuadtreeLeaves())
         {
             AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
-            pool.QueueJob([roomNode, aabb, this]()
+            pool.QueueJob([roomNode, aabb, this, &results, &nqaNode]()
                           {
-                              SimulateSingleRoomFromAABB(roomNode, aabb, {});
+                              CompleteMap& result = SimulateEntireGraph(roomNode, aabb.center());
+                              mtx.lock();
+                              results.push_back(std::make_pair(nqaNode, &result));
+                              mtx.unlock();
                           });
         }
     }
 
-    void SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint)
+    CompleteMap& SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint)
     {
         // create an entry for this simulation in the results data structure
         mtx.lock();
         std::deque<CompleteMap>& maps = gasMapsWithRoomSource[firstNodeInSim];
         maps.push_back(CompleteMap{.source = std::make_shared<PointSource>(sourcePoint)});
+        CompleteMap& map = maps.back();
         mtx.unlock();
 
         // run the simulation
-        _SimulateEntireGraph(firstNodeInSim, maps.back());
+        _SimulateEntireGraph(firstNodeInSim, map);
+        return map;
     }
 
-    void SimulationSystem::SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway)
+    CompleteMap& SimulationSystem::SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway)
     {
         // create an entry for this simulation in the results data structure
         mtx.lock();
         std::deque<CompleteMap>& maps = gasMapsWithRoomSource[sourceDoorway->to.lock()];
         maps.push_back(CompleteMap{.source = std::make_shared<DoorwaySource>(sourceDoorway)});
+        CompleteMap& map = maps.back();
         mtx.unlock();
 
         // run the simulation
-        _SimulateEntireGraph(sourceDoorway->to.lock(), maps.back());
+        _SimulateEntireGraph(sourceDoorway->to.lock(), map);
+        return map;
     }
 
     void SimulationSystem::_SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, CompleteMap& completeGasMap)
@@ -201,6 +208,44 @@ namespace GSL::Graph_internal
 
         // now, we start traversing the graph
         PropagateSimThroughGraph(stateStack, completeGasMap, firstNodeInSim);
+
+        // post process the maps
+        {
+            // append all the hitmaps in completeGasMap.gasMaps
+            std::vector<float> appendedHitMap;
+            for (const auto& [node, map] : completeGasMap.gasMaps)
+                std::ranges::transform(map, std::back_inserter(appendedHitMap), std::identity{});
+            std::vector<Occupancy> appendedOccupancy;
+            for (const auto& [node, map] : completeGasMap.gasMaps)
+                std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
+
+            Utils::Winsorize(appendedHitMap, 5);
+            Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
+
+            size_t globalIndex = 0;
+            for (auto& [node, map] : completeGasMap.gasMaps)
+                for (size_t i = 0; i < map.size(); i++)
+                    map.at(i) = appendedHitMap.at(globalIndex++);
+
+            for (auto& [node, map] : completeGasMap.gasMaps)
+                Simulation::blurHitMap(map, options.blurSigma, node->GetOccupancy(), blurMasks[node]);
+
+            // // normalize by the global maximum!
+            float max = 0;
+            for (const auto& [node, map] : completeGasMap.gasMaps)
+            {
+                auto max_it = std::max_element(map.begin(), map.end());
+                float localMax = *max_it;
+                GSL_ASSERT(localMax == 0 || node->GetOccupancy().occupancy.at(std::distance(map.begin(), max_it)));
+                max = std::max(max, localMax);
+            }
+
+            for (auto& [node, map] : completeGasMap.gasMaps)
+            {
+                for (size_t i = 0; i < map.size(); i++)
+                    map.at(i) /= max;
+            }
+        }
     }
 
     void SimulationSystem::PropagateSimThroughGraph(std::deque<NodeState>& stateStack, CompleteMap& completeGasMap, const std::shared_ptr<PlaceNode> firstNodeInSim)
@@ -283,44 +328,6 @@ namespace GSL::Graph_internal
 
                 for (size_t i = 0; i < result.hitMap->size(); i++)
                     completeGasMap.gasMaps[room].at(i) += result.hitMap->at(i) * weight;
-            }
-        }
-
-        // post process the maps
-        {
-            // append all the hitmaps in completeGasMap.gasMaps
-            std::vector<float> appendedHitMap;
-            for (const auto& [node, map] : completeGasMap.gasMaps)
-                std::ranges::transform(map, std::back_inserter(appendedHitMap), std::identity{});
-            std::vector<Occupancy> appendedOccupancy;
-            for (const auto& [node, map] : completeGasMap.gasMaps)
-                std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
-
-            Utils::Winsorize(appendedHitMap, 5);
-            Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
-
-            size_t globalIndex = 0;
-            for (auto& [node, map] : completeGasMap.gasMaps)
-                for (size_t i = 0; i < map.size(); i++)
-                    map.at(i) = appendedHitMap.at(globalIndex++);
-
-            for (auto& [node, map] : completeGasMap.gasMaps)
-                Simulation::blurHitMap(map, options.blurSigma, node->GetOccupancy(), blurMasks[node]);
-
-            // // normalize by the global maximum!
-            float max = 0;
-            for (const auto& [node, map] : completeGasMap.gasMaps)
-            {
-                auto max_it = std::max_element(map.begin(), map.end());
-                float localMax = *max_it;
-                GSL_ASSERT(localMax == 0 || node->GetOccupancy().occupancy.at(std::distance(map.begin(), max_it)));
-                max = std::max(max, localMax);
-            }
-
-            for (auto& [node, map] : completeGasMap.gasMaps)
-            {
-                for (size_t i = 0; i < map.size(); i++)
-                    map.at(i) /= max;
             }
         }
     }

@@ -18,10 +18,11 @@ namespace GSL
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override; // called from StopAndMeasure once we have enough data for this position
         Vector2 windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
         void Visualize();
-        void CalculateProbs(const std::map<std::shared_ptr<PlaceNode>, float>& resultLoss);
 
     private:
         void EvaluateRoomProbabilities();
+        void EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes);
+        float ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
 
     private:
         Graph graph;

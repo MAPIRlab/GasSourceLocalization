@@ -16,7 +16,7 @@ namespace GSL
                       Grid2D<double>(sourceProbability, occupancy, gridMetadata),
                       Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
                       settings.simulation),
-          pubs(node->get_clock())
+          pubs(rclnode->get_clock())
               IF_GUI(, ui(this))
     {}
 
@@ -24,7 +24,7 @@ namespace GSL
     void PMFS::Initialize()
     {
         Algorithm::Initialize();
-        PMFSLib::InitializePublishers(pubs, node);
+        PMFSLib::InitializePublishers(pubs, rclnode);
 
         iterationsCounter = 0;
 
@@ -103,7 +103,7 @@ namespace GSL
                                                                     windGrid,
                                                                     pubs.gmrfWind.request
                                                                         IF_GADEN(, pubs.groundTruthWind.request));
-                                 PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, node, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
+                                 PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth, windGrid, rclnode, pubs.gmrfWind IF_GADEN(, pubs.groundTruthWind));
                                  stateMachine.forceSetState(stopAndMeasureState.get());
                              });
     }
@@ -151,7 +151,7 @@ namespace GSL
         //  ------------------------------
         PMFSLib::EstimateWind(settings.simulation.useWindGroundTruth,
                               Grid2D<Vector2>(estimatedWindVectors, occupancy, gridMetadata),
-                              node,
+                              rclnode,
                               pubs.gmrfWind
                                   IF_GADEN(, pubs.groundTruthWind));
 

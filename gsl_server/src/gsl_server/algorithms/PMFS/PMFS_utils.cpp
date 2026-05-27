@@ -23,7 +23,7 @@ namespace GSL
         if (stateMachine.getCurrentState() == waitForMapState.get())
             return GSLResult::Running;
 
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
             saveResultsToFile(GSLResult::Failure);
@@ -54,7 +54,7 @@ namespace GSL
     void PMFS::saveResultsToFile(GSLResult result)
     {
         // 1. Search time.
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         double search_t = time_spent.seconds();
 
         Vector2 sourceLocationAll = Utils::ExpectedValue(Grid2D<double>(sourceProbability, occupancy, gridMetadata), 1);

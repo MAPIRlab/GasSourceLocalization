@@ -42,7 +42,7 @@ namespace GSL
         for (int i = 0; i < safetyLimit; i++)
         {
             goal.pose.header.frame_id = "map";
-            goal.pose.header.stamp = node->now();
+            goal.pose.header.stamp = rclnode->now();
 
             // Set a goal in the crosswind direction
             goal.pose.pose.position.x = currentRobotPose.pose.pose.position.x + current_step * cos(movement_dir);

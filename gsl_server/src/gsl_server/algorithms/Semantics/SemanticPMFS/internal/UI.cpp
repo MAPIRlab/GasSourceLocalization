@@ -99,7 +99,7 @@ namespace GSL::SemanticPMFS_internal
             }
             if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({xInd, yInd}))
             {
-                Utils::NQA::Node* leaf = pmfs->simulations.mapSegmentation[xInd][yInd];
+                NQA::Node* leaf = pmfs->simulations.mapSegmentation[xInd][yInd];
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else

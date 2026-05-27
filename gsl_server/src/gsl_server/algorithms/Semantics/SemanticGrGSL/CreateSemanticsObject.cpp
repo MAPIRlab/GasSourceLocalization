@@ -22,7 +22,7 @@ void GSL::SemanticGrGSL::createClassMap2D()
 #include "gsl_server/algorithms/Semantics/Semantics/Voxeland/ClassMapVoxeland.hpp"
 void GSL::SemanticGrGSL::createClassMapVoxeland()
 {
-    semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, node);
+    semantics = std::make_unique<ClassMapVoxeland>(gridMetadata, simulationOccupancy, tfBuffer, rclnode);
 }
 
 

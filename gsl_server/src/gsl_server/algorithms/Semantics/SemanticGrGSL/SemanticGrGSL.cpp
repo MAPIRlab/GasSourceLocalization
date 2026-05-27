@@ -25,7 +25,7 @@ namespace GSL
         GrGSLLib::VisualizeMarkers(
             Grid2D<double>(combinedSourceProbability, simulationOccupancy, gridMetadata),
             markers,
-            node,
+            rclnode,
             settings.colorScaleLimits);
     }
 
@@ -33,8 +33,8 @@ namespace GSL
     {
         Algorithm::Initialize();
 
-        markers.probabilityMarkers = node->create_publisher<Marker>("probabilityMarkers", 10);
-        markers.estimationMarkers = node->create_publisher<Marker>("estimationMarkers", 10);
+        markers.probabilityMarkers = rclnode->create_publisher<Marker>("probabilityMarkers", 10);
+        markers.estimationMarkers = rclnode->create_publisher<Marker>("estimationMarkers", 10);
 
         exploredCells = 0;
 
@@ -47,7 +47,7 @@ namespace GSL
 #else
         movingState = std::make_unique<MovingStateGrGSL>(this,
                                                          GrGSLData{
-                                                             .node = node,
+                                                             .node = rclnode,
                                                              .settings = settings,
                                                              .cells = cells,
                                                              .occupancy = navigationOccupancy,
@@ -65,13 +65,13 @@ namespace GSL
     void SemanticGrGSL::declareParameters()
     {
         Algorithm::declareParameters();
-        GrGSLLib::GetSettings(node, settings, markers);
+        GrGSLLib::GetSettings(rclnode, settings, markers);
     }
 
     void SemanticGrGSL::onGetMap(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
     {
         Algorithm::onGetMap(msg);
-        GrGSLLib::initMetadata(gridMetadata, map, Utils::getParam(node, "scale", 20));
+        GrGSLLib::initMetadata(gridMetadata, map, Utils::getParam(rclnode, "scale", 20));
         cells.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         navigationOccupancy.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
         combinedSourceProbability.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y);
@@ -84,7 +84,7 @@ namespace GSL
 
         // SEMANTICS
         //----------------------
-        std::string semanticsTypeParam = node->declare_parameter<std::string>("semanticsType", "ClassMap2D");
+        std::string semanticsTypeParam = rclnode->declare_parameter<std::string>("semanticsType", "ClassMap2D");
         SemanticsType semanticsType = ParseSemanticsType(semanticsTypeParam);
 
         if (semanticsType == SemanticsType::ClassMap2D)
@@ -160,7 +160,7 @@ namespace GSL
         if (stateMachine.getCurrentState() == waitForMapState.get() || stateMachine.getCurrentState() == waitForGasState.get())
             return GSLResult::Running;
         Grid2D<double> grid(combinedSourceProbability, simulationOccupancy, gridMetadata);
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
             saveResultsToFile(GSLResult::Failure);
@@ -192,7 +192,7 @@ namespace GSL
     {
         Grid2D<double> grid(combinedSourceProbability, simulationOccupancy, gridMetadata);
         // 1. Search time.
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         double search_t = time_spent.seconds();
 
         Vector2 sourceLocation = Utils::ExpectedValue(grid, 1);

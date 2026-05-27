@@ -128,7 +128,7 @@ namespace GSL
             }
             pool.Wait();
         }
-        std::map<std::shared_ptr<PlaceNode>, float> resultLoss;
+        std::map<std::shared_ptr<PlaceNode>, float> roomResiduals;
 
         // get the measured concentration maps
         std::map<std::shared_ptr<RoomNode>, Grid2D<KernelDMVW::KernelCell>> measuredMaps;
@@ -155,7 +155,6 @@ namespace GSL
             for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
             {
                 simulated.push_back(std::vector<float>());
-                auto source = As<Graph_internal::DoorwaySource>(simulation.source);
                 for (const auto& [room, localSimMap] : simulation.gasMaps)
                 {
                     if (room == sourceNode)
@@ -185,28 +184,21 @@ namespace GSL
 
             std::vector<float> weights = NAC::LeastSquaresDoorwayCombination(measured, simulated, uncertainty);
             mtx.lock();
-            resultLoss[sourceNode] = NAC::ResidualDoorways(measured, simulated, confidence, weights);
+            roomResiduals[sourceNode] = NAC::ResidualDoorways(measured, simulated, confidence, weights);
             mtx.unlock();
         };
 
         for (const auto& node : graph.nodes)
-            pool.QueueJob([&]()
-                          {
-                              loop_body(node);
-                          });
+            pool.QueueJob(std::bind(loop_body, node));
         pool.Wait();
 
-        CalculateProbs(resultLoss);
-    }
-
-    void GraphGSL::CalculateProbs(const std::map<std::shared_ptr<PlaceNode>, float>& resultLoss)
-    {
+        // calculate the probabilities from the optimization residuals
+        //----------------------------------------------------
         roomSourceProbabilities.clear();
         GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
-        // calculate the probabilities from the loss evaluation
         std::map<std::shared_ptr<PlaceNode>, double> scores;
         double scoresSum = 0;
-        for (auto& [room, loss] : resultLoss)
+        for (auto& [room, loss] : roomResiduals)
             if (!std::isnan(loss))
             {
                 scores[room] = std::exp(-loss / likelihoodSigma);
@@ -221,49 +213,90 @@ namespace GSL
             roomSourceProbabilities[room] = prob;
             GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
         }
-    }
 
-#if ENABLE_NAIVE_EVALUATION
-    void GraphGSL::EvaluateRoomProbabilitiesNaive()
-    {
-        naiveEntireMap->UpdateWindMap(graph.gmrf);
-        naiveCompleteMaps.clear();
-
+        std::vector<std::shared_ptr<RoomNode>> roomNodes;
+        for (const auto& [node, prob] : roomSourceProbabilities)
         {
-            ScopedStopwatch watch("Evaluation (naive)");
-            // simulate all possible room sources
-            std::vector<Vector2> simsToRun;
-            for (const auto& node : graph.nodes)
-            {
-                auto roomNode = As<RoomNode>(node);
-                for (Vector2 point : node->RepresentativePoints())
-                    if (naiveEntireMap->IsValidPoint(point))
-                        simsToRun.push_back(point);
-            }
-
-#pragma omp parallel for
-            for (const auto& sourcePoint : simsToRun)
-            {
-                Graph_internal::SimWithResult result = naiveSimulationSystem.SimulateSourceFromPoint(naiveEntireMap, sourcePoint);
-#pragma omp critical
-                {
-                    naiveCompleteMaps.push_back(naiveSimulationSystem.AsCompleteMap(naiveEntireMap, result));
-                }
-            }
+            auto roomNode = As<RoomNode>(node);
+            if (roomNode && prob > 0.3)
+                roomNodes.push_back(roomNode);
         }
 
-        std::map<std::shared_ptr<Graph_internal::Source>, float> resultLoss;
+        EvaluateSourceProbabilitiesInRooms(roomNodes);
+    }
 
-        for (auto& simCompleteMap : naiveCompleteMaps)
+    void GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
+    {
+        ScopedStopwatch watch("Evaluation (source probabilities in room)");
+        ThreadPool pool;
+        std::mutex mtx;
+
+        // start by using all the leaves in all the rooms of interest
+        std::deque<std::pair<std::shared_ptr<RoomNode>, NQA::Node>> queue;
+        for (const auto& roomNode : roomNodes)
+            for (const auto& nqaNode : roomNode->GetQuadtreeLeaves())
+                queue.push_back({roomNode, nqaNode});
+
+        do
         {
-            // scaling
-            std::vector<float> measured;
-            std::vector<float> simulated;
-            std::vector<float> uncertainty;
+            struct Result
+            {
+                std::shared_ptr<RoomNode> roomNode;
+                NQA::Node node;
+                Graph_internal::CompleteMap* map;
+            };
+            // run the queued up simulations and register the results
+            std::vector<Result> results;
+            while (!queue.empty())
+            {
+                auto [roomNode, nqaNode] = queue.front();
+                queue.pop_front();
+                pool.QueueJob([this, roomNode, &results, &nqaNode, &mtx]()
+                              {
+                                  AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
+                                  Graph_internal::CompleteMap& result = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
+                                  mtx.lock();
+                                  results.push_back({roomNode, nqaNode, &result});
+                                  mtx.unlock();
+                              });
+            }
+            pool.Wait();
 
+            // calculate the residuals from the simulation results and sort accordingly
+            std::vector<std::pair<Result, float>> residuals;
+            for (const auto& result : results)
+            {
+                float residual = ResidualSingleSimulation(*result.map);
+                residuals.push_back({result, residual});
+            }
+            std::sort(residuals.begin(), residuals.end(), [](const auto& a, const auto& b)
+                      {
+                          return a.second < b.second;
+                      });
+
+            constexpr float proportionBest = 0.15;
+            // subdivide the nodes with the best residuals and add the smaller bits to the queue
+            for (size_t i = 0; i < residuals.size() * proportionBest; i++)
+            {
+                auto [result, residual] = residuals.at(i);
+                result.node.ForceSubdivide();
+                for (const auto& child : result.node.children)
+                    if (child)
+                        queue.push_back({result.roomNode, *child});
+            }
+        } while (!queue.empty());
+    }
+
+    float GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
+    {
+        std::vector<float> measured;
+        std::vector<float> simulated;
+        std::vector<float> uncertainty;
+        for (const auto& [room, localSimMap] : simMap.gasMaps)
+        {
             // add any relevant cells to the comparison arrays
             // we skip the cells with very low measurement confidence for optimization, since they shouldn't really affect the result anyways
-            Grid2D<KernelDMVW::KernelCell> measuredLocal = naiveEntireMap->GetGasMap();
+            Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
             for (size_t i = 0; i < measuredLocal.data.size(); i++)
             {
                 if (!measuredLocal.occupancy.at(i))
@@ -273,31 +306,66 @@ namespace GSL
                     continue;
 
                 measured.push_back(cell.meanAndVariance.mean);
-                simulated.push_back(simCompleteMap.gasMaps.begin()->second.at(i));
+                simulated.push_back(localSimMap.at(i));
                 uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
             }
-            float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
-            float loss = NAC::Residual(measured, simulated, uncertainty, scale);
+        }
+
+        float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
+        float residual = NAC::Residual(measured, simulated, uncertainty, scale);
+        return residual;
+    }
+
+#if ENABLE_NAIVE_EVALUATION
+    void GraphGSL::EvaluateRoomProbabilitiesNaive()
+    {
+        naiveEntireMap->UpdateWindMap(graph.gmrf);
+        naiveCompleteMaps.clear();
+
+        // run the simulations
+        {
+            ScopedStopwatch watch("Evaluation (naive)");
+            ThreadPool pool;
+            for (const auto& node : graph.nodes)
+            {
+                auto roomNode = As<RoomNode>(node);
+                for (Vector2 point : node->RepresentativePoints())
+                    if (naiveEntireMap->IsValidPoint(point))
+                    {
+                        auto job = [point, this]()
+                        {
+                            naiveSimulationSystem.SimulateSourceFromPoint(naiveEntireMap, point);
+                        };
+                        pool.QueueJob(job);
+                    }
+            }
+            pool.Wait();
+        }
+
+        // evaluate the results
+        std::map<std::shared_ptr<Graph_internal::Source>, float> resultLoss;
+        for (auto& simCompleteMap : naiveCompleteMaps)
+        {
+            float loss = ResidualSingleSimulation(simCompleteMap);
             resultLoss[simCompleteMap.source] = loss;
         }
 
         // calculate the probabilities from the loss evaluation
         std::map<std::shared_ptr<Graph_internal::Source>, float> scores;
         constexpr float sigma = 100;
-        float scoresSum = 0;
-        for (auto& [sourcePoint, loss] : resultLoss)
+        double scoresSum = 0;
+        for (auto& [source, loss] : resultLoss)
             if (!std::isnan(loss))
             {
-                scores[sourcePoint] = std::exp(-loss / sigma);
-                scoresSum += scores[sourcePoint];
+                scores[source] = std::exp(-loss / likelihoodSigma);
+                scoresSum += scores[source];
             }
             else
-                scores[sourcePoint] = 0;
+                scores[source] = 0;
 
         for (const auto& [source, score] : scores)
         {
-            float prob = score / scoresSum;
-
+            double prob = score / scoresSum;
             GSL_INFO("\tp({}) = {:.2f}", source->GetPoint(), prob);
         }
     }

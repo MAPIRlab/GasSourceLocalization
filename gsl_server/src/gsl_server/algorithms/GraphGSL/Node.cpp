@@ -28,17 +28,14 @@ namespace GSL
         // re-create the gmrf map, keeping the history of observations
         std::vector<gmrfw::TobservationGMRF> observations;
 
-        wind.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y); // this is fine, because the wind map will be overriden entirely on next query
-        outletMask.resize(gridMetadata.dimensions.x * gridMetadata.dimensions.y, -1);
+        size_t numCells = gridMetadata.dimensions.x * gridMetadata.dimensions.y;
+        wind.resize(numCells);
+        outletMask.resize(numCells, -1);
+        sourceProbabilities.resize(numCells, 1. / numCells);
 
         // quadtree decomposition
-        std::vector<std::vector<uint8_t>> as2D(gridMetadata.dimensions.x, std::vector<uint8_t>(gridMetadata.dimensions.y));
-        for (size_t i = 0; i < gridMetadata.dimensions.x; i++)
-            for (size_t j = 0; j < gridMetadata.dimensions.y; j++)
-                as2D.at(i).at(j) = grid.occupancyAt(i, j);
-
-        NQA::Quadtree quadtree(as2D);
-        std::vector<NQA::Node> quadtreeLeaves = quadtree.fusedLeaves(7);
+        NQA::Quadtree quadtree(GetOccupancy());
+        quadtreeLeaves = quadtree.fusedLeaves(7);
     }
 
     bool RoomNode::IsValidPoint(Vector2 location)
@@ -104,6 +101,11 @@ namespace GSL
     const Grid2D<int> RoomNode::GetOutletsMask()
     {
         return Grid2D<int>(outletMask, occupancy, gridMetadata);
+    }
+
+    Grid2D<float> RoomNode::GetSourceProbabilities()
+    {
+        return Grid2D<float>(sourceProbabilities, occupancy, gridMetadata);
     }
 
     const std::vector<size_t>& RoomNode::GetOutletsCellCount()

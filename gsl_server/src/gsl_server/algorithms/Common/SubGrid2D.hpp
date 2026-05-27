@@ -51,11 +51,6 @@ namespace GSL
             return grid.occupancy.at(indexOriginal(col, row));
         }
 
-        bool occupancyAt(size_t col, size_t row) const
-        {
-            return occupancyAt(col, row) == Occupancy::Free;
-        }
-
         T& dataAt(const Vector2Int& indices) const
         {
             return grid.data.at(indexOriginal(indices));
@@ -64,11 +59,6 @@ namespace GSL
         Occupancy& occupancyAt(const Vector2Int& indices) const
         {
             return grid.occupancy.at(indexOriginal(indices));
-        }
-
-        bool occupancyAt(const Vector2Int& indices) const
-        {
-            return occupancyAt(indices) == Occupancy::Free;
         }
 
     private:
@@ -83,6 +73,7 @@ namespace GSL
         : grid(grid), origin(origin), dimensions(dimensions)
     {
         originIndices = grid.metadata.coordinatesToIndices(origin);
+        GSL_ASSERT(grid.metadata.indicesInBounds(originIndices + dimensions));
     }
 
 } // namespace GSL

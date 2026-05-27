@@ -20,10 +20,10 @@ namespace GSL
         StopAndMeasureState::addGasReading(concentration);
         static rclcpp::Time timeStampLastInterval = rclcpp::Time(-100);
 
-        if ((spiral->node->now() - timeStampLastInterval).seconds() > intervalLength)
+        if ((spiral->rclnode->now() - timeStampLastInterval).seconds() > intervalLength)
         {
             intervals.back().gasMeasurements.push_back(concentration);
-            timeStampLastInterval = spiral->node->now();
+            timeStampLastInterval = spiral->rclnode->now();
         }
     }
 

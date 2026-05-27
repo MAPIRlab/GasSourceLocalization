@@ -9,9 +9,9 @@ namespace GSL
     {
         SurgeSpiral::Initialize();
 
-        particle_markers = node->create_publisher<Marker>("particle_markers", 10);
-        estimationMarkers = node->create_publisher<Marker>("estimationMarkers", 10);
-        average_estimation_marker = node->create_publisher<Marker>("average_estimation_marker", 10);
+        particle_markers = rclnode->create_publisher<Marker>("particle_markers", 10);
+        estimationMarkers = rclnode->create_publisher<Marker>("estimationMarkers", 10);
+        average_estimation_marker = rclnode->create_publisher<Marker>("average_estimation_marker", 10);
     }
 
     void ParticleFilter::declareParameters()
@@ -38,9 +38,9 @@ namespace GSL
         windSpeed_v.push_back(msg->wind_speed);
         windDirection_v.push_back(std::atan2(downwind_map.y, downwind_map.x));
 
-        if (node->now().seconds() - lastWindObservation.seconds() >= deltaT)
+        if (rclnode->now().seconds() - lastWindObservation.seconds() >= deltaT)
         {
-            lastWindObservation = node->now();
+            lastWindObservation = rclnode->now();
             // store the measurement in the list of wind history as a (x,y) vector
             double speed = Utils::getAverageFloatCollection(windSpeed_v.begin(), windSpeed_v.end());
             if (speed == Utils::INVALID_AVERAGE)
@@ -271,7 +271,7 @@ namespace GSL
         {
             Marker parts;
             parts.header.frame_id = "map";
-            parts.header.stamp = node->now();
+            parts.header.stamp = rclnode->now();
             parts.ns = "particles";
             parts.id = 0;
             parts.type = Marker::POINTS;
@@ -296,7 +296,7 @@ namespace GSL
 
             Marker estimation;
             estimation.header.frame_id = "map";
-            estimation.header.stamp = node->now();
+            estimation.header.stamp = rclnode->now();
             estimation.ns = "estimations";
             estimation.id = 1;
             estimation.type = Marker::POINTS;

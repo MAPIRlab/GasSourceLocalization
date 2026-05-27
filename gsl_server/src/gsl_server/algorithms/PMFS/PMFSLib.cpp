@@ -218,7 +218,7 @@ namespace GSL
         visibilityMap.Populate(grid.AsOccupancy());
         GSL_TRACE("Created visibility map");
 
-        simulations.initializeMap(occupancyMap);
+        simulations.initializeMap(grid.AsOccupancy());
         simulations.visibilityMap = &visibilityMap;
         simulations.varianceOfHitProb.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y, 0);
     }

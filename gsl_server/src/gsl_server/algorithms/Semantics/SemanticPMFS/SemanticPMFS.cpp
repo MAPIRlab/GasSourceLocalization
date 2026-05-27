@@ -20,7 +20,7 @@ namespace GSL
           simulations(Grid2D<HitProbability>(hitProbability, simulationOccupancy, gridMetadata),
                       Grid2D<double>(sourceProbabilityPMFS, simulationOccupancy, gridMetadata),
                       Grid2D<Vector2>(estimatedWindVectors, simulationOccupancy, gridMetadata), settings.simulation),
-          pubs(node->get_clock())
+          pubs(rclnode->get_clock())
               IF_GUI(, ui(this))
     {}
 
@@ -28,7 +28,7 @@ namespace GSL
     {
         Algorithm::Initialize();
 
-        PMFSLib::InitializePublishers(pubs.pmfsPubs, node);
+        PMFSLib::InitializePublishers(pubs.pmfsPubs, rclnode);
 
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
@@ -142,7 +142,7 @@ namespace GSL
                                  PMFSLib::EstimateWind(
                                      settings.simulation.useWindGroundTruth,
                                      windGrid,
-                                     node,
+                                     rclnode,
                                      pubs.pmfsPubs.gmrfWind
                                          IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
                                  stateMachine.forceSetState(stopAndMeasureState.get());
@@ -151,7 +151,7 @@ namespace GSL
 
         // SEMANTICS
         //----------------------
-        std::string semanticsTypeParam = node->declare_parameter<std::string>("semanticsType", "ClassMap2D");
+        std::string semanticsTypeParam = rclnode->declare_parameter<std::string>("semanticsType", "ClassMap2D");
         SemanticsType semanticsType = ParseSemanticsType(semanticsTypeParam);
 
         if (semanticsType == SemanticsType::ClassMap2D)
@@ -238,7 +238,7 @@ namespace GSL
             PMFSLib::EstimateWind(
                 settings.simulation.useWindGroundTruth,
                 AsGrid(estimatedWindVectors, simulationOccupancy),
-                node,
+                rclnode,
                 pubs.pmfsPubs.gmrfWind
                     IF_GADEN(, pubs.pmfsPubs.groundTruthWind));
             PMFSViz::PlotWindVectors(
@@ -275,7 +275,7 @@ namespace GSL
         if (stateMachine.getCurrentState() == waitForMapState.get())
             return GSLResult::Running;
 
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         if (time_spent.seconds() > resultLogging.maxSearchTime)
         {
             saveResultsToFile(GSLResult::Failure);
@@ -307,7 +307,7 @@ namespace GSL
     {
         auto grid = AsGrid(combinedSourceProbability, simulationOccupancy);
         // 1. Search time.
-        rclcpp::Duration time_spent = node->now() - startTime;
+        rclcpp::Duration time_spent = rclnode->now() - startTime;
         double search_t = time_spent.seconds();
 
         Vector2 sourceLocationAll = Utils::ExpectedValue(grid, 1);

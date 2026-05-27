@@ -54,6 +54,7 @@ namespace GSL
         const Grid2D<Vector2> GetWindMap();
         const Grid2D<KernelDMVW::KernelCell> GetGasMap();
         const Grid2D<int> GetOutletsMask();
+        Grid2D<float> GetSourceProbabilities();
         const std::vector<size_t>& GetOutletsCellCount();
         Vector2 GetPosition() const override { return centroid; }
         AABB2D GetAABB() const;
@@ -67,6 +68,7 @@ namespace GSL
         std::vector<int> outletMask;
         std::vector<size_t> numCellsOutlet;
         std::vector<Vector2> wind;
+        std::vector<float> sourceProbabilities;
 
         KernelDMVW::GasMap gasMap;
         Grid2DMetadata gridMetadata;

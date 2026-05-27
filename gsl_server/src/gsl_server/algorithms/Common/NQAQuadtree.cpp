@@ -10,9 +10,9 @@
 namespace GSL::NQA
 {
     using namespace GSL;
-    Quadtree::Quadtree(const std::vector<std::vector<uint8_t>>& _map) : map(_map)
+    Quadtree::Quadtree(const Grid2D<Occupancy>& _map) : map(_map)
     {
-        root = Node::createNode(Vector2Int(0, 0), Vector2Int(map.size(), map[0].size()));
+        root = Node::createNode(Vector2Int(0, 0), Vector2Int(map.metadata.dimensions.x, map.metadata.dimensions.y));
 
         std::stack<std::shared_ptr<Node>> nodeStack;
         nodeStack.push(root);
@@ -40,7 +40,7 @@ namespace GSL::NQA
     }
 
     Node::Node(Vector2Int _origin, Vector2Int _size)
-        : origin(_origin), size(_size), value(-1)
+        : origin(_origin), size(_size), value(Occupancy::Unknown)
     {
         children[0] = nullptr;
         children[1] = nullptr;
@@ -48,16 +48,16 @@ namespace GSL::NQA
         children[3] = nullptr;
     }
 
-    bool Node::SubdivideIfNeeded(const std::vector<std::vector<uint8_t>>& map)
+    bool Node::SubdivideIfNeeded(Grid2D<Occupancy> map)
     {
-        value = map[origin.x][origin.y];
+        value = map.occupancyAt(origin);
 
         bool leaf = true;
         for (int i = origin.x; i < origin.x + size.x; i++)
         {
             for (int j = origin.y; j < origin.y + size.y; j++)
             {
-                if (map[i][j] != value)
+                if (map.occupancyAt(i, j) != value)
                 {
                     leaf = false;
                     break;
@@ -160,29 +160,29 @@ namespace GSL::NQA
         for (int i = 0; i < leaves.size(); i++)
         {
             auto locked = leaves[i].lock();
-            if (locked->value == 1)
+            if (locked->value == Occupancy::Free)
             {
                 free_leaves.emplace_back(locked->origin, locked->size);
-                free_leaves.back().value = 1;
+                free_leaves.back().value = Occupancy::Free;
             }
         }
 #else
 
         // use the original map, cell by cell
-        for (int i = 0; i < map.size(); i++)
+        for (int i = 0; i < map.metadata.dimensions.x; i++)
         {
-            for (int j = 0; j < map[0].size(); j++)
+            for (int j = 0; j < map.metadata.dimensions.y; j++)
             {
-                if (map[i][j] != 1)
+                if (map.occupancyAt(i, j) != Occupancy::Free)
                     continue;
                 free_leaves.emplace_back(Vector2Int{i, j}, Vector2Int{1, 1});
-                free_leaves.back().value = 1;
+                free_leaves.back().value = Occupancy::Free;
             }
         }
 #endif
 
         std::vector<std::vector<Node*>> pointersImage(
-            map.size(), std::vector<Node*>(map[0].size(), nullptr)); // for each cell in the original map, a pointer to the leaf that contains it
+            map.metadata.dimensions.x, std::vector<Node*>(map.metadata.dimensions.y, nullptr)); // for each cell in the original map, a pointer to the leaf that contains it
 
         // populate the pòinters image
         for (auto itr = free_leaves.begin(); itr != free_leaves.end(); itr++)
@@ -254,7 +254,7 @@ namespace GSL::NQA
 
                 free_leaves.emplace_back(origin, size);
                 Node* fused = &free_leaves.back();
-                fused->value = 1;
+                fused->value = Occupancy::Free;
 
                 // clean up
                 for (Node* n : allNeighbours[a])
@@ -330,4 +330,4 @@ namespace GSL::NQA
 
         return std::vector<Node>(free_leaves.begin(), free_leaves.end());
     }
-} // namespace GSL::Utils::NQA
+} // namespace GSL::NQA

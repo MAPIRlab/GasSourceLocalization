@@ -15,7 +15,7 @@ namespace GSL::PMFS_internal
     UI::UI(PMFS* _pmfs)
         : pmfs(_pmfs)
     {
-        clickedPointSub = pmfs->node->create_subscription<geometry_msgs::msg::PointStamped>(
+        clickedPointSub = pmfs->rclnode->create_subscription<geometry_msgs::msg::PointStamped>(
             "/clicked_point", 1,
             [this](const geometry_msgs::msg::PointStamped::SharedPtr point)
             {
@@ -99,7 +99,7 @@ namespace GSL::PMFS_internal
             }
             if (ImGui::Button("Simulate leaf") && pmfs->gridMetadata.indicesInBounds({x, y}))
             {
-                Utils::NQA::Node* leaf = pmfs->simulations.mapSegmentation[x][y];
+                NQA::Node* leaf = pmfs->simulations.mapSegmentation[x][y];
                 if (!leaf)
                     GSL_ERROR("Wrong coordinates!");
                 else

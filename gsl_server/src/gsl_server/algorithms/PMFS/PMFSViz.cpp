@@ -4,7 +4,6 @@
 
 namespace GSL
 {
-    namespace NQA = Utils::NQA;
     void PMFSViz::ShowHitProb(Grid2D<PMFS_internal::HitProbability> grid, const PMFS_internal::VisualizationSettings& settings,
                               const PMFS_internal::PublishersAndSubscribers& pubs)
     {
@@ -79,7 +78,7 @@ namespace GSL
         pubs.markers.sourceProbabilityMarkers->publish(sourceProbMarker);
     }
 
-    void PMFSViz::DebugMapSegmentation(const std::vector<Utils::NQA::Node>& QTleaves,
+    void PMFSViz::DebugMapSegmentation(const std::vector<NQA::Node>& QTleaves,
                                        const PMFS_internal::PublishersAndSubscribers& pubs, const Grid2DMetadata& gridMetadata)
     {
         {
@@ -119,8 +118,8 @@ namespace GSL
         pubs.markers.quadtreePublisher->publish(segmentMarker);
     }
 
-    void PMFSViz::VisualizeCoarseToFine(const std::vector<Utils::NQA::Node*>& activeNodes,
-                                        const std::vector<Utils::NQA::Node*>& oldNodes,
+    void PMFSViz::VisualizeCoarseToFine(const std::vector<NQA::Node*>& activeNodes,
+                                        const std::vector<NQA::Node*>& oldNodes,
                                         std::string_view topic,
                                         const Grid2DMetadata& gridMetadata)
     {

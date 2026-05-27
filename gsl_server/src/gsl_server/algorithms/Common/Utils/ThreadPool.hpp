@@ -32,6 +32,10 @@ private:
     void WorkerLoop(size_t threadId);
 };
 
+// ------------------
+// Implementation
+// ------------------
+
 inline ThreadPool::ThreadPool(size_t numThreads)
     : workers(numThreads), workersBusy(0)
 {

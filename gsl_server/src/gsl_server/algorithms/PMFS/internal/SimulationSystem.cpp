@@ -16,23 +16,22 @@
 
 namespace GSL::PMFS_internal
 {
-    namespace NQA = Utils::NQA;
     using HashSet = std::unordered_set<Vector2Int>;
 
     // create the occupancy Quadtree
-    void SimulationSystem::initializeMap(const std::vector<std::vector<uint8_t>>& occupancyMap)
+    void SimulationSystem::initializeMap(const Grid2D<Occupancy> occupancyMap)
     {
         ZoneScoped;
-        quadtree = std::make_unique<Utils::NQA::Quadtree>(occupancyMap);
+        quadtree = std::make_unique<NQA::Quadtree>(occupancyMap);
         QTleaves = quadtree->fusedLeaves(settings.maxRegionSize);
 
-        mapSegmentation.resize(occupancyMap.size(), std::vector<Utils::NQA::Node*>(occupancyMap[0].size(), nullptr));
+        mapSegmentation.resize(occupancyMap.metadata.dimensions.x, std::vector<NQA::Node*>(occupancyMap.metadata.dimensions.y, nullptr));
 
         GSL_INFO("Number of cells after fusing quadtree: {0}", QTleaves.size());
         // generate the image of indices so you can map a cell in the map to the corresponding leaf of the quatree
         for (int i = 0; i < QTleaves.size(); i++)
         {
-            Utils::NQA::Node& node = QTleaves[i];
+            NQA::Node& node = QTleaves[i];
             Vector2Int start = node.origin;
             Vector2Int end = node.origin + node.size;
 
