@@ -301,7 +301,7 @@ namespace GSL::NQA
                         Vector2Int size;
                         sizeFused(current, neighbour, origin, size);
 
-                        float dist = std::abs((size.y / size.x) - 1);
+                        float dist = std::abs(((float)size.y / size.x) - 1.f);
                         if (dist < distanceFromSquare)
                         {
                             distanceFromSquare = dist;

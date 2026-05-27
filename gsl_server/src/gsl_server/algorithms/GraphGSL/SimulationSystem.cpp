@@ -30,8 +30,8 @@ namespace GSL::Graph_internal
                 .mask = roomNode->GetOutletsMask(),
                 .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
                 .numCellsOutlet = roomNode->GetOutletsCellCount(),
-            },
-        });
+            }});
+        result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
         result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
 
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
@@ -40,7 +40,6 @@ namespace GSL::Graph_internal
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
-        // Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         return result;
     }
 
@@ -73,6 +72,7 @@ namespace GSL::Graph_internal
             },
         });
 
+        result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
         result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
 
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
@@ -85,7 +85,6 @@ namespace GSL::Graph_internal
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
-        // Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         return result;
     }
 
@@ -97,21 +96,6 @@ namespace GSL::Graph_internal
         SimWithResult result = SimulateSingleRoomFromAABB(roomNode, doorway->aabb, doorway->samePhysicalDoorway);
 
         return result;
-    }
-
-    void SimulationSystem::SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool, std::vector<std::pair<NQA::Node, CompleteMap*>>& results)
-    {
-        for (const auto& nqaNode : roomNode->GetQuadtreeLeaves())
-        {
-            AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
-            pool.QueueJob([roomNode, aabb, this, &results, &nqaNode]()
-                          {
-                              CompleteMap& result = SimulateEntireGraph(roomNode, aabb.center());
-                              mtx.lock();
-                              results.push_back(std::make_pair(nqaNode, &result));
-                              mtx.unlock();
-                          });
-        }
     }
 
     CompleteMap& SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint)
@@ -227,8 +211,10 @@ namespace GSL::Graph_internal
                 for (size_t i = 0; i < map.size(); i++)
                     map.at(i) = appendedHitMap.at(globalIndex++);
 
+            mtx.lock();
             for (auto& [node, map] : completeGasMap.gasMaps)
                 Simulation::blurHitMap(map, options.blurSigma, node->GetOccupancy(), blurMasks[node]);
+            mtx.unlock();
 
             // // normalize by the global maximum!
             float max = 0;
@@ -260,6 +246,7 @@ namespace GSL::Graph_internal
         constexpr float minimumGasThr = 1e-6;
         while (!stateStack.empty())
         {
+            ZoneScopedN("Graph propagation");
             NodeState& current = stateStack.back();
 
             // if we cannot keep expanding this node, pop it from the stack
@@ -362,6 +349,7 @@ namespace GSL::Graph_internal
             {
                 std::scoped_lock lock(mtx);
                 simsInFlight.insert(doorway);
+                GSL_INFO("Running simulation in room {} from doorway {}", doorway->from.lock()->id, doorway->GetName());
             }
             SimWithResult result = simSys->SimulateSingleRoomFromDoorway(doorway);
             {

@@ -1,6 +1,6 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/Occupancy.hpp"
-#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include "gsl_server/core/Vectors.hpp"
 #include <DDA/DDA.h>
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Utils/Math.hpp>

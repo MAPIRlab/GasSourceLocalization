@@ -13,11 +13,11 @@
 // make sure a suitable implementation exists for the other libraries)
 //--------------------------
 
-#define USE_GLM 0
+#define USE_GLM 1
 #if USE_GLM
-#include "VectorsImpl/vmath_glm.hpp"
+#include "VectorsImpl/vmath_glm.hpp" // IWYU pragma: export
 #else
-#include "VectorsImpl/vmath_DDACustomVec.hpp"
+#include "VectorsImpl/vmath_DDACustomVec.hpp" // IWYU pragma: export
 #endif
 
 #include <fmt/format.h>

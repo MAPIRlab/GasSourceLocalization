@@ -7,7 +7,7 @@
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <gsl_server/core/Logging.hpp>
 #include <gsl_server/core/Macros.hpp>
-#include <gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp>
+#include <gsl_server/core/Vectors.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <vector>

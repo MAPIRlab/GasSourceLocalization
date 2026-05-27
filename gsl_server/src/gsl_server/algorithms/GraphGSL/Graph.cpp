@@ -226,7 +226,7 @@ namespace GSL
                 for (const auto doorway : node->doorways)
                 {
                     auto otherNode = doorway->to.lock();
-                    position += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1. / node->doorways.size());
+                    position += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1.f / node->doorways.size());
                 }
             }
 
@@ -281,8 +281,8 @@ namespace GSL
                 // otherwise, just copy the movement of the real one
                 if (Is<RoomNode>(node) && Is<RoomNode>(otherNode))
                 {
-                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
-                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5;
+                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5f;
+                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5f;
                 }
                 else if (Is<RoomNode>(node))
                     otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);

@@ -19,7 +19,7 @@ namespace GSL::KernelDMVW
             return;
 
         float windAngle = -std::atan2(wind.y, wind.x) + M_PI * 0.5; // I'm honestly not sure why we need to rotate this
-        float windSpeed = wind.norm();
+        float windSpeed = vmath::length(wind);
         // Important note:
         // instead of calculating the full covariance matrix for the oriented gaussian, this implementation just stretches it along the x and y axes
         // the angle is then passed into evaluate2DGaussian() as a separate parameter. This makes the computation a bit simpler

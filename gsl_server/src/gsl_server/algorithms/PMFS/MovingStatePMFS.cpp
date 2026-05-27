@@ -1,7 +1,7 @@
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/Logging.hpp"
 #include "gsl_server/core/Navigation.hpp"
-#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include "gsl_server/core/Vectors.hpp"
 #include <algorithm>
 #include <angles/angles.h>
 #include <gsl_server/algorithms/Common/Grid2D.hpp>

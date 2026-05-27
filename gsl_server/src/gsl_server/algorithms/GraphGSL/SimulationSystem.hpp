@@ -2,7 +2,6 @@
 
 #include "Simulations.hpp"
 #include "gsl_server/algorithms/Common/Simulation.hpp"
-#include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <stack>
@@ -20,7 +19,6 @@ namespace GSL::Graph_internal
         SimWithResult SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
                                                  const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
-        void SimulateAllSectionsInRoom(const std::shared_ptr<RoomNode> roomNode, ThreadPool& pool, std::vector<std::pair<NQA::Node, CompleteMap*>>& results);
         CompleteMap& SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint);
         CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
         

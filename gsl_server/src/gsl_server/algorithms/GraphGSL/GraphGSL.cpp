@@ -227,6 +227,8 @@ namespace GSL
 
     void GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
     {
+        FrameMarkStart("a");
+        ZoneScopedN("Room level");
         ScopedStopwatch watch("Evaluation (source probabilities in room)");
         ThreadPool pool;
         std::mutex mtx;
@@ -237,6 +239,7 @@ namespace GSL
             for (const auto& nqaNode : roomNode->GetQuadtreeLeaves())
                 queue.push_back({roomNode, nqaNode});
 
+        size_t numSimulations = 0;
         do
         {
             struct Result
@@ -251,11 +254,12 @@ namespace GSL
             {
                 auto [roomNode, nqaNode] = queue.front();
                 queue.pop_front();
-                pool.QueueJob([this, roomNode, &results, &nqaNode, &mtx]()
+                pool.QueueJob([&, this, roomNode, nqaNode]()
                               {
                                   AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
                                   Graph_internal::CompleteMap& result = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
                                   mtx.lock();
+                                  numSimulations++;
                                   results.push_back({roomNode, nqaNode, &result});
                                   mtx.unlock();
                               });
@@ -285,10 +289,13 @@ namespace GSL
                         queue.push_back({result.roomNode, *child});
             }
         } while (!queue.empty());
+        GSL_INFO("Ran {} simulations at the geometric level", numSimulations);
+        FrameMarkStart("b");
     }
 
     float GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
     {
+        ZoneScopedN("Residual calculation");
         std::vector<float> measured;
         std::vector<float> simulated;
         std::vector<float> uncertainty;

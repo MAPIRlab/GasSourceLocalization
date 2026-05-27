@@ -1,7 +1,7 @@
 #pragma once
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/VisibilityMap.hpp"
-#include "gsl_server/core/VectorsImpl/vmath_DDACustomVec.hpp"
+#include "gsl_server/core/Vectors.hpp"
 #include <opencv2/core/mat.hpp>
 #include <optional>
 
@@ -74,7 +74,7 @@ namespace GSL
         size_t maxWarmupIterations = 500;
 
         Grid2D<Vector2> wind;
-        std::optional<std::reference_wrapper<VisibilityMap>> visibilityMap;
+        std::optional<std::reference_wrapper<const VisibilityMap>> visibilityMap;
         std::optional<SimulationOutlets> outlets;
 
         void Run(std::vector<float>& hitMap, Type type = Simulation::Type::HitFrequency);

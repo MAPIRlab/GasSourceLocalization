@@ -5,7 +5,8 @@ namespace GSL
 {
 
     RoomNode::RoomNode(Grid2D<Occupancy> grid)
-        : gasMap(grid, KernelDMVW::GasMap::Params{})
+        : gasMap(grid, KernelDMVW::GasMap::Params{}),
+          visibilityMap(grid.metadata.dimensions.x, grid.metadata.dimensions.y, 5)
     {
         SetOccupancy(grid);
     }
@@ -35,7 +36,19 @@ namespace GSL
 
         // quadtree decomposition
         NQA::Quadtree quadtree(GetOccupancy());
-        quadtreeLeaves = quadtree.fusedLeaves(7);
+        size_t best = std::numeric_limits<size_t>::max();
+        for (size_t i = 0; i < 15; i++)
+        {
+            std::vector<NQA::Node> _quadtreeLeaves = quadtree.fusedLeaves(i);
+            if (_quadtreeLeaves.size() < best)
+            {
+                best = _quadtreeLeaves.size();
+                quadtreeLeaves = _quadtreeLeaves;
+            }
+        }
+
+        // visibility map (simulation optimization)
+        visibilityMap.Populate(GetOccupancy());
     }
 
     bool RoomNode::IsValidPoint(Vector2 location)

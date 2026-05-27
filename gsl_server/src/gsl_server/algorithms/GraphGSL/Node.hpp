@@ -2,6 +2,7 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Common/KernelDMVW/KernelDMVW.hpp"
 #include "gsl_server/algorithms/Common/NQAQuadtree.hpp"
+#include "gsl_server/algorithms/Common/VisibilityMap.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
 #include <gmrf_wind_core/gmrf_map.h>
 #include <gsl_server/core/Vectors.hpp>
@@ -60,6 +61,7 @@ namespace GSL
         AABB2D GetAABB() const;
         const std::vector<NQA::Node>& GetQuadtreeLeaves() const { return quadtreeLeaves; }
         std::vector<Vector2> RepresentativePoints() const override;
+        const VisibilityMap& GetVisibilityMap() const { return visibilityMap; }
 
     private:
         Grid2D<Vector2> WindAsGrid();
@@ -74,6 +76,7 @@ namespace GSL
         Grid2DMetadata gridMetadata;
         Vector2 centroid;
         std::vector<NQA::Node> quadtreeLeaves;
+        VisibilityMap visibilityMap;
     };
 
     class OutsideNode : public PlaceNode

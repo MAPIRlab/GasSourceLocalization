@@ -15,6 +15,7 @@ namespace GSL
 {
     using Vector2 = glm::vec2;
     using Vector3 = glm::vec3;
+    using Vector3Int = glm::ivec3;
     using Vector2Int = glm::ivec2;
 } // namespace GSL
 
@@ -69,3 +70,13 @@ namespace GSL::vmath
     }
 
 } // namespace GSL::vmath
+
+inline GSL::Vector2 operator*(const GSL::Vector2& vec, float scalar)
+{
+    return GSL::Vector2(vec.x * scalar, vec.y * scalar);
+}
+
+inline GSL::Vector2 operator/(const GSL::Vector2& vec, float scalar)
+{
+    return GSL::Vector2(vec.x / scalar, vec.y / scalar);
+}

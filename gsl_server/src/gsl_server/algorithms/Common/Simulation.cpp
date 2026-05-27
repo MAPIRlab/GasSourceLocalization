@@ -160,7 +160,7 @@ namespace GSL
                 activeFilamentVec->clear();
                 std::swap(activeFilamentVec, otherFilamentVec);
             }
-            GSL_INFO("Warmup complete ({} iterations)", iterationCount);
+            // GSL_INFO("Warmup complete ({} iterations)", iterationCount);
         }
 
         ZoneScopedN("Recording");

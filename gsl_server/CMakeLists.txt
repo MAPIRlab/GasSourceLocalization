@@ -31,9 +31,9 @@ set(USE_GUI ON)
 
 
 # Tracy is a profiler. ON enables some instrumentation macros (and adds a dependency to tracy). To do sampling-based profiling you also need to run the node as sudo
-set(USE_TRACY OFF)
+set(USE_TRACY ON)
 # disable to do sampling-only profiling
-set(USE_TRACY_INSTRUMENTATION OFF)
+set(USE_TRACY_INSTRUMENTATION ON)
 
 set(DISABLE_NAVIGATION OFF) # Disables navigation decisions and lets you control the robot directly. For testing, mostly
 ##############################################################################
@@ -116,12 +116,12 @@ include(src/gsl_server/algorithms/Common/CMakeLists.txt)
 
 # You can disable the compilation of any of these algorithms by commenting them out here (useful if you don't want to install their dependencies)
 ###############################################################################################################################################
-include(src/gsl_server/algorithms/PlumeTracking/CMakeLists.txt)
-include(src/gsl_server/algorithms/Spiral/CMakeLists.txt)
-include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
-include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
-include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
-include(src/gsl_server/algorithms/Semantics/CMakeLists.txt) # There is further modularity inside of this file!
+# include(src/gsl_server/algorithms/PlumeTracking/CMakeLists.txt)
+# include(src/gsl_server/algorithms/Spiral/CMakeLists.txt)
+# include(src/gsl_server/algorithms/ParticleFilter/CMakeLists.txt)
+# include(src/gsl_server/algorithms/GrGSL/CMakeLists.txt)
+# include(src/gsl_server/algorithms/PMFS/CMakeLists.txt)
+# include(src/gsl_server/algorithms/Semantics/CMakeLists.txt) # There is further modularity inside of this file!
 include(src/gsl_server/algorithms/GraphGSL/CMakeLists.txt)
 
 
