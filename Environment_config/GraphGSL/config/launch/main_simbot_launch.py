@@ -66,7 +66,7 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {"deltaTime": 0.1},
             {"speed": 5.0},
-            {"worldFile": parse_substitution("$(find-pkg-share pmfs_env)/scenarios/$(var scenario)/basicSim/$(var simulation).yaml")}
+            {"worldFile": parse_substitution("$(find-pkg-share graphgsl_env)/scenarios/$(var scenario)/basicSim/$(var simulation).yaml")}
         ],
     )
 
@@ -74,7 +74,8 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             [
                 os.path.join(
-                    get_package_share_directory("pmfs_env"),
+                    get_package_share_directory("graphgsl_env"),
+                    "config",
                     "launch",
                     "gaden_player_launch.py",
                 )
@@ -90,7 +91,7 @@ def launch_setup(context, *args, **kwargs):
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory("pmfs_env"),
+                get_package_share_directory("graphgsl_env"),
                 "navigation_config/nav2_launch.py",
             )
         ),
@@ -205,7 +206,7 @@ def generate_launch_description():
         SetEnvironmentVariable("RCUTILS_COLORIZED_OUTPUT", "1"),
         SetLaunchConfiguration(
             name="pkg_dir",
-            value=[get_package_share_directory("pmfs_env")],
+            value=[get_package_share_directory("graphgsl_env")],
         ),
         SetLaunchConfiguration(
             name="nav_params_yaml",
