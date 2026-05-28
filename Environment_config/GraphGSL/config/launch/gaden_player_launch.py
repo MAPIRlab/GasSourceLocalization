@@ -24,7 +24,7 @@ def launch_arguments():
     return [
         DeclareLaunchArgument(
             "scenario",
-            default_value=["Graph4"],
+            default_value=["graph4"],
             description="scenario to simulate",
         ),
         DeclareLaunchArgument(
@@ -33,7 +33,7 @@ def launch_arguments():
             description="name of the configuration yaml file",
         ),
         DeclareLaunchArgument(
-            "playback",
+            "simulation",
             default_value=["sim1"],
             description="name of the simulation yaml file",
         ),
@@ -80,9 +80,8 @@ def generate_launch_description():
 
         SetLaunchConfiguration(
             name="pkg_dir",
-            value=[get_package_share_directory("test_env")],
+            value=[get_package_share_directory("graphgsl_env")],
         ),
-        SetLaunchConfiguration(name="simulation", value="none"),
     ]
 
     launch_description.extend(launch_arguments())

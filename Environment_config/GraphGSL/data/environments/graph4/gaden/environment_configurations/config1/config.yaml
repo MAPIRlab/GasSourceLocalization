@@ -4,6 +4,6 @@ outlets_models:
   - "!color [0.95, 0.08, 0.08, 1.00]"
   - ../../cad_models/outlets.stl
 unprocessed_wind_files: ../../wind_simulations/wind
-empty_point: [0, 0, 0]
+empty_point: [-1.95, 0.15, 0.9]
 cell_size: 0.1
 uniformWind: false

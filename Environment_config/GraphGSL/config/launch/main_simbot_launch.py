@@ -14,8 +14,8 @@ from launch.frontend.parse_substitution import parse_substitution
 
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="A"),
-        DeclareLaunchArgument("simulation", default_value="A1"),
+        DeclareLaunchArgument("scenario", default_value="graph4"),
+        DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),
     ]
 # ==========================
@@ -184,7 +184,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
     actions = []
-    # actions.append(gaden_player)
+    actions.append(gaden_player)
     # actions.extend(anemometer)
     # actions.extend(PID)
     # actions.append(nav2)
@@ -192,8 +192,8 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_node)
     actions.extend(gsl_call)
     actions.append(rviz)
-    actions.append(windMapCreator)
-    actions.append(observationRecorder)
+    # actions.append(windMapCreator)
+    # actions.append(observationRecorder)
 
     return actions
 
