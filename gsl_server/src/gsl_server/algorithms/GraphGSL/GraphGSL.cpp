@@ -141,7 +141,7 @@ namespace GSL
         }
 
         std::mutex mtx;
-        auto loop_body = [&](const auto& sourceNode)
+        auto loop_body = [&](const auto sourceNode)
         {
             std::vector<std::vector<float>> simulated;
 
@@ -232,8 +232,15 @@ namespace GSL
         ThreadPool pool;
         std::mutex mtx;
 
+        struct Region
+        {
+            std::shared_ptr<RoomNode> room;
+            NQA::Node node;
+        };
+        std::map<Region, float> finalResiduals;
+
         // start by using all the leaves in all the rooms of interest
-        std::deque<std::pair<std::shared_ptr<RoomNode>, NQA::Node>> queue;
+        std::deque<Region> queue;
         for (const auto& roomNode : roomNodes)
             for (const auto& nqaNode : roomNode->GetQuadtreeLeaves())
                 queue.push_back({roomNode, nqaNode});
@@ -243,8 +250,7 @@ namespace GSL
         {
             struct Result
             {
-                std::shared_ptr<RoomNode> roomNode;
-                NQA::Node node;
+                Region region;
                 Graph_internal::CompleteMap* map;
             };
             // run the queued up simulations and register the results
@@ -259,35 +265,41 @@ namespace GSL
                                   Graph_internal::CompleteMap& result = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
                                   mtx.lock();
                                   numSimulations++;
-                                  results.push_back({roomNode, nqaNode, &result});
+                                  results.push_back({Region{roomNode, nqaNode}, &result});
                                   mtx.unlock();
                               });
             }
             pool.Wait();
 
             // calculate the residuals from the simulation results and sort accordingly
-            std::vector<std::pair<Result, float>> residuals;
+            std::vector<std::pair<Result, float>> residualsThisLevel;
             for (const auto& result : results)
             {
                 float residual = ResidualSingleSimulation(*result.map);
-                residuals.push_back({result, residual});
+                residualsThisLevel.push_back({result, residual});
             }
-            std::sort(residuals.begin(), residuals.end(), [](const auto& a, const auto& b)
+            std::sort(residualsThisLevel.begin(), residualsThisLevel.end(), [](const auto& a, const auto& b)
                       {
                           return a.second < b.second;
                       });
 
             constexpr float proportionBest = 0.15;
             // subdivide the nodes with the best residuals and add the smaller bits to the queue
-            for (size_t i = 0; i < residuals.size() * proportionBest; i++)
+            for (size_t i = 0; i < residualsThisLevel.size(); i++)
             {
-                auto [result, residual] = residuals.at(i);
-                result.node.ForceSubdivide();
-                for (const auto& child : result.node.children)
-                    if (child)
-                        queue.push_back({result.roomNode, *child});
+                auto [result, residual] = residualsThisLevel.at(i);
+                if (i < residualsThisLevel.size() * proportionBest)
+                {
+                    result.region.node.ForceSubdivide();
+                    for (const auto& child : result.region.node.children)
+                        if (child)
+                            queue.push_back({result.region.room, *child});
+                }
+                else
+                    finalResiduals[result.region] = residual;
             }
         } while (!queue.empty());
+
         GSL_INFO("Ran {} simulations at the geometric level", numSimulations);
     }
 
