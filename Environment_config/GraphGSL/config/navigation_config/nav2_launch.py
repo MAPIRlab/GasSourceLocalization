@@ -24,12 +24,14 @@ def launch_arguments():
 
 def launch_setup(context, *args, **kwargs):
 	# Get the launch directory
-	my_dir = get_package_share_directory("pmfs_env")
+	my_dir = get_package_share_directory("graphgsl_env")
 	map_file = os.path.join(
 		my_dir,
-		"scenarios",
+		"data",
+		"environments",
 		LaunchConfiguration("scenario").perform(context),
-		"_occupancy.yaml",
+		"graph",
+		"occupancy.yaml",
 	)
 	namespace = LaunchConfiguration("namespace").perform(context)
 	
@@ -108,7 +110,7 @@ def launch_setup(context, *args, **kwargs):
 
 
 	robot_desc = xacro.process_file(
-		os.path.join(my_dir, "navigation_config", "resources", "giraff.xacro"),
+		os.path.join(my_dir, "config", "navigation_config", "resources", "giraff.xacro"),
 		mappings={"frame_ns": namespace},
 	)
 	robot_desc = robot_desc.toprettyxml(indent="  ")
@@ -122,14 +124,15 @@ def launch_setup(context, *args, **kwargs):
 		),
 	]
 	
-	actions = [PushRosNamespace(namespace)]
+	actions = []
+	actions.append(PushRosNamespace(namespace))
 	actions.extend(navigation_nodes)
 	actions.extend(visualization_nodes)
 	return [GroupAction(actions=actions)]
 
 
 def generate_launch_description():
-	my_dir = get_package_share_directory("pmfs_env")
+	my_dir = get_package_share_directory("graphgsl_env")
 
 
 	launch_description = [
@@ -140,7 +143,7 @@ def generate_launch_description():
 		DeclareLaunchArgument(
 			"nav_params_yaml",
 			default_value=os.path.join(
-				my_dir, "navigation_config", "nav2_params.yaml"
+				my_dir, "config", "navigation_config", "nav2_params.yaml"
 			),
 		),
 	]
