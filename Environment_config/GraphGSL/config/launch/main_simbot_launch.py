@@ -15,6 +15,7 @@ from launch.frontend.parse_substitution import parse_substitution
 def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="graph4"),
+        DeclareLaunchArgument("config", default_value="config1"),
         DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),
     ]
@@ -45,15 +46,22 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e gdb -ex run --args",
                 # prefix="xterm -hold -e",
                 parameters=[
-                    {"graph_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph4")},
-                    {"sim_measurements_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_4")},
+                    {"graph_path": os.path.join(get_package_share_directory(
+                        "graphgsl_env"), "data", "environments", "graph4", "graph")},
+                    {"sim_measurements_path": os.path.join(get_package_share_directory(
+                        "graphgsl_env"), "data", "test_data", "data_graph_4")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
+                    {"robot_location_topic": "/PioneerP3DX/ground_truth"},
 
-                    {"GMRF_lambdaPrior_advection": 100.0},             # Advection constraint -> neighboring cells should have similar wind values in the direction of the wind
-                    {"GMRF_lambdaPrior_mass_conservation": 1000.0},    # Mass conservation law -> divergence of the wind field is zero
-                    {"GMRF_lambdaPrior_diffusion": 100.0},              # Diffusion constraint -> neighboring cells should have similar wind values in all directions
-                    {"GMRF_lambdaPrior_obstacles": 2000.0},            # Obstacles --> cells close to obstacles has only tangencial wind
+                    # Advection constraint -> neighboring cells should have similar wind values in the direction of the wind
+                    {"GMRF_lambdaPrior_advection": 100.0},
+                    # Mass conservation law -> divergence of the wind field is zero
+                    {"GMRF_lambdaPrior_mass_conservation": 1000.0},
+                    # Diffusion constraint -> neighboring cells should have similar wind values in all directions
+                    {"GMRF_lambdaPrior_diffusion": 100.0},
+                    # Obstacles --> cells close to obstacles has only tangencial wind
+                    {"GMRF_lambdaPrior_obstacles": 2000.0},
                 ],
                 on_exit=Shutdown()
             ),
@@ -66,7 +74,8 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             {"deltaTime": 0.1},
             {"speed": 5.0},
-            {"worldFile": parse_substitution("$(find-pkg-share graphgsl_env)/scenarios/$(var scenario)/basicSim/$(var simulation).yaml")}
+            {"worldFile": parse_substitution(
+                "$(find-pkg-share graphgsl_env)/data/environments/$(var scenario)/gaden/environment_configurations/$(var config)/BasicSimScene.yaml")}
         ],
     )
 
@@ -84,6 +93,7 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "use_rviz": "False",
             "scenario": LaunchConfiguration("scenario").perform(context),
+            "config": LaunchConfiguration("config").perform(context),
             "simulation": LaunchConfiguration("simulation").perform(context)
         }.items(),
     )
@@ -109,7 +119,8 @@ def launch_setup(context, *args, **kwargs):
                 executable="simulated_anemometer",
                 name="Anemometer",
                 parameters=[
-                    {"sensor_frame": parse_substitution("$(var robot_name)_anemometer_frame")},
+                    {"sensor_frame": parse_substitution(
+                        "$(var robot_name)_anemometer_frame")},
                     {"fixed_frame": "map"},
                     {"noise_std": 0.3},
                     {"use_map_ref_system": False},
@@ -120,7 +131,8 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='anemometer_tf_pub',
-                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
+                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution(
+                    '$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
         ])
@@ -135,7 +147,8 @@ def launch_setup(context, *args, **kwargs):
                 name="PID",
                 parameters=[
                     {"sensor_model": 30},
-                    {"sensor_frame": parse_substitution("$(var robot_name)_pid_frame")},
+                    {"sensor_frame": parse_substitution(
+                        "$(var robot_name)_pid_frame")},
                     {"fixed_frame": "map"},
                     {"noise_std": 20.1},
                     {'use_sim_time': True},
@@ -145,7 +158,8 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='pid_tf_pub',
-                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution('$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
+                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution(
+                    '$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
         ])
@@ -155,9 +169,12 @@ def launch_setup(context, *args, **kwargs):
         package="wind_map_creator",
         executable="gui_pub",
         parameters=[
-                {"listenTopic": parse_substitution("$(var robot_name)/initialpose")},
-                {"publishTopic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
-                {"poseTopic": parse_substitution("$(var robot_name)/amcl_pose")}
+                {"listenTopic": parse_substitution(
+                    "$(var robot_name)/initialpose")},
+                {"publishTopic": parse_substitution(
+                    "$(var robot_name)/Anemometer/WindSensor_reading")},
+                {"poseTopic": parse_substitution(
+                    "$(var robot_name)/amcl_pose")}
         ],
     )
 
@@ -167,10 +184,14 @@ def launch_setup(context, *args, **kwargs):
         name="obs",
         # prefix="xterm -hold -e",
         parameters=[
-                {"pose_topic": parse_substitution("$(var robot_name)/amcl_pose")},
-                {"wind_topic": parse_substitution("$(var robot_name)/Anemometer/WindSensor_reading")},
-                {"gas_topic": parse_substitution("$(var robot_name)/PID/Sensor_reading")},
-                {"file_path": os.path.join(get_package_share_directory("graphgsl_env"), "data", "test_data", "data_graph_4")},
+                {"pose_topic": parse_substitution(
+                    "$(var robot_name)/amcl_pose")},
+                {"wind_topic": parse_substitution(
+                    "$(var robot_name)/Anemometer/WindSensor_reading")},
+                {"gas_topic": parse_substitution(
+                    "$(var robot_name)/PID/Sensor_reading")},
+                {"file_path": os.path.join(get_package_share_directory(
+                    "graphgsl_env"), "data", "test_data", "data_graph_4")},
         ],
     )
 
@@ -180,7 +201,8 @@ def launch_setup(context, *args, **kwargs):
         name="rviz",
         # prefix="xterm -e",
         arguments=[
-            "-d" + os.path.join(get_package_share_directory("graphgsl_env"), "config", "launch", "graph.rviz")
+            "-d" + os.path.join(get_package_share_directory("graphgsl_env"),
+                                "config", "launch", "graph.rviz")
         ],
     )
     actions = []
@@ -188,7 +210,7 @@ def launch_setup(context, *args, **kwargs):
     # actions.extend(anemometer)
     # actions.extend(PID)
     # actions.append(nav2)
-    # actions.append(basic_sim)
+    actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
     actions.append(rviz)
@@ -211,7 +233,8 @@ def generate_launch_description():
         SetLaunchConfiguration(
             name="nav_params_yaml",
             value=[PathJoinSubstitution(
-                [LaunchConfiguration("pkg_dir"), "navigation_config", "nav2_params.yaml"]
+                [LaunchConfiguration("pkg_dir"),
+                 "navigation_config", "nav2_params.yaml"]
             )],
         ),
 

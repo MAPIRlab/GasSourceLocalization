@@ -2,7 +2,7 @@ map: occupancy.yaml
 robots:
   - name: PioneerP3DX
     radius: 0.25
-    position: [-1.95, 0.15, 0.1]
+    position: [15, 4, 0.1]
     angle: 0  # in radians
     sensors:
       - type: laser
