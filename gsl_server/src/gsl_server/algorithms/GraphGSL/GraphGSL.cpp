@@ -93,18 +93,18 @@ namespace GSL
         naiveEntireMap->AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
 #endif
 
-        // graph.UpdateAllWindMaps();
-        // stateMachine.forceSetState(movingState.get());
+        graph.UpdateAllWindMaps();
+        stateMachine.forceSetState(movingState.get());
     }
 
-    // TODO we probably don't want to override this at all! this is here for testing purposes
-    Vector2 GraphGSL::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
-    {
-        Vector2 wind = Algorithm::windCallback(msg);
-        graph.AddObservation(currentRobotPosition, wind, 0);
-        graph.UpdateAllWindMaps(); // TODO remove this! it's a test
-        return wind;
-    }
+    // // TODO we probably don't want to override this at all! this is here for testing purposes
+    // Vector2 GraphGSL::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
+    // {
+    //     Vector2 wind = Algorithm::windCallback(msg);
+    //     graph.AddObservation(currentRobotPosition, wind, 0);
+    //     graph.UpdateAllWindMaps(); // TODO remove this! it's a test
+    //     return wind;
+    // }
 
     void GraphGSL::EvaluateRoomProbabilities()
     {
@@ -237,7 +237,7 @@ namespace GSL
             std::shared_ptr<RoomNode> room;
             NQA::Node node;
         };
-        std::map<Region, float> finalResiduals;
+        std::map<std::shared_ptr<Region>, float> finalResiduals;
 
         // start by using all the leaves in all the rooms of interest
         std::deque<Region> queue;
@@ -250,7 +250,7 @@ namespace GSL
         {
             struct Result
             {
-                Region region;
+                std::shared_ptr<Region> region;
                 Graph_internal::CompleteMap* map;
             };
             // run the queued up simulations and register the results
@@ -265,7 +265,7 @@ namespace GSL
                                   Graph_internal::CompleteMap& result = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
                                   mtx.lock();
                                   numSimulations++;
-                                  results.push_back({Region{roomNode, nqaNode}, &result});
+                                  results.push_back({std::make_shared<Region>(roomNode, nqaNode), &result});
                                   mtx.unlock();
                               });
             }
@@ -290,10 +290,10 @@ namespace GSL
                 auto [result, residual] = residualsThisLevel.at(i);
                 if (i < residualsThisLevel.size() * proportionBest)
                 {
-                    result.region.node.ForceSubdivide();
-                    for (const auto& child : result.region.node.children)
+                    result.region->node.ForceSubdivide();
+                    for (const auto& child : result.region->node.children)
                         if (child)
-                            queue.push_back({result.region.room, *child});
+                            queue.push_back({result.region->room, *child});
                 }
                 else
                     finalResiduals[result.region] = residual;

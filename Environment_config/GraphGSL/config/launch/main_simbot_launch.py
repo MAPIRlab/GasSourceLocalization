@@ -72,7 +72,7 @@ def launch_setup(context, *args, **kwargs):
         package="basic_sim",
         executable="basic_sim",
         parameters=[
-            {"deltaTime": 0.1},
+            {"deltaTime": 0.05},
             {"speed": 5.0},
             {"worldFile": parse_substitution(
                 "$(find-pkg-share graphgsl_env)/data/environments/$(var scenario)/gaden/environment_configurations/$(var config)/BasicSimScene.yaml")}
@@ -102,7 +102,7 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             os.path.join(
                 get_package_share_directory("graphgsl_env"),
-                "navigation_config/nav2_launch.py",
+                "config/navigation_config/nav2_launch.py",
             )
         ),
         launch_arguments={
@@ -206,13 +206,13 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
     actions = []
-    actions.append(gaden_player)
+    # actions.append(gaden_player)
     # actions.extend(anemometer)
     # actions.extend(PID)
-    # actions.append(nav2)
+    actions.append(nav2)
     actions.append(basic_sim)
-    actions.extend(gsl_node)
-    actions.extend(gsl_call)
+    # actions.extend(gsl_node)
+    # actions.extend(gsl_call)
     actions.append(rviz)
     # actions.append(windMapCreator)
     # actions.append(observationRecorder)
@@ -234,7 +234,7 @@ def generate_launch_description():
             name="nav_params_yaml",
             value=[PathJoinSubstitution(
                 [LaunchConfiguration("pkg_dir"),
-                 "navigation_config", "nav2_params.yaml"]
+                 "config", "navigation_config", "nav2_params.yaml"]
             )],
         ),
 
