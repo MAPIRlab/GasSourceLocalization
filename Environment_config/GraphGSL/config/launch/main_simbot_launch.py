@@ -48,8 +48,8 @@ def launch_setup(context, *args, **kwargs):
                 parameters=[
                     {"graph_path": os.path.join(get_package_share_directory(
                         "graphgsl_env"), "data", "environments", "graph4", "graph")},
-                    {"sim_measurements_path": os.path.join(get_package_share_directory(
-                        "graphgsl_env"), "data", "test_data", "data_graph_4")},
+                    # {"sim_measurements_path": os.path.join(get_package_share_directory(
+                    #     "graphgsl_env"), "data", "test_data", "data_graph_4")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
                     {"robot_location_topic": "/PioneerP3DX/ground_truth"},
@@ -122,7 +122,7 @@ def launch_setup(context, *args, **kwargs):
                     {"sensor_frame": parse_substitution(
                         "$(var robot_name)_anemometer_frame")},
                     {"fixed_frame": "map"},
-                    {"noise_std": 0.3},
+                    {"noise_std": 0.2},
                     {"use_map_ref_system": False},
                     {'use_sim_time': True},
                 ]
@@ -206,16 +206,16 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
     actions = []
-    # actions.append(gaden_player)
-    # actions.extend(anemometer)
-    # actions.extend(PID)
+    actions.append(gaden_player)
+    actions.extend(anemometer)
+    actions.extend(PID)
     actions.append(nav2)
     actions.append(basic_sim)
-    # actions.extend(gsl_node)
-    # actions.extend(gsl_call)
+    actions.extend(gsl_node)
+    actions.extend(gsl_call)
     actions.append(rviz)
     # actions.append(windMapCreator)
-    # actions.append(observationRecorder)
+    actions.append(observationRecorder)
 
     return actions
 

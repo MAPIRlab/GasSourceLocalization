@@ -104,7 +104,7 @@ namespace GSL
 
     Vector2 Algorithm::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
     {
-        float downWind_direction = angles::normalize_angle(msg->wind_direction);
+        float downWind_direction = angles::normalize_angle(msg->wind_direction + M_PI);
         // Transform from anemometer ref_system to map ref_system using TF
         PoseStamped anemometer_downWind_pose, map_downWind_pose;
         try
@@ -122,9 +122,9 @@ namespace GSL
             GSL_ERROR("{} - Error: {}", __FUNCTION__, ex.what());
             return Vector2{};
         }
-        // Utils::publishDebugSingleArrow(vmath::WithZ(currentRobotPosition, 0),
+        // Utils::publishDebugSingleArrow(vmath::WithZ(currentRobotPosition, 1),
         //                                map_downWind_pose.pose.orientation,
-        //                                -msg->wind_speed,
+        //                                msg->wind_speed,
         //                                Utils::create_color(0, 1, 0),
         //                                "wind_arrow");
         float angle = Utils::getYaw(map_downWind_pose.pose.orientation);

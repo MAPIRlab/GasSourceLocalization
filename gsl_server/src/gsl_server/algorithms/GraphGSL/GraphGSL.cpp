@@ -93,7 +93,6 @@ namespace GSL
         naiveEntireMap->AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
 #endif
 
-        graph.UpdateAllWindMaps();
         stateMachine.forceSetState(movingState.get());
     }
 
@@ -108,6 +107,7 @@ namespace GSL
 
     void GraphGSL::EvaluateRoomProbabilities()
     {
+        graph.UpdateAllWindMaps();
         simulationSystem.Reset();
         ThreadPool pool;
         {
