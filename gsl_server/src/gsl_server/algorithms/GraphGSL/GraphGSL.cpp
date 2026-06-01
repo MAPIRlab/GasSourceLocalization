@@ -304,6 +304,7 @@ namespace GSL
                 else
                     finalResiduals[result.region] = residual;
             }
+            GSL_INFO("Completed a simulation level -- total simulations: {}", numSimulations);
         } while (!queue.empty());
 
         // turn the residuals into probabilities

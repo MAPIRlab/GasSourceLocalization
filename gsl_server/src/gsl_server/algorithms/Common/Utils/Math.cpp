@@ -93,6 +93,9 @@ namespace GSL::Utils
             max = std::max(max, vec.at(i));
         }
 
+        if (max == 0)
+            return;
+
 #pragma omp parallel for
         for (size_t i = 0; i < vec.size(); i++)
         {

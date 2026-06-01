@@ -39,7 +39,6 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-        GSL_ASSERT(std::any_of(result.hitMap->begin(), result.hitMap->end(), [](float f) { return f > 0; }));
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f) { return std::isfinite(f); }));
         return result;
@@ -86,7 +85,6 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f) { return std::isfinite(f); }));
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
         GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f) { return std::isfinite(f); }));
         return result;
