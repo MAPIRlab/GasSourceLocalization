@@ -250,7 +250,7 @@ namespace GSL::Graph_internal
             NodeState& current = stateStack.back();
 
             // if we cannot keep expanding this node, pop it from the stack
-            if (current.gasAtInlet < minimumGasThr || current.doorways.empty())
+            if (current.gasAtInlet < minimumGasThr || !std::isfinite(current.gasAtInlet) || current.doorways.empty())
                 stateStack.pop_back();
             else
             {
@@ -276,7 +276,7 @@ namespace GSL::Graph_internal
                     continue;
 
                 next.gasAtInlet = current.gasAtInlet * gasProportion;
-                if (next.gasAtInlet < minimumGasThr)
+                if (next.gasAtInlet < minimumGasThr || !std::isfinite(next.gasAtInlet))
                     continue;
 
                 // update the total amount of gas that passes through the doorway
