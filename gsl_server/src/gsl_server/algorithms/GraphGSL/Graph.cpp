@@ -230,9 +230,7 @@ namespace GSL
                 }
             }
 
-            ColorRGBA color;
-            if (Is<RoomNode>(node))
-                color = Utils::valueToColor(roomSourceProbabilities[node], 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis);
+            ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis);
 
             // node marker
             {

@@ -265,9 +265,7 @@ namespace GSL
                 pool.QueueJob([&, this, roomNode, nqaNode]()
                               {
                                   AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
-                                  GSL_INFO("Starting simulation for region: {}", nqaNode.getAABB().min);
                                   Graph_internal::CompleteMap& result = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
-                                  GSL_INFO("Finished simulation for region: {}", nqaNode.getAABB().min);
 
                                   std::scoped_lock lock(mtx);
                                   numSimulations++;
@@ -296,10 +294,15 @@ namespace GSL
                 auto [result, residual] = residualsThisLevel.at(i);
                 if (i < residualsThisLevel.size() * proportionBest)
                 {
-                    result.region->nqaNode.ForceSubdivide();
-                    for (const auto& child : result.region->nqaNode.children)
-                        if (child)
-                            queue.push_back({result.region->room, *child});
+                    bool subdivided = result.region->nqaNode.ForceSubdivide();
+                    if (subdivided)
+                    {
+                        for (const auto& child : result.region->nqaNode.children)
+                            if (child)
+                                queue.push_back({result.region->room, *child});
+                    }
+                    else
+                        finalResiduals[result.region] = residual;
                 }
                 else
                     finalResiduals[result.region] = residual;
@@ -310,7 +313,11 @@ namespace GSL
         // turn the residuals into probabilities
         for (const auto& [region, residual] : finalResiduals)
             for (Vector2Int pos : region->nqaNode.getAABB())
-                region->room->GetSourceProbabilities().dataAt(pos) = ProbFromResidual(residual);
+            {
+                float prob = ProbFromResidual(residual);
+                GSL_ASSERT(std::isfinite(prob));
+                region->room->GetSourceProbabilities().dataAt(pos) = prob;
+            }
 
         // normalize the conditional probabilities -- p(s | room)
         for (auto node : graph.nodes)
@@ -323,16 +330,7 @@ namespace GSL
 
             // if we did simulations in this room, use the probabilities we just calculated from the residuals
             if (Utils::contains(roomNodes, room))
-            {
-                float sum = 0;
-                for (size_t i = 0; i < sourceProbs.data.size(); i++)
-                    if (sourceProbs.occupancy.at(i))
-                        sum += sourceProbs.data.at(i);
-
-                for (size_t i = 0; i < sourceProbs.data.size(); i++)
-                    if (sourceProbs.occupancy.at(i))
-                        sourceProbs.data.at(i) /= sum;
-            }
+                Utils::PowerMaxNormalize(sourceProbs.data, sourceProbs.occupancy);
             // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
             else
             {

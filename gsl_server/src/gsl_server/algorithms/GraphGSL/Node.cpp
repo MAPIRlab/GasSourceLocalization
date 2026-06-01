@@ -32,7 +32,12 @@ namespace GSL
         size_t numCells = gridMetadata.dimensions.x * gridMetadata.dimensions.y;
         wind.resize(numCells);
         outletMask.resize(numCells, -1);
-        sourceProbabilities.resize(numCells, 1. / numCells);
+        sourceProbabilities.resize(numCells);
+        for (size_t i = 0; i < numCells; i++)
+            if (occupancy.at(i))
+                sourceProbabilities.at(i) = 1.f / gridMetadata.numFreeCells;
+            else
+                sourceProbabilities.at(i) = 0;
 
         // quadtree decomposition
         NQA::Quadtree quadtree(GetOccupancy());

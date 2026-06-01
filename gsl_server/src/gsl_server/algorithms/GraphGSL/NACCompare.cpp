@@ -47,7 +47,8 @@ namespace GSL::NAC
         for (size_t i = 0; i < observed.size(); i++)
         {
             float diff = observed.at(i) - scale * simulated.at(i);
-            float error = diff * diff;
+            diff = std::abs(diff);
+            float error = std::pow(diff, 0.5);
             sum += std::lerp(0.0f, error, confidence.at(i));
         }
 
