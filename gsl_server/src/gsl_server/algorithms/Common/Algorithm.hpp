@@ -55,7 +55,7 @@ namespace GSL
         virtual GSLResult checkSourceFound();
         virtual void saveResultsToFile(GSLResult result);
 
-        virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) = 0; //called from StopAndMeasure once we have enough data for this position
+        virtual void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection); //called from StopAndMeasure once we have enough data for this position
 
         virtual float gasCallback(const olfaction_msgs::msg::GasSensor::SharedPtr msg);
         virtual Vector2 windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg);
@@ -86,6 +86,12 @@ namespace GSL
         rclcpp::Subscription<olfaction_msgs::msg::Anemometer>::SharedPtr windSub;
         rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr localizationSub;
 
+        struct Republishers
+        {
+            rclcpp::Publisher<olfaction_msgs::msg::GasSensor>::SharedPtr gasPub;
+            rclcpp::Publisher<olfaction_msgs::msg::Anemometer>::SharedPtr windPub;
+            rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr localizationPub;
+        } republishers;
 
         double thresholdGas, thresholdWind;
 

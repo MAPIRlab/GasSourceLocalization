@@ -34,6 +34,7 @@ namespace GSL
 
     void PlumeTracking::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
+        Algorithm::processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         if (concentration > thresholdGas && windSpeed > thresholdWind)
         {
             setSurgeGoal(windDirection);

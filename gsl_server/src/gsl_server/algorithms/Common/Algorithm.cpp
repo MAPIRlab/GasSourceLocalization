@@ -24,7 +24,7 @@ namespace GSL
         //------------
         using namespace std::placeholders;
         localizationSub = rclnode->create_subscription<PoseWithCovarianceStamped>(getParam<std::string>("robot_location_topic", "amcl_pose"), 1,
-                                                                               std::bind(&Algorithm::localizationCallback, this, _1));
+                                                                                  std::bind(&Algorithm::localizationCallback, this, _1));
         rclcpp::Rate rate(1);
         while (resultLogging.robotPosesVector.size() == 0)
         {
@@ -34,7 +34,7 @@ namespace GSL
         }
 
         gasSub = rclnode->create_subscription<olfaction_msgs::msg::GasSensor>(getParam<std::string>("enose_topic", "PID/Sensor_reading"), 1,
-                                                                           std::bind(&Algorithm::gasCallback, this, _1));
+                                                                              std::bind(&Algorithm::gasCallback, this, _1));
 
         GSL_INFO("Gas sensor topic: '{}'", gasSub->get_topic_name());
         windSub = rclnode->create_subscription<olfaction_msgs::msg::Anemometer>(
@@ -43,15 +43,18 @@ namespace GSL
 
         // extra safety net for when the middleware hangs and the node gets stuck in service/action spinning
         static auto exit_timer = rclnode->create_wall_timer(std::chrono::seconds((int)resultLogging.maxSearchTime + 10), // extra time to make sure this only happens if the node is deadlocked
-                                                         []()
-                                                         {
-                                                             rclcpp::shutdown();
-                                                             GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
-                                                             CLOSE_PROGRAM;
-                                                         });
+                                                            []()
+                                                            {
+                                                                rclcpp::shutdown();
+                                                                GSL_ERROR("GLOBAL TIMEOUT WAS EXCEEDED, BUT NODE IS STILL RUNNING. STOPPING FORCEFULLY.");
+                                                                CLOSE_PROGRAM;
+                                                            });
 
         startTime = rclnode->now();
 
+        republishers.gasPub = rclnode->create_publisher<olfaction_msgs::msg::GasSensor>("/measured_gas", 1);
+        republishers.windPub = rclnode->create_publisher<olfaction_msgs::msg::Anemometer>("/measured_wind", 1);
+        republishers.localizationPub = rclnode->create_publisher<PoseWithCovarianceStamped>("/measured_localization", 1);
         GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
     }
 
@@ -175,7 +178,7 @@ namespace GSL
     {
         GSL_INFO("Reading measurements from file {}", file.c_str());
 
-        if(!std::filesystem::exists(file))
+        if (!std::filesystem::exists(file))
         {
             GSL_WARN("File '{}' does not exist. Creating it.", file.c_str());
             std::ofstream f(file);
@@ -194,7 +197,7 @@ namespace GSL
             float wind_speed = wind["speed"].as<float>();
 
             YAML::Node gas = entry["gas"];
-            float concentration = gas["concentration"].as<float>(); 
+            float concentration = gas["concentration"].as<float>();
 
             processGasAndWindMeasurements(concentration, wind_speed, wind_direction);
         }
@@ -296,6 +299,28 @@ namespace GSL
         }
         else
             GSL_ERROR("Unable to open Results file at: {}", resultLogging.resultsFile.c_str());
+    }
+
+    void Algorithm::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
+    {
+        // publish the averaged observations and the pose they were taken at
+        // this might be used by other nodes to record the observations in a file
+        // or not, not our problem :)
+        
+        olfaction_msgs::msg::GasSensor gasMsg;
+        gasMsg.header.stamp = rclnode->now();
+        gasMsg.raw = concentration;
+
+        republishers.gasPub->publish(gasMsg);
+        olfaction_msgs::msg::Anemometer windMsg;
+        windMsg.header.stamp = rclnode->now();
+        windMsg.wind_speed = windSpeed;
+        windMsg.wind_direction = windDirection;
+        republishers.windPub->publish(windMsg);
+
+        PoseWithCovarianceStamped pose = currentRobotPose;
+        pose.header.stamp = rclnode->now();
+        republishers.localizationPub->publish(pose);
     }
 
     // Utils

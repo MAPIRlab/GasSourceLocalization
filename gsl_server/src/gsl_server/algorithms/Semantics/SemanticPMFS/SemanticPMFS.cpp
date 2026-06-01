@@ -209,6 +209,7 @@ namespace GSL
 
     void SemanticPMFS::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
+        Algorithm::processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         static int number_of_updates = 0;
 
         Grid<HitProbability> grid(hitProbability, simulationOccupancy, gridMetadata);

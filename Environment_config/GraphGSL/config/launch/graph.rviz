@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Grid1/Line Style1
         - /Naive maps1/Topic1
-        - /Marker1
       Splitter Ratio: 0.5199999809265137
     Tree Height: 725
   - Class: rviz_common/Selection
@@ -93,6 +92,19 @@ Visualization Manager:
       Value: false
     - Class: rviz_default_plugins/Marker
       Enabled: true
+      Name: Anemometer
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/wind_arrow
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
       Name: selectedAABB
       Namespaces:
         {}
@@ -165,17 +177,17 @@ Visualization Manager:
         Value: /gsl_graph
       Value: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: Occupancy_nodes
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_occupancy
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: WindMaps
@@ -189,7 +201,7 @@ Visualization Manager:
         Value: /gsl_wind
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: SimGasMaps
       Namespaces:
         {}
@@ -199,7 +211,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/simGasMaps
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: MeasuredGasMaps
@@ -225,7 +237,7 @@ Visualization Manager:
         Value: /PioneerP3DX/quadtree
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: Naive maps
       Namespaces:
         {}
@@ -235,19 +247,18 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_naive_maps
-      Value: true
-    - Class: rviz_default_plugins/Marker
+      Value: false
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
-      Name: Marker
+      Name: SourceProb
       Namespaces:
         "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
-        Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/wind_arrow
+        Value: /PioneerP3DX/sourceProb
       Value: true
   Enabled: true
   Global Options:
@@ -295,15 +306,15 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 4.244101047515869
+      Distance: 36.55344009399414
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 13.194418907165527
-        Y: 1.9746730327606201
+        X: 9.516192436218262
+        Y: 2.515012741088867
         Z: 5.960464477539062e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806

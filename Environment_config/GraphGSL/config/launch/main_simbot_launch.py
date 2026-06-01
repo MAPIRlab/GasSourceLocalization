@@ -48,8 +48,8 @@ def launch_setup(context, *args, **kwargs):
                 parameters=[
                     {"graph_path": os.path.join(get_package_share_directory(
                         "graphgsl_env"), "data", "environments", "graph4", "graph")},
-                    # {"sim_measurements_path": os.path.join(get_package_share_directory(
-                    #     "graphgsl_env"), "data", "test_data", "data_graph_4")},
+                    {"sim_measurements_path": os.path.join(get_package_share_directory(
+                        "graphgsl_env"), "data", "test_data", "data_graph_4")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
                     {"robot_location_topic": "/PioneerP3DX/ground_truth"},
@@ -182,14 +182,11 @@ def launch_setup(context, *args, **kwargs):
         package="gsl_server",
         executable="observation_recorder",
         name="obs",
-        # prefix="xterm -hold -e",
+        prefix="xterm -hold -e",
         parameters=[
-                {"pose_topic": parse_substitution(
-                    "$(var robot_name)/amcl_pose")},
-                {"wind_topic": parse_substitution(
-                    "$(var robot_name)/Anemometer/WindSensor_reading")},
-                {"gas_topic": parse_substitution(
-                    "$(var robot_name)/PID/Sensor_reading")},
+                {"pose_topic": "/measured_localization"},
+                {"wind_topic": "/measured_wind"},
+                {"gas_topic": "/measured_gas"},
                 {"file_path": os.path.join(get_package_share_directory(
                     "graphgsl_env"), "data", "test_data", "data_graph_4")},
         ],
@@ -215,7 +212,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_call)
     actions.append(rviz)
     # actions.append(windMapCreator)
-    actions.append(observationRecorder)
+    # actions.append(observationRecorder)
 
     return actions
 

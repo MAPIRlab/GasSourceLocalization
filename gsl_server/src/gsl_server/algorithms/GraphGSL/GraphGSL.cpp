@@ -87,6 +87,7 @@ namespace GSL
 
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
+        Algorithm::processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         graph.AddObservation(currentRobotPosition, Utils::polarToCartesian(windSpeed, windDirection), concentration);
 
 #if ENABLE_NAIVE_EVALUATION

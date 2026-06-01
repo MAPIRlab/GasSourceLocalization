@@ -27,6 +27,7 @@ namespace GSL
 
     void Spiral::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
+        Algorithm::processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         static double previousPI = 0;
         static int consecutive_misses = 0;
         double PI = getProximityIndex();

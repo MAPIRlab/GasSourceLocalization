@@ -80,6 +80,7 @@ namespace GSL
 
     void GrGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
+        Algorithm::processGasAndWindMeasurements(concentration, windSpeed, windDirection);
         bool gasHit = concentration > thresholdGas;
         bool significantWind = windSpeed > thresholdWind;
 
