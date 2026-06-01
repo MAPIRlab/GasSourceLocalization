@@ -6,6 +6,7 @@
 #include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fmt/ranges.h>
+#include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
 namespace GSL
@@ -53,6 +54,7 @@ namespace GSL
         pubs.simGasMapsPub = rclnode->create_publisher<MarkerArray>("simGasMaps", 1);
         pubs.measuredGasMapsPub = rclnode->create_publisher<MarkerArray>("measuredGasMaps", 1);
         pubs.quadtreePub = rclnode->create_publisher<MarkerArray>("quadtree", 1);
+        pubs.sourceProbPub = rclnode->create_publisher<MarkerArray>("sourceProb", 1);
 #if ENABLE_NAIVE_EVALUATION
         naiveMapsPub = rclnode->create_publisher<MarkerArray>("/gsl_naive_maps", 1);
 #endif
@@ -195,14 +197,14 @@ namespace GSL
 
         // calculate the probabilities from the optimization residuals
         //----------------------------------------------------
-        roomSourceProbabilities.clear();
+        graph.roomSourceProbabilities.clear();
         GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
         std::map<std::shared_ptr<PlaceNode>, double> scores;
         double scoresSum = 0;
-        for (auto& [room, loss] : roomResiduals)
-            if (!std::isnan(loss))
+        for (auto& [room, residual] : roomResiduals)
+            if (!std::isnan(residual))
             {
-                scores[room] = std::exp(-loss / likelihoodSigma);
+                scores[room] = ProbFromResidual(residual);
                 scoresSum += scores[room];
             }
             else
@@ -211,12 +213,12 @@ namespace GSL
         for (const auto& [room, score] : scores)
         {
             double prob = score / scoresSum;
-            roomSourceProbabilities[room] = prob;
+            graph.roomSourceProbabilities[room] = prob;
             GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
         }
 
         std::vector<std::shared_ptr<RoomNode>> roomNodes;
-        for (const auto& [node, prob] : roomSourceProbabilities)
+        for (const auto& [node, prob] : graph.roomSourceProbabilities)
         {
             auto roomNode = As<RoomNode>(node);
             if (roomNode && prob > 0.3)
@@ -236,7 +238,7 @@ namespace GSL
         struct Region
         {
             std::shared_ptr<RoomNode> room;
-            NQA::Node node;
+            NQA::Node nqaNode;
         };
         std::map<std::shared_ptr<Region>, float> finalResiduals;
 
@@ -263,11 +265,13 @@ namespace GSL
                 pool.QueueJob([&, this, roomNode, nqaNode]()
                               {
                                   AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
+                                  GSL_INFO("Starting simulation for region: {}", nqaNode.getAABB().min);
                                   Graph_internal::CompleteMap& result = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
-                                  mtx.lock();
+                                  GSL_INFO("Finished simulation for region: {}", nqaNode.getAABB().min);
+
+                                  std::scoped_lock lock(mtx);
                                   numSimulations++;
                                   results.push_back({std::make_shared<Region>(roomNode, nqaNode), &result});
-                                  mtx.unlock();
                               });
             }
             pool.Wait();
@@ -277,6 +281,7 @@ namespace GSL
             for (const auto& result : results)
             {
                 float residual = ResidualSingleSimulation(*result.map);
+                GSL_ASSERT(std::isfinite(residual));
                 residualsThisLevel.push_back({result, residual});
             }
             std::sort(residualsThisLevel.begin(), residualsThisLevel.end(), [](const auto& a, const auto& b)
@@ -291,8 +296,8 @@ namespace GSL
                 auto [result, residual] = residualsThisLevel.at(i);
                 if (i < residualsThisLevel.size() * proportionBest)
                 {
-                    result.region->node.ForceSubdivide();
-                    for (const auto& child : result.region->node.children)
+                    result.region->nqaNode.ForceSubdivide();
+                    for (const auto& child : result.region->nqaNode.children)
                         if (child)
                             queue.push_back({result.region->room, *child});
                 }
@@ -300,6 +305,41 @@ namespace GSL
                     finalResiduals[result.region] = residual;
             }
         } while (!queue.empty());
+
+        // turn the residuals into probabilities
+        for (const auto& [region, residual] : finalResiduals)
+            for (Vector2Int pos : region->nqaNode.getAABB())
+                region->room->GetSourceProbabilities().dataAt(pos) = ProbFromResidual(residual);
+
+        // normalize the conditional probabilities -- p(s | room)
+        for (auto node : graph.nodes)
+        {
+            auto room = As<RoomNode>(node);
+            if (!room)
+                continue;
+
+            Grid2D sourceProbs = room->GetSourceProbabilities();
+
+            // if we did simulations in this room, use the probabilities we just calculated from the residuals
+            if (Utils::contains(roomNodes, room))
+            {
+                float sum = 0;
+                for (size_t i = 0; i < sourceProbs.data.size(); i++)
+                    if (sourceProbs.occupancy.at(i))
+                        sum += sourceProbs.data.at(i);
+
+                for (size_t i = 0; i < sourceProbs.data.size(); i++)
+                    if (sourceProbs.occupancy.at(i))
+                        sourceProbs.data.at(i) /= sum;
+            }
+            // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
+            else
+            {
+                for (size_t i = 0; i < sourceProbs.data.size(); i++)
+                    if (sourceProbs.occupancy.at(i))
+                        sourceProbs.data.at(i) = 1.f / sourceProbs.metadata.numFreeCells;
+            }
+        }
 
         GSL_INFO("Ran {} simulations at the geometric level", numSimulations);
     }
@@ -334,6 +374,11 @@ namespace GSL
         return residual;
     }
 
+    float GraphGSL::ProbFromResidual(float residual)
+    {
+        return std::exp(-residual / likelihoodSigma);
+    }
+
 #if ENABLE_NAIVE_EVALUATION
     void GraphGSL::EvaluateRoomProbabilitiesNaive()
     {
@@ -359,6 +404,7 @@ namespace GSL
             naiveMapsPub->publish(Graph_internal::VisualizeCompleteMap(naiveCompleteMaps.at(naiveSimulationIndex), {naiveEntireMap}, graph.nodeSeparationViz, 0.2));
 #endif
         pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());
+        pubs.sourceProbPub->publish(graph.VisualizeSourceProbs());
     }
 
 } // namespace GSL

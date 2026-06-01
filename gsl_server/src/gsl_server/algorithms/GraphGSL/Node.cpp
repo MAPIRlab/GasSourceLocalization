@@ -47,6 +47,11 @@ namespace GSL
             }
         }
 
+        // assert the leaves are actually free
+        for (const auto& leaf : quadtreeLeaves)
+            for (Vector2Int indices : leaf.getAABB())
+                GSL_ASSERT(GetOccupancy().occupancyAt(indices));
+
         // visibility map (simulation optimization)
         visibilityMap.Populate(GetOccupancy());
     }

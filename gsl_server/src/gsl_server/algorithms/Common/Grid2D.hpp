@@ -77,8 +77,8 @@ namespace GSL
 
         AABB2D indicesToCoordinates(const AABB2DInt& aabb) const
         {
-            return AABB2D{.min = indicesToCoordinates(aabb.min),
-                          .max = indicesToCoordinates(aabb.max)};
+            return AABB2D{.min = indicesToCoordinates(aabb.min) - Vector2{0.5, 0.5} * cellSize,
+                          .max = indicesToCoordinates(aabb.max) + Vector2{0.5, 0.5} * cellSize};
         }
     };
 
@@ -153,7 +153,9 @@ namespace GSL
 
         Grid2D<Occupancy> AsOccupancy() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
         Grid2D<T> AsNonOwning() { return Grid2D<T, false>(data, occupancy, metadata); }
+        Grid2D<T, true> AsOwning() { return Grid2D<T, true>(data, occupancy, metadata); }
     };
+
 
     // unlike a Grid, a Map is an always-owning struct
     // it only contains occupancy information, no additional data

@@ -93,7 +93,7 @@ namespace GSL
                     doorway->from = thisNode;
                     doorway->to = otherNode;
                     doorway->aabb = aabb;
-                    doorway->samePhysicalDoorway={doorway};
+                    doorway->samePhysicalDoorway = {doorway};
                     thisNode->doorways.push_back(doorway);
                 }
                 else
@@ -232,9 +232,7 @@ namespace GSL
 
             ColorRGBA color;
             if (Is<RoomNode>(node))
-                color = Utils::create_color(0, 1, 0);
-            else
-                color = Utils::create_color(1, 0, 0);
+                color = Utils::valueToColor(roomSourceProbabilities[node], 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis);
 
             // node marker
             {
@@ -380,6 +378,32 @@ namespace GSL
         {
             Marker marker = Utils::createPointsMarker(grid.AsNonOwning(), 0, max,
                                                       Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma, 0.2);
+            marker.id = id++;
+            array.markers.push_back(marker);
+        }
+
+        return array;
+    }
+
+    MarkerArray Graph::VisualizeSourceProbs()
+    {
+        MarkerArray array;
+        size_t id = 0;
+
+        for (auto node : nodes)
+        {
+            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+                continue;
+            auto roomNode = As<RoomNode>(node);
+            std::vector<float> points = roomNode->GetSourceProbabilities().data;
+            for (size_t i = 0; i < points.size(); ++i)
+                points.at(i) *= roomSourceProbabilities.at(roomNode);
+
+            Grid2DMetadata vizMetadata = roomNode->GetSourceProbabilities().metadata;
+            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+
+            Grid2D<float> grid(points, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
+            Marker marker = Utils::createPointsMarker(grid, 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
         }

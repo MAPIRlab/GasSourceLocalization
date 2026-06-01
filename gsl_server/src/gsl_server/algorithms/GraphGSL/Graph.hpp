@@ -27,11 +27,14 @@ namespace GSL
         MarkerArray VisualizeGasReadings();
         MarkerArray VisualizeWind();
         MarkerArray VisualizeMapSegmentation();
+        MarkerArray VisualizeSourceProbs();
 
     public:
+        std::map<std::shared_ptr<class PlaceNode>, float> roomSourceProbabilities;
         std::vector<std::shared_ptr<class PlaceNode>> nodes;
         std::map<std::string, bool> selectedForVisualization;
         float nodeSeparationViz = 1; // multiplier for the origin of each node (for visualization only) Makes it easier to see which area corresponds to which node
+
 
     private:
         void MergeWindMarkers(MarkerArray& all, const MarkerArray& _new);

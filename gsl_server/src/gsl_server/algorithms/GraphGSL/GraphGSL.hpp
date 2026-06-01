@@ -23,12 +23,12 @@ namespace GSL
         void EvaluateRoomProbabilities();
         void EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes);
         float ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
+        float ProbFromResidual(float residual);
 
     private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
-        std::map<std::shared_ptr<PlaceNode>, float> roomSourceProbabilities;
         float likelihoodSigma = 100;
 
 #define ENABLE_NAIVE_EVALUATION 1
@@ -48,6 +48,7 @@ namespace GSL
             rclcpp::Publisher<MarkerArray>::SharedPtr simGasMapsPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr measuredGasMapsPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr sourceProbPub;
         } pubs;
 
         struct SimulationViz

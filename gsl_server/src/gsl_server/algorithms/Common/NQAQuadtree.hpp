@@ -30,7 +30,7 @@ namespace GSL::NQA
         bool SubdivideIfNeeded(Grid2D<Occupancy> _map);
         bool ForceSubdivide(); // returns false if it is not a leaf or is too small to subdivide
         bool isLeaf() { return children[0] == nullptr && children[1] == nullptr && children[2] == nullptr && children[3] == nullptr; }
-        AABB2DInt getAABB() const { return AABB2DInt{origin, origin + size}; }
+        AABB2DInt getAABB() const { return AABB2DInt{origin, origin + size - Vector2Int{1, 1}}; }
 
     private:
     };
