@@ -409,24 +409,14 @@ namespace GSL
         return array;
     }
 
-    MarkerArray Graph::VisualizeWind()
+    MarkerArray Graph::VisualizeWind(std::shared_ptr<RoomNode> roomNode)
     {
-        MarkerArray windArray;
-        for (auto node : nodes)
-        {
-            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
-                continue;
+        Grid2D<Vector2> windMap = roomNode->GetWindMap();
+        Grid2DMetadata vizMetadata = windMap.metadata;
+        vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
-            auto roomNode = As<RoomNode>(node);
-
-            Grid2D<Vector2> windMap = roomNode->GetWindMap();
-            Grid2DMetadata vizMetadata = windMap.metadata;
-            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
-
-            MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05, 0.5);
-            MergeWindMarkers(windArray, windMarker);
-        }
-        return windArray;
+        MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05);
+        return windMarker;
     }
 
     void Graph::MergeWindMarkers(MarkerArray& all, const MarkerArray& _new)

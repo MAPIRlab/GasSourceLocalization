@@ -76,6 +76,8 @@ namespace GSL
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.005, 1., 10.);
             SelectNodes();
+            if(ImGui::Button("Update wind map"))
+                gsl->UpdateWindMaps();
         }
         ImGui::End();
 

@@ -284,9 +284,10 @@ namespace GSL::Utils
                     marker.pose.position.z = height;
                     marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
                     // shape
-                    marker.scale.x = vectors.metadata.cellSize * std::clamp(module / max_module, 0., 1.); // arrow length,
-                    marker.scale.y = size;                                                                // arrow width
-                    marker.scale.z = size;                                                                // arrow height
+                    float sizeFactor = std::clamp(module / max_module, 0., 1.);
+                    marker.scale.x = 1.2 * vectors.metadata.cellSize *  sizeFactor; // arrow length,
+                    marker.scale.y = size * sizeFactor;                                                                // arrow width
+                    marker.scale.z = size * sizeFactor;                                                                // arrow height
 
                     // if we have a manually specified speed to correspond to the max arrow length, but this exceeds it, give it a different color
                     if (module <= max_module)

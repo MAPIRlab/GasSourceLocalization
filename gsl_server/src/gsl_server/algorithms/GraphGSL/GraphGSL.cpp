@@ -70,7 +70,7 @@ namespace GSL
         if (simulatedMeasurementsPath != "?")
         {
             SimulateMeasurements(simulatedMeasurementsPath);
-            graph.UpdateAllWindMaps();
+            UpdateWindMaps();
         }
 
         stateMachine.forceSetState(movingState.get());
@@ -99,22 +99,28 @@ namespace GSL
         stateMachine.forceSetState(movingState.get());
     }
 
+    void GraphGSL::UpdateWindMaps()
+    {
+        graph.UpdateAllWindMaps();
+        naiveEntireMap->UpdateWindMap(graph.gmrf);
+    }
+
     // // TODO we probably don't want to override this at all! this is here for testing purposes
     // Vector2 GraphGSL::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
     // {
     //     Vector2 wind = Algorithm::windCallback(msg);
     //     graph.AddObservation(currentRobotPosition, wind, 0);
-    //     graph.UpdateAllWindMaps(); // TODO remove this! it's a test
+    //     UpdateWindMaps(); // TODO remove this! it's a test
     //     return wind;
     // }
 
     void GraphGSL::EvaluateRoomProbabilities()
     {
-        graph.UpdateAllWindMaps();
+        UpdateWindMaps();
         simulationSystem.Reset();
         ThreadPool pool;
         {
-            ScopedStopwatch watch("evaluation");
+            ScopedStopwatch watch("Room simulations");
             // simulate all possible room sources
             std::vector<std::shared_ptr<DoorwayNode>> simsToRun;
             for (const auto& node : graph.nodes)
@@ -146,23 +152,25 @@ namespace GSL
         std::mutex mtx;
         auto loop_body = [&](const auto sourceNode)
         {
+            // to make the layout convenient for the optimization, each row corresponds to a cell in the map, and each column to a simulation
             std::vector<std::vector<float>> simulated;
+            simulated.reserve(300);
 
             // while we fill a row of the matrix for each simulation out of this node, we only want one copy of the measurements and their uncertainty
             // if we are done recording those, skip them on the next iteration
-            bool fillMeasurements = true;
             std::vector<float> measured;
             std::vector<float> uncertainty;
             std::vector<float> confidence;
 
+            size_t simIndex = 0;
             for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
             {
-                simulated.push_back(std::vector<float>());
                 for (const auto& [room, localSimMap] : simulation.gasMaps)
                 {
                     if (room == sourceNode)
                         continue;
 
+                    size_t cellIdx = 0; // count the valid cells
                     Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
                     for (size_t i = 0; i < localSimMap.size(); i++)
                     {
@@ -172,28 +180,37 @@ namespace GSL
                         if (cell.confidence < 0.05)
                             continue;
 
-                        simulated.back().push_back(localSimMap.at(i));
-                        if (fillMeasurements)
+                        if (simIndex == 0)
                         {
+                            simulated.push_back(std::vector<float>());
                             measured.push_back(cell.meanAndVariance.mean);
                             uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
                             confidence.push_back(cell.confidence);
                         }
+                        simulated.at(cellIdx).push_back(localSimMap.at(i));
+
+                        cellIdx++;
                     }
                 }
-
-                fillMeasurements = false;
+                simIndex++;
             }
 
-            std::vector<float> weights = NAC::LeastSquaresDoorwayCombination(measured, simulated, uncertainty);
+            for (size_t i = 0; i < simulated.size(); i++)
+                GSL_ASSERT(simulated.at(i).size() == simulated.at(0).size());
+
             mtx.lock();
-            roomResiduals[sourceNode] = NAC::ResidualDoorways(measured, simulated, confidence, weights);
+            roomResiduals[sourceNode] = GSL::NACCeres::FitDoorwayScales(measured, simulated, uncertainty);
+            GSL_INFO("Residual at {}: {}", sourceNode->id, roomResiduals[sourceNode]);
             mtx.unlock();
         };
 
-        for (const auto& node : graph.nodes)
-            pool.QueueJob(std::bind(loop_body, node));
-        pool.Wait();
+        {
+            ScopedStopwatch watch("Room residuals");
+
+            for (const auto& node : graph.nodes)
+                pool.QueueJob(std::bind(loop_body, node));
+            pool.Wait();
+        }
 
         // calculate the probabilities from the optimization residuals
         //----------------------------------------------------
@@ -337,7 +354,7 @@ namespace GSL
             if (Utils::contains(roomNodes, room))
             {
                 Utils::NormalizeDistribution(sourceProbsSimulatedRooms.at(room), room->GetSourceProbabilities().occupancy);
-                for(size_t i = 0; i < sourceProbsSimulatedRooms.at(room).size(); i++)
+                for (size_t i = 0; i < sourceProbsSimulatedRooms.at(room).size(); i++)
                     room->GetSourceProbabilities().data.at(i) = sourceProbsSimulatedRooms.at(room).at(i);
             }
             // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
@@ -378,9 +395,8 @@ namespace GSL
             }
         }
 
-        float scale = NAC::LeastSquaresScale(measured, simulated, uncertainty);
-        float residual = NAC::Residual(measured, simulated, uncertainty, scale);
-        return residual;
+        float residual = NACCeres::FitSingleScale(measured, simulated, uncertainty);
+        return residual / measured.size();
     }
 
     long double GraphGSL::ProbFromResidual(long double residual)
@@ -405,7 +421,7 @@ namespace GSL
             Utils::ClearMarkers(pubs.graphPub);
 
         pubs.occupancyPub->publish(graph.VisualizeOccupancy());
-        pubs.windPub->publish(graph.VisualizeWind());
+        pubs.windPub->publish(graph.VisualizeWind(naiveEntireMap));
         pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
         pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(simulationViz.selectedNode, simulationViz.simulationIndex, graph.nodeSeparationViz));
 #if ENABLE_NAIVE_EVALUATION

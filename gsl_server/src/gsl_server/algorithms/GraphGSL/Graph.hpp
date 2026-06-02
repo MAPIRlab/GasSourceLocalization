@@ -25,7 +25,7 @@ namespace GSL
         MarkerArray VisualizeGraph();
         MarkerArray VisualizeOccupancy();
         MarkerArray VisualizeGasReadings();
-        MarkerArray VisualizeWind();
+        MarkerArray VisualizeWind(std::shared_ptr<class RoomNode> roomNode);
         MarkerArray VisualizeMapSegmentation();
         MarkerArray VisualizeSourceProbs();
 
@@ -38,5 +38,6 @@ namespace GSL
 
     private:
         void MergeWindMarkers(MarkerArray& all, const MarkerArray& _new);
+        std::vector<Vector2> _entireWindMap; // for visualization only
     };
 } // namespace GSL

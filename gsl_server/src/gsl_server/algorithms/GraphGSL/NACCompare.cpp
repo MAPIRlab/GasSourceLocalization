@@ -95,4 +95,117 @@ namespace GSL::NAC
 
         return sum;
     }
+
 } // namespace GSL::NAC
+
+#include <ceres/ceres.h>
+
+namespace GSL::NACCeres
+{
+    struct CostFunctorSingle
+    {
+        const std::vector<float>& simulated;
+        const std::vector<float>& observed;
+        const std::vector<float>& uncertainty;
+        const float power = 0.5;
+
+        template <typename T>
+        bool operator()(const T* const x, T* residual) const
+        {
+            // TODO uncertainty
+            residual[0] = T(0);
+            for (size_t i = 0; i < observed.size(); i++)
+            {
+                T diff = T(observed.at(i)) - x[0] * T(simulated.at(i));
+                diff = ceres::abs(diff);
+                residual[0] += ceres::pow(diff, T(power));
+            }
+
+            return true;
+        }
+    };
+
+    static float Solve(ceres::Problem& problem)
+    {
+        // Run the solver!
+        ceres::Solver::Options options;
+        options.linear_solver_type = ceres::DENSE_QR;
+        // options.minimizer_progress_to_stdout = true;
+        ceres::Solver::Summary summary;
+        ceres::Solve(options, &problem, &summary);
+
+        // get the residual as a goodness of fit indicator
+        ceres::Problem::EvaluateOptions evaluate_options;
+        double cost;
+        problem.Evaluate(evaluate_options, &cost, nullptr, nullptr, nullptr);
+        return cost;
+    }
+
+    float FitSingleScale(const std::vector<float>& simulated,
+                         const std::vector<float>& observed,
+                         const std::vector<float>& uncertainty)
+    {
+        double x = 1.0;
+
+        ceres::Problem problem;
+        CostFunctorSingle cost_functor{.simulated = simulated, .observed = observed, .uncertainty = uncertainty};
+        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctorSingle, 1, 1>(&cost_functor);
+        problem.AddResidualBlock(cost_function, nullptr, &x);
+
+        return Solve(problem);
+    }
+
+    // Evaluates the solution (vector of scales) for a single cell
+    struct CostFunctorDoorways
+    {
+        const std::vector<float>& simulated;
+        const float& observed;
+        const float& uncertainty;
+
+        const float power = 0.5;
+
+        template <typename T>
+        bool operator()(const T* const* x, T* residual) const
+        {
+            // TODO uncertainty
+            T diff = T(observed);
+            for (size_t doorwayIdx = 0; doorwayIdx < simulated.size(); doorwayIdx++)
+                diff -= ceres::abs(*x[doorwayIdx] * T(simulated.at(doorwayIdx)));
+
+            residual[0] += ceres::pow(diff, T(power));
+
+            return true;
+        }
+    };
+
+    float FitDoorwayScales(const std::vector<float>& observed,
+                           const std::vector<std::vector<float>>& simulated,
+                           const std::vector<float>& uncertainty)
+    {
+        ceres::Problem problem;
+
+        std::vector<double> scales(simulated.at(0).size(), 1.0);
+        std::vector<double*> scale_pointers(scales.size());
+        for (size_t i = 0; i < scales.size(); i++)
+            scale_pointers.at(i) = &scales.at(i);
+
+        // add one residual block for each cell in the map (at least, the ones with confidence > 0)
+        for (size_t i = 0; i < observed.size(); i++)
+        {
+            auto* cost_function = new ceres::DynamicAutoDiffCostFunction<CostFunctorDoorways>(
+                new CostFunctorDoorways{
+                    .simulated = simulated.at(i),
+                    .observed = observed.at(i),
+                    .uncertainty = uncertainty.at(i)});
+
+            for (size_t i = 0; i < scales.size(); i++)
+                cost_function->AddParameterBlock(1);
+            cost_function->SetNumResiduals(1);
+
+            problem.AddResidualBlock(cost_function, nullptr, scale_pointers);
+        }
+
+        // Run the solver!
+        return Solve(problem);
+    }
+} // namespace GSL::NACCeres
