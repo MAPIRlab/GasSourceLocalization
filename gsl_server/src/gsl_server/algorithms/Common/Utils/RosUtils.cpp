@@ -273,7 +273,7 @@ namespace GSL::Utils
             {
                 double module = vmath::length(vectors.data[i]);
                 double angle = std::atan2(vectors.data[i].y, vectors.data[i].x);
-                if (module > 0.001)
+                if (module > 5e-2 * max_module)
                 {
                     marker.id = i;
                     // Set the pose of the marker.
