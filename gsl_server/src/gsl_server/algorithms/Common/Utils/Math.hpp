@@ -5,6 +5,9 @@
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
 
+template <typename T>
+concept NumericType= std::integral<T> || std::floating_point<T>;
+
 namespace GSL::Utils
 {
     static constexpr float Deg2Rad = M_PI / 180.0f;
@@ -40,13 +43,14 @@ namespace GSL::Utils
         const std::vector<Occupancy>& occupancy,
         std::function<double(const T&)> accessor);
 
-    template <typename T>
+    template <std::floating_point T>
     void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, const std::vector<Occupancy>& occupancy);
-    template <typename T>
+    template <std::floating_point T>
     void NormalizeDistribution(std::vector<T>& variable, const std::vector<Occupancy>& occupancy);
 
     void LogMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy);
-    void PowerMaxNormalize(std::vector<float>& vec, const std::vector<Occupancy>& occupancy, float power = 1);
+    template <std::floating_point T>
+    void PowerMaxNormalize(std::vector<T>& vec, const std::vector<Occupancy>& occupancy, T power = 1);
     void Winsorize(std::vector<float>& vec, float percentile = 5);
 
     float EquallyDistributed01F();
@@ -86,7 +90,7 @@ namespace GSL::Utils
         uint16_t m_index;
         std::array<float, Size> m_precalculatedTable;
     };
-    
+
     // See Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
     struct RunningVariance
     {
@@ -94,7 +98,7 @@ namespace GSL::Utils
         double weight_sum = 0;
         double weight_squared_sum = 0;
         double variance = 0;
-        
+
         void Update(float value, float weight)
         {
             weight_sum = weight_sum + weight;
@@ -104,6 +108,7 @@ namespace GSL::Utils
             variance = variance + weight * (value - mean_old) * (value - mean);
         }
     };
+
 } // namespace GSL::Utils
 
 // Template Definitions
@@ -160,7 +165,7 @@ inline double GSL::Utils::KLD(
     return total;
 }
 
-template <typename T>
+template <std::floating_point T>
 void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, const std::vector<GSL::Occupancy>& occupancy)
 {
     T total = 0;
@@ -178,7 +183,7 @@ void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, const std::vect
     }
 }
 
-template <typename T>
+template <std::floating_point T>
 inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, const std::vector<Occupancy>& occupancy)
 {
     double total = 0;
@@ -193,5 +198,29 @@ inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::fun
     {
         if (occupancy[i] == Occupancy::Free)
             accessor(variable[i]) = accessor(variable[i]) / total;
+    }
+}
+
+template <std::floating_point T>
+void GSL::Utils::PowerMaxNormalize(std::vector<T>& vec, const std::vector<Occupancy>& occupancy, T power)
+{
+    T max = 0;
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        if (occupancy.at(i) != Occupancy::Free)
+            continue;
+        vec.at(i) = std::pow(vec.at(i), power);
+        max = std::max(max, vec.at(i));
+    }
+
+    if (max == 0)
+        return;
+
+#pragma omp parallel for
+    for (size_t i = 0; i < vec.size(); i++)
+    {
+        if (occupancy.at(i) != Occupancy::Free)
+            continue;
+        vec.at(i) = vec.at(i) / max;
     }
 }

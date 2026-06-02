@@ -39,7 +39,7 @@ namespace GSL::Graph_internal
         Utils::Winsorize(*result.hitMap, 5);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
         Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1.f);
         return result;
     }
 

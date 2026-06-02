@@ -40,6 +40,13 @@ namespace GSL::Utils
 
     std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, ValueColorMode mode, Colors::ColorMaps colormap)
     {
+        if(mode == ValueColorMode::Logarithmic)
+        {
+            val = std::log(val);
+            lowLimit = std::log(std::max(1e-10, lowLimit));
+            highLimit = std::log(highLimit);
+        }
+
         float t = (val-lowLimit) / (highLimit-lowLimit);
         auto [r, g, b] = Colors::SampleColorMap(t, colormap);
         return create_color(r, g, b, 1);
@@ -229,7 +236,7 @@ namespace GSL::Utils
         std::vector<ColorRGBA> colors(grid.data.size());
         for (size_t i = 0; i < grid.data.size(); i++)
             if (grid.occupancy.at(i))
-                colors.at(i) = Utils::valueToColor(grid.data.at(i), min, max, ValueColorMode::Linear, colormap);
+                colors.at(i) = Utils::valueToColor(grid.data.at(i), min, max, mode, colormap);
         return createPointsMarker(Grid2D<ColorRGBA>(colors, grid), height);
     }
 

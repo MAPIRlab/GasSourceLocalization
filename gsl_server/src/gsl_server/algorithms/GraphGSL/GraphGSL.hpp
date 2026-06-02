@@ -23,13 +23,13 @@ namespace GSL
         void EvaluateRoomProbabilities();
         void EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes);
         float ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
-        float ProbFromResidual(float residual);
+        long double ProbFromResidual(long double residual);
 
     private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
-        float likelihoodSigma = 100;
+        float likelihoodSigma = 1000;
 
 #define ENABLE_NAIVE_EVALUATION 1
 #if ENABLE_NAIVE_EVALUATION

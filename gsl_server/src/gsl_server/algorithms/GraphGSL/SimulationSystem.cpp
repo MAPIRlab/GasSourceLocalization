@@ -39,8 +39,11 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
-        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f) { return std::isfinite(f); }));
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1.f);
+        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f)
+                               {
+                                   return std::isfinite(f);
+                               }));
         return result;
     }
 
@@ -85,8 +88,11 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1);
-        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f) { return std::isfinite(f); }));
+        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1.f);
+        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f)
+                               {
+                                   return std::isfinite(f);
+                               }));
         return result;
     }
 
@@ -299,10 +305,12 @@ namespace GSL::Graph_internal
         for (const auto& node : graph->nodes)
         {
             auto room = As<RoomNode>(node);
-            if (!room || node == firstNodeInSim)
+            if (!room)
                 continue;
 
-            completeGasMap.gasMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
+            if (room != firstNodeInSim)
+                completeGasMap.gasMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
+
             for (const auto& doorway : node->doorways)
             {
                 if (!totalGasThroughDoorway.contains(doorway) || !simulationCache.Contains(doorway))

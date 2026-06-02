@@ -199,8 +199,8 @@ namespace GSL
         //----------------------------------------------------
         graph.roomSourceProbabilities.clear();
         GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
-        std::map<std::shared_ptr<PlaceNode>, double> scores;
-        double scoresSum = 0;
+        std::map<std::shared_ptr<PlaceNode>, long double> scores;
+        long double scoresSum = 0;
         for (auto& [room, residual] : roomResiduals)
             if (!std::isnan(residual))
             {
@@ -310,14 +310,21 @@ namespace GSL
             GSL_INFO("Completed a simulation level -- total simulations: {}", numSimulations);
         } while (!queue.empty());
 
+        std::map<std::shared_ptr<RoomNode>, std::vector<long double>> sourceProbsSimulatedRooms;
         // turn the residuals into probabilities
         for (const auto& [region, residual] : finalResiduals)
+        {
+            if (!sourceProbsSimulatedRooms.contains(region->room))
+                sourceProbsSimulatedRooms[region->room] = std::vector<long double>(region->room->GetSourceProbabilities().data.size(), 0.0);
+
             for (Vector2Int pos : region->nqaNode.getAABB())
             {
-                float prob = ProbFromResidual(residual);
+                long double prob = ProbFromResidual(residual);
                 GSL_ASSERT(std::isfinite(prob));
-                region->room->GetSourceProbabilities().dataAt(pos) = prob;
+                size_t idx = region->room->GetSourceProbabilities().metadata.indexOf(pos);
+                sourceProbsSimulatedRooms.at(region->room).at(idx) = prob;
             }
+        }
 
         // normalize the conditional probabilities -- p(s | room)
         for (auto node : graph.nodes)
@@ -326,17 +333,20 @@ namespace GSL
             if (!room)
                 continue;
 
-            Grid2D sourceProbs = room->GetSourceProbabilities();
-
             // if we did simulations in this room, use the probabilities we just calculated from the residuals
             if (Utils::contains(roomNodes, room))
-                Utils::PowerMaxNormalize(sourceProbs.data, sourceProbs.occupancy);
+            {
+                Utils::NormalizeDistribution(sourceProbsSimulatedRooms.at(room), room->GetSourceProbabilities().occupancy);
+                for(size_t i = 0; i < sourceProbsSimulatedRooms.at(room).size(); i++)
+                    room->GetSourceProbabilities().data.at(i) = sourceProbsSimulatedRooms.at(room).at(i);
+            }
             // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
             else
             {
+                Grid2D<float> sourceProbs = room->GetSourceProbabilities();
                 for (size_t i = 0; i < sourceProbs.data.size(); i++)
                     if (sourceProbs.occupancy.at(i))
-                        sourceProbs.data.at(i) = 1.f / sourceProbs.metadata.numFreeCells;
+                        sourceProbs.data.at(i) = 1.0 / sourceProbs.metadata.numFreeCells;
             }
         }
 
@@ -373,7 +383,7 @@ namespace GSL
         return residual;
     }
 
-    float GraphGSL::ProbFromResidual(float residual)
+    long double GraphGSL::ProbFromResidual(long double residual)
     {
         return std::exp(-residual / likelihoodSigma);
     }

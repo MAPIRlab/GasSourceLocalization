@@ -349,7 +349,7 @@ namespace GSL
                 }
 
                 Utils::Winsorize(combinedMap, 5);
-                Utils::PowerMaxNormalize(combinedMap, roomNode->GetOccupancy().data, 1);
+                Utils::PowerMaxNormalize(combinedMap, roomNode->GetOccupancy().data, 1.f);
                 Simulation::displayImage(Grid2D<float>(combinedMap, roomNode->GetOccupancy()));
                 simulationOptions.simulationEnabled = true;
             };
