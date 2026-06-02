@@ -165,12 +165,12 @@ namespace GSL
             size_t simIndex = 0;
             for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
             {
+                size_t cellIdx = 0; // count the valid cells
                 for (const auto& [room, localSimMap] : simulation.gasMaps)
                 {
                     if (room == sourceNode)
                         continue;
 
-                    size_t cellIdx = 0; // count the valid cells
                     Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
                     for (size_t i = 0; i < localSimMap.size(); i++)
                     {
@@ -277,7 +277,9 @@ namespace GSL
             std::vector<Result> results;
             while (!queue.empty())
             {
-                auto [roomNode, nqaNode] = queue.front();
+                Region region = queue.front();
+                auto roomNode = region.room;
+                auto nqaNode = region.nqaNode;
                 queue.pop_front();
                 pool.QueueJob([&, this, roomNode, nqaNode]()
                               {

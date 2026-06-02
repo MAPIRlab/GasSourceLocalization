@@ -1,5 +1,7 @@
 #include "NACCompare.hpp"
+#include <cmath>
 #include <eigen3/Eigen/Dense>
+#include <gsl_server/core/Logging.hpp>
 
 namespace GSL::NAC
 {
@@ -117,8 +119,9 @@ namespace GSL::NACCeres
             for (size_t i = 0; i < observed.size(); i++)
             {
                 T diff = T(observed.at(i)) - x[0] * T(simulated.at(i));
+                T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
                 diff = ceres::abs(diff);
-                residual[0] += ceres::pow(diff, T(power));
+                residual[0] += ceres::pow(diff + epsilon, T(power));
             }
 
             return true;
@@ -148,8 +151,11 @@ namespace GSL::NACCeres
         double x = 1.0;
 
         ceres::Problem problem;
-        CostFunctorSingle cost_functor{.simulated = simulated, .observed = observed, .uncertainty = uncertainty};
-        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctorSingle, 1, 1>(&cost_functor);
+        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctorSingle, 1, 1>(
+            new CostFunctorSingle{
+                .simulated = simulated,
+                .observed = observed,
+                .uncertainty = uncertainty});
         problem.AddResidualBlock(cost_function, nullptr, &x);
 
         return Solve(problem);
@@ -168,12 +174,18 @@ namespace GSL::NACCeres
         bool operator()(const T* const* x, T* residual) const
         {
             // TODO uncertainty
-            T diff = T(observed);
+            T sim = T(0);
             for (size_t doorwayIdx = 0; doorwayIdx < simulated.size(); doorwayIdx++)
-                diff -= ceres::abs(*x[doorwayIdx] * T(simulated.at(doorwayIdx)));
+            {
+                T scale = *x[doorwayIdx];
+                sim += scale * T(simulated.at(doorwayIdx));
+            }
 
-            residual[0] += ceres::pow(diff, T(power));
+            T diff = ceres::abs(T(observed) - sim);
+            T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
+            residual[0] = ceres::pow(diff + epsilon, T(power));
 
+            GSL_ASSERT(ceres::isfinite(residual[0]));
             return true;
         }
     };
@@ -198,12 +210,15 @@ namespace GSL::NACCeres
                     .observed = observed.at(i),
                     .uncertainty = uncertainty.at(i)});
 
-            for (size_t i = 0; i < scales.size(); i++)
+            for (size_t j = 0; j < scales.size(); j++)
                 cost_function->AddParameterBlock(1);
             cost_function->SetNumResiduals(1);
 
             problem.AddResidualBlock(cost_function, nullptr, scale_pointers);
         }
+
+        for (size_t i = 0; i < scales.size(); i++)
+            problem.SetParameterLowerBound(scale_pointers.at(i), 0, 0.0);
 
         // Run the solver!
         return Solve(problem);

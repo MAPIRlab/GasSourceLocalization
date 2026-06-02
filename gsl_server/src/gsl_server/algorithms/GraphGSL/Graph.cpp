@@ -401,7 +401,7 @@ namespace GSL
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
             Grid2D<float> grid(points, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
-            Marker marker = Utils::createPointsMarker(grid, 0, 1, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Cividis, 0.3);
+            Marker marker = Utils::createPointsMarker(grid, 0, probabilityVizMax, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
         }
@@ -415,7 +415,7 @@ namespace GSL
         Grid2DMetadata vizMetadata = windMap.metadata;
         vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
-        MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05);
+        MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05, 0.2);
         return windMarker;
     }
 

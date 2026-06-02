@@ -31,9 +31,9 @@ set(USE_GUI ON)
 
 
 # Tracy is a profiler. ON enables some instrumentation macros (and adds a dependency to tracy). To do sampling-based profiling you also need to run the node as sudo
-set(USE_TRACY ON)
+set(USE_TRACY OFF)
 # disable to do sampling-only profiling
-set(USE_TRACY_INSTRUMENTATION ON)
+set(USE_TRACY_INSTRUMENTATION OFF)
 
 set(DISABLE_NAVIGATION OFF) # Disables navigation decisions and lets you control the robot directly. For testing, mostly
 ##############################################################################

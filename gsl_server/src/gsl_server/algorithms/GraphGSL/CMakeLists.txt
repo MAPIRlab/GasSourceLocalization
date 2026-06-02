@@ -19,7 +19,6 @@ ament_target_dependencies(GraphGSL
 target_link_libraries(GraphGSL  
     GSL_common
     Eigen3::Eigen
-    Tracy::TracyClient
     Ceres::ceres
 )
 add_compile_definitions(ENABLE_GraphGSL=1)

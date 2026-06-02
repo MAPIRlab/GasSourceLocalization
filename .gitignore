@@ -1,5 +1,5 @@
 Environment_config/**/gas_simulations
-Environment_config/**/simulations
+Environment_config/**/simulations/**/result
 *_U
 *_V
 *_W

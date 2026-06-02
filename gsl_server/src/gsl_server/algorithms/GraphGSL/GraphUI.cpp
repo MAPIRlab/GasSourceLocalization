@@ -76,8 +76,11 @@ namespace GSL
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.005, 1., 10.);
             SelectNodes();
-            if(ImGui::Button("Update wind map"))
-                gsl->UpdateWindMaps();
+            if (ImGui::Button("Update wind map"))
+                gsl->functionQueue.submit([this]()
+                                          {
+                                              gsl->UpdateWindMaps();
+                                          });
         }
         ImGui::End();
 
@@ -131,6 +134,8 @@ namespace GSL
     {
         ImGui::Begin("Simulate Source");
         {
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Probability max color", &gsl->graph.probabilityVizMax, 0.001, 1e-6, 1.0);
             size_t previousIndex = selectedNodeData.nodeIndex;
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Selected Node", gsl->graph.nodes, selectedNodeData.nodeIndex, [](auto& node)
