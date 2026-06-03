@@ -177,19 +177,19 @@ Visualization Manager:
         Value: /gsl_graph
       Value: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: Occupancy_nodes
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_occupancy
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: WindMaps
       Namespaces:
         {}
@@ -199,7 +199,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_wind
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: SimGasMaps
@@ -249,17 +249,17 @@ Visualization Manager:
         Value: /gsl_naive_maps
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: SourceProb
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/sourceProb
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -306,15 +306,15 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/ThirdPersonFollower
-      Distance: 36.55344009399414
+      Distance: 14.938498497009277
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 9.516192436218262
-        Y: 2.515012741088867
+        X: 9.883805274963379
+        Y: 2.0358076095581055
         Z: 5.960464477539062e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806

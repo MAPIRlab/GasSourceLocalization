@@ -212,7 +212,7 @@ def launch_setup(context, *args, **kwargs):
     actions.extend(gsl_call)
     actions.append(rviz)
     # actions.append(windMapCreator)
-    # actions.append(observationRecorder)
+    actions.append(observationRecorder)
 
     return actions
 

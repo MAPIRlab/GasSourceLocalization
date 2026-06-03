@@ -1,4 +1,4 @@
-playback_initial_iteration: 0
+playback_initial_iteration: 500
 playback_loop:
   loop: true
   from: 500
