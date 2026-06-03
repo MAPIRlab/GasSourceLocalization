@@ -184,7 +184,7 @@ namespace GSL
             std::ofstream f(file);
             f.close();
         }
-
+        republishObservations = false;
         YAML::Node root = YAML::LoadFile(file);
         for (YAML::Node entry : root)
         {
@@ -201,6 +201,7 @@ namespace GSL
 
             processGasAndWindMeasurements(concentration, wind_speed, wind_direction);
         }
+        republishObservations = true;
     }
 
     // This is overriden by non-reactive methods to be based on the uncertainty of the estimation
@@ -303,10 +304,13 @@ namespace GSL
 
     void Algorithm::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
     {
+        if (!republishObservations)
+            return;
+
         // publish the averaged observations and the pose they were taken at
         // this might be used by other nodes to record the observations in a file
         // or not, not our problem :)
-        
+
         olfaction_msgs::msg::GasSensor gasMsg;
         gasMsg.header.stamp = rclnode->now();
         gasMsg.raw = concentration;
