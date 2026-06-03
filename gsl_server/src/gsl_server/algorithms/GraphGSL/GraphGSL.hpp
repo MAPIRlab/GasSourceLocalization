@@ -31,7 +31,7 @@ namespace GSL
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
-        float likelihoodSigma = 1000;
+        float likelihoodSigma = 1;
 
 #define ENABLE_NAIVE_EVALUATION 1
 #if ENABLE_NAIVE_EVALUATION

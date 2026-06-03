@@ -21,8 +21,8 @@ namespace GSL::NAC
         return Q_inv;
     }
 
-    float LeastSquaresScale(const std::vector<float>& observed,
-                            const std::vector<float>& simulated,
+    float LeastSquaresScale(const std::vector<float>& simulated,
+                            const std::vector<float>& observed,
                             const std::vector<float>& uncertainty)
     {
         Eigen::Matrix<float, Eigen::Dynamic, 1> H(simulated.size(), 1);
@@ -57,8 +57,8 @@ namespace GSL::NAC
         return sum;
     }
 
-    std::vector<float> LeastSquaresDoorwayCombination(const std::vector<float>& observed,
-                                                      const std::vector<std::vector<float>>& simulated,
+    std::vector<float> LeastSquaresDoorwayCombination(const std::vector<std::vector<float>>& simulated,
+                                                      const std::vector<float>& observed,
                                                       const std::vector<float>& uncertainty)
     {
         Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> H(simulated.at(0).size(), simulated.size());
@@ -104,25 +104,29 @@ namespace GSL::NAC
 
 namespace GSL::NACCeres
 {
+    template <typename T>
+    T EvaluateScale(T scaledSimulated, T observed, T uncertainty)
+    {
+        T diff = ceres::abs(observed - scaledSimulated);
+        diff = ceres::lerp(diff, T(0), uncertainty);
+        T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
+        // T power(0.5);
+        // diff = ceres::pow(diff + epsilon, T(power));
+        return diff;
+    }
+
     struct CostFunctorSingle
     {
-        const std::vector<float>& simulated;
-        const std::vector<float>& observed;
-        const std::vector<float>& uncertainty;
-        const float power = 0.5;
+        const float simulated;
+        const float observed;
+        const float uncertainty;
 
         template <typename T>
         bool operator()(const T* const x, T* residual) const
         {
-            // TODO uncertainty
             residual[0] = T(0);
-            for (size_t i = 0; i < observed.size(); i++)
-            {
-                T diff = T(observed.at(i)) - x[0] * T(simulated.at(i));
-                T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
-                diff = ceres::abs(diff);
-                residual[0] += ceres::pow(diff + epsilon, T(power));
-            }
+            T scale = x[0];
+            residual[0] += EvaluateScale(scale * T(simulated), T(observed), T(uncertainty));
 
             return true;
         }
@@ -151,12 +155,15 @@ namespace GSL::NACCeres
         double x = 1.0;
 
         ceres::Problem problem;
-        ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctorSingle, 1, 1>(
-            new CostFunctorSingle{
-                .simulated = simulated,
-                .observed = observed,
-                .uncertainty = uncertainty});
-        problem.AddResidualBlock(cost_function, nullptr, &x);
+        for (size_t i = 0; i < observed.size(); i++)
+        {
+            ceres::CostFunction* cost_function = new ceres::AutoDiffCostFunction<CostFunctorSingle, 1, 1>(
+                new CostFunctorSingle{
+                    .simulated = simulated.at(i),
+                    .observed = observed.at(i),
+                    .uncertainty = uncertainty.at(i)});
+            problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(1.0), &x);
+        }
 
         return Solve(problem);
     }
@@ -168,12 +175,9 @@ namespace GSL::NACCeres
         const float& observed;
         const float& uncertainty;
 
-        const float power = 0.5;
-
         template <typename T>
         bool operator()(const T* const* x, T* residual) const
         {
-            // TODO uncertainty
             T sim = T(0);
             for (size_t doorwayIdx = 0; doorwayIdx < simulated.size(); doorwayIdx++)
             {
@@ -181,26 +185,26 @@ namespace GSL::NACCeres
                 sim += scale * T(simulated.at(doorwayIdx));
             }
 
-            T diff = ceres::abs(T(observed) - sim);
-            T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
-            residual[0] = ceres::pow(diff + epsilon, T(power));
+            residual[0] = EvaluateScale(sim, T(observed), T(uncertainty));
 
             GSL_ASSERT(ceres::isfinite(residual[0]));
             return true;
         }
     };
 
-    float FitDoorwayScales(const std::vector<float>& observed,
-                           const std::vector<std::vector<float>>& simulated,
+    float FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
+                           const std::vector<float>& observed,
                            const std::vector<float>& uncertainty)
     {
-        ceres::Problem problem;
+        if(simulated.empty())
+            return NAN;
 
         std::vector<double> scales(simulated.at(0).size(), 1.0);
         std::vector<double*> scale_pointers(scales.size());
         for (size_t i = 0; i < scales.size(); i++)
             scale_pointers.at(i) = &scales.at(i);
 
+        ceres::Problem problem;
         // add one residual block for each cell in the map (at least, the ones with confidence > 0)
         for (size_t i = 0; i < observed.size(); i++)
         {
@@ -214,7 +218,7 @@ namespace GSL::NACCeres
                 cost_function->AddParameterBlock(1);
             cost_function->SetNumResiduals(1);
 
-            problem.AddResidualBlock(cost_function, nullptr, scale_pointers);
+            problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(1.0), scale_pointers);
         }
 
         for (size_t i = 0; i < scales.size(); i++)

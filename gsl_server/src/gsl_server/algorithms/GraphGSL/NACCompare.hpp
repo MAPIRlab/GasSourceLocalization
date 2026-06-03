@@ -35,7 +35,7 @@ namespace GSL::NACCeres
                          const std::vector<float>& observed,
                          const std::vector<float>& uncertainty);
 
-    float FitDoorwayScales(const std::vector<float>& observed,
-                           const std::vector<std::vector<float>>& simulated,
+    float FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
+                           const std::vector<float>& observed,
                            const std::vector<float>& uncertainty);
 }; // namespace GSL::NACCeres

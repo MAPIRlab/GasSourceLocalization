@@ -160,7 +160,6 @@ namespace GSL
             // if we are done recording those, skip them on the next iteration
             std::vector<float> measured;
             std::vector<float> uncertainty;
-            std::vector<float> confidence;
 
             size_t simIndex = 0;
             for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
@@ -184,8 +183,7 @@ namespace GSL
                         {
                             simulated.push_back(std::vector<float>());
                             measured.push_back(cell.meanAndVariance.mean);
-                            uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
-                            confidence.push_back(cell.confidence);
+                            uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
                         }
                         simulated.at(cellIdx).push_back(localSimMap.at(i));
 
@@ -198,8 +196,12 @@ namespace GSL
             for (size_t i = 0; i < simulated.size(); i++)
                 GSL_ASSERT(simulated.at(i).size() == simulated.at(0).size());
 
+            float confidenceSum = 0;
+            for (const auto& u : uncertainty)
+                confidenceSum += 1 - u;
+
             mtx.lock();
-            roomResiduals[sourceNode] = GSL::NACCeres::FitDoorwayScales(measured, simulated, uncertainty);
+            roomResiduals[sourceNode] = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty) / confidenceSum;
             GSL_INFO("Residual at {}: {}", sourceNode->id, roomResiduals[sourceNode]);
             mtx.unlock();
         };
@@ -219,13 +221,10 @@ namespace GSL
         std::map<std::shared_ptr<PlaceNode>, long double> scores;
         long double scoresSum = 0;
         for (auto& [room, residual] : roomResiduals)
-            if (!std::isnan(residual))
-            {
-                scores[room] = ProbFromResidual(residual);
-                scoresSum += scores[room];
-            }
-            else
-                scores[room] = 0;
+        {
+            scores[room] = ProbFromResidual(residual);
+            scoresSum += scores[room];
+        }
 
         for (const auto& [room, score] : scores)
         {
@@ -336,10 +335,12 @@ namespace GSL
             if (!sourceProbsSimulatedRooms.contains(region->room))
                 sourceProbsSimulatedRooms[region->room] = std::vector<long double>(region->room->GetSourceProbabilities().data.size(), 0.0);
 
+            long double prob = ProbFromResidual(residual);
+            GSL_INFO("Residual {} -> Prob {}", residual, prob);
+            GSL_ASSERT(std::isfinite(prob));
+
             for (Vector2Int pos : region->nqaNode.getAABB())
             {
-                long double prob = ProbFromResidual(residual);
-                GSL_ASSERT(std::isfinite(prob));
                 size_t idx = region->room->GetSourceProbabilities().metadata.indexOf(pos);
                 sourceProbsSimulatedRooms.at(region->room).at(idx) = prob;
             }
@@ -393,16 +394,21 @@ namespace GSL
 
                 measured.push_back(cell.meanAndVariance.mean);
                 simulated.push_back(localSimMap.at(i));
-                uncertainty.push_back(1 - measuredLocal.data.at(i).confidence); // TODO uncertainty scale?
+                uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
             }
         }
 
-        float residual = NACCeres::FitSingleScale(measured, simulated, uncertainty);
-        return residual / measured.size();
+        float confidenceSum = 0;
+        for (const auto& u : uncertainty)
+            confidenceSum += 1 - u;
+        float residual = NACCeres::FitSingleScale(simulated, measured, uncertainty);
+        return residual / confidenceSum;
     }
 
     long double GraphGSL::ProbFromResidual(long double residual)
     {
+        if (!std::isfinite(residual))
+            return 0.0;
         return std::exp(-residual / likelihoodSigma);
     }
 
