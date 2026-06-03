@@ -3,6 +3,7 @@
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/core/Macros.hpp"
 #include "gsl_server/core/Profiling.hpp"
+#include <gsl_server/algorithms/Common/Utils/Color.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 #include <yaml-cpp/yaml.h>
 
@@ -230,7 +231,7 @@ namespace GSL
                 }
             }
 
-            ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis);
+            ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis);
 
             // node marker
             {
@@ -348,7 +349,7 @@ namespace GSL
         MarkerArray array;
         size_t id = 0;
 
-        std::vector<Grid2D<float, true>> grids;
+        std::vector<Grid2D<KernelDMVW::KernelCell, true>> grids;
 
         for (auto node : nodes)
         {
@@ -356,26 +357,30 @@ namespace GSL
                 continue;
             auto roomNode = As<RoomNode>(node);
             Grid2D<KernelDMVW::KernelCell> grid = roomNode->GetGasMap();
-            std::vector<float> concentrations;
-            std::ranges::transform(grid.data, std::back_inserter(concentrations), [](auto& cell)
-                                   {
-                                       return cell.ExpectedConcentration();
-                                   });
 
             Grid2DMetadata vizMetadata = grid.metadata;
             vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
-            grids.emplace_back(concentrations, grid.occupancy, vizMetadata);
+            grids.emplace_back(grid.data, grid.occupancy, vizMetadata);
         }
 
-        // find the global max
-        float max = 0;
-        for (const auto& grid : grids)
-            max = std::max(max, *std::max_element(grid.data.begin(), grid.data.end()));
+        float max = 10;
 
         for (auto& grid : grids)
         {
-            Marker marker = Utils::createPointsMarker(grid.AsNonOwning(), 0, max,
-                                                      Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma, 0.2);
+            std::vector<ColorRGBA> colors(grid.data.size());
+            Grid2D<ColorRGBA> colorGrid(colors, grid);
+            ColorRGBA unknownColor = Utils::create_color(0.6, 0.6, 0.6);
+            ColorRGBA excessColor = Utils::create_color(1, 0.2, 0.2);
+            for (size_t i = 0; i < grid.data.size(); ++i)
+            {
+                float value = grid.data.at(i).meanAndVariance.mean;
+                ColorRGBA color = Utils::valueToColor(value, 0, max, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
+                if (value > max)
+                    color = excessColor;
+                colors.at(i) = Utils::Colors::lerp(unknownColor, color, grid.data.at(i).confidence);
+            }
+
+            Marker marker = Utils::createPointsMarker(colorGrid, 0.2);
             marker.id = id++;
             array.markers.push_back(marker);
         }
@@ -415,7 +420,7 @@ namespace GSL
         Grid2DMetadata vizMetadata = windMap.metadata;
         vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
 
-        MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05, 0.2);
+        MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05, 0.4);
         return windMarker;
     }
 

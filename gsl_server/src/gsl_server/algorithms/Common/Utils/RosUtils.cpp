@@ -43,7 +43,7 @@ namespace GSL::Utils
         if(mode == ValueColorMode::Logarithmic)
         {
             val = std::log(val);
-            lowLimit = std::log(std::max(1e-10, lowLimit));
+            lowLimit = std::log(std::max(1e-7, lowLimit));
             highLimit = std::log(highLimit);
         }
 

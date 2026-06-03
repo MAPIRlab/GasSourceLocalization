@@ -105,7 +105,6 @@ namespace GSL
             GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
         }
 
-        // Important! If this is an owning grid, it will copy *both* the the data and the occupancy/metadata
         template <typename OtherT, bool OtherOwning>
         Grid2D(std::vector<T>& data, const Grid2D<OtherT, OtherOwning>& other)
             : data(data), occupancy(other.occupancy), metadata(other.metadata)
@@ -115,9 +114,18 @@ namespace GSL
             GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
         }
 
+        template <typename OtherT, bool OtherOwning>
+        Grid2D(std::vector<T>& data, Grid2D<OtherT, OtherOwning>& other)
+            : data(data), occupancy(other.occupancy), metadata(other.metadata)
+        {
+            static_assert(!(Owning && std::is_same<T, Occupancy>::value),
+                          "Don't use Grid2D<Occupancy, true>! This will create two copies of the occupancy array. Use Map2D instead.");
+            GSL_ASSERT(data.size() == occupancy.size() && data.size() == metadata.dimensions.x * metadata.dimensions.y);
+        }
+
         // marked as explicit because this can convert between owning and non-owning and that's a bit dangerous
         template <bool OtherOwning>
-        explicit Grid2D(const Grid2D<T, OtherOwning>& other)
+        explicit Grid2D(Grid2D<T, OtherOwning>& other)
             : data(other.data), occupancy(other.occupancy), metadata(other.metadata)
         {}
 

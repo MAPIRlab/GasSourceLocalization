@@ -211,7 +211,7 @@ namespace GSL::Graph_internal
             for (const auto& [node, map] : completeGasMap.gasMaps)
                 std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
 
-            Utils::Winsorize(appendedHitMap, 5);
+            // Utils::Winsorize(appendedHitMap, 5);
             Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
 
             size_t globalIndex = 0;
