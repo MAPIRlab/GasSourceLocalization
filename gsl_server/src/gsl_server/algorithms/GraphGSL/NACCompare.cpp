@@ -162,7 +162,7 @@ namespace GSL::NACCeres
                     .simulated = simulated.at(i),
                     .observed = observed.at(i),
                     .uncertainty = uncertainty.at(i)});
-            problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(1.0), &x);
+            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), &x);
         }
 
         return Solve(problem);
@@ -218,7 +218,7 @@ namespace GSL::NACCeres
                 cost_function->AddParameterBlock(1);
             cost_function->SetNumResiduals(1);
 
-            problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(1.0), scale_pointers);
+            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), scale_pointers);
         }
 
         for (size_t i = 0; i < scales.size(); i++)

@@ -273,7 +273,7 @@ namespace GSL
                 Graph_internal::CompleteMap* map;
             };
             // run the queued up simulations and register the results
-            std::vector<Result> results;
+            std::vector<std::pair<Result, float>> residualsThisLevel;
             while (!queue.empty())
             {
                 Region region = queue.front();
@@ -283,23 +283,19 @@ namespace GSL
                 pool.QueueJob([&, this, roomNode, nqaNode]()
                               {
                                   AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
-                                  Graph_internal::CompleteMap& result = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
+                                  Graph_internal::CompleteMap& map = simulationSystem.SimulateEntireGraph(roomNode, aabb.center());
+                                  Result result{std::make_shared<Region>(roomNode, nqaNode), &map};
+                                  float residual = ResidualSingleSimulation(*result.map);
+                                  GSL_ASSERT(std::isfinite(residual));
 
                                   std::scoped_lock lock(mtx);
                                   numSimulations++;
-                                  results.push_back({std::make_shared<Region>(roomNode, nqaNode), &result});
+                                  residualsThisLevel.push_back({result, residual});
                               });
             }
             pool.Wait();
 
-            // calculate the residuals from the simulation results and sort accordingly
-            std::vector<std::pair<Result, float>> residualsThisLevel;
-            for (const auto& result : results)
-            {
-                float residual = ResidualSingleSimulation(*result.map);
-                GSL_ASSERT(std::isfinite(residual));
-                residualsThisLevel.push_back({result, residual});
-            }
+            // sort the results by the residuals
             std::sort(residualsThisLevel.begin(), residualsThisLevel.end(), [](const auto& a, const auto& b)
                       {
                           return a.second < b.second;
