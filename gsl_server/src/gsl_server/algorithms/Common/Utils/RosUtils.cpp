@@ -40,14 +40,14 @@ namespace GSL::Utils
 
     std_msgs::msg::ColorRGBA valueToColor(double val, double lowLimit, double highLimit, ValueColorMode mode, Colors::ColorMaps colormap)
     {
-        if(mode == ValueColorMode::Logarithmic)
+        if (mode == ValueColorMode::Logarithmic)
         {
             val = std::log(val);
-            lowLimit = std::log(std::max(1e-7, lowLimit));
+            lowLimit = std::log(std::max(1e-10, lowLimit));
             highLimit = std::log(highLimit);
         }
 
-        float t = (val-lowLimit) / (highLimit-lowLimit);
+        float t = (val - lowLimit) / (highLimit - lowLimit);
         auto [r, g, b] = Colors::SampleColorMap(t, colormap);
         return create_color(r, g, b, 1);
     }
@@ -132,7 +132,9 @@ namespace GSL::Utils
         msg.info.height = grid.metadata.dimensions.y;
 
         std::transform(grid.occupancy.begin(), grid.occupancy.end(), std::back_inserter(msg.data), [](const Occupancy value) -> int8_t
-                       { return static_cast<int8_t>(value); });
+                       {
+                           return static_cast<int8_t>(value);
+                       });
         return msg;
     }
 
@@ -285,9 +287,9 @@ namespace GSL::Utils
                     marker.pose.orientation = Utils::createQuaternionMsgFromYaw(angle);
                     // shape
                     float sizeFactor = std::clamp(module / max_module, 0., 1.);
-                    marker.scale.x = 1.2 * vectors.metadata.cellSize *  sizeFactor; // arrow length,
-                    marker.scale.y = size * sizeFactor;                                                                // arrow width
-                    marker.scale.z = size * sizeFactor;                                                                // arrow height
+                    marker.scale.x = 1.2 * vectors.metadata.cellSize * sizeFactor; // arrow length,
+                    marker.scale.y = size * sizeFactor;                            // arrow width
+                    marker.scale.z = size * sizeFactor;                            // arrow height
 
                     // if we have a manually specified speed to correspond to the max arrow length, but this exceeds it, give it a different color
                     if (module <= max_module)
@@ -352,6 +354,31 @@ namespace GSL::Utils
         pub->publish(points);
 
     } // namespace GSL::Utils
+
+    void publishPositionWCovariance(Vector2 position, const CovarianceMatrix& covariance, const std::string& topic)
+    {
+        if (!debugNode)
+            debugNode = std::make_shared<rclcpp::Node>("debugNode");
+
+        static std::map<std::string, rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr> publisherMap;
+
+        if (!publisherMap.contains(topic))
+            publisherMap[topic] = debugNode->create_publisher<PoseWithCovarianceStamped>(topic, 1);
+        auto pub = publisherMap[topic];
+
+        PoseWithCovarianceStamped msg;
+        msg.header.frame_id = "map";
+        msg.header.stamp = debugNode->now();
+        msg.pose.pose.position.x = position.x;
+        msg.pose.pose.position.y = position.y;
+
+        msg.pose.covariance[0 + 6 * 0] = covariance.x;
+        msg.pose.covariance[0 + 6 * 1] = covariance.covariance;
+        msg.pose.covariance[1 + 6 * 0] = covariance.covariance;
+        msg.pose.covariance[1 + 6 * 1] = covariance.y;
+
+        pub->publish(msg);
+    }
 
     void publishDebugSingleArrow(Vector3 start, Vector3 end, std_msgs::msg::ColorRGBA color, const std::string& topic)
     {

@@ -196,7 +196,7 @@ namespace GSL
         rclcpp::Duration time_spent = rclnode->now() - startTime;
         double search_t = time_spent.seconds();
 
-        Vector2 sourceLocation = Utils::ExpectedValue(grid, 1);
+        Vector2 sourceLocation = Utils::ExpectedValue(grid.AsMulti(), 1);
 
         double error = sqrt(pow(resultLogging.sourcePositionGT.x - sourceLocation.x, 2) + pow(resultLogging.sourcePositionGT.y - sourceLocation.y, 2));
 

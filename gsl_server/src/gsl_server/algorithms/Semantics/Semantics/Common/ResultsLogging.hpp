@@ -31,14 +31,14 @@ namespace GSL::SemanticsResults
                                             Utils::ValueColorMode::Logarithmic);
         Utils::publishDebugMarkers(Grid2D<ColorRGBA>(colors, olfactionOnly.occupancy, olfactionOnly.metadata), "sourceOlfactionOnly");
 
-        Vector2 expecOlfOnly = Utils::ExpectedValue(olfactionOnly, 1);
+        Vector2 expecOlfOnly = Utils::ExpectedValue(olfactionOnly.AsMulti(), 1);
         Vector2 modeOlfOnly = Utils::Mode(olfactionOnly);
-        Utils::CovarianceMatrix varOlfOnly = Utils::Covariance(olfactionOnly);
+        Utils::CovarianceMatrix varOlfOnly = Utils::Covariance(olfactionOnly.AsMulti());
         double errorOlfOnly = vmath::length(expecOlfOnly - sourcePosition);
 
-        Vector2 expecBoth = Utils::ExpectedValue(withSemantics, 1);
+        Vector2 expecBoth = Utils::ExpectedValue(withSemantics.AsMulti(), 1);
         Vector2 modeBoth = Utils::Mode(withSemantics);
-        Utils::CovarianceMatrix varBoth = Utils::Covariance(withSemantics);
+        Utils::CovarianceMatrix varBoth = Utils::Covariance(withSemantics.AsMulti());
         double errorBoth = vmath::length(expecBoth - sourcePosition);
         progressionFile << fmt::format("{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t{:.2f}\t",
                                        expecOlfOnly.x, expecOlfOnly.y, modeOlfOnly.x, modeOlfOnly.y, errorOlfOnly, varOlfOnly.x, varOlfOnly.y, varOlfOnly.covariance);

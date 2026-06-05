@@ -6,7 +6,7 @@
 #include <vector>
 
 template <typename T>
-concept NumericType= std::integral<T> || std::floating_point<T>;
+concept NumericType = std::integral<T> || std::floating_point<T>;
 
 namespace GSL::Utils
 {
@@ -57,15 +57,21 @@ namespace GSL::Utils
 
     Vector2 Mode(const Grid2D<double> grid);
 
-    Vector2 ExpectedValue(const Grid2D<double> grid, double proportionBest);
-    double Variance(const Grid2D<double> grid);
+    template <std::floating_point T>
+    Vector2 ExpectedValue(const MultiGrid<T> grid, double proportionBest = 1.0);
+
+    // technically, *generalized* variance, defined as the trace of the covariance matrix
+    template <std::floating_point T>
+    double Variance(const MultiGrid<T> grid);
+
     struct CovarianceMatrix
     {
         float x;
         float y;
         float covariance;
     };
-    CovarianceMatrix Covariance(Grid2D<double> grid);
+    template <std::floating_point T>
+    CovarianceMatrix Covariance(MultiGrid<T> grid);
 
     // holds a long list of N(0,1) values, and returns them one at a time, scaled as requested.
     // obviously not as good as generating them on the fly, but it's not like we are doing cryptography here
@@ -112,115 +118,210 @@ namespace GSL::Utils
 } // namespace GSL::Utils
 
 // Template Definitions
-//--------------
-template <typename CollectionIterator>
-inline float GSL::Utils::getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+//---------------------------------------------------------------------
+namespace GSL::Utils
 {
-    int length = std::distance(startIt, endIt);
-    if (length == 0)
-        return Utils::INVALID_AVERAGE;
-    float sum = 0.0;
-    for (CollectionIterator i = startIt; i != endIt; ++i)
-        sum += *i;
 
-    return sum / length;
-}
-
-template <typename CollectionIterator>
-inline float GSL::Utils::getAverageDirection(const CollectionIterator startIt, const CollectionIterator endIt)
-{
-    // Average of wind direction, avoiding the problems of +/- pi angles.
-    int length = std::distance(startIt, endIt);
-    if (length == 0)
-        return Utils::INVALID_AVERAGE;
-
-    float x = 0.0, y = 0.0;
-    for (CollectionIterator i = startIt; i != endIt; ++i)
+    template <typename CollectionIterator>
+    inline float getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt)
     {
-        x += cos(*i);
-        y += sin(*i);
+        int length = std::distance(startIt, endIt);
+        if (length == 0)
+            return Utils::INVALID_AVERAGE;
+        float sum = 0.0;
+        for (CollectionIterator i = startIt; i != endIt; ++i)
+            sum += *i;
+
+        return sum / length;
     }
-    float average_angle = atan2(y, x);
 
-    return average_angle;
-}
+    template <typename CollectionIterator>
+    inline float getAverageDirection(const CollectionIterator startIt, const CollectionIterator endIt)
+    {
+        // Average of wind direction, avoiding the problems of +/- pi angles.
+        int length = std::distance(startIt, endIt);
+        if (length == 0)
+            return Utils::INVALID_AVERAGE;
 
-// Kullback-Leibler Divergence
-template <typename T>
-inline double GSL::Utils::KLD(
-    const std::vector<T>& a,
-    const std::vector<T>& b,
-    const std::vector<Occupancy>& occupancy,
-    std::function<double(const T&)> accessor)
-{
-    double total = 0;
-    for (int index = 0; index < a.size(); index++)
-        if (occupancy[index] == Occupancy::Free)
+        float x = 0.0, y = 0.0;
+        for (CollectionIterator i = startIt; i != endIt; ++i)
         {
-            double aVal = accessor(a[index]);
-            double bVal = accessor(b[index]);
-            double aux = aVal * std::log(aVal / bVal) + (1 - aVal) * std::log((1 - aVal) / (1 - bVal));
-            total += std::isnan(aux) ? 0 : aux;
+            x += cos(*i);
+            y += sin(*i);
         }
-    return total;
-}
+        float average_angle = atan2(y, x);
 
-template <std::floating_point T>
-void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, const std::vector<GSL::Occupancy>& occupancy)
-{
-    T total = 0;
-    for (int i = 0; i < variable.size(); i++)
-    {
-        if (occupancy[i] == GSL::Occupancy::Free)
-            total += variable[i];
+        return average_angle;
     }
+
+    // Kullback-Leibler Divergence
+    template <typename T>
+    inline double KLD(
+        const std::vector<T>& a,
+        const std::vector<T>& b,
+        const std::vector<Occupancy>& occupancy,
+        std::function<double(const T&)> accessor)
+    {
+        double total = 0;
+        for (int index = 0; index < a.size(); index++)
+            if (occupancy[index])
+            {
+                double aVal = accessor(a[index]);
+                double bVal = accessor(b[index]);
+                double aux = aVal * std::log(aVal / bVal) + (1 - aVal) * std::log((1 - aVal) / (1 - bVal));
+                total += std::isnan(aux) ? 0 : aux;
+            }
+        return total;
+    }
+
+    template <std::floating_point T>
+    void NormalizeDistribution(std::vector<T>& variable, const std::vector<GSL::Occupancy>& occupancy)
+    {
+        T total = 0;
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i] == GSL::Occupancy::Free)
+                total += variable[i];
+        }
 
 #pragma omp parallel for
-    for (int i = 0; i < variable.size(); i++)
-    {
-        if (occupancy[i] == GSL::Occupancy::Free)
-            variable[i] = variable[i] / total;
-    }
-}
-
-template <std::floating_point T>
-inline void GSL::Utils::NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, const std::vector<Occupancy>& occupancy)
-{
-    double total = 0;
-    for (int i = 0; i < variable.size(); i++)
-    {
-        if (occupancy[i] == Occupancy::Free)
-            total += accessor(variable[i]);
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i] == GSL::Occupancy::Free)
+                variable[i] = variable[i] / total;
+        }
     }
 
-#pragma omp parallel for
-    for (int i = 0; i < variable.size(); i++)
+    template <std::floating_point T>
+    inline void NormalizeDistribution(std::vector<T>& variable, std::function<double&(T&)> accessor, const std::vector<Occupancy>& occupancy)
     {
-        if (occupancy[i] == Occupancy::Free)
-            accessor(variable[i]) = accessor(variable[i]) / total;
-    }
-}
-
-template <std::floating_point T>
-void GSL::Utils::PowerMaxNormalize(std::vector<T>& vec, const std::vector<Occupancy>& occupancy, T power)
-{
-    T max = 0;
-    for (size_t i = 0; i < vec.size(); i++)
-    {
-        if (occupancy.at(i) != Occupancy::Free)
-            continue;
-        vec.at(i) = std::pow(vec.at(i), power);
-        max = std::max(max, vec.at(i));
-    }
-
-    if (max == 0)
-        return;
+        double total = 0;
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i])
+                total += accessor(variable[i]);
+        }
 
 #pragma omp parallel for
-    for (size_t i = 0; i < vec.size(); i++)
-    {
-        if (occupancy.at(i) != Occupancy::Free)
-            continue;
-        vec.at(i) = vec.at(i) / max;
+        for (int i = 0; i < variable.size(); i++)
+        {
+            if (occupancy[i])
+                accessor(variable[i]) = accessor(variable[i]) / total;
+        }
     }
-}
+
+    template <std::floating_point T>
+    void PowerMaxNormalize(std::vector<T>& vec, const std::vector<Occupancy>& occupancy, T power)
+    {
+        T max = 0;
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            if (occupancy.at(i) != Occupancy::Free)
+                continue;
+            vec.at(i) = std::pow(vec.at(i), power);
+            max = std::max(max, vec.at(i));
+        }
+
+        if (max == 0)
+            return;
+
+#pragma omp parallel for
+        for (size_t i = 0; i < vec.size(); i++)
+        {
+            if (occupancy.at(i) != Occupancy::Free)
+                continue;
+            vec.at(i) = vec.at(i) / max;
+        }
+    }
+
+    template <std::floating_point T>
+    Vector2 ExpectedValue(MultiGrid<T> mgrid, double proportionBest)
+    {
+        struct CellData
+        {
+            Vector2 coords;
+            double probability;
+            CellData(Vector2 coord, double prob)
+            {
+                coords = coord;
+                probability = prob;
+            }
+        };
+        std::vector<CellData> cellData;
+        for (auto it = mgrid.begin(); it != mgrid.end(); ++it)
+        {
+            auto [data, occupancy] = *it;
+            Vector2 coords = it.currentMetadata().indexToCoordinates(it.cellIdx);
+            if (occupancy)
+            {
+                CellData cd(coords, data);
+                cellData.push_back(cd);
+            }
+        }
+
+        std::sort(cellData.begin(), cellData.end(), [](const CellData& a, const CellData& b)
+                  {
+                      return a.probability > b.probability;
+                  });
+
+        double averageX = 0, averageY = 0;
+        double sum = 0;
+
+        for (int i = 0; i < cellData.size() * proportionBest; i++)
+        {
+            CellData& cd = cellData[i];
+            averageX += cd.probability * cd.coords.x;
+            averageY += cd.probability * cd.coords.y;
+            sum += cd.probability;
+        }
+        return Vector2(averageX / sum, averageY / sum);
+    }
+
+    template <std::floating_point T>
+    double Variance(const MultiGrid<T> mgrid)
+    {
+        Vector2 expected = ExpectedValue(mgrid, 1);
+        double x = 0, y = 0;
+        for (auto it = mgrid.begin(); it != mgrid.end(); ++it)
+        {
+            auto [data, occupancy] = *it;
+            if (occupancy)
+            {
+                Vector2 coords = it.currentMetadata().indexToCoordinates(it.cellIdx);
+                double p = data;
+                x += pow(coords.x - expected.x, 2) * p;
+                y += pow(coords.y - expected.y, 2) * p;
+            }
+        }
+        return x + y;
+    }
+
+    template <std::floating_point T>
+    CovarianceMatrix Covariance(MultiGrid<T> mgrid)
+    {
+        Vector2 expectedValue = ExpectedValue(mgrid);
+        float varX = 0;
+        float varY = 0;
+        float covar = 0;
+        for (auto it = mgrid.begin(); it != mgrid.end(); ++it)
+        {
+            auto [data, occupancy] = *it;
+            if (occupancy)
+            {
+                Vector2 center = it.currentMetadata().indexToCoordinates(it.cellIdx);
+
+                float xDiff = (center.x - expectedValue.x);
+                float yDiff = (center.y - expectedValue.y);
+
+                float prob = data;
+                varX += prob * xDiff * xDiff;
+                varY += prob * yDiff * yDiff;
+                covar += prob * xDiff * yDiff;
+            }
+        }
+        return {.x = varX, .y = varY, .covariance = covar};
+    }
+} // namespace GSL::Utils

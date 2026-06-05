@@ -9,6 +9,10 @@
 
 namespace GSL
 {
+    // forward declaration for the conversion operator in Grid2D
+    template <typename T>
+    struct MultiGrid;
+
     // See the grid class
     struct Grid2DMetadata
     {
@@ -162,8 +166,8 @@ namespace GSL
         Grid2D<Occupancy> AsOccupancy() { return Grid2D<Occupancy>(occupancy, occupancy, metadata); }
         Grid2D<T> AsNonOwning() { return Grid2D<T, false>(data, occupancy, metadata); }
         Grid2D<T, true> AsOwning() { return Grid2D<T, true>(data, occupancy, metadata); }
+        MultiGrid<T> AsMulti() { return MultiGrid<T>(*this); }
     };
-
 
     // unlike a Grid, a Map is an always-owning struct
     // it only contains occupancy information, no additional data
@@ -264,6 +268,81 @@ namespace GSL
                 }
 
             return cropped;
+        }
+    };
+
+    // some times, it is useful to have several disconnected grids be processed together (i.e. the Graph class)
+    // this struct offers a simple API for that through an iterator that can seamlessly transition from one grid to the next
+    // a function can always take this as the type of the parameter, even if it is sometimes used with a single grid
+    template <typename T>
+    struct MultiGrid
+    {
+        std::vector<Grid2D<T, false>> grids;
+
+        MultiGrid(std::vector<Grid2D<T, false>>& _grids) : grids(_grids)
+        {}
+
+        MultiGrid(const Grid2D<T, false>& _grid) : grids({_grid})
+        {}
+
+        struct Iterator
+        {
+            size_t gridIdx;
+            size_t cellIdx;
+            MultiGrid& multiGrid;
+
+            Iterator(MultiGrid& _multiGrid) : gridIdx(0), cellIdx(0), multiGrid(_multiGrid) {}
+
+            T& data() { return multiGrid.grids.at(gridIdx).data.at(cellIdx); }
+            Occupancy& occupancy() { return multiGrid.grids.at(gridIdx).occupancy.at(cellIdx); }
+            Grid2DMetadata& currentMetadata() { return multiGrid.grids.at(gridIdx).metadata; }
+
+            std::pair<T&, Occupancy&> operator*()
+            {
+                return {data(), occupancy()};
+            }
+
+            // prefix increment
+            Iterator& operator++()
+            {
+                if (++cellIdx >= multiGrid.grids.at(gridIdx).data.size())
+                {
+                    cellIdx = 0;
+                    gridIdx++;
+                }
+                return *this;
+            }
+
+            // Postfix increment
+            Iterator operator++(int)
+            {
+                Iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            friend bool operator==(const Iterator& a, const Iterator& b)
+            {
+                return &a.multiGrid == &b.multiGrid && a.gridIdx == b.gridIdx && a.cellIdx == b.cellIdx;
+            };
+
+            friend bool operator!=(const Iterator& a, const Iterator& b)
+            {
+                return !(a == b);
+            };
+        };
+
+        Iterator begin()
+        {
+            return Iterator(*this);
+        }
+
+        Iterator end()
+        {
+            Iterator it(*this);
+            it.gridIdx = grids.size();
+            it.cellIdx = 0;
+            return it;
         }
     };
 
