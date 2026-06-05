@@ -59,6 +59,11 @@ namespace GSL::Graph_internal
             std::shared_ptr<const DoorwayNode> doorSource;
             std::stack<std::shared_ptr<const DoorwayNode>> doorways;
         };
+        struct GraphCacheEntry
+        {
+            bool complete = false;
+            std::map<std::shared_ptr<const DoorwayNode>, float> gasProportion;
+        };
 
         bool emergencyStopped = false;
         std::mutex mtx;
