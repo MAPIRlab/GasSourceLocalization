@@ -4,6 +4,7 @@
 #include "gsl_server/algorithms/Common/Simulation.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
+#include <gsl_server/algorithms/Common/Utils/Synchronization.hpp>
 #include <stack>
 
 namespace GSL::Graph_internal
@@ -11,7 +12,6 @@ namespace GSL::Graph_internal
     class SimulationSystem
     {
     public:
-        void blurTest(std::vector<Vector2Int> points);
         SimulationSystem() : simulationCache(this) {}
         void Reset(); // remove all the cached data and results, get ready to run new simulations
 
@@ -21,9 +21,12 @@ namespace GSL::Graph_internal
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
         CompleteMap& SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint);
         CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
+
+        void EmergencyStop(); // to be called from the UI when there is an infinite loop
         
         MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
         
+        void blurTest(std::vector<Vector2Int> points); // this is a utility for testing the effects of the blur. Not part of the algorithm.
         
         std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;
@@ -57,8 +60,23 @@ namespace GSL::Graph_internal
             std::stack<std::shared_ptr<const DoorwayNode>> doorways;
         };
 
+        bool emergencyStopped = false;
         std::mutex mtx;
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
+        
+        struct DoorwayPair
+        {
+            std::shared_ptr<const DoorwayNode> start;
+            std::shared_ptr<const DoorwayNode> end;
+
+            friend bool operator<(const DoorwayPair& a, const DoorwayPair& b)
+            {
+                if (a.start != b.start)
+                    return a.start < b.start;
+                return a.end < b.end;
+            }
+        };
+        Utils::Synced<std::map<DoorwayPair, float>> doorwayPairs;
 
         void _SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, CompleteMap& completeMap);
         void PropagateSimThroughGraph(std::deque<NodeState>& stateStack, CompleteMap& completeGasMap, const std::shared_ptr<PlaceNode> firstNodeInSim);

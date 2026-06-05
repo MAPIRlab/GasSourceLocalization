@@ -107,7 +107,7 @@ namespace GSL::NACCeres
     template <typename T>
     T EvaluateScale(T scaledSimulated, T observed, T uncertainty)
     {
-        T diff = ceres::abs(observed - scaledSimulated);
+        T diff = ceres::abs(ceres::log(observed + T(1)) - ceres::log(scaledSimulated + T(1)));
         diff = ceres::lerp(diff, T(0), uncertainty);
         T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
         // T power(0.5);
@@ -162,7 +162,7 @@ namespace GSL::NACCeres
                     .simulated = simulated.at(i),
                     .observed = observed.at(i),
                     .uncertainty = uncertainty.at(i)});
-            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), &x);
+            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), &x);
         }
 
         return Solve(problem);
@@ -196,7 +196,7 @@ namespace GSL::NACCeres
                            const std::vector<float>& observed,
                            const std::vector<float>& uncertainty)
     {
-        if(simulated.empty())
+        if (simulated.empty())
             return NAN;
 
         std::vector<double> scales(simulated.at(0).size(), 1.0);
@@ -218,7 +218,7 @@ namespace GSL::NACCeres
                 cost_function->AddParameterBlock(1);
             cost_function->SetNumResiduals(1);
 
-            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), scale_pointers);
+            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), scale_pointers);
         }
 
         for (size_t i = 0; i < scales.size(); i++)

@@ -168,7 +168,7 @@ Visualization Manager:
       Enabled: true
       Name: Graph
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -180,7 +180,7 @@ Visualization Manager:
       Enabled: true
       Name: Occupancy_nodes
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -189,17 +189,17 @@ Visualization Manager:
         Value: /gsl_occupancy
       Value: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: WindMaps
       Namespaces:
-        WindVector: true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_wind
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: SimGasMaps
@@ -252,13 +252,48 @@ Visualization Manager:
       Enabled: true
       Name: SourceProb
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/sourceProb
+      Value: true
+    - Alpha: 1
+      Axes Length: 0.20000000298023224
+      Axes Radius: 0.05000000074505806
+      Class: rviz_default_plugins/PoseWithCovariance
+      Color: 255; 25; 0
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: false
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: ExpectedValue
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Axes
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /expected_source_position
       Value: true
   Enabled: true
   Global Options:
@@ -315,11 +350,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 85.681640625
+      Scale: 50.5059814453125
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 8.145668983459473
-      Y: 5.203866481781006
+      X: 8.75650691986084
+      Y: 6.13157844543457
     Saved: ~
 Window Geometry:
   Displays:

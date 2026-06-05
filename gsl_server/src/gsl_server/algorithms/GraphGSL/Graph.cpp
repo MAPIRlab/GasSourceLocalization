@@ -215,23 +215,24 @@ namespace GSL
 
     MarkerArray Graph::VisualizeGraph()
     {
+        constexpr float markerHeight = 0.5;
         MarkerArray array;
         size_t id = 0;
         for (auto node : nodes)
         {
             Vector2 position = node->GetPosition();
             if (Is<RoomNode>(node))
-                position += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+                position += As<RoomNode>(node)->GetOccupancy().metadata.origin * (vizOptions.nodeSeparationViz - 1);
             else
             {
                 for (const auto doorway : node->doorways)
                 {
                     auto otherNode = doorway->to.lock();
-                    position += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * (1.f / node->doorways.size());
+                    position += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (vizOptions.nodeSeparationViz - 1) * (1.f / node->doorways.size());
                 }
             }
 
-            ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis);
+            ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
 
             // node marker
             {
@@ -244,7 +245,7 @@ namespace GSL
                 marker.color = color;
                 marker.pose.position.x = position.x;
                 marker.pose.position.y = position.y;
-                marker.pose.position.z = 0.5f;
+                marker.pose.position.z = markerHeight;
                 marker.id = id;
                 id++;
                 array.markers.push_back(marker);
@@ -260,7 +261,7 @@ namespace GSL
                 textMarker.text = node->id;
                 textMarker.pose.position.x = position.x + 0.5f;
                 textMarker.pose.position.y = position.y + 0.5f;
-                textMarker.pose.position.z = 1.f;
+                textMarker.pose.position.z = markerHeight + 0.5f;
 
                 textMarker.color.r = 0;
                 textMarker.color.g = 0;
@@ -278,13 +279,13 @@ namespace GSL
                 // otherwise, just copy the movement of the real one
                 if (Is<RoomNode>(node) && Is<RoomNode>(otherNode))
                 {
-                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5f;
-                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1) * 0.5f;
+                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (vizOptions.nodeSeparationViz - 1) * 0.5f;
+                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (vizOptions.nodeSeparationViz - 1) * 0.5f;
                 }
                 else if (Is<RoomNode>(node))
-                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+                    otherPos += As<RoomNode>(node)->GetOccupancy().metadata.origin * (vizOptions.nodeSeparationViz - 1);
                 else
-                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (nodeSeparationViz - 1);
+                    otherPos += As<RoomNode>(otherNode)->GetOccupancy().metadata.origin * (vizOptions.nodeSeparationViz - 1);
 
                 // doorway Marker
                 {
@@ -297,7 +298,7 @@ namespace GSL
                     marker.color = Utils::create_color(0, 0, 1);
                     marker.pose.position.x = otherPos.x;
                     marker.pose.position.y = otherPos.y;
-                    marker.pose.position.z = 0.5f;
+                    marker.pose.position.z = markerHeight;
                     marker.id = id;
                     id++;
                     array.markers.push_back(marker);
@@ -310,8 +311,8 @@ namespace GSL
                 marker.scale.x = 0.02; // shaft diameter
                 marker.scale.y = 0.05; // head diameter
                 marker.color = Utils::create_color(0, 0, 1);
-                marker.points.push_back(Point{}.set__x(position.x).set__y(position.y));
-                marker.points.push_back(Point{}.set__x(otherPos.x).set__y(otherPos.y));
+                marker.points.push_back(Point{}.set__x(position.x).set__y(position.y).set__z(markerHeight));
+                marker.points.push_back(Point{}.set__x(otherPos.x).set__y(otherPos.y).set__z(markerHeight));
                 marker.id = id;
                 id++;
                 array.markers.push_back(marker);
@@ -327,14 +328,14 @@ namespace GSL
         size_t occID = 0;
         for (auto node : nodes)
         {
-            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node) || !vizOptions.selectedForVisualization.contains(node->id) || !vizOptions.selectedForVisualization.at(node->id))
                 continue;
 
             auto roomNode = As<RoomNode>(node);
             Grid2D<Occupancy> occupancy = roomNode->GetOccupancy();
 
             Grid2DMetadata vizMetadata = occupancy.metadata;
-            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+            vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
             Marker occMarker = Utils::createPointsOccupancyMarker(Grid2D<Occupancy>(occupancy.occupancy, occupancy.occupancy, vizMetadata));
             occMarker.id = occID;
             occID++;
@@ -353,13 +354,13 @@ namespace GSL
 
         for (auto node : nodes)
         {
-            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node) || !vizOptions.selectedForVisualization.contains(node->id) || !vizOptions.selectedForVisualization.at(node->id))
                 continue;
             auto roomNode = As<RoomNode>(node);
             Grid2D<KernelDMVW::KernelCell> grid = roomNode->GetGasMap();
 
             Grid2DMetadata vizMetadata = grid.metadata;
-            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+            vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
             grids.emplace_back(grid.data, grid.occupancy, vizMetadata);
         }
 
@@ -395,7 +396,7 @@ namespace GSL
 
         for (auto node : nodes)
         {
-            if (!Is<RoomNode>(node) || !selectedForVisualization.contains(node->id) || !selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node) || !vizOptions.selectedForVisualization.contains(node->id) || !vizOptions.selectedForVisualization.at(node->id))
                 continue;
             auto roomNode = As<RoomNode>(node);
             std::vector<float> points = roomNode->GetSourceProbabilities().data;
@@ -403,10 +404,10 @@ namespace GSL
                 points.at(i) *= roomSourceProbabilities.at(roomNode);
 
             Grid2DMetadata vizMetadata = roomNode->GetSourceProbabilities().metadata;
-            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+            vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
 
             Grid2D<float> grid(points, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
-            Marker marker = Utils::createPointsMarker(grid, 0, probabilityVizMax, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Cividis, 0.3);
+            Marker marker = Utils::createPointsMarker(grid, 0, vizOptions.probabilityVizMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
         }
@@ -418,7 +419,7 @@ namespace GSL
     {
         Grid2D<Vector2> windMap = roomNode->GetWindMap();
         Grid2DMetadata vizMetadata = windMap.metadata;
-        vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+        vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
 
         MarkerArray windMarker = Utils::createArrowsMarkers(Grid2D<Vector2>(windMap.data, windMap.occupancy, vizMetadata), 0.7, 0.05, 0.4);
         return windMarker;
@@ -447,7 +448,7 @@ namespace GSL
             for (int i = 0; i < roomNode->GetQuadtreeLeaves().size(); i++)
             {
                 Grid2DMetadata gridMetadata = roomNode->GetOccupancy().metadata;
-                gridMetadata.origin = gridMetadata.origin * nodeSeparationViz;
+                gridMetadata.origin = gridMetadata.origin * vizOptions.nodeSeparationViz;
                 const AABB2DInt& leaf = roomNode->GetQuadtreeLeaves().at(i).getAABB();
                 Vector2Int size = leaf.max - leaf.min;
                 Marker mark;

@@ -38,7 +38,7 @@ namespace GSL
                                                     std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph");
         graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
         float artificialSeparation = rclnode->declare_parameter<float>("node_separation_mult", 1);
-        graph.nodeSeparationViz = artificialSeparation;
+        graph.vizOptions.nodeSeparationViz = artificialSeparation;
         simulationSystem.graph = &graph;
 
 #if ENABLE_NAIVE_EVALUATION
@@ -73,6 +73,7 @@ namespace GSL
             UpdateWindMaps();
         }
 
+        UpdateExpectedValue();
         stateMachine.forceSetState(movingState.get());
     }
 
@@ -130,10 +131,10 @@ namespace GSL
                     continue;
 
                 for (auto doorway : roomNode->doorways)
-                    pool.QueueJob([&, doorway]()
+                    // pool.QueueJob([&, doorway]()
                                   {
                                       simulationSystem.SimulateEntireGraph(doorway);
-                                  });
+                                  }//);
             }
             pool.Wait();
         }
@@ -241,6 +242,8 @@ namespace GSL
                 roomNodes.push_back(roomNode);
         }
 
+        pubs.graphPub->publish(graph.VisualizeGraph());
+
         EvaluateSourceProbabilitiesInRooms(roomNodes);
     }
 
@@ -332,7 +335,7 @@ namespace GSL
                 sourceProbsSimulatedRooms[region->room] = std::vector<long double>(region->room->GetSourceProbabilities().data.size(), 0.0);
 
             long double prob = ProbFromResidual(residual);
-            GSL_INFO("Residual {} -> Prob {}", residual, prob);
+            GSL_INFO("Residual {:.3f} -> Prob {:.3f}", residual, prob);
             GSL_ASSERT(std::isfinite(prob));
 
             for (Vector2Int pos : region->nqaNode.getAABB())
@@ -354,7 +357,7 @@ namespace GSL
             {
                 Utils::NormalizeDistribution(sourceProbsSimulatedRooms.at(room), room->GetSourceProbabilities().occupancy);
                 for (size_t i = 0; i < sourceProbsSimulatedRooms.at(room).size(); i++)
-                    room->GetSourceProbabilities().data.at(i) = sourceProbsSimulatedRooms.at(room).at(i);
+                    room->GetSourceProbabilities().data.at(i) = graph.roomSourceProbabilities.at(room) * sourceProbsSimulatedRooms.at(room).at(i);
             }
             // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
             else
@@ -362,11 +365,13 @@ namespace GSL
                 Grid2D<float> sourceProbs = room->GetSourceProbabilities();
                 for (size_t i = 0; i < sourceProbs.data.size(); i++)
                     if (sourceProbs.occupancy.at(i))
-                        sourceProbs.data.at(i) = 1.0 / sourceProbs.metadata.numFreeCells;
+                        sourceProbs.data.at(i) = graph.roomSourceProbabilities.at(room) / sourceProbs.metadata.numFreeCells;
             }
         }
 
         GSL_INFO("Ran {} simulations at the geometric level", numSimulations);
+
+        UpdateExpectedValue();
     }
 
     float GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
@@ -408,6 +413,21 @@ namespace GSL
         return std::exp(-residual / likelihoodSigma);
     }
 
+    void GraphGSL::UpdateExpectedValue()
+    {
+        std::vector<Grid2D<float>> sourceProbs;
+        for (const auto& node : graph.nodes)
+        {
+            auto room = As<RoomNode>(node);
+            if (room)
+                sourceProbs.push_back(room->GetSourceProbabilities());
+        }
+
+        MultiGrid mgrid(sourceProbs);
+        expectedValue = Utils::ExpectedValue(mgrid, 1.0);
+        cov = Utils::Covariance(mgrid);
+    }
+
 #if ENABLE_NAIVE_EVALUATION
     void GraphGSL::EvaluateRoomProbabilitiesNaive()
     {
@@ -427,13 +447,14 @@ namespace GSL
         pubs.occupancyPub->publish(graph.VisualizeOccupancy());
         pubs.windPub->publish(graph.VisualizeWind(naiveEntireMap));
         pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
-        pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(simulationViz.selectedNode, simulationViz.simulationIndex, graph.nodeSeparationViz));
+        pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(simulationViz.selectedNode, simulationViz.simulationIndex, graph.vizOptions.nodeSeparationViz));
 #if ENABLE_NAIVE_EVALUATION
         if (naiveSimulationIndex < naiveCompleteMaps.size())
-            naiveMapsPub->publish(Graph_internal::VisualizeCompleteMap(naiveCompleteMaps.at(naiveSimulationIndex), {naiveEntireMap}, graph.nodeSeparationViz, 0.2));
+            naiveMapsPub->publish(Graph_internal::VisualizeCompleteMap(naiveCompleteMaps.at(naiveSimulationIndex), {naiveEntireMap}, graph.vizOptions.nodeSeparationViz, 0.2));
 #endif
         pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());
         pubs.sourceProbPub->publish(graph.VisualizeSourceProbs());
+        Utils::publishPositionWCovariance(vmath::WithZ(expectedValue, 0.6), cov, "/expected_source_position");
     }
 
 } // namespace GSL

@@ -74,7 +74,7 @@ namespace GSL
         {
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Node separation", &gsl->graph.nodeSeparationViz, 0.005, 1., 10.);
+            ImGui::DragFloat("Node separation", &gsl->graph.vizOptions.nodeSeparationViz, 0.005, 1., 10.);
             SelectNodes();
             if (ImGui::Button("Update wind map"))
                 gsl->functionQueue.submit([this]()
@@ -102,7 +102,7 @@ namespace GSL
         if (ImGui::Button("Toggle All"))
         {
             occupancyToggleState = !occupancyToggleState;
-            for (auto& entry : gsl->graph.selectedForVisualization)
+            for (auto& entry : gsl->graph.vizOptions.selectedForVisualization)
                 entry.second = occupancyToggleState;
             somethingChanged = true;
         }
@@ -112,14 +112,14 @@ namespace GSL
             if (!Is<RoomNode>(node))
                 continue;
 
-            if (!gsl->graph.selectedForVisualization.contains(node->id))
-                gsl->graph.selectedForVisualization[node->id] = true;
+            if (!gsl->graph.vizOptions.selectedForVisualization.contains(node->id))
+                gsl->graph.vizOptions.selectedForVisualization[node->id] = true;
 
-            bool oldValue = gsl->graph.selectedForVisualization.at(node->id);
+            bool oldValue = gsl->graph.vizOptions.selectedForVisualization.at(node->id);
             ImGui::Checkbox(node->id.c_str(),
-                            &gsl->graph.selectedForVisualization.at(node->id));
+                            &gsl->graph.vizOptions.selectedForVisualization.at(node->id));
 
-            if (gsl->graph.selectedForVisualization.at(node->id) != oldValue)
+            if (gsl->graph.vizOptions.selectedForVisualization.at(node->id) != oldValue)
                 somethingChanged = true;
         }
 
@@ -135,7 +135,18 @@ namespace GSL
         ImGui::Begin("Simulate Source");
         {
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Probability max color", &gsl->graph.probabilityVizMax, 0.001, 1e-6, 1.0);
+            ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Probability max color", &gsl->graph.vizOptions.probabilityVizMax, 1e-4, 1e-5, 1.0, "%.2e");
+
+            {
+                ImGui::BeginDisabled(simulationOptions.simulationEnabled);
+                ImGui::ScopedStyle style(ImGuiCol_Button, IM_COL32(255, 0, 0, 255));
+                if (ImGui::Button("Emergency Stop"))
+                    gsl->simulationSystem.EmergencyStop();
+                ImGui::EndDisabled();
+            }
+
             size_t previousIndex = selectedNodeData.nodeIndex;
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Selected Node", gsl->graph.nodes, selectedNodeData.nodeIndex, [](auto& node)

@@ -10,6 +10,7 @@ namespace GSL::Graph_internal
     {
         simulationCache.Clear();
         gasMapsWithRoomSource.clear();
+        emergencyStopped = false;
         // blurMasks.clear(); //this can probably be retained (if the graph does not change)
     }
 
@@ -134,6 +135,11 @@ namespace GSL::Graph_internal
         return map;
     }
 
+    void SimulationSystem::EmergencyStop()
+    {
+        emergencyStopped = true;
+    }
+
     void SimulationSystem::_SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, CompleteMap& completeGasMap)
     {
         // we need to get the final gas maps by combining the individual doorway simulations
@@ -211,7 +217,7 @@ namespace GSL::Graph_internal
             for (const auto& [node, map] : completeGasMap.gasMaps)
                 std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
 
-            // Utils::Winsorize(appendedHitMap, 5);
+            Utils::Winsorize(appendedHitMap, 5);
             Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
 
             size_t globalIndex = 0;
@@ -252,8 +258,22 @@ namespace GSL::Graph_internal
         }
 
         constexpr float minimumGasThr = 1e-6;
+        size_t iterations = 0;
         while (!stateStack.empty())
         {
+            if (emergencyStopped)
+                break;
+
+            if (iterations++ == 100000)
+            {
+                std::stringstream ss;
+                for (const auto& node : stateStack)
+                {
+                    ss << fmt::format("{} -> ({:.2e})", node.doorSource->to.lock()->id, node.gasAtInlet);
+                }
+                GSL_INFO("{}", ss.str());
+                GSL_ASSERT(false);
+            }
             ZoneScopedN("Graph propagation");
             NodeState& current = stateStack.back();
 
@@ -269,15 +289,22 @@ namespace GSL::Graph_internal
                 if (!Is<RoomNode>(next.doorSource->from))
                     continue;
 
-                SimWithResult result = simulationCache.Get(current.doorSource);
+                float gasProportion;
+                DoorwayPair pair{current.doorSource, next.doorSource};
+                if(Utils::SyncedAccess(doorwayPairs).Get().contains(pair))
+                    gasProportion = Utils::SyncedAccess(doorwayPairs).Get().at(pair);
+                else
+                {
+                    SimWithResult result = simulationCache.Get(current.doorSource);
 
-                // adjust for the fact that the normalized concentration at the inlet might not be 1
-                float concentrationInlet = result.ProportionInDoorway(current.doorSource->GetIndex());
-                float weight = 1.f / concentrationInlet;
+                    // adjust for the fact that the normalized concentration at the inlet might not be 1
+                    float concentrationInlet = result.ProportionInDoorway(current.doorSource->GetIndex());
+                    float weight = 1.f / concentrationInlet;
 
-                // calculate how much of the gas in the current node makes it to the next node
-                size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
-                float gasProportion = weight * result.ProportionInDoorway(outletIndex);
+                    // calculate how much of the gas in the current node makes it to the next node
+                    size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
+                    gasProportion = weight * result.ProportionInDoorway(outletIndex);
+                }
 
                 // if no gas exits this room at all (a dead end or other weird edge case), just stop expansion in this direction
                 if (gasProportion == 0 || !std::isfinite(gasProportion))

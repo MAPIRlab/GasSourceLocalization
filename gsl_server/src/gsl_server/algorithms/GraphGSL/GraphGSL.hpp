@@ -17,7 +17,7 @@ namespace GSL
 
         void processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection) override; // called from StopAndMeasure once we have enough data for this position
         // Vector2 windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg) override;
-        
+
         void UpdateWindMaps();
         void Visualize();
 
@@ -26,12 +26,13 @@ namespace GSL
         void EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes);
         float ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
         long double ProbFromResidual(long double residual);
+        void UpdateExpectedValue();
 
     private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
-        float likelihoodSigma = 1;
+        float likelihoodSigma = 0.1;
 
 #define ENABLE_NAIVE_EVALUATION 1
 #if ENABLE_NAIVE_EVALUATION
@@ -61,6 +62,8 @@ namespace GSL
 
         Utils::Time::Countdown visualizationCD;
         bool drawGraph = true;
+        Vector2 expectedValue;
+        Utils::CovarianceMatrix cov;
 
 #if USE_GUI
         friend class GraphUI;

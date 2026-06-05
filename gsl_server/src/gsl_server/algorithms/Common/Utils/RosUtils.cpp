@@ -355,7 +355,7 @@ namespace GSL::Utils
 
     } // namespace GSL::Utils
 
-    void publishPositionWCovariance(Vector2 position, const CovarianceMatrix& covariance, const std::string& topic)
+    void publishPositionWCovariance(Vector3 position, const CovarianceMatrix& covariance, const std::string& topic)
     {
         if (!debugNode)
             debugNode = std::make_shared<rclcpp::Node>("debugNode");
@@ -371,6 +371,7 @@ namespace GSL::Utils
         msg.header.stamp = debugNode->now();
         msg.pose.pose.position.x = position.x;
         msg.pose.pose.position.y = position.y;
+        msg.pose.pose.position.z = position.z;
 
         msg.pose.covariance[0 + 6 * 0] = covariance.x;
         msg.pose.covariance[0 + 6 * 1] = covariance.covariance;
