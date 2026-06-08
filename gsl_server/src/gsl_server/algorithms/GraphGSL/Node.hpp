@@ -16,14 +16,18 @@ namespace GSL
         AABB2D aabb;
         std::set<std::shared_ptr<DoorwayNode>> samePhysicalDoorway;
 
-        DoorwayNode(const std::string& _name) : name(_name) {}
+        DoorwayNode(const std::string& _name);
         std::string_view GetName() const { return name; }
+        
+        std::string_view GetDebuggingName() const { return _debugging_name; }
+        void SetDebuggingName(std::string_view debugging_name) { _debugging_name = debugging_name; }
 
         size_t GetIndex() const;
         const std::shared_ptr<DoorwayNode> OtherSide() const; // the node which represents the other direction through this doorway
 
     private:
         std::string name; // name is shared between the two directional versions of the doorway
+        std::string _debugging_name; // NOT shared, this is only to make the debugger show a readable identifier
     };
 
     class PlaceNode

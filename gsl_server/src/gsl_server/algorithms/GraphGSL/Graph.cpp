@@ -95,6 +95,7 @@ namespace GSL
                     doorway->to = otherNode;
                     doorway->aabb = aabb;
                     doorway->samePhysicalDoorway = {doorway};
+                    doorway->SetDebuggingName(fmt::format("{}({})", doorway->GetName(), doorway->from.lock()->id));
                     thisNode->doorways.push_back(doorway);
                 }
                 else
@@ -117,6 +118,7 @@ namespace GSL
                             doorway->to = otherNode;
                             doorway->aabb.min = aabb.min + Vector2(i * step.x, j * step.y);
                             doorway->aabb.max = aabb.min + Vector2((i + 1) * step.x, (j + 1) * step.y);
+                            doorway->SetDebuggingName(fmt::format("{}({})", doorway->GetName(), doorway->from.lock()->id));
                             thisNode->doorways.push_back(doorway);
                             samePhysicalDoorway.insert(doorway);
                         }

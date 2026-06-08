@@ -23,11 +23,11 @@ namespace GSL::Graph_internal
         CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
 
         void EmergencyStop(); // to be called from the UI when there is an infinite loop
-        
+
         MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
-        
+
         void blurTest(std::vector<Vector2Int> points); // this is a utility for testing the effects of the blur. Not part of the algorithm.
-        
+
         std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;
         Options options;
@@ -56,6 +56,7 @@ namespace GSL::Graph_internal
         struct NodeState
         {
             float gasAtInlet;
+            float gasProportion; // relative to the previous nodestate
             std::shared_ptr<const DoorwayNode> doorSource;
             std::stack<std::shared_ptr<const DoorwayNode>> doorways;
         };
@@ -68,7 +69,7 @@ namespace GSL::Graph_internal
         bool emergencyStopped = false;
         std::mutex mtx;
         std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
-        
+
         struct DoorwayPair
         {
             std::shared_ptr<const DoorwayNode> start;

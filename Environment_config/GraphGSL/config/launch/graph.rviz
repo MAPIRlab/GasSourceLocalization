@@ -168,7 +168,7 @@ Visualization Manager:
       Enabled: true
       Name: Graph
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -180,7 +180,7 @@ Visualization Manager:
       Enabled: true
       Name: Occupancy_nodes
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -201,17 +201,17 @@ Visualization Manager:
         Value: /gsl_wind
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: SimGasMaps
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/simGasMaps
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: MeasuredGasMaps
@@ -249,7 +249,7 @@ Visualization Manager:
         Value: /gsl_naive_maps
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: SourceProb
       Namespaces:
         {}
@@ -259,7 +259,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/sourceProb
-      Value: true
+      Value: false
     - Alpha: 1
       Axes Length: 0.20000000298023224
       Axes Radius: 0.05000000074505806
@@ -280,7 +280,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: ExpectedValue
@@ -294,7 +294,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /expected_source_position
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -340,7 +340,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 6.285008430480957
       Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -350,11 +350,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 50.5059814453125
+      Scale: 59.2548942565918
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 8.75650691986084
-      Y: 6.13157844543457
+      X: 9.695758819580078
+      Y: 6.00704288482666
     Saved: ~
 Window Geometry:
   Displays:

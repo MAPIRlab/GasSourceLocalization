@@ -190,7 +190,7 @@ namespace GSL
                         if (!Is<RoomNode>(node))
                             pos = node->GetPosition();
                         gsl->simulationSystem.SimulateEntireGraph(node, pos);
-                        GSL_INFO("Done simulating source in room '{}'", node->id);
+                        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Done simulating source in room '{}'", node->id);
                         gsl->simulationViz.simulationIndex = gsl->simulationSystem.gasMapsWithRoomSource.at(node).size() - 1;
                         simulationOptions.simulationEnabled = true;
                     };

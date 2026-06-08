@@ -185,6 +185,9 @@ namespace GSL
         throw std::exception();
     }
 
+    DoorwayNode::DoorwayNode(const std::string& _name) : name(_name), _debugging_name(name)
+    {}
+
     size_t DoorwayNode::GetIndex() const
     {
         return std::distance(from.lock()->doorways.begin(),
