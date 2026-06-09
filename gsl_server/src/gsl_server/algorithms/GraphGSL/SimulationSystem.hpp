@@ -7,10 +7,16 @@
 #include <gsl_server/algorithms/Common/Utils/Synchronization.hpp>
 #include <stack>
 
+namespace GSL
+{
+    class GraphUI;
+}
 namespace GSL::Graph_internal
 {
     class SimulationSystem
     {
+        friend GraphUI;
+
     public:
         SimulationSystem() : simulationCache(this) {}
         void Reset(); // remove all the cached data and results, get ready to run new simulations

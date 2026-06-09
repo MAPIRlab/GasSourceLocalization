@@ -86,7 +86,7 @@ namespace GSL
                 }
                 otherNode = nodesByName.at(nameOtherPlace);
 
-                constexpr float maxDoorwaySize = 2.f;
+                constexpr float maxDoorwaySize = 1.f;
                 if (aabb.size().x < maxDoorwaySize && aabb.size().y < maxDoorwaySize)
                 {
                     std::string nameDoorway = linkFile.stem();

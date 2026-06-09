@@ -24,7 +24,7 @@ namespace GSL
     {
         Vector2Int newIndices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
-        if (!wind.metadata.indicesInBounds(newIndices))
+        if (!wind.metadata.indicesInBounds(newIndices) || wind.occupancyAt(newIndices) == Occupancy::Unknown)
         {
             // if we have manually defined outlets
             if (outlets)

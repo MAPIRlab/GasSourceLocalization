@@ -304,6 +304,9 @@ namespace GSL
                     for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
                         GSL_INFO("{} -> {}", result.ProportionInDoorway(i), roomNode->doorways.at(i)->to.lock()->id);
 
+                    Utils::Winsorize(*result.hitMap);
+                    Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy);
+                    Simulation::blurHitMap(*result.hitMap, gsl->simulationSystem.options.blurSigma, roomNode->GetOccupancy(), gsl->simulationSystem.blurMasks[roomNode]);
                     Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");
                     simulationOptions.simulationEnabled = true;
                 };
