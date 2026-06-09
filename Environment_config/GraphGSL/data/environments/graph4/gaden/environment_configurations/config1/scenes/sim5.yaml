@@ -4,5 +4,5 @@ playback_loop:
   from: 500
   to: 600
 simulations:
-  - sim: sim3
+  - sim: sim5
     gas_color: [0.4, 0.4, 0.4]

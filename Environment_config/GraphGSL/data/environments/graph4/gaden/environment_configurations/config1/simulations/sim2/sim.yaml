@@ -12,7 +12,7 @@ filamentGrowthGamma: 10
 filamentNoise_std: 0.03
 numFilaments_sec: 10
 expectedNumIterations: 600
-saveResults: false
+saveResults: true
 saveDeltaTime: 0.5
 preCalculateConcentrations: false
 windLooping:
