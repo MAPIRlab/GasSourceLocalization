@@ -229,7 +229,7 @@ namespace GSL::Graph_internal
             for (const auto& [node, map] : completeGasMap.gasMaps)
                 std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
 
-            Utils::Winsorize(appendedHitMap, 5);
+            Utils::Winsorize(appendedHitMap, 2);
             Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, options.normalizationPower);
 
             size_t globalIndex = 0;
@@ -274,6 +274,14 @@ namespace GSL::Graph_internal
         constexpr float minimumGasThr = 1e-2;
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
+
+#define LOG_DETAILS 0
+#if LOG_DETAILS
+#define LOG_TRACE(...) GSL_INFO(__VA_ARGS__)
+#else
+#define LOG_TRACE(...) 
+#endif
+
         for (const auto& initialNode : initialNodeStates)
         {
             stateStack.push_back(initialNode);
@@ -285,106 +293,120 @@ namespace GSL::Graph_internal
                     break;
 
                 NodeState& current = stateStack.back();
+#if LOG_DETAILS
                 std::stringstream ss;
                 for (const auto& node : stateStack)
                     ss << fmt::format("->({:.2e}){} ", node.gasAtInlet, node.doorSource->GetDebuggingName());
                 GSL_INFO("{}", ss.str(), current.doorSource->GetDebuggingName());
-
-                // // find a state further in the stack which refers to the same doorway as the current one
-                auto loopIterator = std::find_if(stateStack.rbegin() + 1, // +1 to avoid the current state itself
-                                                 stateStack.rend(),
-                                                 [&current](const NodeState& n)
-                                                 {
-                                                     return n.doorSource == current.doorSource;
-                                                 });
-                bool loopDetected = loopIterator != stateStack.rend();
-                if (loopDetected)
+#endif
+                // loop detection and handling
                 {
-                    std::stringstream ss;
-                    for (const auto& node : stateStack)
+                    // // find a state further in the stack which refers to the same doorway as the current one
+                    auto loopIterator = std::find_if(stateStack.rbegin() + 1, // +1 to avoid the current state itself
+                                                     stateStack.rend(),
+                                                     [&current](const NodeState& n)
+                                                     {
+                                                         return n.doorSource == current.doorSource;
+                                                     });
+                    bool loopDetected = loopIterator != stateStack.rend();
+                    if (loopDetected)
                     {
-                        ss << fmt::format("{} -> ({:.2e})", node.doorSource->GetDebuggingName(), node.gasAtInlet);
+#if LOG_DETAILS
+                        std::stringstream ss;
+                        for (const auto& node : stateStack)
+                        {
+                            ss << fmt::format("{} -> ({:.2e})", node.doorSource->GetDebuggingName(), node.gasAtInlet);
+                        }
+                        GSL_INFO("Loop detected: {}{}", ss.str(), current.doorSource->GetDebuggingName());
+#endif
+
+                        NodeState& previous = *loopIterator;
+                        float loopedProportion = current.gasAtInlet / previous.gasAtInlet;
+
+                        if (loopedProportion >= 1)
+                        {
+                            GSL_ERROR("Loop detected with proportion >= 1. This is a failure of the model assumptions. "
+                                      "Forcefully setting to 0.9 to avoid infinite gas!");
+                            loopedProportion = 0.9;
+                            GSL_ASSERT(false); // catch the debugger, if present
+                        }
+
+                        // since this is a loop, it is technically an infinite series: 1 + x + x*x...
+                        // it converges (as long as x < 1), to this:
+                        float seriesTotal = 1.f / (1 - loopedProportion);
+
+                        // update what proportion of the initial amount makes it to each doorway in the cache
+                        // this makes it so the next time we reach the doorway at the loop start we correctly take the looping into consideration
+                        // from 1 -> x  to  total -> total * x
+                        for (auto& [doorway, gasProportion] : Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion)
+                            gasProportion *= seriesTotal;
+
+                        // now, update the loop start itself
+                        // this always had an implied proportion of 1 (because it is the reference value)
+                        // so we have to add it to the cache as total - 1
+                        // since it is *technically* possible to have more than one loop, we add the value rather than just setting it
+                        float extraProportion = seriesTotal - 1;
+                        Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion[current.doorSource] += extraProportion;
+                        float extraAmount = extraProportion * previous.gasAtInlet;
+
+                        // then, we update the actual gas amounts in the result data structure, (not the cached proportions)
+                        for (auto& [doorway, gasProportion] : Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion)
+                            totalGasThroughDoorway[doorway] += gasProportion * extraAmount;
+
+                        // we need to remove the (first iteration)looped gas fraction from the loop start doorway,
+                        // as that has already been counted when creating currentState
+                        totalGasThroughDoorway[current.doorSource] -= current.gasAtInlet;
+
+                        // finally, update the NodeStates for all the doorways in the loop, in case they still have some unexplored doorways
+                        // (which should still consider the extra gas due to the loop)
+                        for (auto it = stateStack.rbegin(); it != loopIterator; it++)
+                        {
+                            NodeState& node = *it;
+                            float gasProportion = Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion[node.doorSource];
+                            node.gasAtInlet += gasProportion * extraAmount;
+                        }
+                        previous.gasAtInlet += extraAmount;
+
+                        // TODO currently, we are not using the "complete node" aspect of the cache:
+                        // nodes are expanded every time you reach them
+                        // the reason is that that mechanism causes quite a few problems when considering loops
+                        // I would love to figure out how to make it work (incomplete attempt below), but cannot currently dedicate more time to it
+
+                        // update the caches for every node in the loop:
+                        // it does not matter where the loop starts (it is a loop, after all), so if we reach it at a different spot during a different
+                        // path expansion, the cache of that new "loop start" node must reflect all the same calculations we have already done
+                        // for (auto outerIt = stateStack.rbegin(); outerIt != loopIterator; outerIt++)
+                        // {
+                        //     NodeState& outerNode = *outerIt;
+                        //     for (auto& [doorway, gasProportion] : Utils::SyncedAccess(graphCache).Get()[outerNode.doorSource].gasProportion)
+                        //         gasProportion *= seriesTotal;
+
+                        //     float b = seriesTotal;
+                        //     for (auto innerIt = outerIt + 1; innerIt != loopIterator; innerIt++)
+                        //     {
+                        //         NodeState& innerNode = *innerIt;
+                        //         b /= innerNode.gasProportion;
+                        //         Utils::SyncedAccess(graphCache).Get()[outerNode.doorSource].gasProportion[innerNode.doorSource] = b; // TODO is this right?
+                        //     }
+
+                        //     Utils::SyncedAccess(graphCache).Get()[outerNode.doorSource].gasProportion[outerNode.doorSource] += extraProportion;
+                        // }
+
+                        stateStack.pop_back();
+                        continue;
                     }
-                    GSL_INFO("Loop detected: {}{}", ss.str(), current.doorSource->GetDebuggingName());
-
-                    NodeState& previous = *loopIterator;
-                    float loopedProportion = current.gasAtInlet / previous.gasAtInlet;
-
-                    GSL_ASSERT_MSG(loopedProportion < 1, "PANIC: Loop detected with proportion >= 1. Repent your sins.");
-
-                    // since this is a loop, it is technically an infinite series: 1 + x + x*x...
-                    // it converges (as long as x < 1), to this:
-                    float seriesTotal = 1.f / (1 - loopedProportion);
-
-                    // update what proportion of the initial amount makes it to each doorway in the cache
-                    // this makes it so the next time we reach the doorway at the loop start we correctly take the looping into consideration
-                    // from 1 -> x  to  total -> total * x
-                    for (auto& [doorway, gasProportion] : Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion)
-                        gasProportion *= seriesTotal;
-
-                    // now, update the loop start itself
-                    // this always had an implied proportion of 1 (because it is the reference value)
-                    // so we have to add it to the cache as total - 1
-                    // since it is *technically* possible to have more than one loop, we add the value rather than just setting it
-                    float extraProportion = seriesTotal - 1;
-                    Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion[current.doorSource] += extraProportion;
-                    float extraAmount = extraProportion * previous.gasAtInlet;
-
-                    // then, we update the actual gas amounts in the result data structure, (not the cached proportions)
-                    for (auto& [doorway, gasProportion] : Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion)
-                        totalGasThroughDoorway[doorway] += gasProportion * extraAmount;
-
-                    // we need to remove the (first iteration)looped gas fraction from the loop start doorway,
-                    // as that has already been counted when creating currentState
-                    totalGasThroughDoorway[current.doorSource] -= current.gasAtInlet;
-
-                    // finally, update the NodeStates for all the doorways in the loop, in case they still have some unexplored doorways
-                    // (which should still consider the extra gas due to the loop)
-                    for (auto it = stateStack.rbegin(); it != loopIterator; it++)
-                    {
-                        NodeState& node = *it;
-                        float gasProportion = Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion[node.doorSource];
-                        node.gasAtInlet += gasProportion * extraAmount;
-                    }
-                    previous.gasAtInlet += extraAmount;
-
-                    // TODO currently, we are not using the "complete node" aspect of the cache:
-                    // nodes are expanded every time you reach them
-                    // the reason is that that mechanism causes quite a few problems when considering loops
-                    // I would love to figure out how to make it work (incomplete attempt below), but cannot currently dedicate more time to it
-
-                    // update the caches for every node in the loop:
-                    // it does not matter where the loop starts (it is a loop, after all), so if we reach it at a different spot during a different
-                    // path expansion, the cache of that new "loop start" node must reflect all the same calculations we have already done
-                    // for (auto outerIt = stateStack.rbegin(); outerIt != loopIterator; outerIt++)
-                    // {
-                    //     NodeState& outerNode = *outerIt;
-                    //     for (auto& [doorway, gasProportion] : Utils::SyncedAccess(graphCache).Get()[outerNode.doorSource].gasProportion)
-                    //         gasProportion *= seriesTotal;
-
-                    //     float b = seriesTotal;
-                    //     for (auto innerIt = outerIt + 1; innerIt != loopIterator; innerIt++)
-                    //     {
-                    //         NodeState& innerNode = *innerIt;
-                    //         b /= innerNode.gasProportion;
-                    //         Utils::SyncedAccess(graphCache).Get()[outerNode.doorSource].gasProportion[innerNode.doorSource] = b; // TODO is this right?
-                    //     }
-
-                    //     Utils::SyncedAccess(graphCache).Get()[outerNode.doorSource].gasProportion[outerNode.doorSource] += extraProportion;
-                    // }
-
-                    stateStack.pop_back();
-                    continue;
                 }
 
+                // using the graph cache to avoid re-treading paths that have already been completely explored
+                // this is currently not used because it causes some complications with the loop handling
                 // if (Utils::SyncedAccess(graphCache).Get()[current.doorSource].complete)
                 // {
-                //     GSL_INFO("Doorway {} is complete!", current.doorSource->GetDebuggingName());
+                //     LOG_TRACE("Doorway {} is complete!", current.doorSource->GetDebuggingName());
                 //     for (auto& [doorway, gasProportion] : Utils::SyncedAccess(graphCache).Get()[current.doorSource].gasProportion)
                 //     {
                 //         float gasThisDoorway = gasProportion * current.gasAtInlet;
                 //         totalGasThroughDoorway[doorway] += gasThisDoorway;
-                //         GSL_INFO("Adding {} gas to {}", gasThisDoorway, doorway->GetName());
+                //         LOG_TRACE("Adding {} gas to {}", gasThisDoorway, doorway->GetName());
                 //         // add this cached node to all the caches of nodes in the path so far!
                 //         for (auto& state : stateStack)
                 //             Utils::SyncedAccess(graphCache).Get()[state.doorSource].gasProportion[doorway] += gasThisDoorway / state.gasAtInlet;
@@ -395,14 +417,14 @@ namespace GSL::Graph_internal
 
                 if (current.gasProportion <= minimumGasThr)
                 {
-                    GSL_INFO("Pruning {}, too little gas", current.doorSource->GetDebuggingName());
+                    LOG_TRACE("Pruning {}, too little gas", current.doorSource->GetDebuggingName());
                     stateStack.pop_back();
                     continue;
                 }
 
                 if (current.doorways.empty())
                 {
-                    GSL_INFO("Marking {} complete", current.doorSource->GetDebuggingName());
+                    LOG_TRACE("Marking {} complete", current.doorSource->GetDebuggingName());
                     Utils::SyncedAccess(graphCache).Get()[current.doorSource].complete = true;
                     stateStack.pop_back();
                     continue;
@@ -414,7 +436,7 @@ namespace GSL::Graph_internal
                 current.doorways.pop();
                 if (!Is<RoomNode>(next.doorSource->from))
                 {
-                    GSL_INFO("Skipping outside node {}", next.doorSource->from.lock()->id);
+                    LOG_TRACE("Skipping outside node {}", next.doorSource->from.lock()->id);
                     continue;
                 }
 
@@ -437,8 +459,8 @@ namespace GSL::Graph_internal
 
                 next.gasProportion = gasProportion;
                 next.gasAtInlet = current.gasAtInlet * gasProportion;
-                // if (next.gasProportion < minimumGasThr || !std::isfinite(next.gasAtInlet))
-                //     continue;
+                 if (next.gasProportion < minimumGasThr || !std::isfinite(next.gasAtInlet))
+                     continue;
 
                 // update the total amount of gas that passes through the doorway
                 totalGasThroughDoorway[next.doorSource] += next.gasAtInlet;
@@ -515,7 +537,7 @@ namespace GSL::Graph_internal
             {
                 std::scoped_lock lock(mtx);
                 simsInFlight.insert(doorway);
-                GSL_INFO("Running simulation in room {} from doorway {}", doorway->from.lock()->id, doorway->GetName());
+                GSL_TRACE("Running simulation in room {} from doorway {}", doorway->from.lock()->id, doorway->GetName());
             }
             SimWithResult result = simSys->SimulateSingleRoomFromDoorway(doorway);
             {

@@ -452,14 +452,13 @@ namespace GSL
             {
                 Grid2DMetadata gridMetadata = roomNode->GetOccupancy().metadata;
                 gridMetadata.origin = gridMetadata.origin * vizOptions.nodeSeparationViz;
-                const AABB2DInt& leaf = roomNode->GetQuadtreeLeaves().at(i).getAABB();
-                Vector2Int size = leaf.max - leaf.min;
+                const AABB2D aabb = gridMetadata.indicesToCoordinates(roomNode->GetQuadtreeLeaves().at(i).getAABB());
+                Vector2 size = aabb.size();
                 Marker mark;
                 mark.header.frame_id = "map";
                 mark.type = Marker::CUBE;
-                Vector2 worldSpaceScale = (Vector2(size.x, size.y)) * gridMetadata.cellSize;
 
-                auto coords = gridMetadata.indicesToCoordinates(leaf.min.x, leaf.min.y, false) + (worldSpaceScale * 0.5f);
+                auto coords = aabb.min + (size * 0.5f);
 
                 Point p;
                 p.x = coords.x;
@@ -467,8 +466,8 @@ namespace GSL
                 p.z = 0;
                 mark.pose.position = p;
                 mark.id = id++;
-                mark.scale.x = worldSpaceScale.x - gridMetadata.cellSize * 0.2;
-                mark.scale.y = worldSpaceScale.y - gridMetadata.cellSize * 0.2;
+                mark.scale.x = size.x - gridMetadata.cellSize * 0.2;
+                mark.scale.y = size.y - gridMetadata.cellSize * 0.2;
                 mark.scale.z = 0.01;
 
                 mark.color = Utils::create_color(1, 1, 1, 1);

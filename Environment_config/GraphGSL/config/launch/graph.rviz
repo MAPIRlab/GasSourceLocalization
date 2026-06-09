@@ -177,17 +177,17 @@ Visualization Manager:
         Value: /gsl_graph
       Value: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: Occupancy_nodes
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_occupancy
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: WindMaps
@@ -350,11 +350,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 59.2548942565918
+      Scale: 100.91863250732422
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 9.695758819580078
-      Y: 6.00704288482666
+      X: 6.163355350494385
+      Y: 5.686426639556885
     Saved: ~
 Window Geometry:
   Displays:

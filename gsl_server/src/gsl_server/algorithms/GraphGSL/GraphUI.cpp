@@ -27,6 +27,22 @@ namespace GSL
                     size_t nodeIndex = gsl->graph.GetCorrespondingNodeIdx(selectedCoordinates);
                     if (selectedNodeData.nodeIndex != nodeIndex)
                         OnSelectNode(nodeIndex);
+
+                    // select the closest simulation to the clicked point
+                    auto node = gsl->graph.nodes.at(selectedNodeData.nodeIndex);
+                    if (node && gsl->simulationSystem.gasMapsWithRoomSource.contains(node))
+                    {
+                        float minDist = std::numeric_limits<float>::max();
+                        for (size_t i = 0; i < gsl->simulationSystem.gasMapsWithRoomSource.at(node).size(); ++i)
+                        {
+                            const auto& gasMap = gsl->simulationSystem.gasMapsWithRoomSource.at(node).at(i);
+                            if (vmath::length(selectedCoordinates-gasMap.source->GetPoint()) < minDist)
+                            {
+                                minDist = vmath::length(selectedCoordinates-gasMap.source->GetPoint());
+                                gsl->simulationViz.simulationIndex = i;
+                            }
+                        }
+                    }
                 });
     }
 
@@ -79,6 +95,11 @@ namespace GSL
                                           {
                                               gsl->UpdateWindMaps();
                                           });
+
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Probability max color", &gsl->graph.vizOptions.probabilityVizMax, 1e-4, 1e-5, 1.0, "%.2e");
         }
         ImGui::End();
 
@@ -98,19 +119,6 @@ namespace GSL
     {
         ImGui::Begin("Simulate Source");
         {
-            ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
-            ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Probability max color", &gsl->graph.vizOptions.probabilityVizMax, 1e-4, 1e-5, 1.0, "%.2e");
-
-            {
-                ImGui::BeginDisabled(simulationOptions.simulationEnabled);
-                ImGui::ScopedStyle style(ImGuiCol_Button, IM_COL32(255, 0, 0, 255));
-                if (ImGui::Button("Emergency Stop"))
-                    gsl->simulationSystem.EmergencyStop();
-                ImGui::EndDisabled();
-            }
-
             size_t previousIndex = selectedNodeData.nodeIndex;
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Selected Node", gsl->graph.nodes, selectedNodeData.nodeIndex, [](auto& node)
@@ -124,11 +132,16 @@ namespace GSL
                 OnSelectNode(selectedNodeData.nodeIndex);
             }
 
-            std::string name = node ? node->id : "Null";
-            ImGui::Text("Currently selected node: %s", name.c_str());
-
             if (node && gsl->simulationSystem.gasMapsWithRoomSource.contains(node))
             {
+                if (ImGui::Button("Sort simulations"))
+                    std::ranges::sort(gsl->simulationSystem.gasMapsWithRoomSource.at(node), [](const CompleteMap& a, const CompleteMap& b)
+                                      {
+                                          return Is<DoorwaySource>(a.source) && !Is<DoorwaySource>(b.source) ||
+                                                 a.source->GetPoint().y < b.source->GetPoint().y ||
+                                                 a.source->GetPoint().y == b.source->GetPoint().y && a.source->GetPoint().x < b.source->GetPoint().x;
+                                      });
+
                 std::deque<CompleteMap>& gasMaps = gsl->simulationSystem.gasMapsWithRoomSource.at(node);
                 ImGui::SetNextItemWidth(120);
                 ImGui::ComboSelect("Visualize simulation", gasMaps, gsl->simulationViz.simulationIndex,
@@ -141,8 +154,15 @@ namespace GSL
                                    });
             }
 
+            ImGui::VerticalSpace(20.f);
+            {
+                ImGui::BeginDisabled(simulationOptions.simulationEnabled);
+                ImGui::ScopedStyle style(ImGuiCol_Button, IM_COL32(255, 0, 0, 255));
+                if (ImGui::Button("Emergency Stop"))
+                    gsl->simulationSystem.EmergencyStop();
+                ImGui::EndDisabled();
+            }
             ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
-
             if (ImGui::Button("Run whole map simulation"))
             {
                 if (node)
@@ -180,6 +200,7 @@ namespace GSL
             }
 
 #if ENABLE_NAIVE_EVALUATION
+            ImGui::VerticalSpace(20.f);
             if (ImGui::Button("Naive Source Probs"))
             {
                 gsl->functionQueue.submit([this]()

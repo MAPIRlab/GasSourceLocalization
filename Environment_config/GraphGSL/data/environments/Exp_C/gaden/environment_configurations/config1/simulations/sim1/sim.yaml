@@ -1,6 +1,6 @@
 source:
   sourceType: point
-  position: [5, 6, 1.05]
+  position: [4.35, 5.5, 0.5]
   gasType: 0
 deltaTime: 0.1
 windIterationDeltaTime: 1

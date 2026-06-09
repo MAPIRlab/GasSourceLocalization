@@ -14,7 +14,7 @@ from launch.frontend.parse_substitution import parse_substitution
 
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="graph4"),
+        DeclareLaunchArgument("scenario", default_value="Exp_C"),
         DeclareLaunchArgument("config", default_value="config1"),
         DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),
@@ -23,6 +23,7 @@ def launch_arguments():
 
 
 def launch_setup(context, *args, **kwargs):
+    scenario = LaunchConfiguration("scenario").perform(context)
     gsl_call = [
         GroupAction(actions=[
             PushRosNamespace(LaunchConfiguration("robot_name")),
@@ -47,9 +48,9 @@ def launch_setup(context, *args, **kwargs):
                 # prefix="xterm -hold -e",
                 parameters=[
                     {"graph_path": os.path.join(get_package_share_directory(
-                        "graphgsl_env"), "data", "environments", "graph4", "graph")},
+                        "graphgsl_env"), "data", "environments", scenario, "graph")},
                     {"sim_measurements_path": os.path.join(get_package_share_directory(
-                        "graphgsl_env"), "data", "test_data", "data_graph_4")},
+                        "graphgsl_env"), "data", "test_data", f"data_{scenario}")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
                     {"robot_location_topic": "/PioneerP3DX/ground_truth"},
@@ -188,7 +189,7 @@ def launch_setup(context, *args, **kwargs):
                 {"wind_topic": "/measured_wind"},
                 {"gas_topic": "/measured_gas"},
                 {"file_path": os.path.join(get_package_share_directory(
-                    "graphgsl_env"), "data", "test_data", "data_graph_4")},
+                    "graphgsl_env"), "data", "test_data", f"data_{scenario}")},
         ],
     )
 

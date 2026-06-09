@@ -424,7 +424,7 @@ namespace GSL
         }
 
         MultiGrid mgrid(sourceProbs);
-        expectedValue = Utils::ExpectedValue(mgrid, 1.0);
+        expectedValue = Utils::ExpectedValue(mgrid, 0.2);
         cov = Utils::Covariance(mgrid);
     }
 
