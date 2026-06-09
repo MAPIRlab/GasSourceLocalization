@@ -1,7 +1,6 @@
 #include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
-#include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #if USE_GUI
 
@@ -75,7 +74,6 @@ namespace GSL
             ImGui::Checkbox("Draw graph", &gsl->drawGraph);
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Node separation", &gsl->graph.vizOptions.nodeSeparationViz, 0.005, 1., 10.);
-            SelectNodes();
             if (ImGui::Button("Update wind map"))
                 gsl->functionQueue.submit([this]()
                                           {
@@ -94,40 +92,6 @@ namespace GSL
                 ImGui::Text("Null state");
         }
         ImGui::End();
-    }
-
-    void GraphUI::SelectNodes()
-    {
-        bool somethingChanged = false;
-        if (ImGui::Button("Toggle All"))
-        {
-            occupancyToggleState = !occupancyToggleState;
-            for (auto& entry : gsl->graph.vizOptions.selectedForVisualization)
-                entry.second = occupancyToggleState;
-            somethingChanged = true;
-        }
-
-        for (auto node : gsl->graph.nodes)
-        {
-            if (!Is<RoomNode>(node))
-                continue;
-
-            if (!gsl->graph.vizOptions.selectedForVisualization.contains(node->id))
-                gsl->graph.vizOptions.selectedForVisualization[node->id] = true;
-
-            bool oldValue = gsl->graph.vizOptions.selectedForVisualization.at(node->id);
-            ImGui::Checkbox(node->id.c_str(),
-                            &gsl->graph.vizOptions.selectedForVisualization.at(node->id));
-
-            if (gsl->graph.vizOptions.selectedForVisualization.at(node->id) != oldValue)
-                somethingChanged = true;
-        }
-
-        if (somethingChanged)
-        {
-            Utils::ClearMarkers(gsl->pubs.occupancyPub);
-            Utils::ClearMarkers(gsl->pubs.windPub);
-        }
     }
 
     void GraphUI::SimulateSourceMenu()
@@ -203,6 +167,8 @@ namespace GSL
             if (ImGui::Button("Reset simulations"))
                 gsl->simulationSystem.Reset();
 
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 0.001, 0.001, 1);
             if (ImGui::Button("Evaluate Source Probs"))
             {
                 gsl->functionQueue.submit([this]()
@@ -212,8 +178,6 @@ namespace GSL
                                               simulationOptions.simulationEnabled = true;
                                           });
             }
-            ImGui::SetNextItemWidth(100);
-            ImGui::InputFloat("Likelihood Sigma", &gsl->likelihoodSigma);
 
 #if ENABLE_NAIVE_EVALUATION
             if (ImGui::Button("Naive Source Probs"))

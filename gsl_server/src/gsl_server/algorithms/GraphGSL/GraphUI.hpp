@@ -22,7 +22,6 @@ namespace GSL
 
     private:
         void CreateUI();
-        void SelectNodes();
         void SimulateSourceMenu();
         void SimulateSingleRoomMenu();
         void OnSelectNode(size_t nodeIndex);

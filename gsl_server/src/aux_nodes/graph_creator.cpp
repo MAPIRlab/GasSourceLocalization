@@ -111,10 +111,13 @@ GraphCreator::~GraphCreator()
 
 void GraphCreator::OnGraphUpdated()
 {
-    static auto pub = create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
+    static auto graphpub = create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
+    static auto occupancyPub = create_publisher<MarkerArray>("/gsl_occupancy", rclcpp::QoS(1).transient_local());
     graph = Graph::ReadFromDisk(rootDirectory, 0.1, {});
-    MarkerArray marker = graph.VisualizeGraph();
-    pub->publish(marker);
+    MarkerArray graphmarker = graph.VisualizeGraph();
+    graphpub->publish(graphmarker);
+    MarkerArray occupancymarker = graph.VisualizeOccupancy();
+    occupancyPub->publish(occupancymarker);
 }
 
 void GraphCreator::Render()

@@ -81,7 +81,8 @@ namespace GSL
                 if (!nodesByName.contains(nameOtherPlace))
                 {
                     GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", subfolder.stem().c_str(), nameThisPlace, nameOtherPlace);
-                    CLOSE_PROGRAM;
+                    // CLOSE_PROGRAM;
+                    continue;
                 }
                 otherNode = nodesByName.at(nameOtherPlace);
 
@@ -330,7 +331,7 @@ namespace GSL
         size_t occID = 0;
         for (auto node : nodes)
         {
-            if (!Is<RoomNode>(node) || !vizOptions.selectedForVisualization.contains(node->id) || !vizOptions.selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node))
                 continue;
 
             auto roomNode = As<RoomNode>(node);
@@ -356,7 +357,7 @@ namespace GSL
 
         for (auto node : nodes)
         {
-            if (!Is<RoomNode>(node) || !vizOptions.selectedForVisualization.contains(node->id) || !vizOptions.selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node))
                 continue;
             auto roomNode = As<RoomNode>(node);
             Grid2D<KernelDMVW::KernelCell> grid = roomNode->GetGasMap();
@@ -398,7 +399,7 @@ namespace GSL
 
         for (auto node : nodes)
         {
-            if (!Is<RoomNode>(node) || !vizOptions.selectedForVisualization.contains(node->id) || !vizOptions.selectedForVisualization.at(node->id))
+            if (!Is<RoomNode>(node))
                 continue;
             auto roomNode = As<RoomNode>(node);
             std::vector<float> points = roomNode->GetSourceProbabilities().data;

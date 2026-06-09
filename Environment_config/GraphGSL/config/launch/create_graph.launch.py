@@ -25,8 +25,8 @@ def launch_setup(context, *args, **kwargs):
         name="creator",
         parameters=[
             {
-                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph4", "occupancy.yaml"),
-                "root_directory": os.path.join(get_package_share_directory("graphgsl_env"), "data", "graph4")
+                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "data", "environments", "Exp_C", "graph", "occupancy.yaml"),
+                "root_directory": os.path.join(get_package_share_directory("graphgsl_env"), "data", "environments", "Exp_C", "graph")
             },
         ],
     )
@@ -38,7 +38,8 @@ def launch_setup(context, *args, **kwargs):
         # prefix="xterm -e",
         arguments=[
             "-d" +
-                os.path.join(get_package_share_directory("graphgsl_env"), "config", "launch", "graph.rviz")
+                os.path.join(get_package_share_directory(
+                    "graphgsl_env"), "config", "launch", "graph.rviz")
         ],
     )
 
