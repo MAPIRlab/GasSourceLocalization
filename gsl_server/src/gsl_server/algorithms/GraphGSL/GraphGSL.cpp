@@ -306,10 +306,10 @@ namespace GSL
             pool.Wait();
 
             // sort the results by the residuals
-            std::sort(residualsThisLevel.begin(), residualsThisLevel.end(), [](const auto& a, const auto& b)
-                      {
-                          return a.second < b.second;
-                      });
+            std::ranges::sort(residualsThisLevel, [](const auto& a, const auto& b)
+                              {
+                                  return a.second < b.second;
+                              });
 
             constexpr float proportionBest = 0.15;
             // subdivide the nodes with the best residuals and add the smaller bits to the queue
@@ -331,7 +331,7 @@ namespace GSL
                 else
                     finalResiduals[result.region] = residual;
             }
-            GSL_INFO("Completed a simulation level -- total simulations: {}", numSimulations);
+            GSL_TRACE("Completed a simulation level -- total simulations: {}", numSimulations);
         } while (!queue.empty());
 
         std::map<std::shared_ptr<RoomNode>, std::vector<long double>> sourceProbsSimulatedRooms;
@@ -342,7 +342,7 @@ namespace GSL
                 sourceProbsSimulatedRooms[region->room] = std::vector<long double>(region->room->GetSourceProbabilities().data.size(), 0.0);
 
             long double prob = ProbFromResidual(residual);
-            GSL_INFO("Residual {:.3f} -> Prob {:.3f}", residual, prob);
+            // GSL_INFO("Residual {:.3f} -> Prob {:.3f}", residual, prob);
             GSL_ASSERT(std::isfinite(prob));
 
             for (Vector2Int pos : region->nqaNode.getAABB())
@@ -431,13 +431,29 @@ namespace GSL
         }
 
         MultiGrid mgrid(sourceProbs);
-        expectedValue = Utils::ExpectedValue(mgrid, 0.2);
+        expectedValue = Utils::ExpectedValue(mgrid, expectedValueProportion);
         cov = Utils::Covariance(mgrid);
     }
 
 #if ENABLE_NAIVE_EVALUATION
-    void GraphGSL::EvaluateRoomProbabilitiesNaive()
+    void GraphGSL::EvaluateSourceProbabilitiesInAllRooms()
     {
+        simulationSystem.Reset();
+        naiveEntireMap->UpdateWindMap(graph.gmrf);
+        // TODO store the results for visualization?
+        std::vector<std::shared_ptr<RoomNode>> roomNodes;
+        for (const auto& node : graph.nodes)
+        {
+            auto room = As<RoomNode>(node);
+            if (room)
+                roomNodes.push_back(room);
+        }
+        EvaluateSourceProbabilitiesInRooms(roomNodes);
+    }
+
+    void GraphGSL::EvaluateProbabilitiesNaive()
+    {
+        simulationSystem.Reset();
         naiveEntireMap->UpdateWindMap(graph.gmrf);
         // TODO store the results for visualization?
         EvaluateSourceProbabilitiesInRooms({naiveEntireMap});
@@ -461,6 +477,7 @@ namespace GSL
 #endif
         pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());
         pubs.sourceProbPub->publish(graph.VisualizeSourceProbs());
+        UpdateExpectedValue();
         Utils::publishPositionWCovariance(vmath::WithZ(expectedValue, 0.6), cov, "/expected_source_position");
     }
 

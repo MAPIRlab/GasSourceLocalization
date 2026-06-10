@@ -271,7 +271,8 @@ namespace GSL::Graph_internal
 
         Utils::Synced<std::map<std::shared_ptr<const DoorwayNode>, GraphCacheEntry>> graphCache;
 
-        constexpr float minimumGasThr = 1e-2;
+        constexpr float minimumGasProportion = 1e-2;
+        constexpr float minimumGasInlet = 1e-6;
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
 
@@ -415,7 +416,8 @@ namespace GSL::Graph_internal
                 //     continue;
                 // }
 
-                if (current.gasProportion <= minimumGasThr)
+                //TODO if we re-activate the "complete" check, remove the inlet gas condition! the cache is not reliable if we don't actually exhaust the path the first time we reach it
+                if (current.gasProportion <= minimumGasProportion || current.gasAtInlet <= minimumGasInlet)
                 {
                     LOG_TRACE("Pruning {}, too little gas", current.doorSource->GetDebuggingName());
                     stateStack.pop_back();
@@ -459,7 +461,7 @@ namespace GSL::Graph_internal
 
                 next.gasProportion = gasProportion;
                 next.gasAtInlet = current.gasAtInlet * gasProportion;
-                 if (next.gasProportion < minimumGasThr || !std::isfinite(next.gasAtInlet))
+                 if (next.gasProportion < minimumGasProportion || !std::isfinite(next.gasAtInlet))
                      continue;
 
                 // update the total amount of gas that passes through the doorway

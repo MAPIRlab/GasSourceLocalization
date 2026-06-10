@@ -36,7 +36,8 @@ namespace GSL
 
 #define ENABLE_NAIVE_EVALUATION 1
 #if ENABLE_NAIVE_EVALUATION
-        void EvaluateRoomProbabilitiesNaive();
+        void EvaluateSourceProbabilitiesInAllRooms();
+        void EvaluateProbabilitiesNaive();
         Graph_internal::NaiveSimulationSystem naiveSimulationSystem;
         std::shared_ptr<RoomNode> naiveEntireMap;
         std::vector<Graph_internal::CompleteMap> naiveCompleteMaps;
@@ -62,9 +63,10 @@ namespace GSL
 
         Utils::Time::Countdown visualizationCD;
         bool drawGraph = true;
+
         Vector2 expectedValue;
         Utils::CovarianceMatrix cov;
-
+        float expectedValueProportion = 1.0;
 #if USE_GUI
         friend class GraphUI;
         GraphUI gui;

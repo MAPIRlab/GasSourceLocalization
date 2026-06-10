@@ -100,6 +100,8 @@ namespace GSL
             ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Probability max color", &gsl->graph.vizOptions.probabilityVizMax, 1e-4, 1e-5, 1.0, "%.2e");
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Expected value proportion", &gsl->expectedValueProportion, 0.01, 0.0, 1.0, "%.2f");
         }
         ImGui::End();
 
@@ -201,12 +203,21 @@ namespace GSL
 
 #if ENABLE_NAIVE_EVALUATION
             ImGui::VerticalSpace(20.f);
+            if (ImGui::Button("All Fine Source Probs"))
+            {
+                gsl->functionQueue.submit([this]()
+                                          {
+                                              simulationOptions.simulationEnabled = false;
+                                              gsl->EvaluateSourceProbabilitiesInAllRooms();
+                                              simulationOptions.simulationEnabled = true;
+                                          });
+            }
             if (ImGui::Button("Naive Source Probs"))
             {
                 gsl->functionQueue.submit([this]()
                                           {
                                               simulationOptions.simulationEnabled = false;
-                                              gsl->EvaluateRoomProbabilitiesNaive();
+                                              gsl->EvaluateProbabilitiesNaive();
                                               simulationOptions.simulationEnabled = true;
                                           });
             }
