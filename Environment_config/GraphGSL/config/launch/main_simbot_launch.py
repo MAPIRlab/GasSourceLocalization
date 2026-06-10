@@ -63,6 +63,11 @@ def launch_setup(context, *args, **kwargs):
                     {"GMRF_lambdaPrior_diffusion": 100.0},
                     # Obstacles --> cells close to obstacles has only tangencial wind
                     {"GMRF_lambdaPrior_obstacles": 2000.0},
+
+                    {"kernel_sigma": 0.3},
+                    {"kernel_stretch_constant": 0.4},
+                    {"kernel_sigma_omega": 1.0},
+                    {"kernel_omega_concentration_spatial": 8.0},
                 ],
                 on_exit=Shutdown()
             ),

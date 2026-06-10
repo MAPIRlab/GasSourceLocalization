@@ -19,7 +19,7 @@ namespace GSL::KernelDMVW
             return;
 
         float windAngle = -std::atan2(wind.y, wind.x) + M_PI * 0.5; // I'm honestly not sure why we need to rotate this
-        float windSpeed = vmath::length(wind);
+        float windSpeed = std::clamp(vmath::length(wind), 0.0f, 0.4f);
         // Important note:
         // instead of calculating the full covariance matrix for the oriented gaussian, this implementation just stretches it along the x and y axes
         // the angle is then passed into evaluate2DGaussian() as a separate parameter. This makes the computation a bit simpler
@@ -49,7 +49,8 @@ namespace GSL::KernelDMVW
             Vector2 pos = grid.metadata.indicesToCoordinates(indices);
             Vector2 offset = pos - measurePosition;
 
-            float weight = Utils::evaluate2DGaussian(offset, finalSigma, windAngle);
+            float maxW = Utils::evaluate2DGaussian({0,0}, finalSigma, windAngle);
+            float weight = Utils::evaluate2DGaussian(offset, finalSigma, windAngle) / maxW;
             KernelCell& cell = grid.dataAt(indices);
             cell.omega += std::pow(weight, params.omegaConcentrationSpatial);
             cell.confidence = 1 - std::exp(-cell.omega / params.sigmaOmega);

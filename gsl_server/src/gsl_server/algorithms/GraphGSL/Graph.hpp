@@ -5,13 +5,15 @@
 #include <gmrf_wind_core/gmrf_map.h>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
+#include "Node.hpp"
 
 namespace GSL
 {
     class Graph
     {
     public:
-        static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams);
+        static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams,
+                                  KernelDMVW::GasMap::Params kernelParams);
         size_t GetCorrespondingNodeIdx(Vector2 position);
         void AddObservation(Vector2 position, Vector2 wind, float gasConcentration);
         void UpdateAllWindMaps();

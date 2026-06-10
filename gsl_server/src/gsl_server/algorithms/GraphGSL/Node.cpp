@@ -4,8 +4,8 @@
 namespace GSL
 {
 
-    RoomNode::RoomNode(Grid2D<Occupancy> grid)
-        : gasMap(grid, KernelDMVW::GasMap::Params{}),
+    RoomNode::RoomNode(Grid2D<Occupancy> grid, KernelDMVW::GasMap::Params kernelParams)
+        : gasMap(grid, kernelParams),
           visibilityMap(grid.metadata.dimensions.x, grid.metadata.dimensions.y, 5)
     {
         SetOccupancy(grid);

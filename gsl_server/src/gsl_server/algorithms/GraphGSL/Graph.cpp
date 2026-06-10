@@ -9,7 +9,10 @@
 
 namespace GSL
 {
-    Graph Graph::ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams)
+    Graph Graph::ReadFromDisk(const std::filesystem::path& folder,
+                              float cellSize,
+                              gmrfw::CGMRF_map::Parameters gmrfParams,
+                              KernelDMVW::GasMap::Params kernelParams)
     {
         if (!std::filesystem::exists(folder))
         {
@@ -42,7 +45,7 @@ namespace GSL
             else
             {
                 Map2D map = Utils::parseMapData(subfolder / "occupancy.yaml", cellSize);
-                node = std::make_shared<RoomNode>(map.AsGrid());
+                node = std::make_shared<RoomNode>(map.AsGrid(), kernelParams);
             }
 
             graph.nodes.push_back(node);
@@ -410,7 +413,7 @@ namespace GSL
             vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
 
             Grid2D<float> grid(points, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
-            Marker marker = Utils::createPointsMarker(grid, 0, vizOptions.probabilityVizMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
+            Marker marker = Utils::createPointsMarker(grid, vizOptions.probabilityVizMin, vizOptions.probabilityVizMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
         }

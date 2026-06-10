@@ -19,10 +19,10 @@ namespace GSL::KernelDMVW
     public:
         struct Params
         {
-            float kernelSigma = 0.5;               // controls the falloff of the weight as a function of distance
+            float kernelSigma = 0.3;               // controls the falloff of the weight as a function of distance
             float kernelStretchConstant = 0.5;     // how much the default sigma is modified by the wind
-            float sigmaOmega = 0.3;                // Controls how much confidence you gain from one measurement
-            float omegaConcentrationSpatial = 3.0; // how much the confidence spreads to other cells
+            float sigmaOmega = 2.0;                // Controls how much confidence you gain from one measurement
+            float omegaConcentrationSpatial = 5.0; // how much the confidence spreads to other cells
         };
         GasMap(Grid2D<Occupancy> occupancyMap, const Params& parameters);
         void AddReading(float concentration, Vector2 wind, Vector2 position);

@@ -47,7 +47,7 @@ namespace GSL
     class RoomNode : public PlaceNode
     {
     public:
-        RoomNode(Grid2D<Occupancy> grid);
+        RoomNode(Grid2D<Occupancy> grid, KernelDMVW::GasMap::Params kernelParams);
 
         bool IsValidPoint(Vector2 location) override;
         bool AddObservation(Vector2 location, Vector2 wind, float gasObs) override;

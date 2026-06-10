@@ -32,17 +32,24 @@ namespace GSL
         gmrfParams.lambdaPrior_mass_conservation = rclnode->declare_parameter<float>("GMRF_lambdaPrior_mass_conservation");
         gmrfParams.lambdaPrior_obstacles = rclnode->declare_parameter<float>("GMRF_lambdaPrior_obstacles");
 
+        // kernel
+        KernelDMVW::GasMap::Params kernelParams;
+        kernelParams.kernelSigma = rclnode->declare_parameter<float>("kernel_sigma", 0.3);
+        kernelParams.kernelStretchConstant = rclnode->declare_parameter<float>("kernel_stretch_constant", 0.5);
+        kernelParams.sigmaOmega = rclnode->declare_parameter<float>("kernel_sigma_omega", 0.1);
+        kernelParams.omegaConcentrationSpatial = rclnode->declare_parameter<float>("kernel_omega_concentration_spatial", 5.0);
+
         // graph creation
         std::filesystem::path path =
             rclnode->declare_parameter<std::string>("graph_path",
                                                     std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph");
-        graph = Graph::ReadFromDisk(path, cellSize, gmrfParams);
+        graph = Graph::ReadFromDisk(path, cellSize, gmrfParams, kernelParams);
         float artificialSeparation = rclnode->declare_parameter<float>("node_separation_mult", 1);
         graph.vizOptions.nodeSeparationViz = artificialSeparation;
         simulationSystem.graph = &graph;
 
 #if ENABLE_NAIVE_EVALUATION
-        naiveEntireMap = std::make_shared<RoomNode>(graph.completeMap.AsGrid());
+        naiveEntireMap = std::make_shared<RoomNode>(graph.completeMap.AsGrid(), kernelParams);
 #endif
         // GUI
         IF_GUI(gui.Run());
@@ -131,10 +138,10 @@ namespace GSL
                     continue;
 
                 for (auto doorway : roomNode->doorways)
-                    // pool.QueueJob([&, doorway]()
-                                  {
-                                      simulationSystem.SimulateEntireGraph(doorway);
-                                  }//);
+                // pool.QueueJob([&, doorway]()
+                {
+                    simulationSystem.SimulateEntireGraph(doorway);
+                } //);
             }
             pool.Wait();
         }
