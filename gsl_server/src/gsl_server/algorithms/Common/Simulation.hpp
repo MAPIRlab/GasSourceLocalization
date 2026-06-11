@@ -90,7 +90,7 @@ namespace GSL
         bool moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const;
 
         template <typename UpdateFunc>
-        bool filamentIsOutside(const Filament& filament, size_t currentTimestep, UpdateFunc updateFunc);
+        bool filamentIsOutside(Filament& filament, Vector2 oldPos, size_t currentTimestep, UpdateFunc updateFunc);
 
         template <typename UpdateFunc>
         void _Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type);

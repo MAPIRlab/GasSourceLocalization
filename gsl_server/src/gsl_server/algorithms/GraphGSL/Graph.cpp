@@ -83,7 +83,7 @@ namespace GSL
                 std::weak_ptr<PlaceNode> otherNode;
                 if (!nodesByName.contains(nameOtherPlace))
                 {
-                    GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", subfolder.stem().c_str(), nameThisPlace, nameOtherPlace);
+                    GSL_ERROR("Tried to create link between {} and {}, but {} does not exist!", nameOtherPlace, nameThisPlace, nameOtherPlace);
                     // CLOSE_PROGRAM;
                     continue;
                 }

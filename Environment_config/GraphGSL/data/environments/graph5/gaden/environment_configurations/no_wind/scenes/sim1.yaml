@@ -1,0 +1,8 @@
+playback_initial_iteration: 1600
+playback_loop:
+  loop: true
+  from: 1600
+  to: 1800
+simulations:
+  - sim: sim1
+    gas_color: [0.4, 0.4, 0.4]

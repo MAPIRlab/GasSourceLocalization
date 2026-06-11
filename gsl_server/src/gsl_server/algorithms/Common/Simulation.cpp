@@ -1,6 +1,5 @@
 #include "Simulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
-#include "gsl_server/core/Profiling.hpp"
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -20,7 +19,7 @@ namespace GSL
     }
 
     template <typename UpdateFunc>
-    bool Simulation::filamentIsOutside(const Filament& filament, size_t currentTimestep, UpdateFunc updateFunc)
+    bool Simulation::filamentIsOutside(Filament& filament, Vector2 oldPos, size_t currentTimestep, UpdateFunc updateFunc)
     {
         Vector2Int newIndices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
@@ -38,7 +37,11 @@ namespace GSL
                     return true;
                 }
                 else
-                    return false; // if the outlet is disabled, don't count this filament as exiting (don't stop the warmup prematurely)
+                {
+                    // if the outlet is disabled, don't allow this filament to exit
+                    // filament.position = oldPos;
+                    return false; 
+                }
             }
             else
                 return true;
@@ -146,10 +149,11 @@ namespace GSL
                         continue;
 
                     // move active filaments
+                    Vector2 oldPos = filament.position;
                     moveFilament(filament, indices, deltaTime * warmupAcceleration, noiseSTDev / warmupAcceleration);
 
                     // remove filaments
-                    if (filamentIsOutside(filament, 0, updateFunc))
+                    if (filamentIsOutside(filament, oldPos, 0, updateFunc))
                         stable = true;
                     else
                         otherFilamentVec->push_back(filament);
@@ -189,10 +193,11 @@ namespace GSL
                 updateFunc.Update(hitMap, updated, index, t);
 
                 // move active filaments
+                Vector2 oldPos = filament.position;
                 moveFilament(filament, indices, deltaTime, noiseSTDev);
 
                 // remove filaments
-                if (!filamentIsOutside(filament, t, updateFunc))
+                if (!filamentIsOutside(filament, oldPos, t, updateFunc))
                     otherFilamentVec->push_back(filament);
             }
             activeFilamentVec->clear();

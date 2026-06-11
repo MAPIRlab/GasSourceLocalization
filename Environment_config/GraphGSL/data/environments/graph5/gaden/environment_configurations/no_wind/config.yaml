@@ -1,0 +1,10 @@
+models:
+  - "!color [0.73, 0.73, 0.73, 1.00]"
+  - ../../cad_models/Graph4.stl
+outlets_models:
+  - "!color [0.83, 0.12, 0.12, 1.00]"
+  - ../../cad_models/outlets.stl
+unprocessed_wind_files: ../../wind_simulations/no_wind
+empty_point: [1, 2.75, 1.1]
+cell_size: 0.1
+uniformWind: false
