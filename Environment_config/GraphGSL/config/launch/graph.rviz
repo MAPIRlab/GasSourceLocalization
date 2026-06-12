@@ -201,17 +201,17 @@ Visualization Manager:
         Value: /gsl_wind
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: SimGasMaps
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/simGasMaps
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: MeasuredGasMaps
@@ -249,17 +249,17 @@ Visualization Manager:
         Value: /gsl_naive_maps
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: SourceProb
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/sourceProb
-      Value: false
+      Value: true
     - Alpha: 1
       Axes Length: 0.20000000298023224
       Axes Radius: 0.05000000074505806
@@ -280,7 +280,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: false
+      Enabled: true
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: ExpectedValue
@@ -294,7 +294,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /expected_source_position
-      Value: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -353,8 +353,8 @@ Visualization Manager:
       Scale: 78.1513900756836
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 6.163355350494385
-      Y: 5.686426639556885
+      X: 10.245936393737793
+      Y: 5.271615982055664
     Saved: ~
 Window Geometry:
   Displays:

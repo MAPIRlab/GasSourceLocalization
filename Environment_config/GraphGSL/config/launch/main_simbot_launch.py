@@ -24,6 +24,8 @@ def launch_arguments():
 
 def launch_setup(context, *args, **kwargs):
     scenario = LaunchConfiguration("scenario").perform(context)
+    configuration = LaunchConfiguration("config").perform(context)
+    simulation = LaunchConfiguration("simulation").perform(context)
     gsl_call = [
         GroupAction(actions=[
             PushRosNamespace(LaunchConfiguration("robot_name")),
@@ -50,7 +52,7 @@ def launch_setup(context, *args, **kwargs):
                     {"graph_path": os.path.join(get_package_share_directory(
                         "graphgsl_env"), "data", "environments", scenario, "graph")},
                     {"sim_measurements_path": os.path.join(get_package_share_directory(
-                        "graphgsl_env"), "data", "test_data", f"data_{scenario}")},
+                        "graphgsl_env"), "data", "test_data", f"data_{scenario}_{configuration}_{simulation}")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
                     {"robot_location_topic": "/PioneerP3DX/ground_truth"},
@@ -194,7 +196,7 @@ def launch_setup(context, *args, **kwargs):
                 {"wind_topic": "/measured_wind"},
                 {"gas_topic": "/measured_gas"},
                 {"file_path": os.path.join(get_package_share_directory(
-                    "graphgsl_env"), "data", "test_data", f"data_{scenario}")},
+                    "graphgsl_env"), "data", "test_data", f"data_{scenario}_{configuration}_{simulation}")},
         ],
     )
 
