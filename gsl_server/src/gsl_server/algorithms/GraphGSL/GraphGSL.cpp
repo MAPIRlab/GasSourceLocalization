@@ -145,7 +145,9 @@ namespace GSL
             }
             pool.Wait();
         }
-        std::map<std::shared_ptr<PlaceNode>, float> roomResiduals;
+
+        std::vector<NodeResult> nodeResiduals;
+        nodeResiduals.reserve(graph.nodes.size());
 
         // get the measured concentration maps
         std::map<std::shared_ptr<RoomNode>, Grid2D<KernelDMVW::KernelCell>> measuredMaps;
@@ -209,8 +211,10 @@ namespace GSL
                 confidenceSum += 1 - u;
 
             mtx.lock();
-            roomResiduals[sourceNode] = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty) / confidenceSum;
-            GSL_INFO("Residual at {}: {}", sourceNode->id, roomResiduals[sourceNode]);
+            nodeResiduals.push_back({sourceNode, 0, 0});
+            nodeResiduals.back().residual = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty) / confidenceSum;
+            nodeResiduals.back().confidenceSum = confidenceSum;
+            GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}", sourceNode->id, nodeResiduals.back().residual, nodeResiduals.back().confidenceSum);
             mtx.unlock();
         };
 
@@ -222,39 +226,104 @@ namespace GSL
             pool.Wait();
         }
 
-        // calculate the probabilities from the optimization residuals
-        //----------------------------------------------------
-        graph.roomSourceProbabilities.clear();
-        GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
-        std::map<std::shared_ptr<PlaceNode>, long double> scores;
-        long double scoresSum = 0;
-        for (auto& [room, residual] : roomResiduals)
+        for (const auto& [node, residual, confidenceSum] : nodeResiduals)
         {
-            scores[room] = ProbFromResidual(residual);
-            scoresSum += scores[room];
+            auto room = As<RoomNode>(node);
+            if (!room)
+                continue;
         }
 
-        for (const auto& [room, score] : scores)
+        CalculateNodeProbabilities(nodeResiduals);
+
+        // now, fine level estimations
+        // starting with the most promising room, do fine-level estimations
+        // if the fine-level simulations are not as good as the first (room-level) estimates, we might need to look at the second-best room as well
+        // and so on, until we find an actually good candidate
+        std::ranges::sort(nodeResiduals, [](const auto& a, const auto& b)
+                          {
+                              return a.residual < b.residual;
+                          });
+
+        constexpr float doFineLevelThreshold = 0.3;
+        std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
+        if (graph.roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
         {
-            double prob = score / scoresSum;
-            graph.roomSourceProbabilities[room] = prob;
-            GSL_INFO("\tp({}) = {:.2f}", room->id, prob);
+            size_t i = 0;
+            bool done = false;
+            do
+            {
+                auto room = As<RoomNode>(nodeResiduals.at(i).node);
+                if (room)
+                {
+                    GSL_INFO("Running fine-level simulations in node: {} (residual: {:.3e})", room->id, nodeResiduals.at(i).residual);
+                    simulatedFineLevel.push_back(room);
+                    float lowestResidual = EvaluateSourceProbabilitiesInRooms({room});
+                    nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
+                    GSL_TRACE("Lowest residual for node {}: {:.3e}", room->id, lowestResidual);
+
+                    constexpr float toleranceFactor = 1;
+                    if (i + 1 == nodeResiduals.size())
+                    {
+                        GSL_TRACE("No more nodes available for fine-level simulation");
+                        done = true;
+                    }
+                    else if (lowestResidual <= nodeResiduals.at(i + 1).residual * toleranceFactor)
+                    {
+                        GSL_TRACE("Stopping fine-level simulation (next residual: {:.3e} -- {})", nodeResiduals.at(i + 1).residual,
+                                  nodeResiduals.at(i + 1).node->id);
+                        done = true;
+                    }
+                }
+                else
+                {
+                    GSL_TRACE("Stopping at node {} (residual: {:.3e}) -- not a room", nodeResiduals.at(i).node->id, nodeResiduals.at(i).residual);
+                    done = true;
+                }
+
+                i++;
+            } while (!done);
+
+            // re-calculate the probabilities from the optimization residuals, including the fine level results
+            CalculateNodeProbabilities(nodeResiduals);
         }
 
-        std::vector<std::shared_ptr<RoomNode>> roomNodes;
-        for (const auto& [node, prob] : graph.roomSourceProbabilities)
+        // normalize the conditional probabilities -- p(s|r)
+        for (auto node : graph.nodes)
         {
-            auto roomNode = As<RoomNode>(node);
-            if (roomNode && prob > 0.3)
-                roomNodes.push_back(roomNode);
+            auto room = As<RoomNode>(node);
+            if (!room)
+                continue;
+
+            Grid2D<float> sourceProbs = room->GetSourceProbabilities();
+
+            // if we did simulations in this room, calculate the probabilities from the residuals
+            if (Utils::contains(simulatedFineLevel, room))
+            {
+                std::vector<long double> tempProbs(sourceProbs.data.size());
+                // residual -> prob
+                for (size_t i = 0; i < sourceProbs.data.size(); i++)
+                    if (sourceProbs.occupancy.at(i))
+                        tempProbs.at(i) = ProbFromResidual(sourceProbs.data.at(i));
+                // normalize
+                Utils::NormalizeDistribution(tempProbs, room->GetSourceProbabilities().occupancy);
+
+                // asign the probs to the room grid
+                for (size_t i = 0; i < sourceProbs.data.size(); i++)
+                    room->GetSourceProbabilities().data.at(i) = graph.roomSourceProbabilities.at(room) * tempProbs.at(i);
+            }
+            // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
+            else
+            {
+                for (size_t i = 0; i < sourceProbs.data.size(); i++)
+                    if (sourceProbs.occupancy.at(i))
+                        sourceProbs.data.at(i) = graph.roomSourceProbabilities.at(room) / sourceProbs.metadata.numFreeCells;
+            }
         }
 
-        pubs.graphPub->publish(graph.VisualizeGraph());
-
-        EvaluateSourceProbabilitiesInRooms(roomNodes);
+        UpdateExpectedValue();
     }
 
-    void GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
+    float GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
     {
         ZoneScopedN("Room level");
         ScopedStopwatch watch("Evaluation (source probabilities in room)");
@@ -333,52 +402,19 @@ namespace GSL
             }
             GSL_TRACE("Completed a simulation level -- total simulations: {}", numSimulations);
         } while (!queue.empty());
-
-        std::map<std::shared_ptr<RoomNode>, std::vector<long double>> sourceProbsSimulatedRooms;
-        // turn the residuals into probabilities
-        for (const auto& [region, residual] : finalResiduals)
-        {
-            if (!sourceProbsSimulatedRooms.contains(region->room))
-                sourceProbsSimulatedRooms[region->room] = std::vector<long double>(region->room->GetSourceProbabilities().data.size(), 0.0);
-
-            long double prob = ProbFromResidual(residual);
-            // GSL_INFO("Residual {:.3f} -> Prob {:.3f}", residual, prob);
-            GSL_ASSERT(std::isfinite(prob));
-
-            for (Vector2Int pos : region->nqaNode.getAABB())
-            {
-                size_t idx = region->room->GetSourceProbabilities().metadata.indexOf(pos);
-                sourceProbsSimulatedRooms.at(region->room).at(idx) = prob;
-            }
-        }
-
-        // normalize the conditional probabilities -- p(s | room)
-        for (auto node : graph.nodes)
-        {
-            auto room = As<RoomNode>(node);
-            if (!room)
-                continue;
-
-            // if we did simulations in this room, use the probabilities we just calculated from the residuals
-            if (Utils::contains(roomNodes, room))
-            {
-                Utils::NormalizeDistribution(sourceProbsSimulatedRooms.at(room), room->GetSourceProbabilities().occupancy);
-                for (size_t i = 0; i < sourceProbsSimulatedRooms.at(room).size(); i++)
-                    room->GetSourceProbabilities().data.at(i) = graph.roomSourceProbabilities.at(room) * sourceProbsSimulatedRooms.at(room).at(i);
-            }
-            // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
-            else
-            {
-                Grid2D<float> sourceProbs = room->GetSourceProbabilities();
-                for (size_t i = 0; i < sourceProbs.data.size(); i++)
-                    if (sourceProbs.occupancy.at(i))
-                        sourceProbs.data.at(i) = graph.roomSourceProbabilities.at(room) / sourceProbs.metadata.numFreeCells;
-            }
-        }
-
         GSL_INFO("Ran {} simulations at the geometric level", numSimulations);
 
-        UpdateExpectedValue();
+        // Assign the fine-level residuals to the corresponding cells
+        float lowestResidual = std::numeric_limits<float>::max();
+        for (const auto& [region, residual] : finalResiduals)
+        {
+            if (residual < lowestResidual)
+                lowestResidual = residual;
+            for (Vector2Int pos : region->nqaNode.getAABB())
+                region->room->GetSourceProbabilities().dataAt(pos) = residual;
+        }
+
+        return lowestResidual;
     }
 
     float GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
@@ -418,6 +454,26 @@ namespace GSL
         if (!std::isfinite(residual))
             return 0.0;
         return std::exp(-residual / likelihoodSigma);
+    }
+
+    void GraphGSL::CalculateNodeProbabilities(const std::vector<NodeResult>& residuals)
+    {
+        graph.roomSourceProbabilities.clear();
+        GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
+        std::map<std::shared_ptr<PlaceNode>, long double> scores;
+        long double scoresSum = 0;
+        for (const NodeResult& result : residuals)
+        {
+            scores[result.node] = ProbFromResidual(result.residual);
+            scoresSum += scores[result.node];
+        }
+
+        for (const auto& [room, score] : scores)
+        {
+            double prob = score / scoresSum;
+            graph.roomSourceProbabilities[room] = prob;
+            GSL_INFO("\t{}: {:.2f}", room->id, prob);
+        }
     }
 
     void GraphGSL::UpdateExpectedValue()

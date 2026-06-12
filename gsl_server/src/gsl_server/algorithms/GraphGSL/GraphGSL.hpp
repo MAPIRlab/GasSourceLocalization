@@ -23,7 +23,7 @@ namespace GSL
 
     private:
         void EvaluateRoomProbabilities();
-        void EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes);
+        float EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes); // returns the lowest residual found in the fine level
         float ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
         long double ProbFromResidual(long double residual);
         void UpdateExpectedValue();
@@ -44,6 +44,15 @@ namespace GSL
         rclcpp::Publisher<MarkerArray>::SharedPtr naiveMapsPub;
         size_t naiveSimulationIndex;
 #endif
+
+        struct NodeResult
+        {
+            std::shared_ptr<PlaceNode> node;
+            float residual;
+            float confidenceSum;
+        };
+        void CalculateNodeProbabilities(const std::vector< NodeResult>& residuals);
+
         struct Pubs
         {
             rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;

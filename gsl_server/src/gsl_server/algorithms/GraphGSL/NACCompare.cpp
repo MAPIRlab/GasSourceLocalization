@@ -109,7 +109,7 @@ namespace GSL::NACCeres
     {
         T diff = ceres::abs(ceres::log(observed + T(1)) - ceres::log(scaledSimulated + T(1)));
         diff = ceres::lerp(diff, T(0), uncertainty);
-        T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
+        // T epsilon = T(1e-12); // pow is generally not differentiable at 0, which can cause nans to appear
         // T power(0.5);
         // diff = ceres::pow(diff + epsilon, T(power));
         return diff;
