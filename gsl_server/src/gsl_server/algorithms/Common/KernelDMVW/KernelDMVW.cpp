@@ -52,9 +52,10 @@ namespace GSL::KernelDMVW
             float maxW = Utils::evaluate2DGaussian({0,0}, finalSigma, windAngle);
             float weight = Utils::evaluate2DGaussian(offset, finalSigma, windAngle) / maxW;
             KernelCell& cell = grid.dataAt(indices);
-            cell.omega += std::pow(weight, params.omegaConcentrationSpatial);
-            cell.confidence = 1 - std::exp(-cell.omega / params.sigmaOmega);
+            weight = std::pow(weight, params.omegaConcentrationSpatial);
             cell.meanAndVariance.Update(concentration, weight);
+            cell.omega += weight;
+            cell.confidence = 1 - std::exp(-cell.omega / params.sigmaOmega);
         }
     }
 

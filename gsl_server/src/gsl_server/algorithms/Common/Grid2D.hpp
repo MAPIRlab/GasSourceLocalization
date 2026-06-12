@@ -87,7 +87,7 @@ namespace GSL
     };
 
     // A grid represents a 2D map with occupancy and some arbitraty per-cell data. The GridMetadata field allows it to convert 1D to 2D indices and vice-versa
-    // If you want to represent an occupancy map without additional data, you can use a Grid2D<Occupancy, false> and have both .occupancy and .data point to the same vector
+    // If you want to represent an occupancy map without additional data, you can use a Grid2D<Occupancy, false> and have both .occupancy and .data point to the same vector. If you need an owning version, see Map2D below
     // Important: By default, Grid2D is a non-owning struct (contains only references) to make accessing data easier. The second (optional) template parameter changes this behavior
     // To pass an owning grid into a function that expects a default (non-owning) one, you can use the AsNonOwning() conversion method
     template <typename T, bool Owning = false>

@@ -101,7 +101,7 @@ namespace GSL::Utils
     struct RunningVariance
     {
         double mean = 0;
-        double weight_sum = 0;
+        double weight_sum = 1e-12; // avoid NaNs if there are several 0-weight values
         double weight_squared_sum = 0;
         double variance = 0;
 
