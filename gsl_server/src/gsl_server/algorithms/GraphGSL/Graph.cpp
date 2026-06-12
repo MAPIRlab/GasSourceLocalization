@@ -370,7 +370,7 @@ namespace GSL
             grids.emplace_back(grid.data, grid.occupancy, vizMetadata);
         }
 
-        float max = 10;
+        float max = vizOptions.maxConcentration;
 
         for (auto& grid : grids)
         {
@@ -405,14 +405,10 @@ namespace GSL
             if (!Is<RoomNode>(node))
                 continue;
             auto roomNode = As<RoomNode>(node);
-            std::vector<float> points = roomNode->GetSourceProbabilities().data;
-            for (size_t i = 0; i < points.size(); ++i)
-                points.at(i) *= roomSourceProbabilities.at(roomNode);
-
             Grid2DMetadata vizMetadata = roomNode->GetSourceProbabilities().metadata;
             vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
 
-            Grid2D<float> grid(points, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
+            Grid2D<float> grid(roomNode->GetSourceProbabilities().data, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
             Marker marker = Utils::createPointsMarker(grid, vizOptions.probabilityVizMin, vizOptions.probabilityVizMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
