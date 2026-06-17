@@ -23,6 +23,9 @@ namespace GSL
         gmrfw::CGMRF_map::Parameters gmrf_parameters;
         Map2D completeMap;
 
+        MultiGrid<float> GetAllSourceProbs();
+        MultiGrid<KernelDMVW::KernelCell> GetAllKernelCells();
+
         // visualization
         MarkerArray VisualizeGraph();
         MarkerArray VisualizeOccupancy();

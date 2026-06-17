@@ -219,6 +219,28 @@ namespace GSL
         return occMap;
     }
 
+    MultiGrid<float> Graph::GetAllSourceProbs()
+    {
+        std::vector<Grid2D<float>> sourceProbs;
+        for (const auto& node : nodes)
+            if (auto room = As<RoomNode>(node))
+                sourceProbs.push_back(room->GetSourceProbabilities());
+
+        MultiGrid mgrid(sourceProbs);
+        return mgrid;
+    }
+
+    MultiGrid<KernelDMVW::KernelCell> Graph::GetAllKernelCells()
+    {
+        std::vector<Grid2D<KernelDMVW::KernelCell>> kernelCells;
+        for (const auto& node : nodes)
+            if (auto room = As<RoomNode>(node))
+                kernelCells.push_back(room->GetGasMap());
+
+        MultiGrid mgrid(kernelCells);
+        return mgrid;
+    }
+
     MarkerArray Graph::VisualizeGraph()
     {
         constexpr float markerHeight = 0.5;

@@ -36,9 +36,9 @@ namespace GSL
                         for (size_t i = 0; i < gsl->simulationSystem.gasMapsWithRoomSource.at(node).size(); ++i)
                         {
                             const auto& gasMap = gsl->simulationSystem.gasMapsWithRoomSource.at(node).at(i);
-                            if (vmath::length(selectedCoordinates-gasMap.source->GetPoint()) < minDist)
+                            if (vmath::length(selectedCoordinates - gasMap.source->GetPoint()) < minDist)
                             {
-                                minDist = vmath::length(selectedCoordinates-gasMap.source->GetPoint());
+                                minDist = vmath::length(selectedCoordinates - gasMap.source->GetPoint());
                                 gsl->simulationViz.simulationIndex = i;
                             }
                         }
@@ -140,12 +140,17 @@ namespace GSL
             if (node && gsl->simulationSystem.gasMapsWithRoomSource.contains(node))
             {
                 if (ImGui::Button("Sort simulations"))
-                    std::ranges::sort(gsl->simulationSystem.gasMapsWithRoomSource.at(node), [](const CompleteMap& a, const CompleteMap& b)
-                                      {
-                                          return Is<DoorwaySource>(a.source) && !Is<DoorwaySource>(b.source) ||
-                                                 a.source->GetPoint().y < b.source->GetPoint().y ||
-                                                 a.source->GetPoint().y == b.source->GetPoint().y && a.source->GetPoint().x < b.source->GetPoint().x;
-                                      });
+                    std::ranges::stable_sort(gsl->simulationSystem.gasMapsWithRoomSource.at(node),
+                                             [](const CompleteMap& a, const CompleteMap& b)
+                                             {
+                                                 if (Is<DoorwaySource>(a.source) && !Is<DoorwaySource>(b.source))
+                                                     return true;
+                                                 else if (Is<DoorwaySource>(b.source) && !Is<DoorwaySource>(a.source))
+                                                     return false;
+
+                                                 return a.source->GetPoint().y < b.source->GetPoint().y ||
+                                                        (Utils::approx(a.source->GetPoint().y, b.source->GetPoint().y) && a.source->GetPoint().x < b.source->GetPoint().x);
+                                             });
 
                 std::deque<CompleteMap>& gasMaps = gsl->simulationSystem.gasMapsWithRoomSource.at(node);
                 ImGui::SetNextItemWidth(120);

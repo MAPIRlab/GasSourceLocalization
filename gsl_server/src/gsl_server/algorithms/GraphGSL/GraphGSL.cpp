@@ -420,6 +420,56 @@ namespace GSL
     float GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
     {
         ZoneScopedN("Residual calculation");
+
+#define MEASUREMENT_SORTING 0
+#if MEASUREMENT_SORTING
+        // this whole thing comes from here: https://arxiv.org/abs/2605.13208
+
+        struct CellValue
+        {
+            const KernelDMVW::KernelCell* kernelCell;
+            float value;
+        };
+        std::vector<CellValue> measuredValues;
+        std::vector<CellValue> simulatedValues;
+
+        struct NormalizedOrder
+        {
+            float measured;
+            float simulated;
+        };
+
+        std::map<const KernelDMVW::KernelCell*, NormalizedOrder> normalizedOrders;
+        auto EvaluateSorting = [&]() -> float
+        {
+            std::ranges::sort(measuredValues, [](const CellValue& a, const CellValue& b)
+                              {
+                                  return a.value < b.value;
+                              });
+            std::ranges::sort(simulatedValues, [](const CellValue& a, const CellValue& b)
+                              {
+                                  return a.value < b.value;
+                              });
+
+            for (size_t i = 0; i < measuredValues.size(); i++)
+                normalizedOrders[measuredValues[i].kernelCell].measured = float(i) / measuredValues.size();
+
+            for (size_t i = 0; i < simulatedValues.size(); i++)
+                normalizedOrders[simulatedValues[i].kernelCell].simulated = float(i) / simulatedValues.size();
+
+            float sum = 0;
+            size_t n = 0;
+            constexpr float sigma = 10; // ¯\_(ツ)_/¯
+            for (const auto& [kernelCell, normalizedOrder] : normalizedOrders)
+            {
+                float diff = normalizedOrder.measured - normalizedOrder.simulated;
+                sum += diff * diff / (sigma * sigma);
+                n++;
+            }
+            return 0.5f * (float(n) / n + 1) * sum;
+        };
+#endif
+
         std::vector<float> measured;
         std::vector<float> simulated;
         std::vector<float> uncertainty;
@@ -439,14 +489,22 @@ namespace GSL
                 measured.push_back(cell.meanAndVariance.mean);
                 simulated.push_back(localSimMap.at(i));
                 uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
+#if MEASUREMENT_SORTING
+                measuredValues.push_back({&cell, measured.back()});
+                simulatedValues.push_back({&cell, simulated.back()});
+#endif
             }
         }
 
+#if MEASUREMENT_SORTING
+        return EvaluateSorting();
+#else
         float confidenceSum = 0;
         for (const auto& u : uncertainty)
             confidenceSum += 1 - u;
         float residual = NACCeres::FitSingleScale(simulated, measured, uncertainty);
         return residual / confidenceSum;
+#endif
     }
 
     long double GraphGSL::ProbFromResidual(long double residual)
@@ -478,15 +536,7 @@ namespace GSL
 
     void GraphGSL::UpdateExpectedValue()
     {
-        std::vector<Grid2D<float>> sourceProbs;
-        for (const auto& node : graph.nodes)
-        {
-            auto room = As<RoomNode>(node);
-            if (room)
-                sourceProbs.push_back(room->GetSourceProbabilities());
-        }
-
-        MultiGrid mgrid(sourceProbs);
+        MultiGrid mgrid = graph.GetAllSourceProbs();
         expectedValue = Utils::ExpectedValue(mgrid, expectedValueProportion);
         cov = Utils::Covariance(mgrid);
     }
