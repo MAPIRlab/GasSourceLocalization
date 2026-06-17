@@ -100,10 +100,13 @@ namespace GSL::Utils
     // See Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
     struct RunningVariance
     {
-        double mean = 0;
-        double weight_sum = 1e-12; // avoid NaNs if there are several 0-weight values
-        double weight_squared_sum = 0;
-        double variance = 0;
+        double mean;
+        double variance;
+
+        RunningVariance()
+        {
+            Reset();
+        }
 
         void Update(float value, float weight)
         {
@@ -113,6 +116,18 @@ namespace GSL::Utils
             mean = mean_old + (weight / weight_sum) * (value - mean_old);
             variance = variance + weight * (value - mean_old) * (value - mean);
         }
+
+        void Reset()
+        {
+            mean = 0;
+            variance = 0;
+            weight_sum = 1e-12; // avoid NaNs if there are several 0-weight values
+            weight_squared_sum = 0;
+        }
+
+    private:
+        double weight_sum;
+        double weight_squared_sum;
     };
 
 } // namespace GSL::Utils

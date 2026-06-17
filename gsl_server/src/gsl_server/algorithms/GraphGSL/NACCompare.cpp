@@ -152,9 +152,9 @@ namespace GSL::NACCeres
         return cost;
     }
 
-    float FitSingleScale(const std::vector<float>& simulated,
-                         const std::vector<float>& observed,
-                         const std::vector<float>& uncertainty)
+    SingleScale FitSingleScale(const std::vector<float>& simulated,
+                               const std::vector<float>& observed,
+                               const std::vector<float>& uncertainty)
     {
         double x = 1.0;
 
@@ -169,7 +169,8 @@ namespace GSL::NACCeres
             problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), &x);
         }
 
-        return Solve(problem);
+        float residual = Solve(problem);
+        return SingleScale{.scale = x, .residual = residual};
     }
 
     // Evaluates the solution (vector of scales) for a single cell
@@ -196,17 +197,18 @@ namespace GSL::NACCeres
         }
     };
 
-    float FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
+    MultipleScales FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
                            const std::vector<float>& observed,
                            const std::vector<float>& uncertainty)
     {
         if (simulated.empty())
-            return NAN;
+            return MultipleScales{.scales = {}, .residual = NAN};
 
-        std::vector<double> scales(simulated.at(0).size(), 1.0);
-        std::vector<double*> scale_pointers(scales.size());
-        for (size_t i = 0; i < scales.size(); i++)
-            scale_pointers.at(i) = &scales.at(i);
+        MultipleScales result;
+        result.scales.resize(simulated.at(0).size(), 1.0);
+        std::vector<double*> scale_pointers(result.scales.size());
+        for (size_t i = 0; i < result.scales.size(); i++)
+            scale_pointers.at(i) = &result.scales.at(i);
 
         ceres::Problem problem;
         // add one residual block for each cell in the map (at least, the ones with confidence > 0)
@@ -218,17 +220,18 @@ namespace GSL::NACCeres
                     .observed = observed.at(i),
                     .uncertainty = uncertainty.at(i)});
 
-            for (size_t j = 0; j < scales.size(); j++)
+            for (size_t j = 0; j < result.scales.size(); j++)
                 cost_function->AddParameterBlock(1);
             cost_function->SetNumResiduals(1);
 
             problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), scale_pointers);
         }
 
-        for (size_t i = 0; i < scales.size(); i++)
+        for (size_t i = 0; i < result.scales.size(); i++)
             problem.SetParameterLowerBound(scale_pointers.at(i), 0, 0.0);
 
         // Run the solver!
-        return Solve(problem);
+        result.residual = Solve(problem);
+        return result;
     }
 } // namespace GSL::NACCeres

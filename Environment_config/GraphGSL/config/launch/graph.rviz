@@ -201,6 +201,18 @@ Visualization Manager:
         Value: /gsl_wind
       Value: false
     - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: InfoGain
+      Namespaces:
+        "": true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/infoGain
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: SimGasMaps
       Namespaces:
@@ -249,17 +261,17 @@ Visualization Manager:
         Value: /gsl_naive_maps
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: SourceProb
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/sourceProb
-      Value: true
+      Value: false
     - Alpha: 1
       Axes Length: 0.20000000298023224
       Axes Radius: 0.05000000074505806
@@ -280,7 +292,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: ExpectedValue
@@ -294,7 +306,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /expected_source_position
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -350,11 +362,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 78.1513900756836
+      Scale: 68.77322387695312
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 10.245936393737793
-      Y: 5.271615982055664
+      X: 8.268675804138184
+      Y: 5.122600078582764
     Saved: ~
 Window Geometry:
   Displays:

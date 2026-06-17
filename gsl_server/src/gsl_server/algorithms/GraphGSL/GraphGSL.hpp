@@ -24,15 +24,22 @@ namespace GSL
     private:
         void EvaluateRoomProbabilities();
         float EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes); // returns the lowest residual found in the fine level
-        float ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
+        std::pair<float, float> ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
         long double ProbFromResidual(long double residual);
         void UpdateExpectedValue();
-
+        void UpdateInformationGain();
+        
     private:
         Graph graph;
         gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
         float likelihoodSigma = 0.05;
+
+        struct PredictedMap
+        {
+            std::shared_ptr<Graph_internal::CompleteMap> map;
+        };
+        std::map<CellIdentifier, PredictedMap> expectedGasMaps;
 
 #define ENABLE_NAIVE_EVALUATION 1
 #if ENABLE_NAIVE_EVALUATION
@@ -51,7 +58,7 @@ namespace GSL
             float residual;
             float confidenceSum;
         };
-        void CalculateNodeProbabilities(const std::vector< NodeResult>& residuals);
+        void CalculateNodeProbabilities(const std::vector<NodeResult>& residuals);
 
         struct Pubs
         {
@@ -62,6 +69,7 @@ namespace GSL
             rclcpp::Publisher<MarkerArray>::SharedPtr measuredGasMapsPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePub;
             rclcpp::Publisher<MarkerArray>::SharedPtr sourceProbPub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr infoGainPub;
         } pubs;
 
         struct SimulationViz
@@ -71,7 +79,6 @@ namespace GSL
         } simulationViz;
 
         Utils::Time::Countdown visualizationCD;
-        bool drawGraph = true;
 
         Vector2 expectedValue;
         Utils::CovarianceMatrix cov;

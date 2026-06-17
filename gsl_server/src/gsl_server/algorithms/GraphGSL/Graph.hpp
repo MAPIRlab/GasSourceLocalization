@@ -23,6 +23,7 @@ namespace GSL
         gmrfw::CGMRF_map::Parameters gmrf_parameters;
         Map2D completeMap;
 
+        std::vector<CellIdentifier> GetAllFreeCells();
         MultiGrid<float> GetAllSourceProbs();
         MultiGrid<KernelDMVW::KernelCell> GetAllKernelCells();
 
@@ -33,6 +34,7 @@ namespace GSL
         MarkerArray VisualizeWind(std::shared_ptr<class RoomNode> roomNode);
         MarkerArray VisualizeMapSegmentation();
         MarkerArray VisualizeSourceProbs();
+        MarkerArray VisualizeInfoGain();
 
     public:
         std::map<std::shared_ptr<class PlaceNode>, float> roomSourceProbabilities;
@@ -44,6 +46,7 @@ namespace GSL
             float probabilityVizMax = 5e-3;
             float probabilityVizMin = 1e-7;
             float maxConcentration = 10.0;
+            float maxInfoGain = 10.0;
         } vizOptions;
 
     private:

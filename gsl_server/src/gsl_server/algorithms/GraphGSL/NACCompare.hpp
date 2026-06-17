@@ -31,11 +31,21 @@ namespace GSL::NAC
 // ceres version
 namespace GSL::NACCeres
 {
-    float FitSingleScale(const std::vector<float>& simulated,
-                         const std::vector<float>& observed,
-                         const std::vector<float>& uncertainty);
+    struct SingleScale
+    {
+        double scale;
+        float residual;
+    };
+    SingleScale FitSingleScale(const std::vector<float>& simulated,
+                               const std::vector<float>& observed,
+                               const std::vector<float>& uncertainty);
 
-    float FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
+    struct MultipleScales
+    {
+        std::vector<double> scales;
+        float residual;
+    };
+    MultipleScales FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
                            const std::vector<float>& observed,
                            const std::vector<float>& uncertainty);
 }; // namespace GSL::NACCeres

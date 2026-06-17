@@ -88,7 +88,6 @@ namespace GSL
                          ImGuiWindowFlags_NoCollapse);
         {
             ImGui::Checkbox("Republish observations", &gsl->republishObservations);
-            ImGui::Checkbox("Draw graph", &gsl->drawGraph);
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Node separation", &gsl->graph.vizOptions.nodeSeparationViz, 0.005, 1., 10.);
             if (ImGui::Button("Update wind map"))
@@ -99,6 +98,8 @@ namespace GSL
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Max concentration", &gsl->graph.vizOptions.maxConcentration, 0.1, 0., 100.);
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Max info gain", &gsl->graph.vizOptions.maxInfoGain, 0.1, 0., 100.);
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);

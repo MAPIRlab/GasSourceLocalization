@@ -219,6 +219,22 @@ namespace GSL
         return occMap;
     }
 
+    std::vector<CellIdentifier> Graph::GetAllFreeCells()
+    {
+        std::vector<CellIdentifier> freeCells;
+        freeCells.reserve(1000);
+        for (const auto& node : nodes)
+        {
+            if (auto room = As<RoomNode>(node))
+            {
+                for (size_t i = 0; i < room->GetOccupancy().data.size(); ++i)
+                    if (room->GetOccupancy().data.at(i))
+                        freeCells.push_back({.node = room.get(), .indices = room->GetOccupancy().metadata.indices2D(i)});
+            }
+        }
+        return freeCells;
+    }
+
     MultiGrid<float> Graph::GetAllSourceProbs()
     {
         std::vector<Grid2D<float>> sourceProbs;
@@ -432,6 +448,34 @@ namespace GSL
 
             Grid2D<float> grid(roomNode->GetSourceProbabilities().data, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
             Marker marker = Utils::createPointsMarker(grid, vizOptions.probabilityVizMin, vizOptions.probabilityVizMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
+            marker.id = id++;
+            array.markers.push_back(marker);
+        }
+
+        return array;
+    }
+
+    MarkerArray Graph::VisualizeInfoGain()
+    {
+        MarkerArray array;
+        size_t id = 0;
+
+        for (auto node : nodes)
+        {
+            if (!Is<RoomNode>(node))
+                continue;
+            auto roomNode = As<RoomNode>(node);
+            Grid2DMetadata vizMetadata = roomNode->GetSourceProbabilities().metadata;
+            vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
+
+            std::vector<float> info;
+            info.reserve(roomNode->GetSourceProbabilities().data.size());
+            std::ranges::transform(roomNode->GetExpectedVariances().data, std::back_inserter(info), [](Utils::RunningVariance& var) -> float
+                                   {
+                                       return var.variance;
+                                   });
+            Grid2D<float> grid(info, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
+            Marker marker = Utils::createPointsMarker(grid, 0, vizOptions.maxInfoGain, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Jet, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
         }

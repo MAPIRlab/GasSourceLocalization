@@ -18,7 +18,7 @@ namespace GSL
 
         DoorwayNode(const std::string& _name);
         std::string_view GetName() const { return name; }
-        
+
         std::string_view GetDebuggingName() const { return _debugging_name; }
         void SetDebuggingName(std::string_view debugging_name) { _debugging_name = debugging_name; }
 
@@ -26,8 +26,16 @@ namespace GSL
         const std::shared_ptr<DoorwayNode> OtherSide() const; // the node which represents the other direction through this doorway
 
     private:
-        std::string name; // name is shared between the two directional versions of the doorway
+        std::string name;            // name is shared between the two directional versions of the doorway
         std::string _debugging_name; // NOT shared, this is only to make the debugger show a readable identifier
+    };
+
+    struct CellIdentifier
+    {
+        class PlaceNode* node;
+        Vector2Int indices;
+
+        static inline Vector2Int WHOLE_NODE = {-INT_MAX, -INT_MAX};
     };
 
     class PlaceNode
@@ -39,6 +47,7 @@ namespace GSL
         virtual void UpdateDoorwayMask() {}
         const std::shared_ptr<DoorwayNode> GetDoorway(std::string_view name);
         virtual std::vector<Vector2> RepresentativePoints() const { return {GetPosition()}; }
+        CellIdentifier GetNodeIdentifier() { return CellIdentifier{this, CellIdentifier::WHOLE_NODE}; }
 
         std::vector<std::shared_ptr<DoorwayNode>> doorways;
         std::string id;
@@ -60,12 +69,14 @@ namespace GSL
         const Grid2D<KernelDMVW::KernelCell> GetGasMap();
         const Grid2D<int> GetOutletsMask();
         Grid2D<float> GetSourceProbabilities();
+        Grid2D<Utils::RunningVariance> GetExpectedVariances();
         const std::vector<size_t>& GetOutletsCellCount();
         Vector2 GetPosition() const override { return centroid; }
         AABB2D GetAABB() const;
         const std::vector<NQA::Node>& GetQuadtreeLeaves() const { return quadtreeLeaves; }
         std::vector<Vector2> RepresentativePoints() const override;
         const VisibilityMap& GetVisibilityMap() const { return visibilityMap; }
+        CellIdentifier GetCellIdentifier(size_t index);
 
     private:
         Grid2D<Vector2> WindAsGrid();
@@ -75,6 +86,7 @@ namespace GSL
         std::vector<size_t> numCellsOutlet;
         std::vector<Vector2> wind;
         std::vector<float> sourceProbabilities;
+        std::vector<Utils::RunningVariance> expectedVariances; // variance on the expected gas amount, based on the most recent simulation results
 
         KernelDMVW::GasMap gasMap;
         Grid2DMetadata gridMetadata;
@@ -95,4 +107,26 @@ namespace GSL
     private:
         Vector2 position;
     };
+
 } // namespace GSL
+
+namespace std
+{
+    template <> struct hash<GSL::CellIdentifier>
+    {
+        size_t operator()(const GSL::CellIdentifier& x) const
+        {
+            return (size_t)(x.node) ^ (size_t)(x.indices.x) ^ (size_t)(x.indices.y);
+        }
+    };
+
+    template <> struct less<GSL::CellIdentifier>
+    {
+        bool operator()(const GSL::CellIdentifier& a, const GSL::CellIdentifier& b) const
+        {
+            return a.node < b.node                                    //
+                   || (a.node == b.node && a.indices.x < b.indices.x) //
+                   || (a.node == b.node && a.indices.x == b.indices.x && a.indices.y < b.indices.y);
+        }
+    };
+} // namespace std
