@@ -31,7 +31,6 @@ namespace GSL
         
     private:
         Graph graph;
-        gmrfw::CGMRF_map::Parameters gmrfParams;
         Graph_internal::SimulationSystem simulationSystem;
         float likelihoodSigma = 0.05;
 

@@ -46,7 +46,7 @@ namespace GSL
             float probabilityVizMax = 5e-3;
             float probabilityVizMin = 1e-7;
             float maxConcentration = 10.0;
-            float maxInfoGain = 10.0;
+            float maxInfoGain = 1e-2;
         } vizOptions;
 
     private:

@@ -52,7 +52,7 @@ def launch_setup(context, *args, **kwargs):
                     {"graph_path": os.path.join(get_package_share_directory(
                         "graphgsl_env"), "data", "environments", scenario, "graph")},
                     {"sim_measurements_path": os.path.join(get_package_share_directory(
-                        "graphgsl_env"), "data", "test_data", f"data_{scenario}_{configuration}_{simulation}")},
+                        "graphgsl_env"), "data", "test_data", f"data_{scenario}_{configuration}_{simulation}.yaml")},
                     {"cell_size": 0.15},
                     {"node_separation_mult": 1.0},
                     {"robot_location_topic": "/PioneerP3DX/ground_truth"},
@@ -60,11 +60,15 @@ def launch_setup(context, *args, **kwargs):
                     # Advection constraint -> neighboring cells should have similar wind values in the direction of the wind
                     {"GMRF_lambdaPrior_advection": 100.0},
                     # Mass conservation law -> divergence of the wind field is zero
-                    {"GMRF_lambdaPrior_mass_conservation": 1000.0},
+                    {"GMRF_lambdaPrior_mass_conservation": 1e6},
                     # Diffusion constraint -> neighboring cells should have similar wind values in all directions
-                    {"GMRF_lambdaPrior_diffusion": 100.0},
+                    {"GMRF_lambdaPrior_diffusion": 1e3},
                     # Obstacles --> cells close to obstacles has only tangencial wind
-                    {"GMRF_lambdaPrior_obstacles": 2000.0},
+                    {"GMRF_lambdaPrior_obstacles": 200.0},
+                    # Advection iterative process convergence
+                    {"GMRF_picard_convergence_thr": 1e-2},
+                    # Regularization parameter
+                    {"GMRF_lambda_regularization": 1e-5},
 
                     {"kernel_sigma": 0.3},
                     {"kernel_stretch_constant": 0.4},
@@ -196,7 +200,7 @@ def launch_setup(context, *args, **kwargs):
                 {"wind_topic": "/measured_wind"},
                 {"gas_topic": "/measured_gas"},
                 {"file_path": os.path.join(get_package_share_directory(
-                    "graphgsl_env"), "data", "test_data", f"data_{scenario}_{configuration}_{simulation}")},
+                    "graphgsl_env"), "data", "test_data", f"data_{scenario}_{configuration}_{simulation}.yaml")},
         ],
     )
 

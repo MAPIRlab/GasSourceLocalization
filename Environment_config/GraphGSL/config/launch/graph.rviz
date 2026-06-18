@@ -177,32 +177,8 @@ Visualization Manager:
         Value: /gsl_graph
       Value: true
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
-      Name: Occupancy_nodes
-      Namespaces:
-        {}
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /gsl_occupancy
-      Value: false
-    - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
-      Name: WindMaps
-      Namespaces:
-        {}
-      Topic:
-        Depth: 5
-        Durability Policy: Volatile
-        History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /gsl_wind
-      Value: false
-    - Class: rviz_default_plugins/MarkerArray
       Enabled: true
-      Name: InfoGain
+      Name: Occupancy_nodes
       Namespaces:
         "": true
       Topic:
@@ -210,8 +186,32 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /PioneerP3DX/infoGain
+        Value: /gsl_occupancy
       Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: WindMaps
+      Namespaces:
+        WindVector: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /gsl_wind
+      Value: true
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: false
+      Name: InfoGain
+      Namespaces:
+        {}
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/infoGain
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: SimGasMaps
@@ -362,7 +362,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 68.77322387695312
+      Scale: 121.20191955566406
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
       X: 8.268675804138184

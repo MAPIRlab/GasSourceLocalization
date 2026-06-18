@@ -26,11 +26,14 @@ namespace GSL
         float cellSize = rclnode->declare_parameter<float>("cell_size", 0.15);
 
         // GMRF
+        gmrfw::CGMRF_map::Parameters gmrfParams;
         gmrfParams.cell_size = cellSize;
         gmrfParams.lambdaPrior_advection = rclnode->declare_parameter<float>("GMRF_lambdaPrior_advection");
         gmrfParams.lambdaPrior_diffusion = rclnode->declare_parameter<float>("GMRF_lambdaPrior_diffusion");
         gmrfParams.lambdaPrior_mass_conservation = rclnode->declare_parameter<float>("GMRF_lambdaPrior_mass_conservation");
         gmrfParams.lambdaPrior_obstacles = rclnode->declare_parameter<float>("GMRF_lambdaPrior_obstacles");
+        gmrfParams.picard_convergence_thr = rclnode->declare_parameter<float>("GMRF_picard_convergence_thr");
+        gmrfParams.lambda_regularization = rclnode->declare_parameter<float>("GMRF_lambda_regularization");
 
         // kernel
         KernelDMVW::GasMap::Params kernelParams;
@@ -225,6 +228,7 @@ namespace GSL
             expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
             mtx.unlock();
 
+            float scaleSum = std::accumulate(result.scales.begin(), result.scales.end(), 0.0f);
             size_t simIndex = 0;
             for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
             {
@@ -236,7 +240,7 @@ namespace GSL
                         expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
 
                     for (size_t i = 0; i < localSimMap.size(); i++)
-                        expectedGasMaps[id].map->gasMaps[room].at(i) += result.scales.at(simIndex) * std::log(localSimMap.at(i) + 1);
+                        expectedGasMaps[id].map->gasMaps[room].at(i) += (result.scales.at(simIndex) / scaleSum) * localSimMap.at(i);
                 }
 
                 simIndex++;
@@ -419,7 +423,7 @@ namespace GSL
                                       expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
 
                                       for (size_t i = 0; i < localSimMap.size(); i++)
-                                          expectedGasMaps[id].map->gasMaps[room].at(i) = scale * std::log(localSimMap.at(i) + 1);
+                                          expectedGasMaps[id].map->gasMaps[room].at(i) = localSimMap.at(i);
                                   }
                               });
             }

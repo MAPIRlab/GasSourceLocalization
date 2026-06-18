@@ -1,0 +1,26 @@
+- pose:
+    x: 10.245268821716309
+    y: 7.6370687484741211
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: 0.351943254
+    speed: 0.406227201
+    frame: ""
+  gas:
+    concentration: 0
+- pose:
+    x: 10.365667343139648
+    y: 1.9689240455627441
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: 0.24192518
+    speed: 0.515386879
+    frame: ""
+  gas:
+    concentration: 4.36874866
