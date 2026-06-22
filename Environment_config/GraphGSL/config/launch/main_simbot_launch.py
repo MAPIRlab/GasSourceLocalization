@@ -58,17 +58,17 @@ def launch_setup(context, *args, **kwargs):
                     {"robot_location_topic": "/PioneerP3DX/ground_truth"},
 
                     # Advection constraint -> neighboring cells should have similar wind values in the direction of the wind
-                    {"GMRF_lambdaPrior_advection": 100.0},
+                    {"GMRF_lambdaPrior_advection": 2e2},
                     # Mass conservation law -> divergence of the wind field is zero
                     {"GMRF_lambdaPrior_mass_conservation": 1e6},
                     # Diffusion constraint -> neighboring cells should have similar wind values in all directions
                     {"GMRF_lambdaPrior_diffusion": 1e3},
                     # Obstacles --> cells close to obstacles has only tangencial wind
-                    {"GMRF_lambdaPrior_obstacles": 200.0},
+                    {"GMRF_lambdaPrior_obstacles": 2e2},
                     # Advection iterative process convergence
                     {"GMRF_picard_convergence_thr": 1e-2},
                     # Regularization parameter
-                    {"GMRF_lambda_regularization": 1e-5},
+                    {"GMRF_lambda_regularization": 1e-4},
 
                     {"kernel_sigma": 0.3},
                     {"kernel_stretch_constant": 0.4},

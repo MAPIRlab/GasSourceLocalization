@@ -158,12 +158,12 @@ namespace GSL
     {
         // wind
         {
-            constexpr float sigma = 1e-5;
+            constexpr float sigma = 1e-4;
             float speed = vmath::length(wind);
             float direction = std::atan2(wind.y, wind.x);
             bool accepted = true;
             // insert each measurement multiple times to make sure the damn GMRF actually takes it into consideration
-            for (int i = 0; i < 3; ++i) 
+            for (int i = 0; i < 3; ++i)
             {
                 accepted = accepted && gmrf->insertObservation_GMRF(
                                            speed,
@@ -260,6 +260,23 @@ namespace GSL
 
         MultiGrid mgrid(kernelCells);
         return mgrid;
+    }
+
+    void Graph::AutoSetMaxInfoGain()
+    {
+        float maxInfoGain = 0;
+        for (const auto& node : nodes)
+            if (auto room = As<RoomNode>(node))
+            {
+                auto localMax = std::max_element(room->GetExpectedVariances().data.begin(),
+                                                 room->GetExpectedVariances().data.end(),
+                                                 [](const Utils::RunningVariance& a, const Utils::RunningVariance& b)
+                                                 {
+                                                     return a.variance < b.variance;
+                                                 });
+                maxInfoGain = std::max<float>(maxInfoGain, localMax->variance);
+            }
+        vizOptions.maxInfoGain = maxInfoGain;
     }
 
     MarkerArray Graph::VisualizeGraph()

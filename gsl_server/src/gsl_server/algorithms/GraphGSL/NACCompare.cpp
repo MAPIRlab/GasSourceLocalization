@@ -198,8 +198,8 @@ namespace GSL::NACCeres
     };
 
     MultipleScales FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
-                           const std::vector<float>& observed,
-                           const std::vector<float>& uncertainty)
+                                    const std::vector<float>& observed,
+                                    const std::vector<float>& uncertainty)
     {
         if (simulated.empty())
             return MultipleScales{.scales = {}, .residual = NAN};

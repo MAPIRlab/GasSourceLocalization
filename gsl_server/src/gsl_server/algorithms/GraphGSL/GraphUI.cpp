@@ -100,6 +100,11 @@ namespace GSL
             ImGui::DragFloat("Max concentration", &gsl->graph.vizOptions.maxConcentration, 0.1, 0., 100.);
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Max info gain", &gsl->graph.vizOptions.maxInfoGain, 1e-2, 0., 100., "%.2e");
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(100);
+            if (ImGui::Button("Auto"))
+                gsl->graph.AutoSetMaxInfoGain();
+
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);

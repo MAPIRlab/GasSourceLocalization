@@ -32,7 +32,7 @@ namespace GSL
     private:
         Graph graph;
         Graph_internal::SimulationSystem simulationSystem;
-        float likelihoodSigma = 0.05;
+        float likelihoodSigma = 0.03;
 
         struct PredictedMap
         {

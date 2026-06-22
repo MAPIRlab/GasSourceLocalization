@@ -28,6 +28,7 @@ namespace GSL
         MultiGrid<KernelDMVW::KernelCell> GetAllKernelCells();
 
         // visualization
+        void AutoSetMaxInfoGain();
         MarkerArray VisualizeGraph();
         MarkerArray VisualizeOccupancy();
         MarkerArray VisualizeGasReadings();

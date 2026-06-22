@@ -9,6 +9,7 @@
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
+#define SCALE_EXPECTED_MAPS 0
 namespace GSL
 {
 
@@ -228,22 +229,29 @@ namespace GSL
             expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
             mtx.unlock();
 
-            float scaleSum = std::accumulate(result.scales.begin(), result.scales.end(), 0.0f);
-            size_t simIndex = 0;
-            for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
+            if (std::isfinite(result.residual))
             {
-                for (const auto& [room, localSimMap] : simulation.gasMaps)
+                float scaleSum = std::accumulate(result.scales.begin(), result.scales.end(), 0.0f);
+                size_t simIndex = 0;
+                for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
                 {
-                    if (room == sourceNode)
-                        continue;
-                    if (!expectedGasMaps[id].map->gasMaps.contains(room))
-                        expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
+                    for (const auto& [room, localSimMap] : simulation.gasMaps)
+                    {
+                        if (room == sourceNode)
+                            continue;
+                        if (!expectedGasMaps[id].map->gasMaps.contains(room))
+                            expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
+#if SCALE_EXPECTED_MAPS
+                        for (size_t i = 0; i < localSimMap.size(); i++)
+                            expectedGasMaps[id].map->gasMaps[room].at(i) += std::log(result.scales.at(simIndex) * localSimMap.at(i) + 1);
+#else
+                        for (size_t i = 0; i < localSimMap.size(); i++)
+                            expectedGasMaps[id].map->gasMaps[room].at(i) += (result.scales.at(simIndex) / scaleSum) * localSimMap.at(i);
+#endif
+                    }
 
-                    for (size_t i = 0; i < localSimMap.size(); i++)
-                        expectedGasMaps[id].map->gasMaps[room].at(i) += (result.scales.at(simIndex) / scaleSum) * localSimMap.at(i);
+                    simIndex++;
                 }
-
-                simIndex++;
             }
         };
 
@@ -255,13 +263,22 @@ namespace GSL
             pool.Wait();
         }
 
-        for (const auto& [node, residual, confidenceSum] : nodeResiduals)
+        // if we got a NaN residual (we could not find the optimal scale, probably because there were 0 measurements outside the room),
+        // just set the residual to the room to the average of the rest of them as a compromise
+        float averageResidual = std::accumulate(nodeResiduals.begin(), nodeResiduals.end(), 0.0f, [](float acc, const auto& item)
+                                                {
+                                                    if (std::isfinite(item.residual))
+                                                        return acc + item.residual;
+                                                    return acc;
+                                                }) /
+                                nodeResiduals.size();
+        for (NodeResult& item : nodeResiduals)
         {
-            auto room = As<RoomNode>(node);
-            if (!room)
-                continue;
+            if (!std::isfinite(item.residual))
+                item.residual = averageResidual;
         }
 
+        // turn the residuals into probabilities
         CalculateNodeProbabilities(nodeResiduals);
 
         // now, fine level estimations
@@ -290,7 +307,7 @@ namespace GSL
                     nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
                     GSL_TRACE("Lowest residual for node {}: {:.3e}", room->id, lowestResidual);
 
-                    constexpr float toleranceFactor = 1;
+                    constexpr float toleranceFactor = 0.;
                     if (i + 1 == nodeResiduals.size())
                     {
                         GSL_TRACE("No more nodes available for fine-level simulation");
@@ -298,7 +315,8 @@ namespace GSL
                     }
                     else if (lowestResidual <= nodeResiduals.at(i + 1).residual * toleranceFactor)
                     {
-                        GSL_TRACE("Stopping fine-level simulation (next residual: {:.3e} -- {})", nodeResiduals.at(i + 1).residual,
+                        GSL_TRACE("Stopping fine-level simulation (next residual: {:.3e} -- {})",
+                                  nodeResiduals.at(i + 1).residual,
                                   nodeResiduals.at(i + 1).node->id);
                         done = true;
                     }
@@ -367,6 +385,13 @@ namespace GSL
         ThreadPool pool;
         std::mutex mtx;
 
+        // remove the whole-room simulation from the expected maps structure, since we are doing finer simulation
+        for (auto roomNode : roomNodes)
+        {
+            CellIdentifier id{roomNode.get(), CellIdentifier::WHOLE_NODE};
+            expectedGasMaps.erase(id);
+        }
+
         struct Region
         {
             std::shared_ptr<RoomNode> room;
@@ -417,13 +442,17 @@ namespace GSL
                                       expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
                                   }
 
-                                  // store the scaled result for movement strategy
+                                  // store the (scaled?) result for movement strategy
                                   for (const auto& [room, localSimMap] : map.gasMaps)
                                   {
                                       expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
-
+#if SCALE_EXPECTED_MAPS
+                                      for (size_t i = 0; i < localSimMap.size(); i++)
+                                          expectedGasMaps[id].map->gasMaps[room].at(i) = std::log(localSimMap.at(i) * scale + 1);
+#else
                                       for (size_t i = 0; i < localSimMap.size(); i++)
                                           expectedGasMaps[id].map->gasMaps[room].at(i) = localSimMap.at(i);
+#endif
                                   }
                               });
             }
@@ -614,21 +643,19 @@ namespace GSL
         std::vector<CellIdentifier> allFreeCells = graph.GetAllFreeCells();
 
         // reset all the information from previous simulations
+#pragma omp parallel for schedule(dynamic, 50) 
         for (const auto& id : allFreeCells)
             As<RoomNode>(id.node)->GetExpectedVariances().dataAt(id.indices).Reset();
 
         // start updating the values with the latest results
-        for (const auto& sourceID : allFreeCells)
+
+        auto updateWithExpectedMap = [&](const Graph_internal::CompleteMap& completeMap, float probability)
         {
-            auto sourceRoom = As<RoomNode>(sourceID.node);
-            float probability = sourceRoom->GetSourceProbabilities().dataAt(sourceID.indices);
-            if (probability < 1e-7)
-                continue;
-
-            Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(sourceID).map;
-
-            for (const auto& [room, map] : completeMap.gasMaps)
+            for (const auto& entry : completeMap.gasMaps)
             {
+                const auto& room = entry.first;
+                const auto& map = entry.second;
+#pragma omp parallel for schedule(dynamic, 50) 
                 for (size_t i = 0; i < map.size(); ++i)
                 {
                     if (!room->GetOccupancy().data.at(i))
@@ -636,6 +663,34 @@ namespace GSL
                     float value = map.at(i);
                     room->GetExpectedVariances().data.at(i).Update(value, probability);
                     GSL_ASSERT(std::isfinite(room->GetExpectedVariances().data.at(i).variance));
+                }
+            }
+        };
+
+        for (auto node : graph.nodes)
+        {
+            auto room = As<RoomNode>(node);
+            if (!room)
+                continue;
+
+            if (expectedGasMaps.contains({room.get(), CellIdentifier::WHOLE_NODE}))
+            {
+                float probability = graph.roomSourceProbabilities.at(room);
+                Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at({room.get(), CellIdentifier::WHOLE_NODE}).map;
+                updateWithExpectedMap(completeMap, probability);
+            }
+            else
+            {
+                Grid2D<float> probabilities = room->GetSourceProbabilities();
+                for (size_t cellIndex = 0; cellIndex < probabilities.data.size(); cellIndex++)
+                {
+                    float probability = probabilities.data.at(cellIndex);
+                    if (probability < 1e-7)
+                        continue;
+
+                    CellIdentifier sourceID = room->GetCellIdentifier(cellIndex);
+                    Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(sourceID).map;
+                    updateWithExpectedMap(completeMap, probability);
                 }
             }
         }
