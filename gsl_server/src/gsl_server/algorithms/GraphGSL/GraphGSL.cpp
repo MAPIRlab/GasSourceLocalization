@@ -217,9 +217,9 @@ namespace GSL
             for (const auto& u : uncertainty)
                 confidenceSum += 1 - u;
 
+            NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
             mtx.lock();
             nodeResiduals.push_back({sourceNode, 0, 0});
-            NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
             nodeResiduals.back().residual = result.residual / confidenceSum;
             nodeResiduals.back().confidenceSum = confidenceSum;
             GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}", sourceNode->id, nodeResiduals.back().residual, nodeResiduals.back().confidenceSum);
@@ -273,10 +273,8 @@ namespace GSL
                                                 }) /
                                 nodeResiduals.size();
         for (NodeResult& item : nodeResiduals)
-        {
             if (!std::isfinite(item.residual))
                 item.residual = averageResidual;
-        }
 
         // turn the residuals into probabilities
         CalculateNodeProbabilities(nodeResiduals);
@@ -292,7 +290,8 @@ namespace GSL
 
         constexpr float doFineLevelThreshold = 0.3;
         std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
-        if (graph.roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
+        // if (graph.roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
+        if (false)
         {
             size_t i = 0;
             bool done = false;
@@ -373,7 +372,7 @@ namespace GSL
         }
 
         UpdateExpectedValue();
-        UpdateInformationGain();
+        // UpdateInformationGain();
     }
 
     float GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
@@ -568,6 +567,7 @@ namespace GSL
         std::vector<float> measured;
         std::vector<float> simulated;
         std::vector<float> uncertainty;
+
         for (const auto& [room, localSimMap] : simMap.gasMaps)
         {
             // add any relevant cells to the comparison arrays
@@ -643,7 +643,7 @@ namespace GSL
         std::vector<CellIdentifier> allFreeCells = graph.GetAllFreeCells();
 
         // reset all the information from previous simulations
-#pragma omp parallel for schedule(dynamic, 50) 
+#pragma omp parallel for schedule(dynamic, 50)
         for (const auto& id : allFreeCells)
             As<RoomNode>(id.node)->GetExpectedVariances().dataAt(id.indices).Reset();
 
@@ -655,7 +655,7 @@ namespace GSL
             {
                 const auto& room = entry.first;
                 const auto& map = entry.second;
-#pragma omp parallel for schedule(dynamic, 50) 
+#pragma omp parallel for schedule(dynamic, 50)
                 for (size_t i = 0; i < map.size(); ++i)
                 {
                     if (!room->GetOccupancy().data.at(i))

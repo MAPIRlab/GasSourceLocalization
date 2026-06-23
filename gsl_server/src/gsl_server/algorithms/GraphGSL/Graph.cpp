@@ -158,19 +158,16 @@ namespace GSL
     {
         // wind
         {
-            constexpr float sigma = 1e-4;
+            constexpr float sigma = 1e-3;
             float speed = vmath::length(wind);
             float direction = std::atan2(wind.y, wind.x);
             bool accepted = true;
             // insert each measurement multiple times to make sure the damn GMRF actually takes it into consideration
-            for (int i = 0; i < 3; ++i)
-            {
-                accepted = accepted && gmrf->insertObservation_GMRF(
-                                           speed,
-                                           direction,
-                                           sigma, sigma,
-                                           position.x, position.y);
-            }
+            accepted = accepted && gmrf->insertObservation_GMRF(
+                                        speed,
+                                        direction,
+                                        sigma, sigma,
+                                        position.x, position.y);
 
             if (!accepted)
                 GSL_WARN("Wind GMRF did not accept observation at {}", position);
