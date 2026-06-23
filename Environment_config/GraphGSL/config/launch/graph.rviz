@@ -189,7 +189,7 @@ Visualization Manager:
         Value: /gsl_occupancy
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: WindMaps
       Namespaces:
         {}
@@ -199,7 +199,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /gsl_wind
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: InfoGain
@@ -292,7 +292,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: ExpectedValue
@@ -306,7 +306,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /expected_source_position
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217

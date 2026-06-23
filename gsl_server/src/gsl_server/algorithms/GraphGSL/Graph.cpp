@@ -158,16 +158,19 @@ namespace GSL
     {
         // wind
         {
-            constexpr float sigma = 1e-3;
+            constexpr float sigma = 1e-6;
             float speed = vmath::length(wind);
             float direction = std::atan2(wind.y, wind.x);
             bool accepted = true;
             // insert each measurement multiple times to make sure the damn GMRF actually takes it into consideration
-            accepted = accepted && gmrf->insertObservation_GMRF(
-                                        speed,
-                                        direction,
-                                        sigma, sigma,
-                                        position.x, position.y);
+            for (int i = 0; i < 3; i++)
+            {
+                accepted = accepted && gmrf->insertObservation_GMRF(
+                                            speed,
+                                            direction,
+                                            sigma, sigma,
+                                            position.x, position.y);
+            }
 
             if (!accepted)
                 GSL_WARN("Wind GMRF did not accept observation at {}", position);
@@ -301,10 +304,10 @@ namespace GSL
             {
                 Marker marker;
                 marker.header.frame_id = "map";
-                marker.type = Marker::SPHERE;
+                marker.type = Marker::CYLINDER;
                 marker.scale.x = 0.3;
                 marker.scale.y = 0.3;
-                marker.scale.z = 0.3;
+                marker.scale.z = 0.05;
                 marker.color = color;
                 marker.pose.position.x = position.x;
                 marker.pose.position.y = position.y;

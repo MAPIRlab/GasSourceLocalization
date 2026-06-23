@@ -6,255 +6,138 @@
     qz: 0
     qw: 1
   wind:
-    direction: -1.15241051
-    speed: 0.73891747
+    direction: -1.17122579
+    speed: 0.736045539
     frame: ""
   gas:
-    concentration: 3.5550518
+    concentration: 1.32621932
 - pose:
-    x: 5.3366508483886719
-    y: 2.5883512496948242
+    x: 4.7298469543457031
+    y: 3.6969597339630127
     qx: 0
     qy: 0
     qz: 0
     qw: 1
   wind:
-    direction: -1.15733814
-    speed: 0.753849149
+    direction: -1.28985357
+    speed: 0.603001177
     frame: ""
   gas:
-    concentration: 5.72467279
+    concentration: 19.5774269
 - pose:
-    x: 9.4712619781494141
-    y: 5.8854174613952637
+    x: 6.0059394836425781
+    y: 7.1932783126831055
     qx: 0
     qy: 0
     qz: 0
     qw: 1
   wind:
-    direction: -1.81297684
-    speed: 0.00829265546
+    direction: -1.63419747
+    speed: 0.871527314
     frame: ""
   gas:
     concentration: 0
 - pose:
-    x: 9.0153121948242188
-    y: 6.943964958190918
+    x: 5.3803863525390625
+    y: 2.406463623046875
     qx: 0
     qy: 0
-    qz: 0
-    qw: 1
+    qz: 0.70775373557666088
+    qw: 0.70645923433506197
   wind:
-    direction: -0.479641825
-    speed: 0.00937047414
+    direction: -1.07568836
+    speed: 0.751965761
+    frame: ""
+  gas:
+    concentration: 12.3071318
+- pose:
+    x: 5.2646235100807788
+    y: 2.8882837874578935
+    qx: 0
+    qy: 0
+    qz: -0.035058941317696497
+    qw: 0.99938524635581982
+  wind:
+    direction: -1.14184237
+    speed: 0.752840638
+    frame: ""
+  gas:
+    concentration: 7.20689869
+- pose:
+    x: 5.2646235100807788
+    y: 2.8882837874578935
+    qx: 0
+    qy: 0
+    qz: -0.035058941317696497
+    qw: 0.99938524635581982
+  wind:
+    direction: -1.14223504
+    speed: 0.750499845
+    frame: ""
+  gas:
+    concentration: 3.56591535
+- pose:
+    x: 1.1272566318511963
+    y: 7.1355032920837402
+    qx: 0
+    qy: 0
+    qz: 0.70775373557666088
+    qw: 0.70645923433506197
+  wind:
+    direction: -1.48273003
+    speed: 0.560199916
     frame: ""
   gas:
     concentration: 0
 - pose:
-    x: 5.8368849754333496
-    y: 7.1032686233520508
+    x: 9.4876213073730469
+    y: 5.695798397064209
     qx: 0
     qy: 0
-    qz: 0
-    qw: 1
+    qz: 0.70775373557666088
+    qw: 0.70645923433506197
   wind:
-    direction: -1.72926915
-    speed: 0.798787296
+    direction: -1.96127212
+    speed: 0.007347418
     frame: ""
   gas:
     concentration: 0
 - pose:
-    x: 3.3328323364257812
-    y: 7.1399774551391602
+    x: 2.4104988574981689
+    y: 5.3109545707702637
     qx: 0
     qy: 0
-    qz: 0
-    qw: 1
+    qz: 0.70775373557666088
+    qw: 0.70645923433506197
   wind:
-    direction: -0.115056038
-    speed: 0.193513423
+    direction: -0.880849719
+    speed: 0.329645127
     frame: ""
   gas:
     concentration: 0
 - pose:
-    x: 1.7370913028717041
-    y: 7.027003288269043
+    x: 4.4567074775695801
+    y: 5.0193195343017578
     qx: 0
     qy: 0
-    qz: 0
-    qw: 1
+    qz: 0.70775373557666088
+    qw: 0.70645923433506197
   wind:
-    direction: -0.906010389
-    speed: 0.686355412
+    direction: -1.329934
+    speed: 0.498724431
     frame: ""
   gas:
-    concentration: 0
+    concentration: 40.3878365
 - pose:
-    x: 2.5383479595184326
-    y: 5.2261443138122559
+    x: 4.6108174324035645
+    y: 4.4945068359375
     qx: 0
     qy: 0
-    qz: 0
-    qw: 1
+    qz: 0.70775373557666088
+    qw: 0.70645923433506197
   wind:
-    direction: -0.98121202
-    speed: 0.309839308
+    direction: -1.36052012
+    speed: 0.553141892
     frame: ""
   gas:
-    concentration: 0
-- pose:
-    x: 7.745337963104248
-    y: 1.7135467529296875
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -0.584561467
-    speed: 0.453845561
-    frame: ""
-  gas:
-    concentration: 0
-- pose:
-    x: 7.0984807014465332
-    y: 1.8361907005310059
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -0.502695024
-    speed: 0.585116088
-    frame: ""
-  gas:
-    concentration: 0
-- pose:
-    x: 2.3401787281036377
-    y: 0.72686195373535156
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -2.52574778
-    speed: 0.59130466
-    frame: ""
-  gas:
-    concentration: 0
-- pose:
-    x: 0.92203903198242188
-    y: 1.3021197319030762
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -2.93828917
-    speed: 0.0782672614
-    frame: ""
-  gas:
-    concentration: 0
-- pose:
-    x: 6.6328625679016113
-    y: 0.65213966369628906
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -0.332884908
-    speed: 0.538579285
-    frame: ""
-  gas:
-    concentration: 5.63565826
-- pose:
-    x: 5.9453825950622559
-    y: 0.41699695587158203
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -0.291180789
-    speed: 0.317401409
-    frame: ""
-  gas:
-    concentration: 0.962299347
-- pose:
-    x: 5.562199592590332
-    y: 6.841362476348877
-    qx: 0
-    qy: 0
-    qz: -0.029312568736102725
-    qw: 0.99957029433356581
-  wind:
-    direction: -1.74985373
-    speed: 0.637265265
-    frame: ""
-  gas:
-    concentration: 0
-# - pose:
-#     x: 5.0043125152587891
-#     y: 3.4420785903930664
-#     qx: 0
-#     qy: 0
-#     qz: 0
-#     qw: 1
-#   wind:
-#     direction: -1.26666236
-#     speed: 0.665464759
-#     frame: ""
-#   gas:
-#     concentration: 11.7536535
-- pose:
-    x: 3.3403072357177734
-    y: 3.0400576591491699
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -0.357398897
-    speed: 0.623375416
-    frame: ""
-  gas:
-    concentration: 0
-- pose:
-    x: 4.0541744232177734
-    y: 3.8943653106689453
-    qx: 0
-    qy: 0
-    qz: 0
-    qw: 1
-  wind:
-    direction: -1.28068542
-    speed: 0.453809261
-    frame: ""
-  gas:
-    concentration: 0
-- pose:
-    x: 4.5374748239035032
-    y: 4.5193188965392812
-    qx: 0
-    qy: 0
-    qz: -0.048716881032085255
-    qw: 0.99881262782491198
-  wind:
-    direction: -1.39307237
-    speed: 0.546368599
-    frame: ""
-  gas:
-    concentration: 19.0365772
-- pose:
-    x: 4.4457672511876085
-    y: 4.8718901120856062
-    qx: 0
-    qy: 0
-    qz: -0.025672844231826655
-    qw: 0.99967039821585679
-  wind:
-    direction: -1.34569418
-    speed: 0.523672462
-    frame: ""
-  gas:
-    concentration: 29.5341949
+    concentration: 24.1332741

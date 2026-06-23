@@ -204,6 +204,8 @@ namespace GSL
                 gsl->simulationSystem.Reset();
 
             ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Default residual", &gsl->defaultResidual, 1e-6, 0.0, 1.0, "%.2e");
+            ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 0.001, 0.001, 1);
             if (ImGui::Button("Evaluate Source Probs"))
             {

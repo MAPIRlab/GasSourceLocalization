@@ -176,6 +176,22 @@ namespace GSL
             // if we are done recording those, skip them on the next iteration
             std::vector<float> measured;
             std::vector<float> uncertainty;
+
+            float totalConfidence = 0;
+            for (auto node : graph.nodes)
+            {
+                if (auto room = As<RoomNode>(node))
+                {
+                    Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
+                    totalConfidence += std::accumulate(measuredLocal.data.begin(), measuredLocal.data.end(), 0.0f,
+                                                       [](float acc, const KernelDMVW::KernelCell& cell)
+                                                       {
+                                                           return acc + cell.confidence;
+                                                       });
+                }
+            }
+
+            // iterate over all the simulated maps and record the simulated-measured-confidence triplets
             {
                 size_t simIndex = 0;
                 for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
@@ -220,7 +236,8 @@ namespace GSL
             NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
             mtx.lock();
             nodeResiduals.push_back({sourceNode, 0, 0});
-            nodeResiduals.back().residual = result.residual / confidenceSum;
+            nodeResiduals.back().residual = result.residual + (totalConfidence - confidenceSum) * defaultResidual;
+            nodeResiduals.back().residual /= confidenceSum;
             nodeResiduals.back().confidenceSum = confidenceSum;
             GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}", sourceNode->id, nodeResiduals.back().residual, nodeResiduals.back().confidenceSum);
 
