@@ -1,6 +1,7 @@
 #include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
+#include "gsl_server/algorithms/GraphGSL/NACCompare.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #if USE_GUI
 
@@ -204,9 +205,9 @@ namespace GSL
                 gsl->simulationSystem.Reset();
 
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Default residual", &gsl->defaultResidual, 1e-6, 0.0, 1.0, "%.2e");
+            ImGui::DragFloat("Default residual", &NACCeres::defaultResidual, 1e-6, 0.0, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 0.001, 0.001, 1);
+            ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 1e-3, 0.001, 1, "%.2e");
             if (ImGui::Button("Evaluate Source Probs"))
             {
                 gsl->functionQueue.submit([this]()

@@ -23,6 +23,7 @@ namespace GSL
         gmrfw::CGMRF_map::Parameters gmrf_parameters;
         Map2D completeMap;
 
+        size_t TotalFreeCellsCount();
         std::vector<CellIdentifier> GetAllFreeCells();
         MultiGrid<float> GetAllSourceProbs();
         MultiGrid<KernelDMVW::KernelCell> GetAllKernelCells();

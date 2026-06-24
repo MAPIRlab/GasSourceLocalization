@@ -224,6 +224,19 @@ namespace GSL
         return occMap;
     }
 
+    size_t Graph::TotalFreeCellsCount()
+    {
+        size_t count = 0;
+        for (auto node : nodes)
+        {
+            if (auto room = As<RoomNode>(node))
+            {
+                count += room->GetOccupancy().metadata.numFreeCells;
+            }
+        }
+        return count;
+    }
+
     std::vector<CellIdentifier> Graph::GetAllFreeCells()
     {
         std::vector<CellIdentifier> freeCells;

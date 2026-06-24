@@ -177,19 +177,8 @@ namespace GSL
             std::vector<float> measured;
             std::vector<float> uncertainty;
 
-            float totalConfidence = 0;
-            for (auto node : graph.nodes)
-            {
-                if (auto room = As<RoomNode>(node))
-                {
-                    Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
-                    totalConfidence += std::accumulate(measuredLocal.data.begin(), measuredLocal.data.end(), 0.0f,
-                                                       [](float acc, const KernelDMVW::KernelCell& cell)
-                                                       {
-                                                           return acc + cell.confidence;
-                                                       });
-                }
-            }
+            float skippedCellsResidual = 0; // to reduce computational complexity, we are going to avoid adding 0-confidence cells to the optimization problem
+                                            // we can calculate what their residual should be anyways, since at 0 confidence it is actually a constant
 
             // iterate over all the simulated maps and record the simulated-measured-confidence triplets
             {
@@ -200,7 +189,11 @@ namespace GSL
                     for (const auto& [room, localSimMap] : simulation.gasMaps)
                     {
                         if (room == sourceNode)
+                        {
+                            if (simIndex == 0)
+                                skippedCellsResidual += room->GetOccupancy().metadata.numFreeCells * NACCeres::defaultResidual;
                             continue;
+                        }
 
                         Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
                         for (size_t i = 0; i < localSimMap.size(); i++)
@@ -208,8 +201,13 @@ namespace GSL
                             if (!measuredLocal.occupancy.at(i))
                                 continue;
                             KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
+
                             if (cell.confidence < 0.05)
+                            {
+                                if (simIndex == 0)
+                                    skippedCellsResidual += NACCeres::defaultResidual;
                                 continue;
+                            }
 
                             if (simIndex == 0)
                             {
@@ -217,6 +215,7 @@ namespace GSL
                                 measured.push_back(cell.meanAndVariance.mean);
                                 uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
                             }
+
                             simulated.at(cellIdx).push_back(localSimMap.at(i));
 
                             cellIdx++;
@@ -235,11 +234,19 @@ namespace GSL
 
             NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
             mtx.lock();
+            if (!std::isfinite(result.residual))
+                result.residual = 0;
+
             nodeResiduals.push_back({sourceNode, 0, 0});
-            nodeResiduals.back().residual = result.residual + (totalConfidence - confidenceSum) * defaultResidual;
-            nodeResiduals.back().residual /= confidenceSum;
+            nodeResiduals.back().residual = result.residual + skippedCellsResidual;
+            nodeResiduals.back().residual /= graph.TotalFreeCellsCount();
             nodeResiduals.back().confidenceSum = confidenceSum;
-            GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}", sourceNode->id, nodeResiduals.back().residual, nodeResiduals.back().confidenceSum);
+            GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}. "
+                     "Scales: {:2f}",
+                     sourceNode->id,
+                     nodeResiduals.back().residual,
+                     nodeResiduals.back().confidenceSum,
+                     fmt::join(result.scales.begin(), result.scales.end(), ", "));
 
             // store the scaled sum of the simulation results, to later evaluate the most interesting points for future measurement
             CellIdentifier id{.node = sourceNode.get(), .indices = CellIdentifier::WHOLE_NODE};

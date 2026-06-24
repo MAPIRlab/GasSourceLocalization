@@ -31,6 +31,7 @@ namespace GSL::NAC
 // ceres version
 namespace GSL::NACCeres
 {
+    inline float defaultResidual = 1e-2;
     struct SingleScale
     {
         double scale;

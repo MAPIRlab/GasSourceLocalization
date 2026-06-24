@@ -108,7 +108,7 @@ namespace GSL::NACCeres
     T EvaluateScale(T scaledSimulated, T observed, T uncertainty)
     {
         T diff = ceres::abs(ceres::log(observed + T(1)) - ceres::log(scaledSimulated + T(1)));
-        diff = ceres::lerp(diff, T(0), uncertainty);
+        diff = ceres::lerp(diff, T(defaultResidual), uncertainty);
         return diff;
     }
 
@@ -140,9 +140,19 @@ namespace GSL::NACCeres
 
         // get the residual as a goodness of fit indicator
         ceres::Problem::EvaluateOptions evaluate_options;
+        evaluate_options.apply_loss_function = false;
+        
+        // the cost reported by ceres has the squaring and loss function baked in, 
+        // which makes it difficult for us to omit low-confidence cells from the optimization (even though their residual contribution should be constant)
+        // so, instead, we'll take the raw residuals and manually sum them up as the final cost metric
         double cost;
-        problem.Evaluate(evaluate_options, &cost, nullptr, nullptr, nullptr);
-        return cost;
+        int num_residuals = problem.NumResiduals();
+        std::vector<double> raw_residuals(num_residuals);
+
+        problem.Evaluate(evaluate_options, &cost, &raw_residuals, nullptr, nullptr);
+        
+        double residualsSum = std::accumulate(raw_residuals.begin(), raw_residuals.end(), 0.0);
+        return residualsSum;
     }
 
     SingleScale FitSingleScale(const std::vector<float>& simulated,
@@ -221,7 +231,10 @@ namespace GSL::NACCeres
         }
 
         for (size_t i = 0; i < result.scales.size(); i++)
+        {
             problem.SetParameterLowerBound(scale_pointers.at(i), 0, 0.0);
+            problem.SetParameterUpperBound(scale_pointers.at(i), 0, 500.0);
+        }
 
         // Run the solver!
         result.residual = Solve(problem);
