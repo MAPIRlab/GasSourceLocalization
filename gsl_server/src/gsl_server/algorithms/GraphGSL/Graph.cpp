@@ -166,10 +166,10 @@ namespace GSL
             for (int i = 0; i < 3; i++)
             {
                 accepted = accepted && gmrf->insertObservation_GMRF(
-                                            speed,
-                                            direction,
-                                            sigma, sigma,
-                                            position.x, position.y);
+                                           speed,
+                                           direction,
+                                           sigma, sigma,
+                                           position.x, position.y);
             }
 
             if (!accepted)
@@ -298,10 +298,9 @@ namespace GSL
                 }
             }
 
-            ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
-
             // node marker
             {
+                ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::CYLINDER;
@@ -312,8 +311,15 @@ namespace GSL
                 marker.pose.position.x = position.x;
                 marker.pose.position.y = position.y;
                 marker.pose.position.z = markerHeight;
-                marker.id = id;
-                id++;
+                marker.id = id++;
+                array.markers.push_back(marker);
+
+                // duplicate a bit wider and shorter for an "outline" effect
+                marker.scale.x = 0.35;
+                marker.scale.y = 0.35;
+                marker.scale.z = 0.03;
+                marker.color = Utils::create_color(0, 0, 0);
+                marker.id = id++;
                 array.markers.push_back(marker);
             }
 
