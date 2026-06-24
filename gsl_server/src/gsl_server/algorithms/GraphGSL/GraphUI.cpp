@@ -93,9 +93,7 @@ namespace GSL
             ImGui::DragFloat("Node separation", &gsl->graph.vizOptions.nodeSeparationViz, 0.005, 1., 10.);
             if (ImGui::Button("Update wind map"))
                 gsl->functionQueue.submit([this]()
-                                          {
-                                              gsl->UpdateWindMaps();
-                                          });
+                                          { gsl->UpdateWindMaps(); });
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Max concentration", &gsl->graph.vizOptions.maxConcentration, 0.1, 0., 100.);
@@ -134,9 +132,7 @@ namespace GSL
             size_t previousIndex = selectedNodeData.nodeIndex;
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Selected Node", gsl->graph.nodes, selectedNodeData.nodeIndex, [](auto& node)
-                               {
-                                   return node->id;
-                               });
+                               { return node->id; });
             auto node = gsl->graph.nodes.at(selectedNodeData.nodeIndex);
             if (selectedNodeData.nodeIndex != previousIndex)
             {
@@ -214,8 +210,7 @@ namespace GSL
                                           {
                                               simulationOptions.simulationEnabled = false;
                                               gsl->EvaluateRoomProbabilities();
-                                              simulationOptions.simulationEnabled = true;
-                                          });
+                                              simulationOptions.simulationEnabled = true; });
             }
 
 #if ENABLE_NAIVE_EVALUATION
@@ -226,8 +221,7 @@ namespace GSL
                                           {
                                               simulationOptions.simulationEnabled = false;
                                               gsl->EvaluateSourceProbabilitiesInAllRooms();
-                                              simulationOptions.simulationEnabled = true;
-                                          });
+                                              simulationOptions.simulationEnabled = true; });
             }
             if (ImGui::Button("Naive Source Probs"))
             {
@@ -235,14 +229,11 @@ namespace GSL
                                           {
                                               simulationOptions.simulationEnabled = false;
                                               gsl->EvaluateProbabilitiesNaive();
-                                              simulationOptions.simulationEnabled = true;
-                                          });
+                                              simulationOptions.simulationEnabled = true; });
             }
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Naive simulation viz", gsl->naiveCompleteMaps, gsl->naiveSimulationIndex, [](auto& map)
-                               {
-                                   return fmt::format("{}", map.source->GetPoint());
-                               });
+                               { return fmt::format("{}", map.source->GetPoint()); });
 #endif
 
             ImGui::EndDisabled();
@@ -298,9 +289,7 @@ namespace GSL
                 ImGui::PushID("node");
                 ImGui::SetNextItemWidth(120);
                 ImGui::ComboSelect("Doorway", node->doorways, simulationOptions.selectedArcIdx, [](auto& door)
-                                   {
-                                       return door->GetName();
-                                   });
+                                   { return door->GetName(); });
                 ImGui::PopID();
             }
         }

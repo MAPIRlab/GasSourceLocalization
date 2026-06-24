@@ -32,7 +32,7 @@ namespace GSL
     private:
         Graph graph;
         Graph_internal::SimulationSystem simulationSystem;
-        float likelihoodSigma = 5e-3;
+        float likelihoodSigma = 1e-3;
 
         struct PredictedMap
         {
@@ -57,7 +57,8 @@ namespace GSL
             float residual;
             float confidenceSum;
         };
-        void CalculateNodeProbabilities(const std::vector<NodeResult>& residuals);
+        void GetNodeResidual(std::shared_ptr<PlaceNode> sourceNode, std::vector<NodeResult>& nodeResiduals, std::mutex& mtx);
+        void CalculateNodeProbabilities(const std::vector<NodeResult>& nodeResiduals);
 
         struct Pubs
         {

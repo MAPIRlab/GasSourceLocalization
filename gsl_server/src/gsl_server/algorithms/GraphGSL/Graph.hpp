@@ -46,7 +46,7 @@ namespace GSL
         {
             float nodeSeparationViz = 1; // multiplier for the origin of each node (for visualization only) Makes it easier to see which area corresponds to which node
             float probabilityVizMax = 5e-3;
-            float probabilityVizMin = 1e-7;
+            float probabilityVizMin = 1e-5;
             float maxConcentration = 10.0;
             float maxInfoGain = 1e-2;
         } vizOptions;

@@ -313,7 +313,7 @@ namespace GSL
 
             // node marker
             {
-                ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
+                ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], -0.1, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::CYLINDER;

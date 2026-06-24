@@ -133,6 +133,8 @@ namespace GSL
         expectedGasMaps.clear();
         simulationSystem.Reset();
         ThreadPool pool;
+
+        // Run the simulations
         {
             ScopedStopwatch watch("Room simulations");
             // simulate all possible room sources
@@ -145,160 +147,23 @@ namespace GSL
 
                 for (auto doorway : roomNode->doorways)
                     pool.QueueJob([&, doorway]()
-                                  {
-                                      simulationSystem.SimulateEntireGraph(doorway);
-                                  });
+                                  { simulationSystem.SimulateEntireGraph(doorway); });
             }
             pool.Wait();
         }
 
+        // calculate the residuals
         std::vector<NodeResult> nodeResiduals;
-        nodeResiduals.reserve(graph.nodes.size());
-
-        // get the measured concentration maps
-        std::map<std::shared_ptr<RoomNode>, Grid2D<KernelDMVW::KernelCell>> measuredMaps;
-        for (auto& node : graph.nodes)
-        {
-            auto room = As<RoomNode>(node);
-            if (!room)
-                continue;
-            measuredMaps.insert({room, room->GetGasMap()});
-        }
-
-        std::mutex mtx;
-        auto loop_body = [&](const auto sourceNode)
-        {
-            // to make the layout convenient for the optimization, each row corresponds to a cell in the map, and each column to a simulation
-            std::vector<std::vector<float>> simulated;
-            simulated.reserve(300);
-
-            // while we fill a row of the matrix for each simulation out of this node, we only want one copy of the measurements and their uncertainty
-            // if we are done recording those, skip them on the next iteration
-            std::vector<float> measured;
-            std::vector<float> uncertainty;
-
-            float skippedCellsResidual = 0; // to reduce computational complexity, we are going to avoid adding 0-confidence cells to the optimization problem
-                                            // we can calculate what their residual should be anyways, since at 0 confidence it is actually a constant
-
-            // iterate over all the simulated maps and record the simulated-measured-confidence triplets
-            {
-                size_t simIndex = 0;
-                for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
-                {
-                    size_t cellIdx = 0; // count the valid cells
-                    for (const auto& [room, localSimMap] : simulation.gasMaps)
-                    {
-                        if (room == sourceNode)
-                        {
-                            if (simIndex == 0)
-                                skippedCellsResidual += room->GetOccupancy().metadata.numFreeCells * NACCeres::defaultResidual;
-                            continue;
-                        }
-
-                        Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
-                        for (size_t i = 0; i < localSimMap.size(); i++)
-                        {
-                            if (!measuredLocal.occupancy.at(i))
-                                continue;
-                            KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
-
-                            if (cell.confidence < 0.05)
-                            {
-                                if (simIndex == 0)
-                                    skippedCellsResidual += NACCeres::defaultResidual;
-                                continue;
-                            }
-
-                            if (simIndex == 0)
-                            {
-                                simulated.push_back(std::vector<float>());
-                                measured.push_back(cell.meanAndVariance.mean);
-                                uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
-                            }
-
-                            simulated.at(cellIdx).push_back(localSimMap.at(i));
-
-                            cellIdx++;
-                        }
-                    }
-                    simIndex++;
-                }
-            }
-
-            for (size_t i = 0; i < simulated.size(); i++)
-                GSL_ASSERT(simulated.at(i).size() == simulated.at(0).size());
-
-            float confidenceSum = 0;
-            for (const auto& u : uncertainty)
-                confidenceSum += 1 - u;
-
-            NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
-            mtx.lock();
-            if (!std::isfinite(result.residual))
-                result.residual = 0;
-
-            nodeResiduals.push_back({sourceNode, 0, 0});
-            nodeResiduals.back().residual = result.residual + skippedCellsResidual;
-            nodeResiduals.back().residual /= graph.TotalFreeCellsCount();
-            nodeResiduals.back().confidenceSum = confidenceSum;
-            GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}. "
-                     "Scales: {:2f}",
-                     sourceNode->id,
-                     nodeResiduals.back().residual,
-                     nodeResiduals.back().confidenceSum,
-                     fmt::join(result.scales.begin(), result.scales.end(), ", "));
-
-            // store the scaled sum of the simulation results, to later evaluate the most interesting points for future measurement
-            CellIdentifier id{.node = sourceNode.get(), .indices = CellIdentifier::WHOLE_NODE};
-            expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
-            mtx.unlock();
-
-            if (std::isfinite(result.residual))
-            {
-                float scaleSum = std::accumulate(result.scales.begin(), result.scales.end(), 0.0f);
-                size_t simIndex = 0;
-                for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
-                {
-                    for (const auto& [room, localSimMap] : simulation.gasMaps)
-                    {
-                        if (room == sourceNode)
-                            continue;
-                        if (!expectedGasMaps[id].map->gasMaps.contains(room))
-                            expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
-#if SCALE_EXPECTED_MAPS
-                        for (size_t i = 0; i < localSimMap.size(); i++)
-                            expectedGasMaps[id].map->gasMaps[room].at(i) += std::log(result.scales.at(simIndex) * localSimMap.at(i) + 1);
-#else
-                        for (size_t i = 0; i < localSimMap.size(); i++)
-                            expectedGasMaps[id].map->gasMaps[room].at(i) += (result.scales.at(simIndex) / scaleSum) * localSimMap.at(i);
-#endif
-                    }
-
-                    simIndex++;
-                }
-            }
-        };
-
         {
             ScopedStopwatch watch("Room residuals");
 
+            nodeResiduals.reserve(graph.nodes.size());
+            std::mutex mtx;
             for (const auto& node : graph.nodes)
-                pool.QueueJob(std::bind(loop_body, node));
+                pool.QueueJob([&]()
+                              { GetNodeResidual(node, nodeResiduals, mtx); });
             pool.Wait();
         }
-
-        // if we got a NaN residual (we could not find the optimal scale, probably because there were 0 measurements outside the room),
-        // just set the residual to the room to the average of the rest of them as a compromise
-        float averageResidual = std::accumulate(nodeResiduals.begin(), nodeResiduals.end(), 0.0f, [](float acc, const auto& item)
-                                                {
-                                                    if (std::isfinite(item.residual))
-                                                        return acc + item.residual;
-                                                    return acc;
-                                                }) /
-                                nodeResiduals.size();
-        for (NodeResult& item : nodeResiduals)
-            if (!std::isfinite(item.residual))
-                item.residual = averageResidual;
 
         // turn the residuals into probabilities
         CalculateNodeProbabilities(nodeResiduals);
@@ -308,14 +173,11 @@ namespace GSL
         // if the fine-level simulations are not as good as the first (room-level) estimates, we might need to look at the second-best room as well
         // and so on, until we find an actually good candidate
         std::ranges::sort(nodeResiduals, [](const auto& a, const auto& b)
-                          {
-                              return a.residual < b.residual;
-                          });
+                          { return a.residual < b.residual; });
 
         constexpr float doFineLevelThreshold = 0.3;
         std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
-        // if (graph.roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
-        if (false)
+        if (graph.roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
         {
             size_t i = 0;
             bool done = false;
@@ -330,7 +192,7 @@ namespace GSL
                     nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
                     GSL_TRACE("Lowest residual for node {}: {:.3e}", room->id, lowestResidual);
 
-                    constexpr float toleranceFactor = 0.;
+                    constexpr float toleranceFactor = 1.0;
                     if (i + 1 == nodeResiduals.size())
                     {
                         GSL_TRACE("No more nodes available for fine-level simulation");
@@ -476,16 +338,13 @@ namespace GSL
                                       for (size_t i = 0; i < localSimMap.size(); i++)
                                           expectedGasMaps[id].map->gasMaps[room].at(i) = localSimMap.at(i);
 #endif
-                                  }
-                              });
+                                  } });
             }
             pool.Wait();
 
             // sort the results by the residuals
             std::ranges::sort(residualsThisLevel, [](const auto& a, const auto& b)
-                              {
-                                  return a.second < b.second;
-                              });
+                              { return a.second < b.second; });
 
             constexpr float proportionBest = 0.15;
             // subdivide the nodes with the best residuals and add the smaller bits to the queue
@@ -535,6 +394,113 @@ namespace GSL
         return lowestResidual;
     }
 
+    void GraphGSL::GetNodeResidual(std::shared_ptr<PlaceNode> sourceNode, std::vector<NodeResult>& nodeResiduals, std::mutex& mtx)
+    {
+        // to make the layout convenient for the optimization, each row corresponds to a cell in the map, and each column to a simulation
+        std::vector<std::vector<float>> simulated;
+        simulated.reserve(300);
+
+        // while we fill a row of the matrix for each simulation out of this node, we only want one copy of the measurements and their uncertainty
+        // if we are done recording those, skip them on the next iteration
+        std::vector<float> measured;
+        std::vector<float> uncertainty;
+
+        float skippedCellsResidual = 0; // to reduce computational complexity, we are going to avoid adding 0-confidence cells to the optimization problem
+                                        // we can calculate what their residual should be anyways, since at 0 confidence it is actually a constant
+
+        // iterate over all the simulated maps and record the simulated-measured-confidence triplets
+        {
+            size_t simIndex = 0;
+            for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
+            {
+                size_t cellIdx = 0; // count the valid cells
+                for (const auto& [room, localSimMap] : simulation.gasMaps)
+                {
+                    if (room == sourceNode)
+                    {
+                        if (simIndex == 0)
+                            skippedCellsResidual += room->GetOccupancy().metadata.numFreeCells * NACCeres::defaultResidual;
+                        continue;
+                    }
+
+                    Grid2D<KernelDMVW::KernelCell> measuredLocal = room->GetGasMap();
+                    for (size_t i = 0; i < localSimMap.size(); i++)
+                    {
+                        if (!measuredLocal.occupancy.at(i))
+                            continue;
+                        KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
+
+                        if (cell.confidence < 0.05)
+                        {
+                            if (simIndex == 0)
+                                skippedCellsResidual += NACCeres::defaultResidual;
+                            continue;
+                        }
+
+                        if (simIndex == 0)
+                        {
+                            simulated.push_back(std::vector<float>());
+                            measured.push_back(cell.meanAndVariance.mean);
+                            uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
+                        }
+
+                        simulated.at(cellIdx).push_back(localSimMap.at(i));
+
+                        cellIdx++;
+                    }
+                }
+                simIndex++;
+            }
+        }
+
+        float confidenceSum = 0;
+        for (const auto& u : uncertainty)
+            confidenceSum += 1 - u;
+
+        NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
+        mtx.lock();
+
+        nodeResiduals.push_back({sourceNode, 0, 0});
+        nodeResiduals.back().residual = (std::isfinite(result.residual) ? result.residual : 0) + skippedCellsResidual;
+        nodeResiduals.back().residual /= graph.TotalFreeCellsCount();
+        nodeResiduals.back().confidenceSum = confidenceSum;
+        GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}. Scales: {:.2f}",
+                 sourceNode->id,
+                 nodeResiduals.back().residual,
+                 nodeResiduals.back().confidenceSum,
+                 fmt::join(result.scales.begin(), result.scales.end(), ", "));
+
+        // store the scaled sum of the simulation results, to later evaluate the most interesting points for future measurement
+        CellIdentifier id{.node = sourceNode.get(), .indices = CellIdentifier::WHOLE_NODE};
+        expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
+        mtx.unlock();
+
+        if (std::isfinite(result.residual))
+        {
+            float scaleSum = std::accumulate(result.scales.begin(), result.scales.end(), 0.0f);
+            size_t simIndex = 0;
+            for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
+            {
+                for (const auto& [room, localSimMap] : simulation.gasMaps)
+                {
+                    if (room == sourceNode)
+                        continue;
+                    if (!expectedGasMaps[id].map->gasMaps.contains(room))
+                        expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
+#if SCALE_EXPECTED_MAPS
+                    for (size_t i = 0; i < localSimMap.size(); i++)
+                        expectedGasMaps[id].map->gasMaps[room].at(i) += std::log(result.scales.at(simIndex) * localSimMap.at(i) + 1);
+#else
+                    for (size_t i = 0; i < localSimMap.size(); i++)
+                        expectedGasMaps[id].map->gasMaps[room].at(i) += (result.scales.at(simIndex) / scaleSum) * localSimMap.at(i);
+#endif
+                }
+
+                simIndex++;
+            }
+        }
+    }
+
     std::pair<float, float> GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
     {
         ZoneScopedN("Residual calculation");
@@ -561,13 +527,9 @@ namespace GSL
         auto EvaluateSorting = [&]() -> float
         {
             std::ranges::sort(measuredValues, [](const CellValue& a, const CellValue& b)
-                              {
-                                  return a.value < b.value;
-                              });
+                              { return a.value < b.value; });
             std::ranges::sort(simulatedValues, [](const CellValue& a, const CellValue& b)
-                              {
-                                  return a.value < b.value;
-                              });
+                              { return a.value < b.value; });
 
             for (size_t i = 0; i < measuredValues.size(); i++)
                 normalizedOrders[measuredValues[i].kernelCell].measured = float(i) / measuredValues.size();
@@ -592,6 +554,7 @@ namespace GSL
         std::vector<float> simulated;
         std::vector<float> uncertainty;
 
+        float skippedCellsResidual = 0;
         for (const auto& [room, localSimMap] : simMap.gasMaps)
         {
             // add any relevant cells to the comparison arrays
@@ -603,7 +566,10 @@ namespace GSL
                     continue;
                 KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
                 if (cell.confidence < 0.05)
+                {
+                    skippedCellsResidual += NACCeres::defaultResidual;
                     continue;
+                }
 
                 measured.push_back(cell.meanAndVariance.mean);
                 simulated.push_back(localSimMap.at(i));
@@ -618,11 +584,10 @@ namespace GSL
 #if MEASUREMENT_SORTING
         return EvaluateSorting();
 #else
-        float confidenceSum = 0;
-        for (const auto& u : uncertainty)
-            confidenceSum += 1 - u;
         NACCeres::SingleScale result = NACCeres::FitSingleScale(simulated, measured, uncertainty);
-        return {result.residual / confidenceSum, result.scale};
+
+        float finalResidual = result.residual + skippedCellsResidual;
+        return {finalResidual / graph.TotalFreeCellsCount(), result.scale};
 #endif
     }
 
