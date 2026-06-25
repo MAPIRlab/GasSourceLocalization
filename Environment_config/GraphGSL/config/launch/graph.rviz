@@ -42,6 +42,82 @@ Visualization Manager:
       Plane Cell Count: 100
       Reference Frame: <Fixed Frame>
       Value: false
+    - Alpha: 0.30000001192092896
+      Class: rviz_default_plugins/RobotModel
+      Collision Enabled: false
+      Description File: ""
+      Description Source: Topic
+      Description Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /PioneerP3DX/robot_description
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        PioneerP3DX_base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_body:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_green_button:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_head:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_hokuyo_front:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_left_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_neck:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_red_button:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_right_wheel:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        PioneerP3DX_screen:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Mass Properties:
+        Inertia: false
+        Mass: false
+      Name: RobotModel
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
     - Alpha: 0.699999988079071
       Binary representation: false
       Binary threshold: 100
@@ -352,7 +428,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 6.285008430480957
+      Angle: 0
       Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
@@ -362,11 +438,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 72.6842269897461
+      Scale: 61.3039436340332
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 5.289458274841309
-      Y: 5.513202667236328
+      X: 10.153952598571777
+      Y: 6.475029468536377
     Saved: ~
 Window Geometry:
   Displays:

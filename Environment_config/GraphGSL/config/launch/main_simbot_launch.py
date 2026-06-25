@@ -15,7 +15,7 @@ from launch.frontend.parse_substitution import parse_substitution
 def launch_arguments():
     return [
         DeclareLaunchArgument("scenario", default_value="Exp_C"),
-        DeclareLaunchArgument("config", default_value="config1"),
+        DeclareLaunchArgument("configuration", default_value="config1"),
         DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),
     ]
@@ -24,7 +24,7 @@ def launch_arguments():
 
 def launch_setup(context, *args, **kwargs):
     scenario = LaunchConfiguration("scenario").perform(context)
-    configuration = LaunchConfiguration("config").perform(context)
+    configuration = LaunchConfiguration("configuration").perform(context)
     simulation = LaunchConfiguration("simulation").perform(context)
     gsl_call = [
         GroupAction(actions=[
@@ -105,7 +105,7 @@ def launch_setup(context, *args, **kwargs):
         launch_arguments={
             "use_rviz": "False",
             "scenario": LaunchConfiguration("scenario").perform(context),
-            "config": LaunchConfiguration("config").perform(context),
+            "config": LaunchConfiguration("configuration").perform(context),
             "simulation": LaunchConfiguration("simulation").perform(context)
         }.items(),
     )
