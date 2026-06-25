@@ -27,6 +27,7 @@ namespace GSL::KernelDMVW
         GasMap(Grid2D<Occupancy> occupancyMap, const Params& parameters);
         void AddReading(float concentration, Vector2 wind, Vector2 position);
         const Grid2D<KernelCell> GetMap() { return Grid2D<KernelCell>(cells, occupancy, metadata); }
+        void Reset();
 
     private:
         std::vector<KernelCell> cells;

@@ -17,6 +17,7 @@ namespace GSL
         size_t GetCorrespondingNodeIdx(Vector2 position);
         void AddObservation(Vector2 position, Vector2 wind, float gasConcentration);
         void UpdateAllWindMaps();
+        void ResetObservations();
 
         static gmrfw::TOccupancyMap ToGMRFOcc(const Grid2D<Occupancy> occupancy);
         std::shared_ptr<gmrfw::CGMRF_map> gmrf;

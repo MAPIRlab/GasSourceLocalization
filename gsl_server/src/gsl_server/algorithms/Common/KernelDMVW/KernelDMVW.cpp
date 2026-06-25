@@ -49,7 +49,7 @@ namespace GSL::KernelDMVW
             Vector2 pos = grid.metadata.indicesToCoordinates(indices);
             Vector2 offset = pos - measurePosition;
 
-            float maxW = Utils::evaluate2DGaussian({0,0}, finalSigma, windAngle);
+            float maxW = Utils::evaluate2DGaussian({0, 0}, finalSigma, windAngle);
             float weight = Utils::evaluate2DGaussian(offset, finalSigma, windAngle) / maxW;
             KernelCell& cell = grid.dataAt(indices);
             weight = std::pow(weight, params.omegaConcentrationSpatial);
@@ -57,6 +57,11 @@ namespace GSL::KernelDMVW
             cell.omega += weight;
             cell.confidence = 1 - std::exp(-cell.omega / params.sigmaOmega);
         }
+    }
+
+    void GasMap::Reset()
+    {
+        cells.assign(occupancy.size(), KernelCell());
     }
 
 } // namespace GSL::KernelDMVW

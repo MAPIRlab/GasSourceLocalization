@@ -118,17 +118,11 @@ namespace GSL
         naiveEntireMap->UpdateWindMap(graph.gmrf);
     }
 
-    // // TODO we probably don't want to override this at all! this is here for testing purposes
-    // Vector2 GraphGSL::windCallback(const olfaction_msgs::msg::Anemometer::SharedPtr msg)
-    // {
-    //     Vector2 wind = Algorithm::windCallback(msg);
-    //     graph.AddObservation(currentRobotPosition, wind, 0);
-    //     UpdateWindMaps(); // TODO remove this! it's a test
-    //     return wind;
-    // }
-
     void GraphGSL::EvaluateRoomProbabilities()
     {
+        //TODO this is a test. There probably is a better way to adjust this value
+        NACCeres::defaultResidual = 50.f / graph.TotalFreeCellsCount();
+        
         UpdateWindMaps();
         expectedGasMaps.clear();
         simulationSystem.Reset();
@@ -258,7 +252,7 @@ namespace GSL
         }
 
         UpdateExpectedValue();
-        // UpdateInformationGain();
+        UpdateInformationGain();
     }
 
     float GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)

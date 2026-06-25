@@ -88,6 +88,8 @@ namespace GSL
                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
                          ImGuiWindowFlags_NoCollapse);
         {
+            if (ImGui::Button("Clear observations"))
+                gsl->graph.ResetObservations();
             ImGui::Checkbox("Republish observations", &gsl->republishObservations);
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Node separation", &gsl->graph.vizOptions.nodeSeparationViz, 0.005, 1., 10.);

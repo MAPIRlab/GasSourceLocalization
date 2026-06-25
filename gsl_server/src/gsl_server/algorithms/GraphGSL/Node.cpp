@@ -171,6 +171,12 @@ namespace GSL
         return CellIdentifier{this, gridMetadata.indices2D(index)};
     }
 
+    void RoomNode::ResetObservations()
+    {
+        gasMap.Reset();
+        wind.assign(wind.size(), Vector2{0, 0});
+    }
+
     Grid2D<Vector2> RoomNode::WindAsGrid()
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);

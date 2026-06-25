@@ -206,14 +206,19 @@ namespace GSL
         }
     }
 
+    void Graph::ResetObservations()
+    {
+        gmrf->clearObservations_GMRF();
+        for (auto node : nodes)
+            node->ResetObservations();
+    }
+
     gmrfw::TOccupancyMap Graph::ToGMRFOcc(const Grid2D<Occupancy> occupancy)
     {
         gmrfw::TOccupancyMap occMap;
 
         std::transform(occupancy.data.begin(), occupancy.data.end(), std::back_inserter(occMap.data), [](const Occupancy value) -> int8_t
-                       {
-                           return static_cast<int8_t>(value);
-                       });
+                       { return static_cast<int8_t>(value); });
 
         occMap.width = occupancy.metadata.dimensions.x;
         occMap.height = occupancy.metadata.dimensions.y;
@@ -313,7 +318,7 @@ namespace GSL
 
             // node marker
             {
-                ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], -0.1, 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
+                ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0., 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::CYLINDER;
@@ -512,9 +517,7 @@ namespace GSL
             std::vector<float> info;
             info.reserve(roomNode->GetSourceProbabilities().data.size());
             std::ranges::transform(roomNode->GetExpectedVariances().data, std::back_inserter(info), [](Utils::RunningVariance& var) -> float
-                                   {
-                                       return var.variance;
-                                   });
+                                   { return var.variance; });
             Grid2D<float> grid(info, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
             Marker marker = Utils::createPointsMarker(grid, 0, vizOptions.maxInfoGain, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Jet, 0.3);
             marker.id = id++;

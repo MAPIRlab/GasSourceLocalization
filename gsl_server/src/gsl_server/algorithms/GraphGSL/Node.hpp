@@ -48,6 +48,7 @@ namespace GSL
         const std::shared_ptr<DoorwayNode> GetDoorway(std::string_view name);
         virtual std::vector<Vector2> RepresentativePoints() const { return {GetPosition()}; }
         CellIdentifier GetNodeIdentifier() { return CellIdentifier{this, CellIdentifier::WHOLE_NODE}; }
+        virtual void ResetObservations(){}
 
         std::vector<std::shared_ptr<DoorwayNode>> doorways;
         std::string id;
@@ -77,6 +78,7 @@ namespace GSL
         std::vector<Vector2> RepresentativePoints() const override;
         const VisibilityMap& GetVisibilityMap() const { return visibilityMap; }
         CellIdentifier GetCellIdentifier(size_t index);
+        void ResetObservations() override;
 
     private:
         Grid2D<Vector2> WindAsGrid();
