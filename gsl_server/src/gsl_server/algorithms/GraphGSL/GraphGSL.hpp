@@ -27,29 +27,6 @@ namespace GSL
         std::pair<float, float> ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap);
         long double ProbFromResidual(long double residual);
         void UpdateExpectedValue();
-        void UpdateInformationGain();
-        
-    private:
-        Graph graph;
-        Graph_internal::SimulationSystem simulationSystem;
-        float likelihoodSigma = 1e-3;
-
-        struct PredictedMap
-        {
-            std::shared_ptr<Graph_internal::CompleteMap> map;
-        };
-        std::map<CellIdentifier, PredictedMap> expectedGasMaps;
-
-#define ENABLE_NAIVE_EVALUATION 1
-#if ENABLE_NAIVE_EVALUATION
-        void EvaluateSourceProbabilitiesInAllRooms();
-        void EvaluateProbabilitiesNaive();
-        Graph_internal::NaiveSimulationSystem naiveSimulationSystem;
-        std::shared_ptr<RoomNode> naiveEntireMap;
-        std::vector<Graph_internal::CompleteMap> naiveCompleteMaps;
-        rclcpp::Publisher<MarkerArray>::SharedPtr naiveMapsPub;
-        size_t naiveSimulationIndex;
-#endif
 
         struct NodeResult
         {
@@ -60,6 +37,18 @@ namespace GSL
         void GetNodeResidual(std::shared_ptr<PlaceNode> sourceNode, std::vector<NodeResult>& nodeResiduals, std::mutex& mtx);
         void CalculateNodeProbabilities(const std::vector<NodeResult>& nodeResiduals);
 
+
+    private:
+        Graph graph;
+        Graph_internal::SimulationSystem simulationSystem;
+        float likelihoodSigma = 5e-4;
+        std::map<std::shared_ptr<class PlaceNode>, float> roomSourceProbabilities;
+        Vector2 expectedValue;
+        Utils::CovarianceMatrix cov;
+        float expectedValueProportion = 1.0;
+
+        // Visualization
+        //-----------------------------------
         struct Pubs
         {
             rclcpp::Publisher<MarkerArray>::SharedPtr graphPub;
@@ -77,15 +66,25 @@ namespace GSL
             std::shared_ptr<PlaceNode> selectedNode;
             size_t simulationIndex;
         } simulationViz;
-
         Utils::Time::Countdown visualizationCD;
 
-        Vector2 expectedValue;
-        Utils::CovarianceMatrix cov;
-        float expectedValueProportion = 1.0;
+        //----------------------------------
+        //----------------------------------
+        friend class MovingStateGraph;
 #if USE_GUI
         friend class GraphUI;
         GraphUI gui;
+#endif
+
+#define ENABLE_NAIVE_EVALUATION 1
+#if ENABLE_NAIVE_EVALUATION
+        void EvaluateSourceProbabilitiesInAllRooms();
+        void EvaluateProbabilitiesNaive();
+        Graph_internal::NaiveSimulationSystem naiveSimulationSystem;
+        std::shared_ptr<RoomNode> naiveEntireMap;
+        std::vector<Graph_internal::CompleteMap> naiveCompleteMaps;
+        rclcpp::Publisher<MarkerArray>::SharedPtr naiveMapsPub;
+        size_t naiveSimulationIndex;
 #endif
     };
 } // namespace GSL

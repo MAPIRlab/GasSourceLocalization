@@ -67,7 +67,7 @@ namespace GSL
             if (std::abs(from.x - to.x) > range || std::abs(from.y - to.y) > range)
                 return Visibility::OutOfRange;
 
-            auto set = at_c(from);
+            auto set = at(from);
             // if (!find(set, to))
             if (std::find(set.begin(), set.end(), to) == set.end())
                 return Visibility::NotVisible;
@@ -100,7 +100,7 @@ namespace GSL
             return Range<std::vector<Vector2Int>::iterator>::make_range(m_map.begin(), beginIndex, beginIndex + usedSize);
         }
 
-        const Range<std::vector<Vector2Int>::const_iterator> at_c(const Vector2Int& key) const
+        const Range<std::vector<Vector2Int>::const_iterator> at(const Vector2Int& key) const
         {
             size_t beginIndex = indexOf(key);
             size_t usedSize = m_map[beginIndex].x;

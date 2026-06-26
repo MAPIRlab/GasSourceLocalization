@@ -114,7 +114,7 @@ void GraphCreator::OnGraphUpdated()
     static auto graphpub = create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
     static auto occupancyPub = create_publisher<MarkerArray>("/gsl_occupancy", rclcpp::QoS(1).transient_local());
     graph = Graph::ReadFromDisk(rootDirectory, 0.1, {}, {});
-    MarkerArray graphmarker = graph.VisualizeGraph();
+    MarkerArray graphmarker = graph.VisualizeGraph({});
     graphpub->publish(graphmarker);
     MarkerArray occupancymarker = graph.VisualizeOccupancy();
     occupancyPub->publish(occupancymarker);

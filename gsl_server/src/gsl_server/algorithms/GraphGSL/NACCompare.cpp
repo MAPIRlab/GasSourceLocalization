@@ -233,7 +233,7 @@ namespace GSL::NACCeres
         for (size_t i = 0; i < result.scales.size(); i++)
         {
             problem.SetParameterLowerBound(scale_pointers.at(i), 0, 0.0);
-            problem.SetParameterUpperBound(scale_pointers.at(i), 0, 500.0);
+            problem.SetParameterUpperBound(scale_pointers.at(i), 0, 300.0);
         }
 
         // Run the solver!

@@ -252,6 +252,10 @@ namespace GSL::Graph_internal
                 max = std::max(max, localMax);
             }
 
+            // should not happen, but avoid NaNs just in case
+            if(max == 0)
+                max = 1.f;
+
             for (auto& [node, map] : completeGasMap.gasMaps)
             {
                 for (size_t i = 0; i < map.size(); i++)
@@ -329,7 +333,7 @@ namespace GSL::Graph_internal
                             GSL_ERROR("Loop detected with proportion >= 1. This is a failure of the model assumptions. "
                                       "Forcefully setting to 0.9 to avoid infinite gas!");
                             loopedProportion = 0.9;
-                            GSL_ASSERT(false); // catch the debugger, if present
+                            // GSL_ASSERT(false); // catch the debugger, if present
                         }
 
                         // since this is a loop, it is technically an infinite series: 1 + x + x*x...

@@ -121,8 +121,10 @@ namespace GSL::Utils
         {
             mean = 0;
             variance = 0;
-            weight_sum = 1e-12; // avoid NaNs if there are several 0-weight values
-            weight_squared_sum = 0;
+            
+            // avoid NaNs if there are several 0-weight values
+            weight_sum = 1e-10; 
+            weight_squared_sum = 1e-20; 
         }
 
     private:

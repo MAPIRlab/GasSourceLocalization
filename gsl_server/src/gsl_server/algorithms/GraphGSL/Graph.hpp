@@ -30,17 +30,14 @@ namespace GSL
         MultiGrid<KernelDMVW::KernelCell> GetAllKernelCells();
 
         // visualization
-        void AutoSetMaxInfoGain();
-        MarkerArray VisualizeGraph();
+        MarkerArray VisualizeGraph(const std::map<std::shared_ptr<PlaceNode>, float>& roomSourceProbabilities);
         MarkerArray VisualizeOccupancy();
         MarkerArray VisualizeGasReadings();
         MarkerArray VisualizeWind(std::shared_ptr<class RoomNode> roomNode);
         MarkerArray VisualizeMapSegmentation();
         MarkerArray VisualizeSourceProbs();
-        MarkerArray VisualizeInfoGain();
 
     public:
-        std::map<std::shared_ptr<class PlaceNode>, float> roomSourceProbabilities;
         std::vector<std::shared_ptr<class PlaceNode>> nodes;
 
         struct VisualizationOptions

@@ -3,8 +3,8 @@
     Each of the methods is guarded by preprocessor definitions so you can omit compiling them if you dont want to install their dependencies (see the CMakeLists)
 */
 
-#include <gsl_server/gsl_server.hpp>
 #include <gsl_server/algorithms/gsl_algorithms.hpp>
+#include <gsl_server/gsl_server.hpp>
 
 int main(int argc, char** argv)
 {
@@ -22,19 +22,7 @@ int main(int argc, char** argv)
         rclcpp::spin_some(gsl_node);
         if (gsl_node->m_activeGoal.get() != nullptr)
         {
-            //in debug mode, don't catch the exception! It prevents the debugger from automatically stopping in the offending line
-#if GSL_DEBUG
             gsl_node->execute(gsl_node->m_activeGoal);
-#else
-            try
-            {
-                gsl_node->execute(gsl_node->m_activeGoal);
-            }
-            catch (std::exception& e)
-            {
-                GSL_ERROR("Exception while running GSL: {}", e.what());
-            }
-#endif
 
             rclcpp::sleep_for(std::chrono::seconds(1));
             GSL_INFO_COLOR(fmt::terminal_color::blue, "DONE, CLOSING");
@@ -45,7 +33,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-//Main algorithm loop
+// Main algorithm loop
 //-------------------
 GSLResult GSLServer::runMethod(std::shared_ptr<GSL::Algorithm> algorithm)
 {
@@ -60,8 +48,7 @@ GSLResult GSLServer::runMethod(std::shared_ptr<GSL::Algorithm> algorithm)
     return algorithm->GetResult();
 }
 
-
-//ActionServer Setup
+// ActionServer Setup
 //-----------------
 rclcpp_action::GoalResponse GSLServer::handle_goal(const rclcpp_action::GoalUUID& uuid, std::shared_ptr<const DoGSL::Goal> goal)
 {
@@ -79,8 +66,7 @@ void GSLServer::handle_accepted(const std::shared_ptr<rclcpp_action::ServerGoalH
     m_activeGoal = goal_handle;
 }
 
-
-//Request processing
+// Request processing
 //---------------------
 void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> goal_handle)
 {
@@ -125,7 +111,8 @@ void GSLServer::execute(std::shared_ptr<rclcpp_action::ServerGoalHandle<DoGSL>> 
 std::shared_ptr<GSL::Algorithm> GSLServer::createAlgorithm(const std::string name)
 {
     if (false) // just so we can disable the first one with a preprocessor define without breaking the if
-    {}
+    {
+    }
 #if ENABLE_PLUME_TRACKING
     else if (name == SURGE_CAST_NAME)
         return GSL::CreateSurgeCast(shared_from_this());

@@ -9,7 +9,7 @@
 
 //Usage:
     //Is<>:
-    // BaseClass* ptr = new DerivedClassA();
+    // FirstClass* ptr = new DerivedClassA();
     // if(Is<DerivedClassA>(ptr))
     //      ...
     // else if(Is<DerivedClassB>(ptr))
@@ -17,7 +17,7 @@
 //------------------
 
     //As<>:
-    // BaseClass* ptr = new DerivedClassA();
+    // FirstClass* ptr = new DerivedClassA();
     // As<DerivedClassA>(ptr)->methodFromDerived();
 
 //----------------------------------
@@ -25,56 +25,56 @@
 
 
 // Raw
-template <typename Subclass, typename Baseclass>
-    requires(std::derived_from<Subclass, Baseclass>)
-Subclass* As(Baseclass* p)
+template <typename SecondClass, typename FirstClass>
+    requires(std::derived_from<SecondClass, FirstClass> || std::derived_from<FirstClass, SecondClass>)
+SecondClass* As(FirstClass* p)
 {
-    return dynamic_cast<Subclass*>(p);
+    return dynamic_cast<SecondClass*>(p);
 }
 
-template <typename Subclass, typename Baseclass>
-    requires(std::derived_from<Subclass, Baseclass>)
-bool Is(Baseclass* p)
+template <typename SecondClass, typename FirstClass>
+    requires(std::derived_from<SecondClass, FirstClass>)
+bool Is(FirstClass* p)
 {
-    return dynamic_cast<Subclass*>(p) != nullptr;
+    return dynamic_cast<SecondClass*>(p) != nullptr;
 }
 
 // Unique_ptr
 
-template <typename Subclass, typename Baseclass>
-    requires(std::derived_from<Subclass, Baseclass>)
-Subclass* As(const std::unique_ptr<Baseclass>& p)
+template <typename SecondClass, typename FirstClass>
+    requires(std::derived_from<SecondClass, FirstClass> || std::derived_from<FirstClass, SecondClass>)
+SecondClass* As(const std::unique_ptr<FirstClass>& p)
 {
-    return dynamic_cast<Subclass*>(p.get());
+    return dynamic_cast<SecondClass*>(p.get());
 }
 
-template <typename Subclass, typename Baseclass>
-    requires(std::derived_from<Subclass, Baseclass>)
-bool Is(const std::unique_ptr<Baseclass>& p)
+template <typename SecondClass, typename FirstClass>
+    requires(std::derived_from<SecondClass, FirstClass>)
+bool Is(const std::unique_ptr<FirstClass>& p)
 {
-    return dynamic_cast<Subclass*>(p.get()) != nullptr;
+    return dynamic_cast<SecondClass*>(p.get()) != nullptr;
 }
 
 
 // Shared_ptr
 
-template <typename Subclass, typename Baseclass>
-    requires(std::derived_from<Subclass, Baseclass>)
-std::shared_ptr<Subclass> As(const std::shared_ptr<Baseclass>& p)
+template <typename SecondClass, typename FirstClass>
+    requires(std::derived_from<SecondClass, FirstClass> || std::derived_from<FirstClass, SecondClass>)
+std::shared_ptr<SecondClass> As(const std::shared_ptr<FirstClass>& p)
 {
-    return std::dynamic_pointer_cast<Subclass>(p);
+    return std::dynamic_pointer_cast<SecondClass>(p);
 }
 
-template <typename Subclass, typename Baseclass>
-    requires(std::derived_from<Subclass, Baseclass>)
-bool Is(const std::shared_ptr<Baseclass>& p)
+template <typename SecondClass, typename FirstClass>
+    requires(std::derived_from<SecondClass, FirstClass>)
+bool Is(const std::shared_ptr<FirstClass>& p)
 {
-    return dynamic_cast<Subclass*>(p.get()) != nullptr;
+    return dynamic_cast<SecondClass*>(p.get()) != nullptr;
 }
 
-template <typename Subclass, typename Baseclass>
-    requires(std::derived_from<Subclass, Baseclass>)
-bool Is(const std::weak_ptr<Baseclass>& p)
+template <typename SecondClass, typename FirstClass>
+    requires(std::derived_from<SecondClass, FirstClass>)
+bool Is(const std::weak_ptr<FirstClass>& p)
 {
-    return Is<Subclass>(p.lock());
+    return Is<SecondClass>(p.lock());
 }

@@ -1,6 +1,7 @@
 #include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
+#include "gsl_server/algorithms/GraphGSL/MovingStateGraph.hpp"
 #include "gsl_server/algorithms/GraphGSL/NACCompare.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #if USE_GUI
@@ -102,9 +103,12 @@ namespace GSL
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Max info gain", &gsl->graph.vizOptions.maxInfoGain, 1e-2, 0., 100., "%.2e");
             ImGui::SameLine();
+
+            ImGui::BeginDisabled(!Is<MovingStateGraph>(gsl->movingState));
             ImGui::SetNextItemWidth(100);
             if (ImGui::Button("Auto"))
-                gsl->graph.AutoSetMaxInfoGain();
+                As<MovingStateGraph>(gsl->movingState)->AutoSetMaxInfoGain();
+            ImGui::EndDisabled();
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
@@ -205,7 +209,7 @@ namespace GSL
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Default residual", &NACCeres::defaultResidual, 1e-6, 0.0, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 1e-3, 0.001, 1, "%.2e");
+            ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 1e-4, 1e-5, 1, "%.2e");
             if (ImGui::Button("Evaluate Source Probs"))
             {
                 gsl->functionQueue.submit([this]()

@@ -89,7 +89,7 @@ namespace GSL
                 }
                 otherNode = nodesByName.at(nameOtherPlace);
 
-                constexpr float maxDoorwaySize = 1.f;
+                constexpr float maxDoorwaySize = 1.0f;
                 if (aabb.size().x < maxDoorwaySize && aabb.size().y < maxDoorwaySize)
                 {
                     std::string nameDoorway = linkFile.stem();
@@ -252,7 +252,7 @@ namespace GSL
             {
                 for (size_t i = 0; i < room->GetOccupancy().data.size(); ++i)
                     if (room->GetOccupancy().data.at(i))
-                        freeCells.push_back({.node = room.get(), .indices = room->GetOccupancy().metadata.indices2D(i)});
+                        freeCells.push_back({.node = room, .indices = room->GetOccupancy().metadata.indices2D(i)});
             }
         }
         return freeCells;
@@ -280,24 +280,7 @@ namespace GSL
         return mgrid;
     }
 
-    void Graph::AutoSetMaxInfoGain()
-    {
-        float maxInfoGain = 0;
-        for (const auto& node : nodes)
-            if (auto room = As<RoomNode>(node))
-            {
-                auto localMax = std::max_element(room->GetExpectedVariances().data.begin(),
-                                                 room->GetExpectedVariances().data.end(),
-                                                 [](const Utils::RunningVariance& a, const Utils::RunningVariance& b)
-                                                 {
-                                                     return a.variance < b.variance;
-                                                 });
-                maxInfoGain = std::max<float>(maxInfoGain, localMax->variance);
-            }
-        vizOptions.maxInfoGain = maxInfoGain;
-    }
-
-    MarkerArray Graph::VisualizeGraph()
+    MarkerArray Graph::VisualizeGraph(const std::map<std::shared_ptr<PlaceNode>, float>& roomSourceProbabilities)
     {
         constexpr float markerHeight = 0.5;
         MarkerArray array;
@@ -318,7 +301,8 @@ namespace GSL
 
             // node marker
             {
-                ColorRGBA color = Utils::valueToColor(roomSourceProbabilities[node], 0., 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
+                float value = roomSourceProbabilities.contains(node) ? roomSourceProbabilities.at(node) : 0.0f;
+                ColorRGBA color = Utils::valueToColor(value, 0., 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::CYLINDER;
@@ -494,32 +478,6 @@ namespace GSL
 
             Grid2D<float> grid(roomNode->GetSourceProbabilities().data, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
             Marker marker = Utils::createPointsMarker(grid, vizOptions.probabilityVizMin, vizOptions.probabilityVizMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
-            marker.id = id++;
-            array.markers.push_back(marker);
-        }
-
-        return array;
-    }
-
-    MarkerArray Graph::VisualizeInfoGain()
-    {
-        MarkerArray array;
-        size_t id = 0;
-
-        for (auto node : nodes)
-        {
-            if (!Is<RoomNode>(node))
-                continue;
-            auto roomNode = As<RoomNode>(node);
-            Grid2DMetadata vizMetadata = roomNode->GetSourceProbabilities().metadata;
-            vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
-
-            std::vector<float> info;
-            info.reserve(roomNode->GetSourceProbabilities().data.size());
-            std::ranges::transform(roomNode->GetExpectedVariances().data, std::back_inserter(info), [](Utils::RunningVariance& var) -> float
-                                   { return var.variance; });
-            Grid2D<float> grid(info, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
-            Marker marker = Utils::createPointsMarker(grid, 0, vizOptions.maxInfoGain, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Jet, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
         }

@@ -33,7 +33,6 @@ namespace GSL
         wind.resize(numCells);
         outletMask.resize(numCells, -1);
         sourceProbabilities.resize(numCells);
-        expectedVariances.resize(numCells);
         for (size_t i = 0; i < numCells; i++)
             if (occupancy.at(i))
                 sourceProbabilities.at(i) = 1.f / gridMetadata.numFreeCells;
@@ -132,11 +131,6 @@ namespace GSL
         return Grid2D<float>(sourceProbabilities, occupancy, gridMetadata);
     }
 
-    Grid2D<Utils::RunningVariance> RoomNode::GetExpectedVariances()
-    {
-        return Grid2D<Utils::RunningVariance>(expectedVariances, occupancy, gridMetadata);
-    }
-
     const std::vector<size_t>& RoomNode::GetOutletsCellCount()
     {
         return numCellsOutlet;
@@ -168,7 +162,7 @@ namespace GSL
 
     CellIdentifier RoomNode::GetCellIdentifier(size_t index)
     {
-        return CellIdentifier{this, gridMetadata.indices2D(index)};
+        return CellIdentifier{shared_from_this(), gridMetadata.indices2D(index)};
     }
 
     void RoomNode::ResetObservations()

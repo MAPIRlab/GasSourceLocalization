@@ -184,6 +184,8 @@ namespace GSL
             std::ofstream f(file);
             f.close();
         }
+
+        bool previousValue = republishObservations;
         republishObservations = false;
         YAML::Node root = YAML::LoadFile(file);
         for (YAML::Node entry : root)
@@ -201,7 +203,7 @@ namespace GSL
 
             processGasAndWindMeasurements(concentration, wind_speed, wind_direction);
         }
-        republishObservations = true;
+        republishObservations = previousValue;
     }
 
     // This is overriden by non-reactive methods to be based on the uncertainty of the estimation

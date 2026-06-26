@@ -92,7 +92,7 @@ namespace GSL
             rclcpp::Publisher<olfaction_msgs::msg::Anemometer>::SharedPtr windPub;
             rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr localizationPub;
         } republishers;
-        bool republishObservations = true;
+        bool republishObservations = false;
 
         double thresholdGas, thresholdWind;
 

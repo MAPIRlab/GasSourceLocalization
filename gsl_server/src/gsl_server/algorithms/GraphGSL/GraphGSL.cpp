@@ -1,9 +1,9 @@
 #include "GraphGSL.hpp"
 #include "NACCompare.hpp"
-#include "gsl_server/algorithms/Common/States/ManualNavigation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
+#include "gsl_server/algorithms/GraphGSL/MovingStateGraph.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fmt/ranges.h>
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
@@ -76,7 +76,7 @@ namespace GSL
         waitForMapState->shouldWaitForGas = false;
 
         stopAndMeasureState = std::make_unique<StopAndMeasureState>(this);
-        movingState = std::make_unique<ManualNavigationState>(this);
+        movingState = std::make_unique<MovingStateGraph>(this);
 
         std::string simulatedMeasurementsPath = rclnode->declare_parameter<std::string>("sim_measurements_path", "?");
         if (simulatedMeasurementsPath != "?")
@@ -120,17 +120,20 @@ namespace GSL
 
     void GraphGSL::EvaluateRoomProbabilities()
     {
-        //TODO this is a test. There probably is a better way to adjust this value
+        ScopedStopwatch watch("Total evaluation time");
+        // TODO this is a test. There probably is a better way to adjust this value
         NACCeres::defaultResidual = 50.f / graph.TotalFreeCellsCount();
-        
+
+        if (auto move = As<MovingStateGraph>(movingState))
+            move->ResetVariances();
+
         UpdateWindMaps();
-        expectedGasMaps.clear();
         simulationSystem.Reset();
         ThreadPool pool;
 
         // Run the simulations
         {
-            ScopedStopwatch watch("Room simulations");
+            ScopedStopwatch watch("Room level simulations");
             // simulate all possible room sources
             std::vector<std::shared_ptr<DoorwayNode>> simsToRun;
             for (const auto& node : graph.nodes)
@@ -171,7 +174,7 @@ namespace GSL
 
         constexpr float doFineLevelThreshold = 0.3;
         std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
-        if (graph.roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
+        if (roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
         {
             size_t i = 0;
             bool done = false;
@@ -235,41 +238,29 @@ namespace GSL
 
                 // asign the probs to the room grid
                 for (size_t i = 0; i < sourceProbs.data.size(); i++)
-                    room->GetSourceProbabilities().data.at(i) = graph.roomSourceProbabilities.at(room) * tempProbs.at(i);
+                    room->GetSourceProbabilities().data.at(i) = roomSourceProbabilities.at(room) * tempProbs.at(i);
             }
             // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
             else
             {
                 for (size_t i = 0; i < sourceProbs.data.size(); i++)
                     if (sourceProbs.occupancy.at(i))
-                    {
-                        sourceProbs.data.at(i) = graph.roomSourceProbabilities.at(room) / sourceProbs.metadata.numFreeCells;
-                        // there was no finer-level simulation for this node, so just assume that a source placed at this point would
-                        // generate the same gas map as the entire room
-                        expectedGasMaps[room->GetCellIdentifier(i)] = expectedGasMaps.at(room->GetNodeIdentifier());
-                    }
+                        sourceProbs.data.at(i) = roomSourceProbabilities.at(room) / sourceProbs.metadata.numFreeCells;
             }
         }
 
         UpdateExpectedValue();
-        UpdateInformationGain();
+        if (auto move = As<MovingStateGraph>(movingState))
+            move->UpdateExpectedVariance();
     }
 
     float GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
     {
-        ZoneScopedN("Room level");
-        constexpr float AABBCENTER = -1; // used to distinguish aabb entries in the expectedGasMaps structure
+        ZoneScopedN("Fine level");
 
-        ScopedStopwatch watch("Evaluation (source probabilities in room)");
+        ScopedStopwatch watch("Fine level simulations");
         ThreadPool pool;
         std::mutex mtx;
-
-        // remove the whole-room simulation from the expected maps structure, since we are doing finer simulation
-        for (auto roomNode : roomNodes)
-        {
-            CellIdentifier id{roomNode.get(), CellIdentifier::WHOLE_NODE};
-            expectedGasMaps.erase(id);
-        }
 
         struct Region
         {
@@ -309,30 +300,19 @@ namespace GSL
                                   auto [residual, scale] = ResidualSingleSimulation(*result.map);
                                   GSL_ASSERT(std::isfinite(residual));
 
-                                  // indices are multiplied by 100 to signal that this is a special case (aabb center, rather than single cell)
-                                  CellIdentifier id{.node = roomNode.get(),
-                                                    .indices = roomNode->GetOccupancy().metadata.coordinatesToIndices(sourcePoint) * AABBCENTER};
-
                                   {
                                       std::scoped_lock lock(mtx);
                                       numSimulations++;
                                       residualsThisLevel.push_back({result, residual});
-
-                                      expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
                                   }
 
-                                  // store the (scaled?) result for movement strategy
-                                  for (const auto& [room, localSimMap] : map.gasMaps)
-                                  {
-                                      expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
-#if SCALE_EXPECTED_MAPS
-                                      for (size_t i = 0; i < localSimMap.size(); i++)
-                                          expectedGasMaps[id].map->gasMaps[room].at(i) = std::log(localSimMap.at(i) * scale + 1);
-#else
-                                      for (size_t i = 0; i < localSimMap.size(); i++)
-                                          expectedGasMaps[id].map->gasMaps[room].at(i) = localSimMap.at(i);
-#endif
-                                  } });
+                                  // indices are multiplied by AABBCENTER to signal that this is a special case (aabb center, rather than single cell)
+                                  CellIdentifier id{.node = roomNode,
+                                                    .indices = roomNode->GetOccupancy().metadata.coordinatesToIndices(sourcePoint) * CellIdentifier::AABBCENTER};
+
+                                  if (auto move = As<MovingStateGraph>(movingState))
+                                      move->UpdateExpectedGasGeometricLevel(mtx, id, map); //
+                              });
             }
             pool.Wait();
 
@@ -372,16 +352,20 @@ namespace GSL
                 lowestResidual = residual;
             AABB2DInt aabbi = region->nqaNode.getAABB();
             AABB2D aabb = region->room->GetOccupancy().metadata.indicesToCoordinates(aabbi);
-            Vector2Int centerIndices = region->room->GetOccupancy().metadata.coordinatesToIndices(aabb.center()) * AABBCENTER;
-            CellIdentifier centerID{.node = region->room.get(),
+            Vector2Int centerIndices = region->room->GetOccupancy().metadata.coordinatesToIndices(aabb.center()) * CellIdentifier::AABBCENTER;
+            CellIdentifier centerID{.node = region->room,
                                     .indices = centerIndices};
             for (Vector2Int pos : aabbi)
             {
                 region->room->GetSourceProbabilities().dataAt(pos) = residual;
 
                 // store the results of the finest simulation that includes this cell as representative of the cell itself
-                CellIdentifier thisID{region->room.get(), pos};
-                expectedGasMaps[thisID] = expectedGasMaps.at(centerID);
+                if (auto move = As<MovingStateGraph>(movingState))
+                {
+                    CellIdentifier thisID{region->room, pos};
+
+                    move->AssignAABBGasMapToCell(centerID, thisID);
+                }
             }
         }
 
@@ -464,35 +448,10 @@ namespace GSL
                  nodeResiduals.back().confidenceSum,
                  fmt::join(result.scales.begin(), result.scales.end(), ", "));
 
-        // store the scaled sum of the simulation results, to later evaluate the most interesting points for future measurement
-        CellIdentifier id{.node = sourceNode.get(), .indices = CellIdentifier::WHOLE_NODE};
-        expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
+        if (auto move = As<MovingStateGraph>(movingState))
+            move->UpdateExpectedGasRoomLevel(sourceNode, result.residual, result.scales, simulationSystem.gasMapsWithRoomSource.at(sourceNode));
+
         mtx.unlock();
-
-        if (std::isfinite(result.residual))
-        {
-            float scaleSum = std::accumulate(result.scales.begin(), result.scales.end(), 0.0f);
-            size_t simIndex = 0;
-            for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
-            {
-                for (const auto& [room, localSimMap] : simulation.gasMaps)
-                {
-                    if (room == sourceNode)
-                        continue;
-                    if (!expectedGasMaps[id].map->gasMaps.contains(room))
-                        expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
-#if SCALE_EXPECTED_MAPS
-                    for (size_t i = 0; i < localSimMap.size(); i++)
-                        expectedGasMaps[id].map->gasMaps[room].at(i) += std::log(result.scales.at(simIndex) * localSimMap.at(i) + 1);
-#else
-                    for (size_t i = 0; i < localSimMap.size(); i++)
-                        expectedGasMaps[id].map->gasMaps[room].at(i) += (result.scales.at(simIndex) / scaleSum) * localSimMap.at(i);
-#endif
-                }
-
-                simIndex++;
-            }
-        }
     }
 
     std::pair<float, float> GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
@@ -594,8 +553,8 @@ namespace GSL
 
     void GraphGSL::CalculateNodeProbabilities(const std::vector<NodeResult>& residuals)
     {
-        graph.roomSourceProbabilities.clear();
-        GSL_INFO("Results with sigma={:.2f}", likelihoodSigma);
+        roomSourceProbabilities.clear();
+        GSL_INFO("Results with sigma={:.2e}", likelihoodSigma);
         std::map<std::shared_ptr<PlaceNode>, long double> scores;
         long double scoresSum = 0;
         for (const NodeResult& result : residuals)
@@ -607,7 +566,7 @@ namespace GSL
         for (const auto& [room, score] : scores)
         {
             double prob = score / scoresSum;
-            graph.roomSourceProbabilities[room] = prob;
+            roomSourceProbabilities[room] = prob;
             GSL_INFO("\t{}: {:.2f}", room->id, prob);
         }
     }
@@ -617,66 +576,6 @@ namespace GSL
         MultiGrid mgrid = graph.GetAllSourceProbs();
         expectedValue = Utils::ExpectedValue(mgrid, expectedValueProportion);
         cov = Utils::Covariance(mgrid);
-    }
-
-    void GraphGSL::UpdateInformationGain()
-    {
-        GSL_INFO("Updating information gain");
-        ScopedStopwatch watch("info gain");
-        std::vector<CellIdentifier> allFreeCells = graph.GetAllFreeCells();
-
-        // reset all the information from previous simulations
-#pragma omp parallel for schedule(dynamic, 50)
-        for (const auto& id : allFreeCells)
-            As<RoomNode>(id.node)->GetExpectedVariances().dataAt(id.indices).Reset();
-
-        // start updating the values with the latest results
-
-        auto updateWithExpectedMap = [&](const Graph_internal::CompleteMap& completeMap, float probability)
-        {
-            for (const auto& entry : completeMap.gasMaps)
-            {
-                const auto& room = entry.first;
-                const auto& map = entry.second;
-#pragma omp parallel for schedule(dynamic, 50)
-                for (size_t i = 0; i < map.size(); ++i)
-                {
-                    if (!room->GetOccupancy().data.at(i))
-                        continue;
-                    float value = map.at(i);
-                    room->GetExpectedVariances().data.at(i).Update(value, probability);
-                    GSL_ASSERT(std::isfinite(room->GetExpectedVariances().data.at(i).variance));
-                }
-            }
-        };
-
-        for (auto node : graph.nodes)
-        {
-            auto room = As<RoomNode>(node);
-            if (!room)
-                continue;
-
-            if (expectedGasMaps.contains({room.get(), CellIdentifier::WHOLE_NODE}))
-            {
-                float probability = graph.roomSourceProbabilities.at(room);
-                Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at({room.get(), CellIdentifier::WHOLE_NODE}).map;
-                updateWithExpectedMap(completeMap, probability);
-            }
-            else
-            {
-                Grid2D<float> probabilities = room->GetSourceProbabilities();
-                for (size_t cellIndex = 0; cellIndex < probabilities.data.size(); cellIndex++)
-                {
-                    float probability = probabilities.data.at(cellIndex);
-                    if (probability < 1e-7)
-                        continue;
-
-                    CellIdentifier sourceID = room->GetCellIdentifier(cellIndex);
-                    Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(sourceID).map;
-                    updateWithExpectedMap(completeMap, probability);
-                }
-            }
-        }
     }
 
 #if ENABLE_NAIVE_EVALUATION
@@ -706,7 +605,7 @@ namespace GSL
 
     void GraphGSL::Visualize()
     {
-        pubs.graphPub->publish(graph.VisualizeGraph());
+        pubs.graphPub->publish(graph.VisualizeGraph(roomSourceProbabilities));
         pubs.occupancyPub->publish(graph.VisualizeOccupancy());
         pubs.windPub->publish(graph.VisualizeWind(naiveEntireMap));
         pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
@@ -717,9 +616,11 @@ namespace GSL
 #endif
         pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());
         pubs.sourceProbPub->publish(graph.VisualizeSourceProbs());
-        pubs.infoGainPub->publish(graph.VisualizeInfoGain());
         UpdateExpectedValue();
         Utils::publishPositionWCovariance(vmath::WithZ(expectedValue, 0.6), cov, "/expected_source_position");
+
+        if (auto move = As<MovingStateGraph>(movingState))
+            pubs.infoGainPub->publish(move->VisualizeInfoGain());
     }
 
 } // namespace GSL

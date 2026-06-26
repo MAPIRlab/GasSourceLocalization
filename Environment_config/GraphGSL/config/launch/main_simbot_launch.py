@@ -14,7 +14,7 @@ from launch.frontend.parse_substitution import parse_substitution
 
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="Exp_C"),
+        DeclareLaunchArgument("scenario", default_value="graph4"),
         DeclareLaunchArgument("configuration", default_value="config1"),
         DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),
@@ -73,7 +73,7 @@ def launch_setup(context, *args, **kwargs):
                     {"kernel_sigma": 0.3},
                     {"kernel_stretch_constant": 0.4},
                     {"kernel_sigma_omega": 1.0},
-                    {"kernel_omega_concentration_spatial": 8.0},
+                    {"kernel_omega_concentration_spatial": 6.0},
                 ],
                 on_exit=Shutdown()
             ),

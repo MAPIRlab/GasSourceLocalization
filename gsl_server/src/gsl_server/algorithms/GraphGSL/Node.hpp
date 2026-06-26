@@ -32,13 +32,14 @@ namespace GSL
 
     struct CellIdentifier
     {
-        class PlaceNode* node;
+        std::shared_ptr<PlaceNode> node;
         Vector2Int indices;
 
-        static inline Vector2Int WHOLE_NODE = {-INT_MAX, -INT_MAX};
+        static inline const Vector2Int WHOLE_NODE = {-INT_MAX, -INT_MAX};
+        static constexpr float AABBCENTER = -1; // used to distinguish aabb entries in the expectedGasMaps structure
     };
 
-    class PlaceNode
+    class PlaceNode : public std::enable_shared_from_this<PlaceNode>
     {
     public:
         virtual Vector2 GetPosition() const = 0;
@@ -47,8 +48,8 @@ namespace GSL
         virtual void UpdateDoorwayMask() {}
         const std::shared_ptr<DoorwayNode> GetDoorway(std::string_view name);
         virtual std::vector<Vector2> RepresentativePoints() const { return {GetPosition()}; }
-        CellIdentifier GetNodeIdentifier() { return CellIdentifier{this, CellIdentifier::WHOLE_NODE}; }
-        virtual void ResetObservations(){}
+        CellIdentifier GetNodeIdentifier() { return CellIdentifier{shared_from_this(), CellIdentifier::WHOLE_NODE}; }
+        virtual void ResetObservations() {}
 
         std::vector<std::shared_ptr<DoorwayNode>> doorways;
         std::string id;
@@ -70,7 +71,6 @@ namespace GSL
         const Grid2D<KernelDMVW::KernelCell> GetGasMap();
         const Grid2D<int> GetOutletsMask();
         Grid2D<float> GetSourceProbabilities();
-        Grid2D<Utils::RunningVariance> GetExpectedVariances();
         const std::vector<size_t>& GetOutletsCellCount();
         Vector2 GetPosition() const override { return centroid; }
         AABB2D GetAABB() const;
@@ -88,7 +88,6 @@ namespace GSL
         std::vector<size_t> numCellsOutlet;
         std::vector<Vector2> wind;
         std::vector<float> sourceProbabilities;
-        std::vector<Utils::RunningVariance> expectedVariances; // variance on the expected gas amount, based on the most recent simulation results
 
         KernelDMVW::GasMap gasMap;
         Grid2DMetadata gridMetadata;
@@ -118,7 +117,7 @@ namespace std
     {
         size_t operator()(const GSL::CellIdentifier& x) const
         {
-            return (size_t)(x.node) ^ (size_t)(x.indices.x) ^ (size_t)(x.indices.y);
+            return (size_t)(x.node.get()) ^ (size_t)(x.indices.x) ^ (size_t)(x.indices.y);
         }
     };
 
