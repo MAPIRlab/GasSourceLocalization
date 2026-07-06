@@ -10,14 +10,14 @@ namespace GSL::Graph_internal
     struct Options
     {
         bool cummulativeMap = true;
-        float filamentsPerSecond = 2.0;
-        float deltaTime = 0.2;
+        float filamentsPerSecond = 5.0;
+        float deltaTime = 0.1;
         float blurSigma = 1.5;
         float noiseSTDev = 0.25;
-        float warmupTimeAcc = 8.0;
+        float warmupTimeAcc = 4.0;
         size_t iterationLimit = 200;
-        size_t minWarmupIterations = 2000;
-        size_t maxWarmupIterations = 4000;
+        size_t minWarmupIterations = 1000;
+        size_t maxWarmupIterations = 2000;
         float normalizationPower = 0.5;
     };
 

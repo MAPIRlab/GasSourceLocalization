@@ -1,7 +1,7 @@
 #include "MovingStateGraph.hpp"
 #include "GraphGSL.hpp"
 
-#define SCALE_EXPECTED_MAPS 1
+#define SCALE_EXPECTED_MAPS 0
 
 namespace GSL
 {

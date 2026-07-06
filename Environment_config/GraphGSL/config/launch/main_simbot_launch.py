@@ -73,7 +73,7 @@ def launch_setup(context, *args, **kwargs):
                     {"kernel_sigma": 0.3},
                     {"kernel_stretch_constant": 0.4},
                     {"kernel_sigma_omega": 1.0},
-                    {"kernel_omega_concentration_spatial": 4.0},
+                    {"kernel_omega_concentration_spatial": 8.0},
                 ],
                 on_exit=Shutdown()
             ),
