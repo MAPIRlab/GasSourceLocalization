@@ -1,10 +1,10 @@
+#if USE_GUI
 #include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/GraphGSL/MovingStateGraph.hpp"
 #include "gsl_server/algorithms/GraphGSL/NACCompare.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
-#if USE_GUI
 
 #include "GraphUI.hpp"
 #include "gsl_server/algorithms/GraphGSL/GraphGSL.hpp"
@@ -109,6 +109,10 @@ namespace GSL
             if (ImGui::Button("Auto"))
                 As<MovingStateGraph>(gsl->movingState)->AutoSetMaxInfoGain();
             ImGui::EndDisabled();
+
+            //TODO remove this bit once we have settled on a reasonable value
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Info gain sigma", &As<MovingStateGraph>(gsl->movingState)->sigmaDist, 0.1, 0, 100, "%.2f");
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");

@@ -167,6 +167,74 @@ namespace GSL
         Grid2D<T> AsNonOwning() { return Grid2D<T, false>(data, occupancy, metadata); }
         Grid2D<T, true> AsOwning() { return Grid2D<T, true>(data, occupancy, metadata); }
         MultiGrid<T> AsMulti() { return MultiGrid<T>(*this); }
+
+        template <typename DataType, typename OccupancyType>
+        struct Iterator
+        {
+            size_t cellIdx;
+            using GridT = std::conditional<std::is_const<DataType>::value, const Grid2D&, Grid2D&>::type;
+            GridT grid;
+
+            Iterator(GridT grid) : cellIdx(0), grid(grid) {}
+
+            DataType& data() { return grid.data.at(cellIdx); }
+            OccupancyType& occupancy() { return grid.occupancy.at(cellIdx); }
+            Grid2DMetadata& currentMetadata() { return grid.metadata; }
+
+            std::pair<DataType&, OccupancyType&> operator*()
+            {
+                return {data(), occupancy()};
+            }
+
+            // prefix increment
+            Iterator& operator++()
+            {
+                ++cellIdx;
+                return *this;
+            }
+
+            // Postfix increment
+            Iterator operator++(int)
+            {
+                Iterator tmp = *this;
+                ++(*this);
+                return tmp;
+            }
+
+            friend bool operator==(const Iterator& a, const Iterator& b)
+            {
+                return a.cellIdx == b.cellIdx;
+            };
+
+            friend bool operator!=(const Iterator& a, const Iterator& b)
+            {
+                return !(a == b);
+            };
+        };
+
+        Iterator<T, Occupancy> begin()
+        {
+            return Iterator<T, Occupancy>(*this);
+        }
+
+        Iterator<T, Occupancy> end()
+        {
+            Iterator it(*this);
+            it.cellIdx = data.size();
+            return it;
+        }
+
+        Iterator<const T, const Occupancy> begin() const
+        {
+            return Iterator<const T, const Occupancy>(*this);
+        }
+
+        Iterator<const T, const Occupancy> end() const
+        {
+            Iterator<const T, const Occupancy> it(*this);
+            it.cellIdx = data.size();
+            return it;
+        }
     };
 
     // unlike a Grid, a Map is an always-owning struct
@@ -323,7 +391,7 @@ namespace GSL
 
             friend bool operator==(const Iterator& a, const Iterator& b)
             {
-                return &a.multiGrid == &b.multiGrid && a.gridIdx == b.gridIdx && a.cellIdx == b.cellIdx;
+                return a.gridIdx == b.gridIdx && a.cellIdx == b.cellIdx;
             };
 
             friend bool operator!=(const Iterator& a, const Iterator& b)

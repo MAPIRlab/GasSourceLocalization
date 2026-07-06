@@ -9,7 +9,6 @@
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
-#define SCALE_EXPECTED_MAPS 0
 namespace GSL
 {
 
@@ -121,8 +120,6 @@ namespace GSL
     void GraphGSL::EvaluateRoomProbabilities()
     {
         ScopedStopwatch watch("Total evaluation time");
-        // TODO this is a test. There probably is a better way to adjust this value
-        NACCeres::defaultResidual = 50.f / graph.TotalFreeCellsCount();
 
         if (auto move = As<MovingStateGraph>(movingState))
             move->ResetVariances();
@@ -251,7 +248,10 @@ namespace GSL
 
         UpdateExpectedValue();
         if (auto move = As<MovingStateGraph>(movingState))
+        {
             move->UpdateExpectedVariance();
+            move->UpdateInfoGain(); //TODO this probably wants to be removed once we are not triggering evaluation from the GUI
+        }
     }
 
     float GraphGSL::EvaluateSourceProbabilitiesInRooms(std::vector<std::shared_ptr<RoomNode>> roomNodes)
@@ -311,7 +311,7 @@ namespace GSL
                                                     .indices = roomNode->GetOccupancy().metadata.coordinatesToIndices(sourcePoint) * CellIdentifier::AABBCENTER};
 
                                   if (auto move = As<MovingStateGraph>(movingState))
-                                      move->UpdateExpectedGasGeometricLevel(mtx, id, map); //
+                                      move->UpdateExpectedGasGeometricLevel(mtx, id, scale, map); //
                               });
             }
             pool.Wait();
@@ -436,10 +436,16 @@ namespace GSL
             confidenceSum += 1 - u;
 
         NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
+        if(!std::isfinite(result.residual))
+        {
+            result.residual = 0;
+            result.scales.resize(simulationSystem.gasMapsWithRoomSource.at(sourceNode).size(), 0.0);
+        }
+
         mtx.lock();
 
         nodeResiduals.push_back({sourceNode, 0, 0});
-        nodeResiduals.back().residual = (std::isfinite(result.residual) ? result.residual : 0) + skippedCellsResidual;
+        nodeResiduals.back().residual = result.residual + skippedCellsResidual;
         nodeResiduals.back().residual /= graph.TotalFreeCellsCount();
         nodeResiduals.back().confidenceSum = confidenceSum;
         GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}. Scales: {:.2f}",
@@ -449,7 +455,7 @@ namespace GSL
                  fmt::join(result.scales.begin(), result.scales.end(), ", "));
 
         if (auto move = As<MovingStateGraph>(movingState))
-            move->UpdateExpectedGasRoomLevel(sourceNode, result.residual, result.scales, simulationSystem.gasMapsWithRoomSource.at(sourceNode));
+            move->UpdateExpectedGasRoomLevel(sourceNode, result.scales, simulationSystem.gasMapsWithRoomSource.at(sourceNode));
 
         mtx.unlock();
     }

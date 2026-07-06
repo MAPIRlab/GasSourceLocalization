@@ -1,6 +1,8 @@
 #include "MovingStateGraph.hpp"
 #include "GraphGSL.hpp"
 
+#define SCALE_EXPECTED_MAPS 1
+
 namespace GSL
 {
     MovingStateGraph::MovingStateGraph(Algorithm* alg) : ManualNavigationState(alg), gsl(dynamic_cast<GraphGSL*>(alg))
@@ -11,11 +13,33 @@ namespace GSL
             {
                 expectedGasVariances[roomNode].resize(roomNode->GetOccupancy().data.size());
                 finalInfoValue[roomNode].resize(roomNode->GetOccupancy().data.size());
+
+                for (auto it = roomNode->GetOutletsMask().begin(); it != roomNode->GetOutletsMask().end(); ++it)
+                {
+                    auto [outletId, occupancy] = *it;
+                    if (!occupancy)
+                        continue;
+                    if (outletId != -1)
+                        doorwayValue[roomNode->GetCellIdentifier(it.cellIdx)] = 1.0f;
+                    else
+                        doorwayValue[roomNode->GetCellIdentifier(it.cellIdx)] = 0.8f;
+                }
             }
     }
 
     void MovingStateGraph::OnEnterState(State* previous)
     {
+        UpdateInfoGain();
+        ManualNavigationState::OnEnterState(previous);
+    }
+
+    void MovingStateGraph::chooseGoalAndMove()
+    {
+    }
+
+    void MovingStateGraph::UpdateInfoGain()
+    {
+        ScopedStopwatch watch("UpdateInfoGain");
         MultiGrid<KernelDMVW::KernelCell> kernelCells = gsl->graph.GetAllKernelCells();
         for (auto node : gsl->graph.nodes)
         {
@@ -29,15 +53,12 @@ namespace GSL
                     continue;
                 CellIdentifier id = roomNode->GetCellIdentifier(i);
                 explorationValue[id] = CalculateExplorationValue(id);
-                finalInfoValue[roomNode].at(i) = explorationValue[id]; // TODO
+                finalInfoValue[roomNode].at(i) = explorationValue[id]                                    //
+                                                 * (expectedGasVariances[roomNode].at(i).variance + 0.1) //
+                                                                                                         //  * doorwayValue[id]                                      //
+                    ;
             }
         }
-        
-        ManualNavigationState::OnEnterState(previous);
-    }
-
-    void MovingStateGraph::chooseGoalAndMove()
-    {
     }
 
     void MovingStateGraph::ResetVariances()
@@ -53,11 +74,13 @@ namespace GSL
         double sum = 0;
         for (const auto& p : range)
         {
-            float confidence = As<RoomNode>(c.node)->GetGasMap().dataAt(c.indices).confidence;
+            float confidence = As<RoomNode>(c.node)->GetGasMap().dataAt(p).confidence;
             float distance = vmath::length(Vector2(c.indices - p)); // not the navigable distance, but we are close enough that it does not matter
-            sum += (1 - confidence) * std::exp(-distance);
+            sum += confidence * std::exp(-distance * sigmaDist);
         }
-        return sum;
+
+        constexpr float baseInfo = 1e-0;
+        return std::exp(-sum) + baseInfo;
     }
 
     void MovingStateGraph::UpdateExpectedVariance()
@@ -120,7 +143,7 @@ namespace GSL
         }
     }
 
-    void MovingStateGraph::UpdateExpectedGasGeometricLevel(std::mutex& mtx, CellIdentifier id, const Graph_internal::CompleteMap& map)
+    void MovingStateGraph::UpdateExpectedGasGeometricLevel(std::mutex& mtx, CellIdentifier id, float scale, const Graph_internal::CompleteMap& map)
     {
         {
             std::scoped_lock lock(mtx);
@@ -133,7 +156,7 @@ namespace GSL
             expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
 #if SCALE_EXPECTED_MAPS
             for (size_t i = 0; i < localSimMap.size(); i++)
-                expectedGasMaps[id].map->gasMaps[room].at(i) = std::log(localSimMap.at(i) * scale + 1);
+                expectedGasMaps[id].map->gasMaps[room].at(i) = localSimMap.at(i) * scale;
 #else
             for (size_t i = 0; i < localSimMap.size(); i++)
                 expectedGasMaps[id].map->gasMaps[room].at(i) = localSimMap.at(i);
@@ -147,15 +170,12 @@ namespace GSL
     }
 
     void MovingStateGraph::UpdateExpectedGasRoomLevel(std::shared_ptr<PlaceNode> sourceNode,
-                                                      float residual,
                                                       const std::vector<double>& scales,
                                                       const std::deque<Graph_internal::CompleteMap>& simulations)
     {
         // store the scaled sum of the simulation results, to later evaluate the most interesting points for future measurement
         CellIdentifier id{.node = sourceNode, .indices = CellIdentifier::WHOLE_NODE};
         expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
-        if (!std::isfinite(residual))
-            return;
 
         float scaleSum = std::accumulate(scales.begin(), scales.end(), 0.0f);
         size_t simIndex = 0;
@@ -169,7 +189,7 @@ namespace GSL
                     expectedGasMaps[id].map->gasMaps[room].resize(localSimMap.size(), 0);
 #if SCALE_EXPECTED_MAPS
                 for (size_t i = 0; i < localSimMap.size(); i++)
-                    expectedGasMaps[id].map->gasMaps[room].at(i) += std::log(scales.at(simIndex) * localSimMap.at(i) + 1);
+                    expectedGasMaps[id].map->gasMaps[room].at(i) += scales.at(simIndex) * localSimMap.at(i);
 #else
                 float scale = (scales.at(simIndex) / scaleSum);
                 if (!std::isfinite(scale))
@@ -211,13 +231,9 @@ namespace GSL
         for (const auto& node : gsl->graph.nodes)
             if (auto room = As<RoomNode>(node))
             {
-                auto localMax = std::max_element(expectedGasVariances[room].begin(),
-                                                 expectedGasVariances[room].end(),
-                                                 [](const Utils::RunningVariance& a, const Utils::RunningVariance& b)
-                                                 {
-                                                     return a.variance < b.variance;
-                                                 });
-                maxInfoGain = std::max<float>(maxInfoGain, localMax->variance);
+                auto localMax = std::max_element(finalInfoValue[room].begin(),
+                                                 finalInfoValue[room].end());
+                maxInfoGain = std::max<float>(maxInfoGain, *localMax);
             }
         gsl->graph.vizOptions.maxInfoGain = maxInfoGain;
     }

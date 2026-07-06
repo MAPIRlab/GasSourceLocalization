@@ -41,7 +41,7 @@ namespace GSL
     private:
         Graph graph;
         Graph_internal::SimulationSystem simulationSystem;
-        float likelihoodSigma = 5e-4;
+        float likelihoodSigma = 1e-3;
         std::map<std::shared_ptr<class PlaceNode>, float> roomSourceProbabilities;
         Vector2 expectedValue;
         Utils::CovarianceMatrix cov;
