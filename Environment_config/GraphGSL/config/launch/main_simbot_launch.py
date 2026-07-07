@@ -14,7 +14,7 @@ from launch.frontend.parse_substitution import parse_substitution
 
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="graph4"),
+        DeclareLaunchArgument("scenario", default_value="Exp_C"),
         DeclareLaunchArgument("configuration", default_value="config1"),
         DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),
@@ -204,7 +204,7 @@ def launch_setup(context, *args, **kwargs):
         ],
     )
 
-    rviz = Node(
+    rviz1 = Node(
         package="rviz2",
         executable="rviz2",
         name="rviz",
@@ -214,6 +214,17 @@ def launch_setup(context, *args, **kwargs):
                                 "config", "launch", "graph.rviz")
         ],
     )
+    rviz2 = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz",
+        # prefix="xterm -e",
+        arguments=[
+            "-d" + os.path.join(get_package_share_directory("graphgsl_env"),
+                                "config", "launch", "sourceProb.rviz")
+        ],
+    )
+
     actions = []
     actions.append(gaden_player)
     actions.extend(anemometer)
@@ -222,7 +233,8 @@ def launch_setup(context, *args, **kwargs):
     actions.append(basic_sim)
     actions.extend(gsl_node)
     actions.extend(gsl_call)
-    actions.append(rviz)
+    actions.append(rviz1)
+    actions.append(rviz2)
     # actions.append(windMapCreator)
     actions.append(observationRecorder)
 

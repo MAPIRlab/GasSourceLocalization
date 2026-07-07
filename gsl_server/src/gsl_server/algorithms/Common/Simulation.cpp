@@ -282,7 +282,7 @@ namespace GSL
             index++;
             Vector2Int pair = metadata.coordinatesToIndices(currentPosition.x, currentPosition.y);
             bool isOutside = !metadata.indicesInBounds(pair);
-            bool freeBecauseOutside = isOutside; // we only consider "out of the map" OK if there are no explicitly defined outlets
+            bool freeBecauseOutside = isOutside || wind.occupancyAt(pair.x, pair.y) == GSL::Occupancy::Unknown;
             pathIsFree = freeBecauseOutside || (!isOutside && wind.occupancyAt(pair.x, pair.y));
             if (!pathIsFree)
                 currentPosition -= increment;

@@ -109,7 +109,8 @@ namespace GSL
                     if (!room->GetOccupancy().data.at(i))
                         continue;
                     float value = map.at(i);
-                    expectedGasVariances[room].at(i).Update(value, probability);
+                    float weight = std::pow(probability * 100, 2);
+                    expectedGasVariances[room].at(i).Update(value, weight);
                     GSL_ASSERT(std::isfinite(expectedGasVariances[room].at(i).variance));
                 }
             }
