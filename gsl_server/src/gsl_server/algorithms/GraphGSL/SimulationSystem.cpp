@@ -280,7 +280,7 @@ namespace GSL::Graph_internal
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
 
-#define LOG_DETAILS 1
+#define LOG_DETAILS 0
 #if LOG_DETAILS
 #define LOG_TRACE(...) GSL_INFO(__VA_ARGS__)
 #else

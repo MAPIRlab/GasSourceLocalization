@@ -14,7 +14,7 @@ from launch.frontend.parse_substitution import parse_substitution
 
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="Exp_C"),
+        DeclareLaunchArgument("scenario", default_value="graph1"),
         DeclareLaunchArgument("configuration", default_value="config1"),
         DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),

@@ -19,14 +19,16 @@ def launch_arguments():
 
 
 def launch_setup(context, *args, **kwargs):
+    scenario = "graph2"
+
     graph_creator = Node(
         package="gsl_server",
         executable="graph_creator",
         name="creator",
         parameters=[
             {
-                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "data", "environments", "graph5", "graph", "occupancy.yaml"),
-                "root_directory": os.path.join(get_package_share_directory("graphgsl_env"), "data", "environments", "graph5", "graph")
+                "map_yaml": os.path.join(get_package_share_directory("graphgsl_env"), "data", "environments", scenario, "graph", "occupancy.yaml"),
+                "root_directory": os.path.join(get_package_share_directory("graphgsl_env"), "data", "environments", scenario, "graph")
             },
         ],
     )
@@ -39,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
         arguments=[
             "-d" +
                 os.path.join(get_package_share_directory(
-                    "graphgsl_env"), "config", "launch", "graph.rviz")
+                    "graphgsl_env"), "config", "launch", "create_graph.rviz")
         ],
     )
 
