@@ -1,0 +1,9 @@
+models:
+  - ../../cad_models/office.stl
+outlets_models:
+  - "!color [0.87, 0.16, 0.16, 1.00]"
+  - ../../cad_models/outlets.stl
+unprocessed_wind_files: ../../wind_simulations/wind
+empty_point: [13.6, 15, 0.9]
+cell_size: 0.1
+uniformWind: false

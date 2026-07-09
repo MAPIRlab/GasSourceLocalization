@@ -71,6 +71,7 @@ namespace GSL
         //----------------------------------
         //----------------------------------
         friend class MovingStateGraph;
+        friend class SimpleMovingStateGraph;
 #if USE_GUI
         friend class GraphUI;
         GraphUI gui;

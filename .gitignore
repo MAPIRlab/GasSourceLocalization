@@ -1,4 +1,5 @@
 Environment_config/**/gas_simulations
+Environment_config/**/wind
 Environment_config/**/simulations/**/result
 *_U
 *_V
