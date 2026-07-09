@@ -12,7 +12,8 @@ namespace GSL
     Graph Graph::ReadFromDisk(const std::filesystem::path& folder,
                               float cellSize,
                               gmrfw::CGMRF_map::Parameters gmrfParams,
-                              KernelDMVW::GasMap::Params kernelParams)
+                              KernelDMVW::GasMap::Params kernelParams,
+                              bool initialize)
     {
         if (!std::filesystem::exists(folder))
         {
@@ -137,9 +138,12 @@ namespace GSL
             thisNode->UpdateDoorwayMask();
         }
 
-        graph.gmrf_parameters = gmrfParams;
-        graph.completeMap = Utils::parseMapData(folder / "occupancy.yaml", cellSize);
-        graph.gmrf = std::make_shared<gmrfw::CGMRF_map>(ToGMRFOcc(graph.completeMap.AsGrid()), graph.gmrf_parameters, false, false);
+        if (initialize)
+        {
+            graph.gmrf_parameters = gmrfParams;
+            graph.completeMap = Utils::parseMapData(folder / "occupancy.yaml", cellSize);
+            graph.gmrf = std::make_shared<gmrfw::CGMRF_map>(ToGMRFOcc(graph.completeMap.AsGrid()), graph.gmrf_parameters, false, false);
+        }
 
         return graph;
     }

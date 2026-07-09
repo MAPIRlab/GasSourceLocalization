@@ -19,7 +19,7 @@ def launch_arguments():
 
 
 def launch_setup(context, *args, **kwargs):
-    scenario = "graph2"
+    scenario = "office"
 
     graph_creator = Node(
         package="gsl_server",

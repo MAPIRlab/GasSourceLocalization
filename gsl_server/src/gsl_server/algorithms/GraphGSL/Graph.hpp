@@ -1,11 +1,11 @@
 #pragma once
+#include "Node.hpp"
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
 #include <filesystem>
 #include <gmrf_wind_core/gmrf_map.h>
 #include <gsl_server/core/Vectors.hpp>
 #include <vector>
-#include "Node.hpp"
 
 namespace GSL
 {
@@ -13,7 +13,7 @@ namespace GSL
     {
     public:
         static Graph ReadFromDisk(const std::filesystem::path& folder, float cellSize, gmrfw::CGMRF_map::Parameters gmrfParams,
-                                  KernelDMVW::GasMap::Params kernelParams);
+                                  KernelDMVW::GasMap::Params kernelParams, bool initialize = true);
         size_t GetCorrespondingNodeIdx(Vector2 position);
         void AddObservation(Vector2 position, Vector2 wind, float gasConcentration);
         void UpdateAllWindMaps();
