@@ -115,9 +115,12 @@ namespace GSL
             ImGui::DragFloat("Info gain sigma", &As<MovingStateGraph>(gsl->movingState)->sigmaDist, 0.1, 0, 100, "%.2f");
 
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.probabilityVizMin, 1e-6, 1e-7, 1.0, "%.2e");
+            ImGui::DragFloat("Node prob max", &gsl->graph.vizOptions.nodeProbMax, 0.01, 0., 1.0, "%.2f");
+
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Probability max color", &gsl->graph.vizOptions.probabilityVizMax, 1e-4, 1e-5, 1.0, "%.2e");
+            ImGui::DragFloat("Probability min color", &gsl->graph.vizOptions.cellProbMin, 1e-6, 1e-7, 1.0, "%.2e");
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Probability max color", &gsl->graph.vizOptions.cellProbMax, 1e-4, 1e-5, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Expected value proportion", &gsl->expectedValueProportion, 0.01, 0.0, 1.0, "%.2f");
         }

@@ -80,6 +80,8 @@ namespace GSL
         windClient = rclnode->create_client<WindEstimation>("/wind_value");
 #endif
 
+        NACCeres::defaultResidual = 50.f / graph.GetAllFreeCells().size(); // TODO check if this is a reasonable value
+
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
@@ -148,7 +150,7 @@ namespace GSL
                 CellIdentifier cell = freeCells.at(ind);
                 auto room = As<RoomNode>(cell.node);
                 room->GetWindMap().dataAt(cell.indices) = Vector2(response->u[ind], response->v[ind]);
-                
+
                 Vector2 coords = As<RoomNode>(cell.node)->GetOccupancy().metadata.indicesToCoordinates(cell.indices);
                 naiveEntireMap->GetWindMap().dataAt(coords) = Vector2(response->u[ind], response->v[ind]);
             }
@@ -160,7 +162,6 @@ namespace GSL
         graph.UpdateAllWindMaps();
         naiveEntireMap->UpdateWindMap(graph.gmrf);
 #endif
-
     }
 
     void GraphGSL::EvaluateRoomProbabilities()
@@ -659,7 +660,7 @@ namespace GSL
     {
         static Utils::Time::Countdown lowFreqTimer(1.0);
 
-        if(lowFreqTimer.isDone())
+        if (lowFreqTimer.isDone())
         {
             pubs.windPub->publish(graph.VisualizeWind(naiveEntireMap));
             pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());

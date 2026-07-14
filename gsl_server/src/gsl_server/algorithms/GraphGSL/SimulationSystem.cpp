@@ -275,12 +275,12 @@ namespace GSL::Graph_internal
 
         std::map<std::shared_ptr<const DoorwayNode>, GraphCacheEntry> graphCache;
 
-        constexpr float minimumGasProportion = 1e-2;
+        constexpr float minimumGasProportion = 1e-4;
         constexpr float minimumGasInlet = 1e-6;
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
 
-#define LOG_DETAILS 1
+#define LOG_DETAILS 0
 #if LOG_DETAILS
 #define LOG_TRACE(...) GSL_INFO(__VA_ARGS__)
 #else
@@ -444,11 +444,6 @@ namespace GSL::Graph_internal
                 NodeState next;
                 next.doorSource = current.doorways.top()->OtherSide();
                 current.doorways.pop();
-                if (!Is<RoomNode>(next.doorSource->from))
-                {
-                    LOG_TRACE("Skipping outside node {}", next.doorSource->from.lock()->id);
-                    continue;
-                }
 
                 float gasProportion;
                 DoorwayPair pair{current.doorSource, next.doorSource};
@@ -465,6 +460,12 @@ namespace GSL::Graph_internal
                     // calculate how much of the gas in the current node makes it to the next node
                     size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
                     gasProportion = weight * result.ProportionInDoorway(outletIndex);
+                }
+
+                if (!Is<RoomNode>(next.doorSource->from))
+                {
+                    LOG_TRACE("Skipping outside node {}", next.doorSource->from.lock()->id);
+                    continue;
                 }
 
                 next.gasProportion = gasProportion;

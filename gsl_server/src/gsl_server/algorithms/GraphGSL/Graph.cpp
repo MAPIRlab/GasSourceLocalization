@@ -160,6 +160,7 @@ namespace GSL
 
     void Graph::AddObservation(Vector2 position, Vector2 wind, float gasConcentration)
     {
+#if not USE_GADEN
         // wind
         {
             constexpr float sigma = 1e-6;
@@ -179,7 +180,7 @@ namespace GSL
             if (!accepted)
                 GSL_WARN("Wind GMRF did not accept observation at {}", position);
         }
-
+#endif
         // gas
         bool accepted = false;
         for (auto node : nodes)
@@ -306,7 +307,7 @@ namespace GSL
             // node marker
             {
                 float value = roomSourceProbabilities.contains(node) ? roomSourceProbabilities.at(node) : 0.0f;
-                ColorRGBA color = Utils::valueToColor(value, 0., 0.5, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
+                ColorRGBA color = Utils::valueToColor(value, 0., vizOptions.nodeProbMax, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
                 Marker marker;
                 marker.header.frame_id = "map";
                 marker.type = Marker::CYLINDER;
@@ -481,7 +482,7 @@ namespace GSL
             vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
 
             Grid2D<float> grid(roomNode->GetSourceProbabilities().data, roomNode->GetSourceProbabilities().occupancy, vizMetadata);
-            Marker marker = Utils::createPointsMarker(grid, vizOptions.probabilityVizMin, vizOptions.probabilityVizMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
+            Marker marker = Utils::createPointsMarker(grid, vizOptions.cellProbMin, vizOptions.cellProbMax, Utils::ValueColorMode::Logarithmic, Utils::Colors::ColorMaps::Plasma, 0.3);
             marker.id = id++;
             array.markers.push_back(marker);
         }
