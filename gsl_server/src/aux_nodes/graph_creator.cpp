@@ -452,7 +452,7 @@ void GraphCreator::OnClick(const PointStamped::SharedPtr msg)
         currentAABB.max.y = msg->point.y;
         selectionMode = SelectionMode::Max;
         id_number++;
-        node_id = fmt::format("room_{}", id_number);
+        node_id = fmt::format("room_{:02d}", id_number);
     }
     else if (selectionMode == SelectionMode::Min)
     {

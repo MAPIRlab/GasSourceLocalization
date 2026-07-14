@@ -55,7 +55,6 @@ namespace GSL
         republishers.gasPub = rclnode->create_publisher<olfaction_msgs::msg::GasSensor>("/measured_gas", 1);
         republishers.windPub = rclnode->create_publisher<olfaction_msgs::msg::Anemometer>("/measured_wind", 1);
         republishers.localizationPub = rclnode->create_publisher<PoseWithCovarianceStamped>("/measured_localization", 1);
-        GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
     }
 
     void Algorithm::declareParameters()

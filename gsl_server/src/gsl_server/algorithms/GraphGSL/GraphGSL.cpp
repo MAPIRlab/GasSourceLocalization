@@ -46,7 +46,12 @@ namespace GSL
         std::filesystem::path path =
             rclnode->declare_parameter<std::string>("graph_path",
                                                     std::filesystem::path(ament_index_cpp::get_package_share_directory("graphgsl_env")) / "second_graph");
-        graph = Graph::ReadFromDisk(path, cellSize, gmrfParams, kernelParams);
+#if USE_GADEN
+        bool useGMRF = false;
+#else
+        bool useGMRF = true;
+#endif
+        graph = Graph::ReadFromDisk(path, cellSize, gmrfParams, kernelParams, useGMRF);
         float artificialSeparation = rclnode->declare_parameter<float>("node_separation_mult", 1);
         graph.vizOptions.nodeSeparationViz = artificialSeparation;
         simulationSystem.graph = &graph;
@@ -60,15 +65,21 @@ namespace GSL
         // publishers
         pubs.graphPub = rclnode->create_publisher<MarkerArray>("/gsl_graph", rclcpp::QoS(1).transient_local());
         pubs.occupancyPub = rclnode->create_publisher<MarkerArray>("/gsl_occupancy", 1);
-        pubs.windPub = rclnode->create_publisher<MarkerArray>("/gsl_wind", 1);
+        pubs.windPub = rclnode->create_publisher<MarkerArray>("/gsl_wind", rclcpp::QoS(1).durability_volatile().best_effort());
         pubs.simGasMapsPub = rclnode->create_publisher<MarkerArray>("simGasMaps", 1);
         pubs.measuredGasMapsPub = rclnode->create_publisher<MarkerArray>("measuredGasMaps", 1);
         pubs.quadtreePub = rclnode->create_publisher<MarkerArray>("quadtree", 1);
         pubs.sourceProbPub = rclnode->create_publisher<MarkerArray>("sourceProb", 1);
         pubs.infoGainPub = rclnode->create_publisher<MarkerArray>("infoGain", 1);
+        pubs.doorwaysPub = rclnode->create_publisher<MarkerArray>("doorways", 1);
 #if ENABLE_NAIVE_EVALUATION
         naiveMapsPub = rclnode->create_publisher<MarkerArray>("/gsl_naive_maps", 1);
 #endif
+
+#if USE_GADEN
+        windClient = rclnode->create_client<WindEstimation>("/wind_value");
+#endif
+
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);
         waitForMapState = std::make_unique<WaitForMapState>(this);
@@ -80,6 +91,7 @@ namespace GSL
         std::string simulatedMeasurementsPath = rclnode->declare_parameter<std::string>("sim_measurements_path", "?");
         if (simulatedMeasurementsPath != "?")
         {
+            GSL_INFO("Reading serialized measurements from '{}'", simulatedMeasurementsPath);
             SimulateMeasurements(simulatedMeasurementsPath);
             UpdateWindMaps();
         }
@@ -113,18 +125,52 @@ namespace GSL
 
     void GraphGSL::UpdateWindMaps()
     {
+        ScopedStopwatch watch("Wind update");
+
+#if USE_GADEN
+        auto request = std::make_shared<WindEstimation::Request>();
+        auto freeCells = graph.GetAllFreeCells();
+        for (const auto& cell : freeCells)
+        {
+            Vector2 coords = As<RoomNode>(cell.node)->GetOccupancy().metadata.indicesToCoordinates(cell.indices);
+            request->x.push_back(coords.x);
+            request->y.push_back(coords.y);
+            request->z.push_back(0.5);
+        }
+
+        auto future = windClient->async_send_request(request);
+        auto result = rclcpp::spin_until_future_complete(rclnode, future, std::chrono::seconds(5));
+        if (result == rclcpp::FutureReturnCode::SUCCESS)
+        {
+            auto response = future.get();
+            for (int ind = 0; ind < request->x.size(); ind++)
+            {
+                CellIdentifier cell = freeCells.at(ind);
+                auto room = As<RoomNode>(cell.node);
+                room->GetWindMap().dataAt(cell.indices) = Vector2(response->u[ind], response->v[ind]);
+                
+                Vector2 coords = As<RoomNode>(cell.node)->GetOccupancy().metadata.indicesToCoordinates(cell.indices);
+                naiveEntireMap->GetWindMap().dataAt(coords) = Vector2(response->u[ind], response->v[ind]);
+            }
+        }
+        else
+            GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
+
+#else
         graph.UpdateAllWindMaps();
         naiveEntireMap->UpdateWindMap(graph.gmrf);
+#endif
+
     }
 
     void GraphGSL::EvaluateRoomProbabilities()
     {
-        ScopedStopwatch watch("Total evaluation time");
-
         if (auto move = As<MovingStateGraph>(movingState))
             move->ResetVariances();
 
         UpdateWindMaps();
+
+        ScopedStopwatch watch("Total evaluation time");
         simulationSystem.Reset();
         ThreadPool pool;
 
@@ -169,7 +215,7 @@ namespace GSL
         std::ranges::sort(nodeResiduals, [](const auto& a, const auto& b)
                           { return a.residual < b.residual; });
 
-        constexpr float doFineLevelThreshold = 0.3;
+        constexpr float doFineLevelThreshold = 0.15;
         std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
         if (roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
         {
@@ -186,7 +232,7 @@ namespace GSL
                     nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
                     GSL_TRACE("Lowest residual for node {}: {:.3e}", room->id, lowestResidual);
 
-                    constexpr float toleranceFactor = 1.0;
+                    constexpr float toleranceFactor = 0.5;
                     if (i + 1 == nodeResiduals.size())
                     {
                         GSL_TRACE("No more nodes available for fine-level simulation");
@@ -250,7 +296,7 @@ namespace GSL
         if (auto move = As<MovingStateGraph>(movingState))
         {
             move->UpdateExpectedVariance();
-            move->UpdateInfoGain(); //TODO this probably wants to be removed once we are not triggering evaluation from the GUI
+            move->UpdateInfoGain(); // TODO this probably wants to be removed once we are not triggering evaluation from the GUI
         }
     }
 
@@ -436,7 +482,7 @@ namespace GSL
             confidenceSum += 1 - u;
 
         NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
-        if(!std::isfinite(result.residual))
+        if (!std::isfinite(result.residual))
         {
             result.residual = 0;
             result.scales.resize(simulationSystem.gasMapsWithRoomSource.at(sourceNode).size(), 0.0);
@@ -611,16 +657,24 @@ namespace GSL
 
     void GraphGSL::Visualize()
     {
+        static Utils::Time::Countdown lowFreqTimer(1.0);
+
+        if(lowFreqTimer.isDone())
+        {
+            pubs.windPub->publish(graph.VisualizeWind(naiveEntireMap));
+            pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());
+            lowFreqTimer.Restart();
+        }
+
         pubs.graphPub->publish(graph.VisualizeGraph(roomSourceProbabilities));
+        pubs.doorwaysPub->publish(graph.VisualizeDoorwayCells());
         pubs.occupancyPub->publish(graph.VisualizeOccupancy());
-        pubs.windPub->publish(graph.VisualizeWind(naiveEntireMap));
         pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
         pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(simulationViz.selectedNode, simulationViz.simulationIndex, graph.vizOptions.nodeSeparationViz));
 #if ENABLE_NAIVE_EVALUATION
         if (naiveSimulationIndex < naiveCompleteMaps.size())
             naiveMapsPub->publish(Graph_internal::VisualizeCompleteMap(naiveCompleteMaps.at(naiveSimulationIndex), {naiveEntireMap}, graph.vizOptions.nodeSeparationViz, 0.2));
 #endif
-        pubs.quadtreePub->publish(graph.VisualizeMapSegmentation());
         pubs.sourceProbPub->publish(graph.VisualizeSourceProbs());
         UpdateExpectedValue();
         Utils::publishPositionWCovariance(vmath::WithZ(expectedValue, 0.6), cov, "/expected_source_position");

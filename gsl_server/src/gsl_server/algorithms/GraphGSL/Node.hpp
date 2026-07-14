@@ -67,7 +67,7 @@ namespace GSL
         void UpdateWindMap(std::shared_ptr<gmrfw::CGMRF_map> gmrf);
         void SetOccupancy(Grid2D<Occupancy> grid);
         const Grid2D<Occupancy> GetOccupancy() const;
-        const Grid2D<Vector2> GetWindMap();
+        Grid2D<Vector2> GetWindMap();
         const Grid2D<KernelDMVW::KernelCell> GetGasMap();
         const Grid2D<int> GetOutletsMask();
         Grid2D<float> GetSourceProbabilities();

@@ -269,7 +269,7 @@ namespace GSL
     {
         grid.data.resize(grid.metadata.dimensions.x * grid.metadata.dimensions.y);
 
-#ifdef USE_GADEN
+#if USE_GADEN
         if (settings.useWindGroundTruth)
         {
             std::string anemometer_frame = algorithm.getParam<std::string>("anemometer_frame", "anemometer_frame");
@@ -325,7 +325,7 @@ namespace GSL
                                    IF_GADEN(, PMFS_internal::GroundTruthWind& groundTruth))
     {
         // if not compiled with gaden support, you have no choice but to use GMRF :)
-#ifdef USE_GADEN
+#if USE_GADEN
         if (!useGroundTruth)
         {
 #endif
@@ -345,7 +345,7 @@ namespace GSL
             else
                 GSL_WARN("CANNOT READ ESTIMATED WIND VECTORS");
 
-#ifdef USE_GADEN
+#if USE_GADEN
         }
 
         else

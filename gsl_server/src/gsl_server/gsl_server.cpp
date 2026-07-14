@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 GSLResult GSLServer::runMethod(std::shared_ptr<GSL::Algorithm> algorithm)
 {
     algorithm->Initialize();
+    GSL_INFO_COLOR(fmt::terminal_color::blue, "INITIALIZATON COMPLETED");
 
     rclcpp::Rate rate(20);
     while (rclcpp::ok() && !algorithm->HasEnded())

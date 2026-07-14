@@ -35,6 +35,7 @@ namespace GSL
         MarkerArray VisualizeGasReadings();
         MarkerArray VisualizeWind(std::shared_ptr<class RoomNode> roomNode);
         MarkerArray VisualizeMapSegmentation();
+        MarkerArray VisualizeDoorwayCells();
         MarkerArray VisualizeSourceProbs();
 
     public:

@@ -42,7 +42,7 @@ namespace GSL
         // quadtree decomposition
         NQA::Quadtree quadtree(GetOccupancy());
         size_t best = std::numeric_limits<size_t>::max();
-        for (size_t i = 0; i < 15; i++)
+        for (size_t i = 5; i < 10; i++)
         {
             std::vector<NQA::Node> _quadtreeLeaves = quadtree.fusedLeaves(i);
             if (_quadtreeLeaves.size() < best)
@@ -111,7 +111,7 @@ namespace GSL
         }
     }
 
-    const Grid2D<Vector2> RoomNode::GetWindMap()
+    Grid2D<Vector2> RoomNode::GetWindMap()
     {
         return WindAsGrid();
     }

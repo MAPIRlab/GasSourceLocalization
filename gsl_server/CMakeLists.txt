@@ -20,7 +20,7 @@ set(GSL_TRACING ON)
 
 # if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. 
 # If you dont have gaden in this workspace, you need to set this to OFF or it wont compile
-set(USE_GADEN OFF)
+set(USE_GADEN ON)
 
 # if ON uses the nav_assistant package rather than directly communicating with nav_2. 
 # It adds some extra features, but currently it has a relatively high performance cost due to async inter-process communication  
@@ -31,9 +31,9 @@ set(USE_GUI ON)
 
 
 # Tracy is a profiler. ON enables some instrumentation macros (and adds a dependency to tracy). To do sampling-based profiling you also need to run the node as sudo
-set(USE_TRACY OFF)
+set(USE_TRACY ON)
 # disable to do sampling-only profiling
-set(USE_TRACY_INSTRUMENTATION OFF)
+set(USE_TRACY_INSTRUMENTATION ON)
 
 set(DISABLE_NAVIGATION OFF) # Disables navigation decisions and lets you control the robot directly. For testing, mostly
 ##############################################################################

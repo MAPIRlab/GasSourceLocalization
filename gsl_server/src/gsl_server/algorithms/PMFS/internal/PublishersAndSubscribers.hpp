@@ -5,7 +5,7 @@
 #include <rclcpp/client.hpp>
 #include <gmrf_msgs/srv/wind_estimation.hpp>
 
-#ifdef USE_GADEN
+#if USE_GADEN
 #include <gaden_msgs/srv/wind_position.hpp>
 #endif
 
@@ -21,7 +21,7 @@ namespace GSL
             WindEstimation::Request::SharedPtr request;
             rclcpp::Client<WindEstimation>::SharedPtr client;
         };
-#ifdef USE_GADEN
+#if USE_GADEN
         struct GroundTruthWind
         {
             gaden_msgs::srv::WindPosition::Request::SharedPtr request;
@@ -33,7 +33,7 @@ namespace GSL
         {
             std::shared_ptr<rclcpp::Clock> clock;
             GMRFWind gmrfWind;
-#ifdef USE_GADEN
+#if USE_GADEN
             GroundTruthWind groundTruthWind;
 #endif
 

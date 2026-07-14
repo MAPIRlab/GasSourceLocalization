@@ -13,7 +13,7 @@ namespace GSL
                               float cellSize,
                               gmrfw::CGMRF_map::Parameters gmrfParams,
                               KernelDMVW::GasMap::Params kernelParams,
-                              bool initialize)
+                              bool initializeGMRF)
     {
         if (!std::filesystem::exists(folder))
         {
@@ -138,10 +138,10 @@ namespace GSL
             thisNode->UpdateDoorwayMask();
         }
 
-        if (initialize)
+        graph.completeMap = Utils::parseMapData(folder / "occupancy.yaml", cellSize);
+        if (initializeGMRF)
         {
             graph.gmrf_parameters = gmrfParams;
-            graph.completeMap = Utils::parseMapData(folder / "occupancy.yaml", cellSize);
             graph.gmrf = std::make_shared<gmrfw::CGMRF_map>(ToGMRFOcc(graph.completeMap.AsGrid()), graph.gmrf_parameters, false, false);
         }
 
@@ -544,6 +544,34 @@ namespace GSL
                 mark.color = Utils::create_color(1, 1, 1, 1);
                 array.markers.push_back(mark);
             }
+        }
+        return array;
+    }
+
+    MarkerArray Graph::VisualizeDoorwayCells()
+    {
+        MarkerArray array;
+        size_t roomInd = 0;
+        for (auto node : nodes)
+        {
+            auto roomNode = As<RoomNode>(node);
+            if (!roomNode)
+                continue;
+
+            Grid2D<int> mask = roomNode->GetOutletsMask();
+            std::vector<ColorRGBA> colors(mask.data.size(), Utils::create_color(0, 0, 0, 1));
+            for (size_t i = 0; i < mask.data.size(); i++)
+            {
+                if (mask.occupancy.at(i) && mask.data.at(i) != -1)
+                    colors.at(i) = Utils::Colors::GetDistinctColor(mask.data.at(i) + roomInd);
+            }
+
+            Grid2DMetadata vizMetadata = roomNode->GetSourceProbabilities().metadata;
+            vizMetadata.origin = vizMetadata.origin * vizOptions.nodeSeparationViz;
+
+            Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, mask.occupancy, vizMetadata), 0.3);
+            marker.id = roomInd++;
+            array.markers.push_back(marker);
         }
         return array;
     }

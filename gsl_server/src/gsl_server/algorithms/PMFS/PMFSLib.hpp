@@ -12,7 +12,7 @@
 
 #include <gmrf_msgs/srv/wind_estimation.hpp>
 
-#ifdef USE_GADEN
+#if USE_GADEN
 #include <gaden_msgs/srv/wind_position.hpp>
 #endif
 

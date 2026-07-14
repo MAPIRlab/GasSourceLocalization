@@ -1,4 +1,5 @@
 #pragma once
+#include "GadenWind.hpp"
 #include "Graph.hpp"
 #include "GraphUI.hpp"
 #include "NaiveSimulationSystem.hpp"
@@ -37,7 +38,6 @@ namespace GSL
         void GetNodeResidual(std::shared_ptr<PlaceNode> sourceNode, std::vector<NodeResult>& nodeResiduals, std::mutex& mtx);
         void CalculateNodeProbabilities(const std::vector<NodeResult>& nodeResiduals);
 
-
     private:
         Graph graph;
         Graph_internal::SimulationSystem simulationSystem;
@@ -59,6 +59,7 @@ namespace GSL
             rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePub;
             rclcpp::Publisher<MarkerArray>::SharedPtr sourceProbPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr infoGainPub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr doorwaysPub;
         } pubs;
 
         struct SimulationViz
@@ -75,6 +76,10 @@ namespace GSL
 #if USE_GUI
         friend class GraphUI;
         GraphUI gui;
+#endif
+
+#if USE_GADEN
+        rclcpp::Client<WindEstimation>::SharedPtr windClient;
 #endif
 
 #define ENABLE_NAIVE_EVALUATION 1
