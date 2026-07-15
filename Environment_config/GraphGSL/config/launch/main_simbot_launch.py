@@ -143,7 +143,7 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='anemometer_tf_pub',
-                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution(
+                arguments=['0', '0', '1.0', '1.0', '0.0', '0', '0', parse_substitution(
                     '$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_anemometer_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
@@ -170,7 +170,7 @@ def launch_setup(context, *args, **kwargs):
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 name='pid_tf_pub',
-                arguments=['0', '0', '0.5', '1.0', '0.0', '0', '0', parse_substitution(
+                arguments=['0', '0', '1.0', '1.0', '0.0', '0', '0', parse_substitution(
                     '$(var robot_name)_base_link'), parse_substitution('$(var robot_name)_pid_frame')],
                 parameters=[{'use_sim_time': True}]
             ),
