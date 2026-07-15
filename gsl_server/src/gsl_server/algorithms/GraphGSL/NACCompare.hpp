@@ -1,5 +1,6 @@
 #pragma once
 
+#include <numeric>
 #include <vector>
 
 namespace GSL::NAC
@@ -31,11 +32,17 @@ namespace GSL::NAC
 // ceres version
 namespace GSL::NACCeres
 {
+    struct Result
+    {
+        std::vector<float> residuals;
+        float TotalResidual(){ return std::accumulate(residuals.begin(), residuals.end(), 0.0f); }
+    };
+
     inline float defaultResidual = 1e-2;
     struct SingleScale
     {
         double scale;
-        float residual;
+        Result result;
     };
     SingleScale FitSingleScale(const std::vector<float>& simulated,
                                const std::vector<float>& observed,
@@ -44,7 +51,7 @@ namespace GSL::NACCeres
     struct MultipleScales
     {
         std::vector<double> scales;
-        float residual;
+        Result result;
     };
     MultipleScales FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
                            const std::vector<float>& observed,

@@ -20,7 +20,7 @@ set(GSL_TRACING ON)
 
 # if ON, the code is compiled with support for directly querying gaden simulations to obtain the wind ground truth. 
 # If you dont have gaden in this workspace, you need to set this to OFF or it wont compile
-set(USE_GADEN ON)
+set(USE_GADEN OFF)
 
 # if ON uses the nav_assistant package rather than directly communicating with nav_2. 
 # It adds some extra features, but currently it has a relatively high performance cost due to async inter-process communication  

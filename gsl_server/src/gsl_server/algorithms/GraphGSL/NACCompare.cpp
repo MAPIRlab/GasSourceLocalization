@@ -121,15 +121,14 @@ namespace GSL::NACCeres
         template <typename T>
         bool operator()(const T* const x, T* residual) const
         {
-            residual[0] = T(0);
             T scale = x[0];
-            residual[0] += EvaluateScale(scale * T(simulated), T(observed), T(uncertainty));
+            residual[0] = EvaluateScale(scale * T(simulated), T(observed), T(uncertainty));
 
             return true;
         }
     };
 
-    static float Solve(ceres::Problem& problem)
+    static Result Solve(ceres::Problem& problem)
     {
         // Run the solver!
         ceres::Solver::Options options;
@@ -151,8 +150,7 @@ namespace GSL::NACCeres
 
         problem.Evaluate(evaluate_options, &cost, &raw_residuals, nullptr, nullptr);
         
-        double residualsSum = std::accumulate(raw_residuals.begin(), raw_residuals.end(), 0.0);
-        return residualsSum;
+        return Result{ .residuals = std::vector<float>(raw_residuals.begin(), raw_residuals.end()) };
     }
 
     SingleScale FitSingleScale(const std::vector<float>& simulated,
@@ -172,8 +170,8 @@ namespace GSL::NACCeres
             problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), &x);
         }
 
-        float residual = Solve(problem);
-        return SingleScale{.scale = x, .residual = residual};
+        Result result = Solve(problem);
+        return SingleScale{.scale = x, .result = result};
     }
 
     // Evaluates the solution (vector of scales) for a single cell
@@ -205,7 +203,7 @@ namespace GSL::NACCeres
                                     const std::vector<float>& uncertainty)
     {
         if (simulated.empty())
-            return MultipleScales{.scales = {}, .residual = NAN};
+            return MultipleScales{.scales = {}, .result = Result{ .residuals = {} }};
 
         MultipleScales result;
         result.scales.resize(simulated.at(0).size(), 1.0);
@@ -237,7 +235,7 @@ namespace GSL::NACCeres
         }
 
         // Run the solver!
-        result.residual = Solve(problem);
+        result.result = Solve(problem);
         return result;
     }
 } // namespace GSL::NACCeres
