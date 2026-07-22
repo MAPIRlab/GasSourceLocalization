@@ -14,7 +14,7 @@ from launch.frontend.parse_substitution import parse_substitution
 
 def launch_arguments():
     return [
-        DeclareLaunchArgument("scenario", default_value="graph4"),
+        DeclareLaunchArgument("scenario", default_value="office"),
         DeclareLaunchArgument("configuration", default_value="config1"),
         DeclareLaunchArgument("simulation", default_value="sim1"),
         DeclareLaunchArgument("method",	default_value=["GraphGSL"]),
@@ -62,13 +62,13 @@ def launch_setup(context, *args, **kwargs):
                     # Mass conservation law -> divergence of the wind field is zero
                     {"GMRF_lambdaPrior_mass_conservation": 2e2},
                     # Diffusion constraint -> neighboring cells should have similar wind values in all directions
-                    {"GMRF_lambdaPrior_diffusion": 1e-3},
+                    {"GMRF_lambdaPrior_diffusion": 1e-1},
                     # Obstacles --> cells close to obstacles has only tangential wind
                     {"GMRF_lambdaPrior_obstacles": 1e2},
                     # Advection iterative process convergence
                     {"GMRF_picard_convergence_thr": 1e-2},
                     # Regularization parameter
-                    {"GMRF_lambda_regularization": 1e-8},
+                    {"GMRF_lambda_regularization": 1e-9},
 
                     {"kernel_sigma": 0.3},
                     {"kernel_stretch_constant": 0.4},

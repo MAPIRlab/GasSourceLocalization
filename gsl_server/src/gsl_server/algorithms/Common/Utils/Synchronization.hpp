@@ -33,4 +33,6 @@ namespace GSL::Utils
         T& obj;
         std::mutex& mtx;
     };
+
 } // namespace GSL::Utils
+#define SYNC(var) GSL::Utils::SyncedAccess(var).Get()

@@ -72,7 +72,7 @@ def launch_setup(context, *args, **kwargs):
             name='gaden_filament_simulator',
             output='screen',
             parameters=[ParameterFile(params_yaml_file, allow_substs=True),
-                        {"sim_time": 500.0},
+                        {"sim_time": 1000.0},
                         {"runRate": 0.0}
                         ]
         )

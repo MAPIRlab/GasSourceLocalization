@@ -10,6 +10,7 @@ namespace GSL
     struct Filament
     {
         Vector2 position;
+        uint age = 0;
         int mostRecentOutlet = -1;
     };
 

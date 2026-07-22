@@ -167,7 +167,7 @@ namespace GSL::NACCeres
                     .simulated = simulated.at(i),
                     .observed = observed.at(i),
                     .uncertainty = uncertainty.at(i)});
-            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), &x);
+            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), &x);
         }
 
         Result result = Solve(problem);
@@ -225,13 +225,13 @@ namespace GSL::NACCeres
                 cost_function->AddParameterBlock(1);
             cost_function->SetNumResiduals(1);
 
-            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(1.0), scale_pointers);
+            problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), scale_pointers);
         }
 
         for (size_t i = 0; i < result.scales.size(); i++)
         {
             problem.SetParameterLowerBound(scale_pointers.at(i), 0, 0.0);
-            problem.SetParameterUpperBound(scale_pointers.at(i), 0, 300.0);
+            problem.SetParameterUpperBound(scale_pointers.at(i), 0, 10.0);
         }
 
         // Run the solver!

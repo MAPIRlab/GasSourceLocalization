@@ -40,7 +40,7 @@ namespace GSL
                 {
                     // if the outlet is disabled, don't allow this filament to exit
                     // filament.position = oldPos;
-                    return false; 
+                    return false;
                 }
             }
             else
@@ -152,6 +152,7 @@ namespace GSL
                     Vector2 oldPos = filament.position;
                     moveFilament(filament, indices, deltaTime * warmupAcceleration, noiseSTDev / warmupAcceleration);
 
+                    filament.age++;
                     // remove filaments
                     if (filamentIsOutside(filament, oldPos, 0, updateFunc))
                         stable = true;
@@ -190,11 +191,13 @@ namespace GSL
                     continue;
 
                 GSL_ASSERT(wind.metadata.indicesInBounds(indices));
-                updateFunc.Update(hitMap, updated, index, t);
+                if (filament.age > 10)
+                    updateFunc.Update(hitMap, updated, index, t);
 
                 // move active filaments
                 Vector2 oldPos = filament.position;
                 moveFilament(filament, indices, deltaTime, noiseSTDev);
+                filament.age++;
 
                 // remove filaments
                 if (!filamentIsOutside(filament, oldPos, t, updateFunc))

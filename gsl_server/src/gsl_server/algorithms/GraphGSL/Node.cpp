@@ -162,7 +162,7 @@ namespace GSL
 
     CellIdentifier RoomNode::GetCellIdentifier(size_t index)
     {
-        return CellIdentifier{shared_from_this(), gridMetadata.indices2D(index)};
+        return CellIdentifier{this, gridMetadata.indices2D(index)};
     }
 
     void RoomNode::ResetObservations()

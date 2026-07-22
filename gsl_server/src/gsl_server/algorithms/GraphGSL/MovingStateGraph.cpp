@@ -1,7 +1,8 @@
 #include "MovingStateGraph.hpp"
 #include "GraphGSL.hpp"
+#include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
 
-#define SCALE_EXPECTED_MAPS 0
+#define SCALE_EXPECTED_MAPS 1
 
 namespace GSL
 {
@@ -53,9 +54,9 @@ namespace GSL
                     continue;
                 CellIdentifier id = roomNode->GetCellIdentifier(i);
                 explorationValue[id] = CalculateExplorationValue(id);
-                finalInfoValue[roomNode].at(i) = explorationValue[id]                                    //
-                                                 * (expectedGasVariances[roomNode].at(i).variance + 0.1) //
-                                                                                                         //  * doorwayValue[id]                                      //
+                finalInfoValue.at(roomNode).at(i) = explorationValue[id]                                       //
+                                                    * (expectedGasVariances.at(roomNode).at(i).variance + 0.1) //
+                                                                                                               //  * doorwayValue[id]                                      //
                     ;
             }
         }
@@ -92,26 +93,30 @@ namespace GSL
         // reset all the information from previous simulations
         expectedGasVariances.clear();
 
-        // start updating the values with the latest results
+        Utils::Synced<decltype(expectedGasVariances)&> syncedExpectedGasVariances(expectedGasVariances);
 
+        // start updating the values with the latest results
+        ThreadPool pool;
         auto updateWithExpectedMap = [&](const Graph_internal::CompleteMap& completeMap, float probability)
         {
+            ZoneScopedN("ExpectedVariances");
             for (const auto& entry : completeMap.gasMaps)
             {
                 const auto& room = entry.first;
                 const auto& map = entry.second;
-                if (!expectedGasVariances.contains(room))
-                    expectedGasVariances[room] = std::vector<Utils::RunningVariance>(room->GetOccupancy().data.size());
+                Grid2D<Occupancy> occupancy = room->GetOccupancy();
+                if (!SYNC(syncedExpectedGasVariances).contains(room))
+                    SYNC(syncedExpectedGasVariances)
+                [room].resize(occupancy.data.size());
 
-#pragma omp parallel for schedule(dynamic, 50)
+                auto node = As<PlaceNode>(room);
                 for (size_t i = 0; i < map.size(); ++i)
                 {
-                    if (!room->GetOccupancy().data.at(i))
+                    if (!occupancy.data.at(i))
                         continue;
-                    float value = map.at(i);
-                    float weight = std::pow(probability * 100, 2);
-                    expectedGasVariances[room].at(i).Update(value, weight);
-                    GSL_ASSERT(std::isfinite(expectedGasVariances[room].at(i).variance));
+                    float value = entry.second.at(i);
+                    float weight = probability;
+                    SYNC(syncedExpectedGasVariances).at(node).at(i).Update(value, probability);
                 }
             }
         };
@@ -122,32 +127,41 @@ namespace GSL
             {
                 float probability = gsl->roomSourceProbabilities.at(node);
                 Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(node->GetNodeIdentifier()).map;
-                updateWithExpectedMap(completeMap, probability);
+                pool.QueueJob([&, probability]()
+                              { updateWithExpectedMap(completeMap, std::pow(probability, 2)); });
             }
             else
             {
-                auto room = As<RoomNode>(node);
-                if (!room)
-                    continue;
-                Grid2D<float> probabilities = room->GetSourceProbabilities();
-                for (size_t cellIndex = 0; cellIndex < probabilities.data.size(); cellIndex++)
+                auto lambda = [&, node]()
                 {
-                    float probability = probabilities.data.at(cellIndex);
-                    if (probability < 1e-7)
-                        continue;
+                    auto room = As<RoomNode>(node);
+                    if (!room)
+                        return;
+                    Grid2D<float> probabilities = room->GetSourceProbabilities();
+                    for (size_t cellIndex = 0; cellIndex < probabilities.data.size(); cellIndex++)
+                    {
+                        float probability = probabilities.data.at(cellIndex);
+                        if (probability < 1e-4)
+                            continue;
 
-                    CellIdentifier sourceID = room->GetCellIdentifier(cellIndex);
-                    Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(sourceID).map;
-                    updateWithExpectedMap(completeMap, probability);
-                }
+                        CellIdentifier sourceID = room->GetCellIdentifier(cellIndex);
+                        Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(sourceID).map;
+                        updateWithExpectedMap(completeMap, probability);
+                    }
+                };
+                pool.QueueJob(lambda);
             }
         }
+        pool.Wait();
+
+        GSL_INFO("...");
     }
 
     void MovingStateGraph::UpdateExpectedGasGeometricLevel(std::mutex& mtx, CellIdentifier id, float scale, const Graph_internal::CompleteMap& map)
     {
         {
             std::scoped_lock lock(mtx);
+            expectedGasMaps.erase(id.node->GetNodeIdentifier());
             expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
         }
 
@@ -175,7 +189,7 @@ namespace GSL
                                                       const std::deque<Graph_internal::CompleteMap>& simulations)
     {
         // store the scaled sum of the simulation results, to later evaluate the most interesting points for future measurement
-        CellIdentifier id{.node = sourceNode, .indices = CellIdentifier::WHOLE_NODE};
+        CellIdentifier id{.node = sourceNode.get(), .indices = CellIdentifier::WHOLE_NODE};
         expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
 
         float scaleSum = std::accumulate(scales.begin(), scales.end(), 0.0f);

@@ -32,7 +32,7 @@ namespace GSL
 
     struct CellIdentifier
     {
-        std::shared_ptr<PlaceNode> node;
+        PlaceNode* node;
         Vector2Int indices;
 
         static inline const Vector2Int WHOLE_NODE = {-INT_MAX, -INT_MAX};
@@ -48,7 +48,7 @@ namespace GSL
         virtual void UpdateDoorwayMask() {}
         const std::shared_ptr<DoorwayNode> GetDoorway(std::string_view name);
         virtual std::vector<Vector2> RepresentativePoints() const { return {GetPosition()}; }
-        CellIdentifier GetNodeIdentifier() { return CellIdentifier{shared_from_this(), CellIdentifier::WHOLE_NODE}; }
+        CellIdentifier GetNodeIdentifier() { return CellIdentifier{this, CellIdentifier::WHOLE_NODE}; }
         virtual void ResetObservations() {}
 
         std::vector<std::shared_ptr<DoorwayNode>> doorways;
@@ -117,7 +117,7 @@ namespace std
     {
         size_t operator()(const GSL::CellIdentifier& x) const
         {
-            return (size_t)(x.node.get()) ^ (size_t)(x.indices.x) ^ (size_t)(x.indices.y);
+            return (size_t)(x.node) ^ (size_t)(x.indices.x) ^ (size_t)(x.indices.y);
         }
     };
 

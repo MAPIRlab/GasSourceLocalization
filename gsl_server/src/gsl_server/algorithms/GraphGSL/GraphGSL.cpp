@@ -259,7 +259,7 @@ namespace GSL
                     nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
                     GSL_TRACE("Lowest residual for node {}: {:.2e}", room->id, lowestResidual);
 
-                    constexpr float toleranceFactor = 0.8;
+                    constexpr float toleranceFactor = 1.0;
                     if (i + 1 == nodeResiduals.size())
                     {
                         GSL_TRACE("No more nodes available for fine-level simulation");
@@ -322,6 +322,7 @@ namespace GSL
         UpdateExpectedValue();
         if (auto move = As<MovingStateGraph>(movingState))
         {
+            ZoneScopedN("UpdateExpectedVariance");
             move->UpdateExpectedVariance();
             move->UpdateInfoGain(); // TODO this probably wants to be removed once we are not triggering evaluation from the GUI
         }
@@ -380,7 +381,7 @@ namespace GSL
                                   }
 
                                   // indices are multiplied by AABBCENTER to signal that this is a special case (aabb center, rather than single cell)
-                                  CellIdentifier id{.node = roomNode,
+                                  CellIdentifier id{.node = roomNode.get(),
                                                     .indices = roomNode->GetOccupancy().metadata.coordinatesToIndices(sourcePoint) * CellIdentifier::AABBCENTER};
 
                                   if (auto move = As<MovingStateGraph>(movingState))
@@ -426,7 +427,7 @@ namespace GSL
             AABB2DInt aabbi = region->nqaNode.getAABB();
             AABB2D aabb = region->room->GetOccupancy().metadata.indicesToCoordinates(aabbi);
             Vector2Int centerIndices = region->room->GetOccupancy().metadata.coordinatesToIndices(aabb.center()) * CellIdentifier::AABBCENTER;
-            CellIdentifier centerID{.node = region->room,
+            CellIdentifier centerID{.node = region->room.get(),
                                     .indices = centerIndices};
             for (Vector2Int pos : aabbi)
             {
@@ -435,7 +436,7 @@ namespace GSL
                 // store the results of the finest simulation that includes this cell as representative of the cell itself
                 if (auto move = As<MovingStateGraph>(movingState))
                 {
-                    CellIdentifier thisID{region->room, pos};
+                    CellIdentifier thisID{region->room.get(), pos};
 
                     move->AssignAABBGasMapToCell(centerID, thisID);
                 }

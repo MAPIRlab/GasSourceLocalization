@@ -257,7 +257,7 @@ namespace GSL
             {
                 for (size_t i = 0; i < room->GetOccupancy().data.size(); ++i)
                     if (room->GetOccupancy().data.at(i))
-                        freeCells.push_back({.node = room, .indices = room->GetOccupancy().metadata.indices2D(i)});
+                        freeCells.push_back({.node = room.get(), .indices = room->GetOccupancy().metadata.indices2D(i)});
             }
         }
         return freeCells;

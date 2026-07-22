@@ -13,7 +13,7 @@ namespace GSL::Graph_internal
         float filamentsPerSecond = 5.0;
         float deltaTime = 0.1;
         float blurSigma = 1.5;
-        float noiseSTDev = 0.25;
+        float noiseSTDev = 0.15;
         float warmupTimeAcc = 4.0;
         size_t iterationLimit = 200;
         size_t minWarmupIterations = 1000;
