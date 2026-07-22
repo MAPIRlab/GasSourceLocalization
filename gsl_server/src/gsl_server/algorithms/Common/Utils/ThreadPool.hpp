@@ -93,9 +93,7 @@ inline void ThreadPool::WorkerLoop(size_t threadId)
         {
             std::unique_lock<std::mutex> lock(jobsMutex);
             condition.wait(lock, [this]()
-                           {
-                               return destructing || !jobs.empty();
-                           });
+                           { return destructing || !jobs.empty(); });
 
             if (destructing)
                 return;
@@ -104,19 +102,13 @@ inline void ThreadPool::WorkerLoop(size_t threadId)
                 continue;
             job = std::move(jobs.front());
             jobs.pop_front();
+            workersBusy++;
         }
 
-        if (job)
+        job.value()();
         {
-            {
-                std::unique_lock<std::mutex> lock(jobsMutex);
-                workersBusy++;
-            }
-            job.value()();
-            {
-                std::unique_lock<std::mutex> lock(jobsMutex);
-                workersBusy--;
-            }
+            std::unique_lock<std::mutex> lock(jobsMutex);
+            workersBusy--;
         }
     }
 }
