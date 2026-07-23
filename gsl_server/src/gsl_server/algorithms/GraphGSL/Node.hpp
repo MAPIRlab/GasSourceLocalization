@@ -20,6 +20,7 @@ namespace GSL
         std::string_view GetName() const { return name; }
 
         void FitToMapEdge();
+        static AABB2D FitAABBToMapEdge(Grid2D<Occupancy> occupancy, AABB2D aabb, std::string_view debugging_name);
         std::string_view GetDebuggingName() const { return _debugging_name; }
         void SetDebuggingName(std::string_view debugging_name) { _debugging_name = debugging_name; }
 

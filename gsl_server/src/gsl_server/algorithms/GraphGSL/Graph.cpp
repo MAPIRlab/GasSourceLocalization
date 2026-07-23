@@ -90,7 +90,10 @@ namespace GSL
                 }
                 otherNode = nodesByName.at(nameOtherPlace);
 
-                constexpr float maxDoorwaySize = 1.0f;
+                if(auto roomNode = As<RoomNode>(thisNode))
+                    aabb = DoorwayNode::FitAABBToMapEdge(roomNode->GetOccupancy(), aabb, fmt::format("{}-{}", thisNode->id, otherNode.lock()->id));
+
+                constexpr float maxDoorwaySize = 0.5f;
                 if (aabb.size().x < maxDoorwaySize && aabb.size().y < maxDoorwaySize)
                 {
                     std::string nameDoorway = linkFile.stem();

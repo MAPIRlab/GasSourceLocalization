@@ -207,6 +207,11 @@ namespace GSL
             return;
 
         auto occupancy = As<RoomNode>(fromNode)->GetOccupancy();
+        aabb = FitAABBToMapEdge(occupancy, aabb, _debugging_name);
+    }
+
+    AABB2D DoorwayNode::FitAABBToMapEdge(Grid2D<Occupancy> occupancy, AABB2D aabb, std::string_view debugging_name)
+    {
         AABB2DInt aabbIdx{
             occupancy.metadata.coordinatesToIndices(aabb.min),
             occupancy.metadata.coordinatesToIndices(aabb.max)};
@@ -248,9 +253,9 @@ namespace GSL
         }
 
         GSL_VERIFY_MSG(validIndices.size() > 0 && (newAABB.min.x == newAABB.max.x || newAABB.min.y == newAABB.max.y),
-                       "Doorway '{}' AABB is not a line after fitting to map edge. Its geometric definition is probably not correct", _debugging_name);
+                       "Doorway '{}' AABB is not a line after fitting to map edge. Its geometric definition is probably not correct", debugging_name);
 
-        aabb = occupancy.metadata.indicesToCoordinates(newAABB);
+        return occupancy.metadata.indicesToCoordinates(newAABB);
     }
 
     size_t DoorwayNode::GetIndex() const
