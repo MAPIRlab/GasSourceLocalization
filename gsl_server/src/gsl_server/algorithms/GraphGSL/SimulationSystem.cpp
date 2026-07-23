@@ -14,6 +14,19 @@ namespace GSL::Graph_internal
         // blurMasks.clear(); //this can probably be retained (if the graph does not change)
     }
 
+    void SimulationSystem::PostProcessResult(SimWithResult& result, const Grid2D<Occupancy>& occupancy)
+    {
+        result.rawMaxValue = *std::max_element(result.hitMap->begin(), result.hitMap->end());
+        Utils::PowerMaxNormalize(*result.hitMap, occupancy.occupancy, 1.f);
+
+        for (auto& val : *result.hitMap)
+            if (val < 1e-4)
+                val = 0;
+
+        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f)
+                               { return std::isfinite(f); }));
+    }
+
     SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> roomNode, Vector2 point)
     {
         SimWithResult result;
@@ -40,11 +53,9 @@ namespace GSL::Graph_internal
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1.f);
-        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f)
-                               {
-                                   return std::isfinite(f);
-                               }));
+
+        PostProcessResult(result, roomNode->GetOccupancy());
+
         return result;
     }
 
@@ -90,21 +101,7 @@ namespace GSL::Graph_internal
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
         result.simulation->Run(*result.hitMap, type);
 
-        // equate the concentration at all the inlet cells to avoid having an artifact on the back ranks
-        AABB2DInt aabbIndices{nodeMetadata.coordinatesToIndices(sourceAABB.min), nodeMetadata.coordinatesToIndices(sourceAABB.max)};
-        Grid2D<float> resultGrid(*result.hitMap, roomNode->GetOccupancy());
-        float max = 0;
-        for (Vector2Int cell : aabbIndices)
-            max = std::max(max, resultGrid.dataAt(cell));
-        for (Vector2Int cell : aabbIndices)
-            if (roomNode->GetOccupancy().occupancyAt(cell))
-                resultGrid.dataAt(cell) = max;
-
-        Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1.f);
-        GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f)
-                               {
-                                   return std::isfinite(f);
-                               }));
+        PostProcessResult(result, roomNode->GetOccupancy());
         return result;
     }
 
@@ -170,7 +167,7 @@ namespace GSL::Graph_internal
                 SimWithResult result = SimulateSingleRoomFromPoint(roomNode, completeGasMap.source->GetPoint());
                 completeGasMap.gasMaps[roomNode] = *result.hitMap;
                 for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
-                    weightDoorwaysfirstNodeInSim.at(i) = result.ProportionInDoorway(i);
+                    weightDoorwaysfirstNodeInSim.at(i) = result.ConcentrationAtDoorway(i);
             }
             else // if the source is an outside node, just use the doorways themselves as the starting point
                 for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
@@ -253,7 +250,7 @@ namespace GSL::Graph_internal
             }
 
             // should not happen, but avoid NaNs just in case
-            if(max == 0)
+            if (max == 0)
                 max = 1.f;
 
             for (auto& [node, map] : completeGasMap.gasMaps)
@@ -454,12 +451,12 @@ namespace GSL::Graph_internal
                     SimWithResult result = simulationCache.Get(current.doorSource);
 
                     // adjust for the fact that the normalized concentration at the inlet might not be 1
-                    float concentrationInlet = result.ProportionInDoorway(current.doorSource->GetIndex());
+                    float concentrationInlet = result.ConcentrationAtDoorway(current.doorSource->GetIndex());
                     float weight = 1.f / concentrationInlet;
 
                     // calculate how much of the gas in the current node makes it to the next node
                     size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
-                    gasProportion = weight * result.ProportionInDoorway(outletIndex);
+                    gasProportion = weight * result.ConcentrationExitingDoorway(outletIndex);
                 }
 
                 if (!Is<RoomNode>(next.doorSource->from))
@@ -471,7 +468,10 @@ namespace GSL::Graph_internal
                 next.gasProportion = gasProportion;
                 next.gasAtInlet = current.gasAtInlet * gasProportion;
                 if (next.gasProportion < minimumGasProportion || !std::isfinite(next.gasAtInlet))
+                {
+                    LOG_TRACE("Ignoring next node {}, too little gas", next.doorSource->GetDebuggingName());
                     continue;
+                }
 
                 // update the total amount of gas that passes through the doorway
                 totalGasThroughDoorway[next.doorSource] += next.gasAtInlet;
@@ -509,7 +509,7 @@ namespace GSL::Graph_internal
                 float weight = totalGasThroughDoorway.at(doorway);
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
-                float concentrationInlet = result.ProportionInDoorway(doorway->GetIndex());
+                float concentrationInlet = result.ConcentrationAtDoorway(doorway->GetIndex());
                 weight /= concentrationInlet;
 
                 for (size_t i = 0; i < result.hitMap->size(); i++)

@@ -191,8 +191,7 @@ namespace GSL
                     continue;
 
                 GSL_ASSERT(wind.metadata.indicesInBounds(indices));
-                if (filament.age > 10)
-                    updateFunc.Update(hitMap, updated, index, t);
+                updateFunc.Update(hitMap, updated, index, t);
 
                 // move active filaments
                 Vector2 oldPos = filament.position;

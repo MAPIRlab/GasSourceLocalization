@@ -81,8 +81,8 @@ namespace GSL
 
         AABB2D indicesToCoordinates(const AABB2DInt& aabb) const
         {
-            return AABB2D{.min = indicesToCoordinates(aabb.min) - Vector2{0.5, 0.5} * cellSize,
-                          .max = indicesToCoordinates(aabb.max) + Vector2{0.5, 0.5} * cellSize};
+            return AABB2D{.min = indicesToCoordinates(aabb.min) - Vector2{0.499, 0.499} * cellSize,
+                          .max = indicesToCoordinates(aabb.max) + Vector2{0.499, 0.499} * cellSize};
         }
     };
 

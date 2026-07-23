@@ -53,10 +53,13 @@ namespace GSL
                 if (!roomNode->GetGasMap().occupancy.at(i))
                     continue;
                 CellIdentifier id = roomNode->GetCellIdentifier(i);
+
+                float var = (expectedGasVariances.contains(roomNode) ? expectedGasVariances.at(roomNode).at(i).variance : 0) + 0.1f;
+
                 explorationValue[id] = CalculateExplorationValue(id);
-                finalInfoValue.at(roomNode).at(i) = explorationValue[id]                                       //
-                                                    * (expectedGasVariances.at(roomNode).at(i).variance + 0.1) //
-                                                                                                               //  * doorwayValue[id]                                      //
+                finalInfoValue.at(roomNode).at(i) = explorationValue[id] //
+                                                    * var                //
+                                                                         //  * doorwayValue[id]                                      //
                     ;
             }
         }

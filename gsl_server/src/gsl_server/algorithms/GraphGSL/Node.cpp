@@ -1,4 +1,5 @@
 #include "Node.hpp"
+#include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include <gsl_server/algorithms/Common/NQAQuadtree.hpp>
 
 namespace GSL
@@ -198,6 +199,59 @@ namespace GSL
 
     DoorwayNode::DoorwayNode(const std::string& _name) : name(_name), _debugging_name(name)
     {}
+
+    void DoorwayNode::FitToMapEdge()
+    {
+        auto fromNode = from.lock();
+        if (!fromNode || !Is<RoomNode>(fromNode))
+            return;
+
+        auto occupancy = As<RoomNode>(fromNode)->GetOccupancy();
+        AABB2DInt aabbIdx{
+            occupancy.metadata.coordinatesToIndices(aabb.min),
+            occupancy.metadata.coordinatesToIndices(aabb.max)};
+
+        std::vector<Vector2Int> validIndices;
+        for (Vector2Int indices : aabbIdx)
+        {
+            bool isEdge = indices.x == 0 || indices.x == occupancy.metadata.dimensions.x - 1 || indices.y == 0 || indices.y == occupancy.metadata.dimensions.y - 1;
+            isEdge = isEdge && occupancy.metadata.indicesInBounds(indices);
+
+            // cell is also an "edge" cell if one of the neighbors is unknown (other room)
+            if (!isEdge && occupancy.metadata.indicesInBounds(indices))
+            {
+                std::vector<Vector2Int> neighbors{indices + Vector2Int{-1, 0},
+                                                  indices + Vector2Int{1, 0},
+                                                  indices + Vector2Int{0, -1},
+                                                  indices + Vector2Int{0, 1}};
+                for (Vector2Int neighbor : neighbors)
+                {
+                    if (occupancy.metadata.indicesInBounds(neighbor) && occupancy.dataAt(neighbor) == Occupancy::Unknown)
+                    {
+                        isEdge = true;
+                        break;
+                    }
+                }
+            }
+
+            if (isEdge && occupancy.dataAt(indices))
+                validIndices.push_back(indices);
+        }
+
+        AABB2DInt newAABB;
+        for (const Vector2Int& indices : validIndices)
+        {
+            newAABB.min.x = std::min(newAABB.min.x, indices.x);
+            newAABB.min.y = std::min(newAABB.min.y, indices.y);
+            newAABB.max.x = std::max(newAABB.max.x, indices.x);
+            newAABB.max.y = std::max(newAABB.max.y, indices.y);
+        }
+
+        GSL_VERIFY_MSG(validIndices.size() > 0 && (newAABB.min.x == newAABB.max.x || newAABB.min.y == newAABB.max.y),
+                       "Doorway '{}' AABB is not a line after fitting to map edge. Its geometric definition is probably not correct", _debugging_name);
+
+        aabb = occupancy.metadata.indicesToCoordinates(newAABB);
+    }
 
     size_t DoorwayNode::GetIndex() const
     {

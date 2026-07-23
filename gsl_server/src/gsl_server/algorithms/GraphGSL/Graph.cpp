@@ -99,6 +99,7 @@ namespace GSL
                     doorway->from = thisNode;
                     doorway->to = otherNode;
                     doorway->aabb = aabb;
+                    doorway->FitToMapEdge();
                     doorway->samePhysicalDoorway = {doorway};
                     doorway->SetDebuggingName(fmt::format("{}({})", doorway->GetName(), doorway->from.lock()->id));
                     thisNode->doorways.push_back(doorway);
@@ -123,6 +124,7 @@ namespace GSL
                             doorway->to = otherNode;
                             doorway->aabb.min = aabb.min + Vector2(i * step.x, j * step.y);
                             doorway->aabb.max = aabb.min + Vector2((i + 1) * step.x, (j + 1) * step.y);
+                            doorway->FitToMapEdge();
                             doorway->SetDebuggingName(fmt::format("{}({})", doorway->GetName(), doorway->from.lock()->id));
                             thisNode->doorways.push_back(doorway);
                             samePhysicalDoorway.insert(doorway);

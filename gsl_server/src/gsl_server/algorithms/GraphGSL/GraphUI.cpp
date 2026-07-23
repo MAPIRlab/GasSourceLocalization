@@ -332,7 +332,7 @@ namespace GSL
                     // Log results
                     GSL_INFO("Emitted {} filaments during recording", result.simulation->totalEmittedFilaments);
                     for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
-                        GSL_INFO("{} -> {}", result.ProportionInDoorway(i), roomNode->doorways.at(i)->to.lock()->id);
+                        GSL_INFO("{} -> {}", result.ConcentrationExitingDoorway(i), roomNode->doorways.at(i)->to.lock()->id);
 
                     Utils::Winsorize(*result.hitMap);
                     Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy);

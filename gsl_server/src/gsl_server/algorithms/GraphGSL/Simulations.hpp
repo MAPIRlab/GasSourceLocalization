@@ -26,7 +26,10 @@ namespace GSL::Graph_internal
         std::shared_ptr<Simulation> simulation;
         std::shared_ptr<std::vector<float>> hitMap;
 
-        float ProportionInDoorway(size_t index, const std::vector<float>* map = nullptr) const;
+        float ConcentrationExitingDoorway(size_t index) const;
+        float ConcentrationAtDoorway(size_t index) const;
+
+        float rawMaxValue;
     };
 
     struct Source
@@ -104,10 +107,16 @@ namespace GSL::Graph_internal
         return array;
     }
 
-    inline float SimWithResult::ProportionInDoorway(size_t index, const std::vector<float>* map) const
+    inline float SimWithResult::ConcentrationExitingDoorway(size_t index) const
+    {
+        size_t count = simulation->outlets->exitsPerOutlet.at(index);
+        return (float(count) / rawMaxValue) / simulation->outlets->numCellsOutlet.at(index);
+    }
+
+    inline float SimWithResult::ConcentrationAtDoorway(size_t index) const
     {
         const auto& mask = simulation->outlets->mask;
-        const auto& localHitMap = map ? *map : *hitMap;
+        const auto& localHitMap = *hitMap;
 
         float sum = 0;
         for (size_t i = 0; i < mask.data.size(); i++)

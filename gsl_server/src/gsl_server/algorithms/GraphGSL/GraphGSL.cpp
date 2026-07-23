@@ -259,7 +259,7 @@ namespace GSL
                     nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
                     GSL_TRACE("Lowest residual for node {}: {:.2e}", room->id, lowestResidual);
 
-                    constexpr float toleranceFactor = 1.0;
+                    constexpr float toleranceFactor = 0.8;
                     if (i + 1 == nodeResiduals.size())
                     {
                         GSL_TRACE("No more nodes available for fine-level simulation");
@@ -323,8 +323,8 @@ namespace GSL
         if (auto move = As<MovingStateGraph>(movingState))
         {
             ZoneScopedN("UpdateExpectedVariance");
-            move->UpdateExpectedVariance();
-            move->UpdateInfoGain(); // TODO this probably wants to be removed once we are not triggering evaluation from the GUI
+            // move->UpdateExpectedVariance();
+            // move->UpdateInfoGain(); // TODO this probably wants to be removed once we are not triggering evaluation from the GUI
         }
     }
 

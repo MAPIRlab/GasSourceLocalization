@@ -90,6 +90,7 @@ namespace GSL::Graph_internal
         };
         Utils::Synced<std::map<DoorwayPair, float>> doorwayPairs;
 
+        void PostProcessResult(SimWithResult& result, const Grid2D<Occupancy>& occupancy);
         void _SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, CompleteMap& completeMap);
         void PropagateSimThroughGraph(std::deque<NodeState>& stateStack, CompleteMap& completeGasMap, const std::shared_ptr<PlaceNode> firstNodeInSim);
     };

@@ -15,28 +15,35 @@
 #define GSL_ERROR(...) RCLCPP_ERROR(rclcpp::get_logger("GSL"), "%s", fmt::format(fmt::fg(fmt::terminal_color::red), __VA_ARGS__).c_str())
 
 #if GSL_TRACING
-    #define GSL_TRACE(...) RCLCPP_INFO(rclcpp::get_logger("GSL - Trace"), "%s", fmt::format(fmt::fg(fmt::terminal_color::green), __VA_ARGS__).c_str())
+#define GSL_TRACE(...) RCLCPP_INFO(rclcpp::get_logger("GSL - Trace"), "%s", fmt::format(fmt::fg(fmt::terminal_color::green), __VA_ARGS__).c_str())
 #else
-    #define GSL_TRACE(...)
+#define GSL_TRACE(...)
 #endif
 
-// Asserts will raise SIGTRAP if condition fails. If you have a debugger, that will stop it in the appropriate line. Otherwise, the program ends.
+// Asserts and verifies will raise SIGTRAP if condition fails. If you have a debugger, that will stop it in the appropriate line. Otherwise, the program ends.
+
+//verify
+#define GSL_VERIFY_MSG(cnd, ...)                                                                                                 \
+    {                                                                                                                            \
+        if (!(cnd))                                                                                                              \
+        {                                                                                                                        \
+            GSL_ERROR("{0}:     At {1}",                                                                                         \
+                      fmt::format(fmt::bg(fmt::terminal_color::red) | fmt::fg(fmt::terminal_color::white) | fmt::emphasis::bold, \
+                                  fmt::format(__VA_ARGS__)),                                                                     \
+                      fmt::format(fmt::emphasis::bold, "{0}:{1}", __FILE__, __LINE__));                                          \
+            raise(SIGTRAP);                                                                                                      \
+        }                                                                                                                        \
+    }
+
+#define GSL_VERIFY(cnd) GSL_VERIFY_MSG(cnd, "")
+
+// assert
 #if GSL_DEBUG
-    #define GSL_ASSERT_MSG(cnd, ...)                                                                                                                 \
-        {                                                                                                                                            \
-            if (!(cnd))                                                                                                                              \
-            {                                                                                                                                        \
-                GSL_ERROR("{0}:     At {1}",                                                                                                         \
-                          fmt::format(fmt::bg(fmt::terminal_color::red) | fmt::fg(fmt::terminal_color::white) | fmt::emphasis::bold,                 \
-                                      fmt::format(__VA_ARGS__)),                                                                                     \
-                          fmt::format(fmt::emphasis::bold, "{0}:{1}", __FILE__, __LINE__));                                                          \
-                raise(SIGTRAP);                                                                                                                      \
-            }                                                                                                                                        \
-        }
+#define GSL_ASSERT_MSG(cnd, ...) GSL_VERIFY_MSG(cnd, __VA_ARGS__)
 
 #else
 
-    #define GSL_ASSERT_MSG(cnd, ...)
+#define GSL_ASSERT_MSG(cnd, ...)
 
 #endif
 

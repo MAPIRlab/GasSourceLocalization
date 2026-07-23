@@ -5,8 +5,8 @@ namespace GSL
 {
     struct AABB2D
     {
-        Vector2 min;
-        Vector2 max;
+        Vector2 min = Vector2{FLT_MAX, FLT_MAX};
+        Vector2 max = Vector2{-FLT_MAX, -FLT_MAX};
 
         Vector2 center() const { return min + 0.5f * size(); }
         Vector2 size() const { return max - min; }
@@ -24,8 +24,8 @@ namespace GSL
     // AABB expressed as the minimum and maximum indices. Implements iterator to traverse the box, x first, y later
     struct AABB2DInt
     {
-        Vector2Int min;
-        Vector2Int max;
+        Vector2Int min = Vector2Int{INT_MAX, INT_MAX};
+        Vector2Int max = Vector2Int{-INT_MAX, -INT_MAX};
 
         AABB2DInt() {}
         AABB2DInt(const Vector2Int& _min, const Vector2Int& _max) : min(_min), max(_max)
