@@ -100,13 +100,15 @@ namespace GSL
 
         // start updating the values with the latest results
         ThreadPool pool;
-        auto updateWithExpectedMap = [&](const Graph_internal::CompleteMap& completeMap, float weight, Vector2 sourcePos)
+        auto updateWithExpectedMap = [&](const Graph_internal::CompleteMap& completeMap, float weight, PlaceNode* sourceNode, Vector2 sourcePos)
         {
             ZoneScopedN("ExpectedVariances");
             for (const auto& entry : completeMap.gasMaps)
             {
                 const auto& room = entry.first;
                 const auto& map = entry.second;
+                if (room.get() == sourceNode)
+                    continue;
                 Grid2D<Occupancy> occupancy = room->GetOccupancy();
                 // clang-format off
                 if (!SYNC(syncedExpectedGasVariances).contains(room))
@@ -120,8 +122,10 @@ namespace GSL
                         continue;
                     Vector2 position = occupancy.metadata.indexToCoordinates(i);
                     float t = std::pow(vmath::length(sourcePos - position) * alpha, p);
-                    float scaled_weight = weight * std::lerp(1.0, 0.1, t);
+                    float scale = std::lerp(1.0, 0.1, std::clamp(t, 0.0f, 1.0f));
+                    float scaled_weight = weight * scale;
                     float value = entry.second.at(i);
+
                     SYNC(syncedExpectedGasVariances).at(node).at(i).Update(value, scaled_weight);
                     GSL_ASSERT(std::isfinite(SYNC(syncedExpectedGasVariances).at(node).at(i).mean));
                 }
@@ -136,7 +140,7 @@ namespace GSL
                               {
                                   Vector2 position = region.node->GetPosition();
                                   float weight = gsl->roomSourceProbabilities.at(region.node);
-                                  updateWithExpectedMap(*predictedMap.map, weight, position);
+                                  updateWithExpectedMap(*predictedMap.map, weight, region.node, position);
                               });
             }
             else
@@ -146,7 +150,7 @@ namespace GSL
                               {
                                   Vector2 position = As<RoomNode>(region.node)->GetOccupancy().metadata.indicesToCoordinates(region.indices);
                                   float weight = As<RoomNode>(region.node)->GetSourceProbabilities().dataAt(region.indices) * region.size.x * region.size.y;
-                                  updateWithExpectedMap(*predictedMap.map, weight, position);
+                                  updateWithExpectedMap(*predictedMap.map, weight, region.node, position);
                               });
             }
         }
