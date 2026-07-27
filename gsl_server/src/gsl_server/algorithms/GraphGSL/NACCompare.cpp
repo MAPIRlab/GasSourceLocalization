@@ -112,6 +112,42 @@ namespace GSL::NACCeres
         return diff;
     }
 
+    // punish all 0 scales
+    struct CostFunctorNullScale
+    {
+        size_t n;
+
+        template <typename T>
+        T Eval(T scale) const
+        {
+            return 50. * ceres::exp(-scale * 0.8);
+        }
+
+        template <typename T>
+        bool operator()(const T* const* x, T* residual) const
+        {
+            T scale(0);
+            for (size_t i = 0; i < n; i++)
+                scale += *x[i];
+
+            residual[0] = Eval(scale);
+
+            return true;
+        }
+
+        template <typename T>
+        bool operator()(const T* x, T* residual) const
+        {
+            T scale(0);
+            for (size_t i = 0; i < n; i++)
+                scale += x[i];
+
+            residual[0] = Eval(scale);
+
+            return true;
+        }
+    };
+
     struct CostFunctorSingle
     {
         const float simulated;
@@ -140,8 +176,8 @@ namespace GSL::NACCeres
         // get the residual as a goodness of fit indicator
         ceres::Problem::EvaluateOptions evaluate_options;
         evaluate_options.apply_loss_function = false;
-        
-        // the cost reported by ceres has the squaring and loss function baked in, 
+
+        // the cost reported by ceres has the squaring and loss function baked in,
         // which makes it difficult for us to omit low-confidence cells from the optimization (even though their residual contribution should be constant)
         // so, instead, we'll take the raw residuals and manually sum them up as the final cost metric
         double cost;
@@ -149,8 +185,8 @@ namespace GSL::NACCeres
         std::vector<double> raw_residuals(num_residuals);
 
         problem.Evaluate(evaluate_options, &cost, &raw_residuals, nullptr, nullptr);
-        
-        return Result{ .residuals = std::vector<float>(raw_residuals.begin(), raw_residuals.end()) };
+
+        return Result{.residuals = std::vector<float>(raw_residuals.begin(), raw_residuals.end())};
     }
 
     SingleScale FitSingleScale(const std::vector<float>& simulated,
@@ -169,6 +205,10 @@ namespace GSL::NACCeres
                     .uncertainty = uncertainty.at(i)});
             problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), &x);
         }
+
+        problem.AddResidualBlock(new ceres::AutoDiffCostFunction<CostFunctorNullScale, 1, 1>(
+                                     new CostFunctorNullScale{.n = 1}),
+                                 nullptr, &x);
 
         Result result = Solve(problem);
         return SingleScale{.scale = x, .result = result};
@@ -203,7 +243,7 @@ namespace GSL::NACCeres
                                     const std::vector<float>& uncertainty)
     {
         if (simulated.empty())
-            return MultipleScales{.scales = {}, .result = Result{ .residuals = {} }};
+            return MultipleScales{.scales = {}, .result = Result{.residuals = {}}};
 
         MultipleScales result;
         result.scales.resize(simulated.at(0).size(), 1.0);
@@ -226,6 +266,17 @@ namespace GSL::NACCeres
             cost_function->SetNumResiduals(1);
 
             problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), scale_pointers);
+        }
+
+        {
+            auto* cost_function = new ceres::DynamicAutoDiffCostFunction<CostFunctorNullScale>(
+                new CostFunctorNullScale{.n = result.scales.size()});
+
+            for (size_t j = 0; j < result.scales.size(); j++)
+                cost_function->AddParameterBlock(1);
+            cost_function->SetNumResiduals(1);
+
+            problem.AddResidualBlock(cost_function, nullptr, scale_pointers);
         }
 
         for (size_t i = 0; i < result.scales.size(); i++)
