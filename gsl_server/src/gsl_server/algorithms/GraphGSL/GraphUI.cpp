@@ -113,6 +113,10 @@ namespace GSL
             //TODO remove this bit once we have settled on a reasonable value
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Info gain sigma", &As<MovingStateGraph>(gsl->movingState)->sigmaDist, 0.1, 0, 100, "%.2f");
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Alpha", &As<MovingStateGraph>(gsl->movingState)->alpha, 0.01, 0, 1, "%.2f");
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("P", &As<MovingStateGraph>(gsl->movingState)->p, 0.1, 0, 10, "%.2f");
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Node prob max", &gsl->graph.vizOptions.nodeProbMax, 0.01, 0., 1.0, "%.2f");

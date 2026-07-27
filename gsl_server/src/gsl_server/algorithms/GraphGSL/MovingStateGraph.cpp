@@ -2,7 +2,7 @@
 #include "GraphGSL.hpp"
 #include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
 
-#define SCALE_EXPECTED_MAPS 1
+#define SCALE_EXPECTED_MAPS 0
 
 namespace GSL
 {
@@ -100,7 +100,7 @@ namespace GSL
 
         // start updating the values with the latest results
         ThreadPool pool;
-        auto updateWithExpectedMap = [&](const Graph_internal::CompleteMap& completeMap, float probability)
+        auto updateWithExpectedMap = [&](const Graph_internal::CompleteMap& completeMap, float weight, Vector2 sourcePos)
         {
             ZoneScopedN("ExpectedVariances");
             for (const auto& entry : completeMap.gasMaps)
@@ -118,9 +118,12 @@ namespace GSL
                 {
                     if (!occupancy.data.at(i))
                         continue;
+                    Vector2 position = occupancy.metadata.indexToCoordinates(i);
+                    float t = std::pow(vmath::length(sourcePos - position) * alpha, p);
+                    float scaled_weight = weight * std::lerp(1.0, 0.1, t);
                     float value = entry.second.at(i);
-                    float weight = probability;
-                    SYNC(syncedExpectedGasVariances).at(node).at(i).Update(value, probability);
+                    SYNC(syncedExpectedGasVariances).at(node).at(i).Update(value, scaled_weight);
+                    GSL_ASSERT(std::isfinite(SYNC(syncedExpectedGasVariances).at(node).at(i).mean));
                 }
             }
         };
@@ -130,17 +133,21 @@ namespace GSL
             if (region.indices == RegionIdentifier::WHOLE_NODE)
             {
                 pool.QueueJob([&]()
-                              { 
-                                  float probability = gsl->roomSourceProbabilities.at(region.node);
-                                updateWithExpectedMap(*predictedMap.map, probability); });
+                              {
+                                  Vector2 position = region.node->GetPosition();
+                                  float weight = gsl->roomSourceProbabilities.at(region.node);
+                                  updateWithExpectedMap(*predictedMap.map, weight, position);
+                              });
             }
             else
             {
                 // if the node itself is not in the data structure, it must be a room (which got subdivided)
                 pool.QueueJob([&]()
-                              { 
-                    float probability = As<RoomNode>(region.node)->GetSourceProbabilities().dataAt(region.indices) * region.size.x * region.size.y;
-                    updateWithExpectedMap(*predictedMap.map, probability); });
+                              {
+                                  Vector2 position = As<RoomNode>(region.node)->GetOccupancy().metadata.indicesToCoordinates(region.indices);
+                                  float weight = As<RoomNode>(region.node)->GetSourceProbabilities().dataAt(region.indices) * region.size.x * region.size.y;
+                                  updateWithExpectedMap(*predictedMap.map, weight, position);
+                              });
             }
         }
         pool.Wait();

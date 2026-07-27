@@ -80,7 +80,7 @@ namespace GSL
         windClient = rclnode->create_client<WindEstimation>("/wind_value");
 #endif
 
-        NACCeres::defaultResidual = 30.f / graph.TotalFreeCellsCount(); // TODO check if this is a reasonable value
+        NACCeres::defaultResidual = 30.f / graph.TotalFreeCellsCount();
 
         // state machine
         waitForGasState = std::make_unique<WaitForGasState>(this);
@@ -189,7 +189,9 @@ namespace GSL
 
                 for (auto doorway : roomNode->doorways)
                     pool.QueueJob([&, doorway]()
-                                  { simulationSystem.SimulateEntireGraph(doorway); });
+                                  {
+                                      simulationSystem.SimulateEntireGraph(doorway);
+                                  });
             }
             pool.Wait();
         }
@@ -203,7 +205,9 @@ namespace GSL
             std::mutex mtx;
             for (const auto& node : graph.nodes)
                 pool.QueueJob([&]()
-                              { GetNodeResidual(node, nodeResiduals, mtx); });
+                              {
+                                  GetNodeResidual(node, nodeResiduals, mtx);
+                              });
             pool.Wait();
         }
 
@@ -212,7 +216,9 @@ namespace GSL
             for (auto node : graph.nodes)
             {
                 NodeResult& nodeRes = *std::find_if(nodeResiduals.begin(), nodeResiduals.end(), [node](const NodeResult& r)
-                                                    { return r.node == node; });
+                                                    {
+                                                        return r.node == node;
+                                                    });
                 if (auto roomNode = As<RoomNode>(node))
                 {
                     for (size_t i = 0; i < roomNode->GetOccupancy().data.size(); i++)
@@ -240,7 +246,9 @@ namespace GSL
         // if the fine-level simulations are not as good as the first (room-level) estimates, we might need to look at the second-best room as well
         // and so on, until we find an actually good candidate
         std::ranges::sort(nodeResiduals, [](const auto& a, const auto& b)
-                          { return a.residual < b.residual; });
+                          {
+                              return a.residual < b.residual;
+                          });
 
         constexpr float doFineLevelThreshold = 0.15;
         std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
@@ -391,7 +399,9 @@ namespace GSL
 
             // sort the results by the residuals
             std::ranges::sort(residualsThisLevel, [](const auto& a, const auto& b)
-                              { return a.second < b.second; });
+                              {
+                                  return a.second < b.second;
+                              });
 
             constexpr float proportionBest = 0.1;
             // subdivide the nodes with the best residuals and add the smaller bits to the queue
@@ -574,9 +584,13 @@ namespace GSL
         auto EvaluateSorting = [&]() -> float
         {
             std::ranges::sort(measuredValues, [](const CellValue& a, const CellValue& b)
-                              { return a.value < b.value; });
+                              {
+                                  return a.value < b.value;
+                              });
             std::ranges::sort(simulatedValues, [](const CellValue& a, const CellValue& b)
-                              { return a.value < b.value; });
+                              {
+                                  return a.value < b.value;
+                              });
 
             for (size_t i = 0; i < measuredValues.size(); i++)
                 normalizedOrders[measuredValues[i].kernelCell].measured = float(i) / measuredValues.size();
