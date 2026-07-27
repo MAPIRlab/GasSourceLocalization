@@ -52,7 +52,7 @@ namespace GSL
             {
                 if (!roomNode->GetGasMap().occupancy.at(i))
                     continue;
-                CellIdentifier id = roomNode->GetCellIdentifier(i);
+                RegionIdentifier id = roomNode->GetCellIdentifier(i);
 
                 float var = (expectedGasVariances.contains(roomNode) ? expectedGasVariances.at(roomNode).at(i).variance : 0) + 0.1f;
 
@@ -70,7 +70,7 @@ namespace GSL
         expectedGasVariances.clear();
     }
 
-    double MovingStateGraph::CalculateExplorationValue(const CellIdentifier& c)
+    double MovingStateGraph::CalculateExplorationValue(const RegionIdentifier& c)
     {
         // the exploration value is the sum of the uncertainty about the hit probability for all cells around (i,j), weighed by distance
         auto range = As<RoomNode>(c.node)->GetVisibilityMap().at(c.indices);
@@ -91,7 +91,7 @@ namespace GSL
     {
         GSL_INFO("Updating information gain");
         ScopedStopwatch watch("info gain");
-        std::vector<CellIdentifier> allFreeCells = gsl->graph.GetAllFreeCells();
+        std::vector<RegionIdentifier> allFreeCells = gsl->graph.GetAllFreeCells();
 
         // reset all the information from previous simulations
         expectedGasVariances.clear();
@@ -108,9 +108,10 @@ namespace GSL
                 const auto& room = entry.first;
                 const auto& map = entry.second;
                 Grid2D<Occupancy> occupancy = room->GetOccupancy();
+                // clang-format off
                 if (!SYNC(syncedExpectedGasVariances).contains(room))
-                    SYNC(syncedExpectedGasVariances)
-                [room].resize(occupancy.data.size());
+                    SYNC(syncedExpectedGasVariances)[room].resize(occupancy.data.size());
+                // clang-format on
 
                 auto node = As<PlaceNode>(room);
                 for (size_t i = 0; i < map.size(); ++i)
@@ -124,35 +125,22 @@ namespace GSL
             }
         };
 
-        for (auto node : gsl->graph.nodes)
+        for (auto& [region, predictedMap] : expectedGasMaps)
         {
-            if (expectedGasMaps.contains(node->GetNodeIdentifier()))
+            if (region.indices == RegionIdentifier::WHOLE_NODE)
             {
-                float probability = gsl->roomSourceProbabilities.at(node);
-                Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(node->GetNodeIdentifier()).map;
-                pool.QueueJob([&, probability]()
-                              { updateWithExpectedMap(completeMap, std::pow(probability, 2)); });
+                pool.QueueJob([&]()
+                              { 
+                                  float probability = gsl->roomSourceProbabilities.at(region.node);
+                                updateWithExpectedMap(*predictedMap.map, probability); });
             }
             else
             {
-                auto lambda = [&, node]()
-                {
-                    auto room = As<RoomNode>(node);
-                    if (!room)
-                        return;
-                    Grid2D<float> probabilities = room->GetSourceProbabilities();
-                    for (size_t cellIndex = 0; cellIndex < probabilities.data.size(); cellIndex++)
-                    {
-                        float probability = probabilities.data.at(cellIndex);
-                        if (probability < 1e-4)
-                            continue;
-
-                        CellIdentifier sourceID = room->GetCellIdentifier(cellIndex);
-                        Graph_internal::CompleteMap& completeMap = *expectedGasMaps.at(sourceID).map;
-                        updateWithExpectedMap(completeMap, probability);
-                    }
-                };
-                pool.QueueJob(lambda);
+                // if the node itself is not in the data structure, it must be a room (which got subdivided)
+                pool.QueueJob([&]()
+                              { 
+                    float probability = As<RoomNode>(region.node)->GetSourceProbabilities().dataAt(region.indices) * region.size.x * region.size.y;
+                    updateWithExpectedMap(*predictedMap.map, probability); });
             }
         }
         pool.Wait();
@@ -160,7 +148,7 @@ namespace GSL
         GSL_INFO("...");
     }
 
-    void MovingStateGraph::UpdateExpectedGasGeometricLevel(std::mutex& mtx, CellIdentifier id, float scale, const Graph_internal::CompleteMap& map)
+    void MovingStateGraph::UpdateExpectedGasGeometricLevel(std::mutex& mtx, RegionIdentifier id, float scale, const Graph_internal::CompleteMap& map)
     {
         {
             std::scoped_lock lock(mtx);
@@ -182,17 +170,12 @@ namespace GSL
         }
     }
 
-    void MovingStateGraph::AssignAABBGasMapToCell(CellIdentifier aabbID, CellIdentifier cellID)
-    {
-        expectedGasMaps[cellID] = expectedGasMaps.at(aabbID);
-    }
-
     void MovingStateGraph::UpdateExpectedGasRoomLevel(std::shared_ptr<PlaceNode> sourceNode,
                                                       const std::vector<double>& scales,
                                                       const std::deque<Graph_internal::CompleteMap>& simulations)
     {
         // store the scaled sum of the simulation results, to later evaluate the most interesting points for future measurement
-        CellIdentifier id{.node = sourceNode.get(), .indices = CellIdentifier::WHOLE_NODE};
+        RegionIdentifier id{.node = sourceNode.get(), .indices = RegionIdentifier::WHOLE_NODE};
         expectedGasMaps[id] = {.map = std::make_shared<Graph_internal::CompleteMap>()};
 
         float scaleSum = std::accumulate(scales.begin(), scales.end(), 0.0f);

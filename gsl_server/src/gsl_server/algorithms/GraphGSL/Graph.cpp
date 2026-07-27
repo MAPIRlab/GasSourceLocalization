@@ -90,10 +90,7 @@ namespace GSL
                 }
                 otherNode = nodesByName.at(nameOtherPlace);
 
-                if(auto roomNode = As<RoomNode>(thisNode))
-                    aabb = DoorwayNode::FitAABBToMapEdge(roomNode->GetOccupancy(), aabb, fmt::format("{}-{}", thisNode->id, otherNode.lock()->id));
-
-                constexpr float maxDoorwaySize = 0.5f;
+                constexpr float maxDoorwaySize = 1.0f;
                 if (aabb.size().x < maxDoorwaySize && aabb.size().y < maxDoorwaySize)
                 {
                     std::string nameDoorway = linkFile.stem();
@@ -252,9 +249,9 @@ namespace GSL
         return count;
     }
 
-    std::vector<CellIdentifier> Graph::GetAllFreeCells()
+    std::vector<RegionIdentifier> Graph::GetAllFreeCells()
     {
-        std::vector<CellIdentifier> freeCells;
+        std::vector<RegionIdentifier> freeCells;
         freeCells.reserve(1000);
         for (const auto& node : nodes)
         {
@@ -290,7 +287,7 @@ namespace GSL
         return mgrid;
     }
 
-    MarkerArray Graph::VisualizeGraph(const std::map<std::shared_ptr<PlaceNode>, float>& roomSourceProbabilities)
+    MarkerArray Graph::VisualizeGraph(const std::map<const PlaceNode*, float>& roomSourceProbabilities)
     {
         constexpr float markerHeight = 0.5;
         MarkerArray array;
@@ -311,7 +308,7 @@ namespace GSL
 
             // node marker
             {
-                float value = roomSourceProbabilities.contains(node) ? roomSourceProbabilities.at(node) : 0.0f;
+                float value = roomSourceProbabilities.contains(node.get()) ? roomSourceProbabilities.at(node.get()) : 0.0f;
                 ColorRGBA color = Utils::valueToColor(value, 0., vizOptions.nodeProbMax, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Plasma);
                 Marker marker;
                 marker.header.frame_id = "map";

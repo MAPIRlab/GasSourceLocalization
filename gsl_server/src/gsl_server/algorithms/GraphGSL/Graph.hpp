@@ -25,12 +25,12 @@ namespace GSL
         Map2D completeMap;
 
         size_t TotalFreeCellsCount();
-        std::vector<CellIdentifier> GetAllFreeCells();
+        std::vector<RegionIdentifier> GetAllFreeCells();
         MultiGrid<float> GetAllSourceProbs();
         MultiGrid<KernelDMVW::KernelCell> GetAllKernelCells();
 
         // visualization
-        MarkerArray VisualizeGraph(const std::map<std::shared_ptr<PlaceNode>, float>& roomSourceProbabilities);
+        MarkerArray VisualizeGraph(const std::map<const PlaceNode*, float>& roomSourceProbabilities);
         MarkerArray VisualizeOccupancy();
         MarkerArray VisualizeGasReadings();
         MarkerArray VisualizeWind(std::shared_ptr<class RoomNode> roomNode);

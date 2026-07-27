@@ -161,9 +161,9 @@ namespace GSL
         return points;
     }
 
-    CellIdentifier RoomNode::GetCellIdentifier(size_t index)
+    RegionIdentifier RoomNode::GetCellIdentifier(size_t index)
     {
-        return CellIdentifier{this, gridMetadata.indices2D(index)};
+        return RegionIdentifier{this, gridMetadata.indices2D(index)};
     }
 
     void RoomNode::ResetObservations()

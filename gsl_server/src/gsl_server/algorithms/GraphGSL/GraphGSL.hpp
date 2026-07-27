@@ -1,11 +1,12 @@
 #pragma once
-#include "GadenWind.hpp"
 #include "Graph.hpp"
 #include "GraphUI.hpp"
 #include "NaiveSimulationSystem.hpp"
 #include "SimulationSystem.hpp"
 #include "gsl_server/algorithms/Common/Utils/Time.hpp"
 #include <gsl_server/algorithms/Common/Algorithm.hpp>
+#include <gsl_server/core/ConditionalMacros.hpp>
+IF_GADEN(#include "GadenWind.hpp")
 
 namespace GSL
 {
@@ -43,8 +44,8 @@ namespace GSL
         Graph_internal::SimulationSystem simulationSystem;
         
         float likelihoodSigma = 7e-4;
-        std::map<std::shared_ptr<class PlaceNode>, float> roomSourceProbabilities;
-        std::map<CellIdentifier, float> bestResidualPerCell;
+        std::map<const PlaceNode*, float> roomSourceProbabilities;
+        std::map<RegionIdentifier, float> bestResidualPerCell; // to generate an optimistic estimation of the residual in the source node at the coarse level
         
         Vector2 expectedValue;
         Utils::CovarianceMatrix cov;

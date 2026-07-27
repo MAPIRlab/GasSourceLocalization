@@ -32,13 +32,13 @@ namespace GSL
         std::string _debugging_name; // NOT shared, this is only to make the debugger show a readable identifier
     };
 
-    struct CellIdentifier
+    struct RegionIdentifier
     {
         PlaceNode* node;
         Vector2Int indices;
+        Vector2Int size = {1, 1};
 
         static inline const Vector2Int WHOLE_NODE = {-INT_MAX, -INT_MAX};
-        static constexpr float AABBCENTER = -1; // used to distinguish aabb entries in the expectedGasMaps structure
     };
 
     class PlaceNode : public std::enable_shared_from_this<PlaceNode>
@@ -50,7 +50,7 @@ namespace GSL
         virtual void UpdateDoorwayMask() {}
         const std::shared_ptr<DoorwayNode> GetDoorway(std::string_view name);
         virtual std::vector<Vector2> RepresentativePoints() const { return {GetPosition()}; }
-        CellIdentifier GetNodeIdentifier() { return CellIdentifier{this, CellIdentifier::WHOLE_NODE}; }
+        RegionIdentifier GetNodeIdentifier() { return RegionIdentifier{this, RegionIdentifier::WHOLE_NODE, RegionIdentifier::WHOLE_NODE}; }
         virtual void ResetObservations() {}
 
         std::vector<std::shared_ptr<DoorwayNode>> doorways;
@@ -79,7 +79,7 @@ namespace GSL
         const std::vector<NQA::Node>& GetQuadtreeLeaves() const { return quadtreeLeaves; }
         std::vector<Vector2> RepresentativePoints() const override;
         const VisibilityMap& GetVisibilityMap() const { return visibilityMap; }
-        CellIdentifier GetCellIdentifier(size_t index);
+        RegionIdentifier GetCellIdentifier(size_t index);
         void ResetObservations() override;
 
     private:
@@ -115,21 +115,23 @@ namespace GSL
 
 namespace std
 {
-    template <> struct hash<GSL::CellIdentifier>
+    template <> struct hash<GSL::RegionIdentifier>
     {
-        size_t operator()(const GSL::CellIdentifier& x) const
+        size_t operator()(const GSL::RegionIdentifier& x) const
         {
-            return (size_t)(x.node) ^ (size_t)(x.indices.x) ^ (size_t)(x.indices.y);
+            return (size_t)(x.node) ^ (size_t)(x.indices.x) ^ (size_t)(x.indices.y) ^ (size_t)(x.size.x) ^ (size_t)(x.size.y);
         }
     };
 
-    template <> struct less<GSL::CellIdentifier>
+    template <> struct less<GSL::RegionIdentifier>
     {
-        bool operator()(const GSL::CellIdentifier& a, const GSL::CellIdentifier& b) const
+        bool operator()(const GSL::RegionIdentifier& a, const GSL::RegionIdentifier& b) const
         {
             return a.node < b.node                                    //
                    || (a.node == b.node && a.indices.x < b.indices.x) //
-                   || (a.node == b.node && a.indices.x == b.indices.x && a.indices.y < b.indices.y);
+                   || (a.node == b.node && a.indices.x == b.indices.x && a.indices.y < b.indices.y) //
+                   || (a.node == b.node && a.indices.x == b.indices.x && a.indices.y == b.indices.y && a.size.x < b.size.x) //
+                   || (a.node == b.node && a.indices.x == b.indices.x && a.indices.y == b.indices.y && a.size.x == b.size.x && a.size.y < b.size.y);
         }
     };
 } // namespace std

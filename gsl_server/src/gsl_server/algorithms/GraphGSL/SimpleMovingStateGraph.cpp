@@ -22,7 +22,7 @@ namespace GSL
     }
 
 
-    double SimpleMovingStateGraph::CalculateExplorationValue(const CellIdentifier& c)
+    double SimpleMovingStateGraph::CalculateExplorationValue(const RegionIdentifier& c)
     {
         // the exploration value is the sum of the uncertainty about the hit probability for all cells around (i,j), weighed by distance
         auto range = As<RoomNode>(c.node)->GetVisibilityMap().at(c.indices);

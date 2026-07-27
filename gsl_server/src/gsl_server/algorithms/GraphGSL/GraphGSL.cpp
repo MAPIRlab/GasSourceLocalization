@@ -244,7 +244,7 @@ namespace GSL
 
         constexpr float doFineLevelThreshold = 0.15;
         std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
-        if (roomSourceProbabilities.at(nodeResiduals.at(0).node) > doFineLevelThreshold)
+        if (roomSourceProbabilities.at(nodeResiduals.at(0).node.get()) > doFineLevelThreshold)
         {
             size_t i = 0;
             bool done = false;
@@ -308,14 +308,14 @@ namespace GSL
 
                 // asign the probs to the room grid
                 for (size_t i = 0; i < sourceProbs.data.size(); i++)
-                    room->GetSourceProbabilities().data.at(i) = roomSourceProbabilities.at(room) * tempProbs.at(i);
+                    room->GetSourceProbabilities().data.at(i) = roomSourceProbabilities.at(room.get()) * tempProbs.at(i);
             }
             // otherwise, set all the cells in the room to the same probability (old probs might not be reliable anymore)
             else
             {
                 for (size_t i = 0; i < sourceProbs.data.size(); i++)
                     if (sourceProbs.occupancy.at(i))
-                        sourceProbs.data.at(i) = roomSourceProbabilities.at(room) / sourceProbs.metadata.numFreeCells;
+                        sourceProbs.data.at(i) = roomSourceProbabilities.at(room.get()) / sourceProbs.metadata.numFreeCells;
             }
         }
 
@@ -323,8 +323,8 @@ namespace GSL
         if (auto move = As<MovingStateGraph>(movingState))
         {
             ZoneScopedN("UpdateExpectedVariance");
-            // move->UpdateExpectedVariance();
-            // move->UpdateInfoGain(); // TODO this probably wants to be removed once we are not triggering evaluation from the GUI
+            move->UpdateExpectedVariance();
+            move->UpdateInfoGain(); // TODO this probably wants to be removed once we are not triggering evaluation from the GUI
         }
     }
 
@@ -340,6 +340,11 @@ namespace GSL
         {
             std::shared_ptr<RoomNode> room;
             NQA::Node nqaNode;
+
+            Vector2 center()
+            {
+                return room->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB()).center();
+            }
         };
         std::map<std::shared_ptr<Region>, float> finalResiduals;
 
@@ -356,6 +361,7 @@ namespace GSL
             {
                 std::shared_ptr<Region> region;
                 Graph_internal::CompleteMap* map;
+                float scale;
             };
             // run the queued up simulations and register the results
             std::vector<std::pair<Result, float>> residualsThisLevel;
@@ -370,22 +376,15 @@ namespace GSL
                                   AABB2D aabb = roomNode->GetOccupancy().metadata.indicesToCoordinates(nqaNode.getAABB());
                                   Vector2 sourcePoint = aabb.center();
                                   Graph_internal::CompleteMap& map = simulationSystem.SimulateEntireGraph(roomNode, sourcePoint);
-                                  Result result{std::make_shared<Region>(roomNode, nqaNode), &map};
-                                  auto [residual, scale] = ResidualSingleSimulation(*result.map);
+                                  auto [residual, scale] = ResidualSingleSimulation(map);
+                                  Result result{std::make_shared<Region>(roomNode, nqaNode), &map, scale};
                                   GSL_ASSERT(std::isfinite(residual));
 
                                   {
                                       std::scoped_lock lock(mtx);
                                       numSimulations++;
                                       residualsThisLevel.push_back({result, residual});
-                                  }
-
-                                  // indices are multiplied by AABBCENTER to signal that this is a special case (aabb center, rather than single cell)
-                                  CellIdentifier id{.node = roomNode.get(),
-                                                    .indices = roomNode->GetOccupancy().metadata.coordinatesToIndices(sourcePoint) * CellIdentifier::AABBCENTER};
-
-                                  if (auto move = As<MovingStateGraph>(movingState))
-                                      move->UpdateExpectedGasGeometricLevel(mtx, id, scale, map); //
+                                  } //
                               });
             }
             pool.Wait();
@@ -398,21 +397,32 @@ namespace GSL
             // subdivide the nodes with the best residuals and add the smaller bits to the queue
             for (size_t i = 0; i < residualsThisLevel.size(); i++)
             {
-                auto [result, residual] = residualsThisLevel.at(i);
+                auto& [result, residual] = residualsThisLevel.at(i);
+                bool subdivided = false;
                 if (i < residualsThisLevel.size() * proportionBest)
                 {
-                    bool subdivided = result.region->nqaNode.ForceSubdivide();
+                    subdivided = result.region->nqaNode.ForceSubdivide();
                     if (subdivided)
                     {
                         for (const auto& child : result.region->nqaNode.children)
                             if (child)
                                 queue.push_back({result.region->room, *child});
                     }
-                    else
-                        finalResiduals[result.region] = residual;
                 }
-                else
+
+                if (!subdivided)
+                {
                     finalResiduals[result.region] = residual;
+
+                    if (auto move = As<MovingStateGraph>(movingState))
+                    {
+                        RegionIdentifier id{.node = result.region->room.get(),
+                                            .indices = result.region->room->GetOccupancy().metadata.coordinatesToIndices(result.region->center()),
+                                            .size = result.region->nqaNode.size};
+
+                        move->UpdateExpectedGasGeometricLevel(mtx, id, result.scale, *result.map);
+                    }
+                }
             }
             GSL_TRACE("Completed a simulation level -- total simulations: {}", numSimulations);
         } while (!queue.empty());
@@ -426,21 +436,12 @@ namespace GSL
                 lowestResidual = residual;
             AABB2DInt aabbi = region->nqaNode.getAABB();
             AABB2D aabb = region->room->GetOccupancy().metadata.indicesToCoordinates(aabbi);
-            Vector2Int centerIndices = region->room->GetOccupancy().metadata.coordinatesToIndices(aabb.center()) * CellIdentifier::AABBCENTER;
-            CellIdentifier centerID{.node = region->room.get(),
-                                    .indices = centerIndices};
+            Vector2Int centerIndices = region->room->GetOccupancy().metadata.coordinatesToIndices(aabb.center());
+            RegionIdentifier centerID{.node = region->room.get(),
+                                      .indices = centerIndices,
+                                      .size = region->nqaNode.size};
             for (Vector2Int pos : aabbi)
-            {
                 region->room->GetSourceProbabilities().dataAt(pos) = residual;
-
-                // store the results of the finest simulation that includes this cell as representative of the cell itself
-                if (auto move = As<MovingStateGraph>(movingState))
-                {
-                    CellIdentifier thisID{region->room.get(), pos};
-
-                    move->AssignAABBGasMapToCell(centerID, thisID);
-                }
-            }
         }
 
         return lowestResidual;
@@ -448,7 +449,7 @@ namespace GSL
 
     void GraphGSL::GetNodeResidual(std::shared_ptr<PlaceNode> sourceNode, std::vector<NodeResult>& nodeResiduals, std::mutex& mtx)
     {
-        std::vector<CellIdentifier> cellIDs;
+        std::vector<RegionIdentifier> cellIDs;
 
         // to make the layout convenient for the optimization, each row corresponds to a cell in the map, and each column to a simulation
         std::vector<std::vector<float>> simulated;
@@ -659,7 +660,7 @@ namespace GSL
         for (const auto& [room, score] : scores)
         {
             double prob = score / scoresSum;
-            roomSourceProbabilities[room] = prob;
+            roomSourceProbabilities[room.get()] = prob;
             GSL_INFO("\t{}: {:.2f}", room->id, prob);
         }
     }

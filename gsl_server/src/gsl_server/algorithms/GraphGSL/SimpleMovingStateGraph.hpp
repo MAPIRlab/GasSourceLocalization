@@ -9,13 +9,13 @@ namespace GSL
         SimpleMovingStateGraph(Algorithm* alg);
 
     private:
-        double CalculateExplorationValue(const struct CellIdentifier& c);
+        double CalculateExplorationValue(const struct RegionIdentifier& c);
 
     private:
         class GraphGSL* gsl;
         
         float sigmaDist = 1.f;
-        std::map<struct CellIdentifier, float> explorationValue;
-        std::map<struct CellIdentifier, float> doorwayValue;
+        std::map<struct RegionIdentifier, float> explorationValue;
+        std::map<struct RegionIdentifier, float> doorwayValue;
     };
 } // namespace GSL
