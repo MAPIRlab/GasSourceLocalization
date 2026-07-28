@@ -30,8 +30,6 @@ namespace GSL
     private:
         class GraphGSL* gsl;
         float sigmaDist = 1.f;
-        float alpha = 0.2;
-        float p = 2;
         std::map<struct RegionIdentifier, float> explorationValue;
         std::map<struct RegionIdentifier, float> doorwayValue;
         std::map<std::shared_ptr<class PlaceNode>, std::vector<float>> finalInfoValue;

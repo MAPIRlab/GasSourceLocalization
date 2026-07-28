@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gsl_server/core/Vectors.hpp"
 #include <numeric>
 #include <vector>
 
@@ -32,13 +33,23 @@ namespace GSL::NAC
 // ceres version
 namespace GSL::NACCeres
 {
+    inline float defaultResidual = 1e-2;
+    inline float alpha = 0.15;
+    inline float p = 2.5;
+
+    inline float DistanceWeight(Vector2 pos, Vector2 sourcePos)
+    {
+        float t = std::pow(vmath::length(sourcePos - pos) * alpha, p);
+        float scale = std::lerp(1.0, 0.1, std::clamp(t, 0.0f, 1.0f));
+        return scale;
+    }
+
     struct Result
     {
         std::vector<float> residuals;
-        float TotalResidual(){ return std::accumulate(residuals.begin(), residuals.end(), 0.0f); }
+        float TotalResidual() { return std::accumulate(residuals.begin(), residuals.end(), 0.0f); }
     };
 
-    inline float defaultResidual = 1e-2;
     struct SingleScale
     {
         double scale;
@@ -54,6 +65,6 @@ namespace GSL::NACCeres
         Result result;
     };
     MultipleScales FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
-                           const std::vector<float>& observed,
-                           const std::vector<float>& uncertainty);
+                                    const std::vector<float>& observed,
+                                    const std::vector<float>& uncertainty);
 }; // namespace GSL::NACCeres

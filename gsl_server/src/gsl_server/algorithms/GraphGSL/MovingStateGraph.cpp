@@ -1,6 +1,7 @@
 #include "MovingStateGraph.hpp"
 #include "GraphGSL.hpp"
 #include "gsl_server/algorithms/Common/Utils/ThreadPool.hpp"
+#include "gsl_server/algorithms/GraphGSL/NACCompare.hpp"
 
 #define SCALE_EXPECTED_MAPS 0
 
@@ -121,9 +122,7 @@ namespace GSL
                     if (!occupancy.data.at(i))
                         continue;
                     Vector2 position = occupancy.metadata.indexToCoordinates(i);
-                    float t = std::pow(vmath::length(sourcePos - position) * alpha, p);
-                    float scale = std::lerp(1.0, 0.1, std::clamp(t, 0.0f, 1.0f));
-                    float scaled_weight = weight * scale;
+                    float scaled_weight = weight * NACCeres::DistanceWeight(position, sourcePos);
                     float value = entry.second.at(i);
 
                     SYNC(syncedExpectedGasVariances).at(node).at(i).Update(value, scaled_weight);
@@ -140,7 +139,8 @@ namespace GSL
                               {
                                   Vector2 position = region.node->GetPosition();
                                   float weight = gsl->roomSourceProbabilities.at(region.node);
-                                  updateWithExpectedMap(*predictedMap.map, weight, region.node, position);
+                                  if (weight > 1e-4)
+                                      updateWithExpectedMap(*predictedMap.map, weight, region.node, position);
                               });
             }
             else
@@ -150,7 +150,8 @@ namespace GSL
                               {
                                   Vector2 position = As<RoomNode>(region.node)->GetOccupancy().metadata.indicesToCoordinates(region.indices);
                                   float weight = As<RoomNode>(region.node)->GetSourceProbabilities().dataAt(region.indices) * region.size.x * region.size.y;
-                                  updateWithExpectedMap(*predictedMap.map, weight, region.node, position);
+                                  if (weight > 1e-4)
+                                      updateWithExpectedMap(*predictedMap.map, weight, nullptr, position);
                               });
             }
         }
