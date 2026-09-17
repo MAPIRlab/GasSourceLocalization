@@ -24,7 +24,9 @@ namespace GSL::Graph_internal
                 val = 0;
 
         GSL_ASSERT(std::all_of(result.hitMap->begin(), result.hitMap->end(), [](float f)
-                               { return std::isfinite(f); }));
+                               {
+                                   return std::isfinite(f);
+                               }));
     }
 
     SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> roomNode, Vector2 point)
@@ -599,6 +601,45 @@ namespace GSL::Graph_internal
 
         float total = std::accumulate(map.begin(), map.end(), 0.0f);
         GSL_INFO("Total gas: {}", total);
+    }
+
+    void SimulationSystem::uncertaintyTest(std::shared_ptr<PlaceNode> sourceRoom, Vector2 sourcePoint)
+    {
+        auto room = As<RoomNode>(sourceRoom);
+
+        std::vector<Utils::RunningVariance> variances(room->GetOccupancy().data.size());
+        std::vector<Vector2> originalWind = room->GetWindMap().data;
+
+        for (size_t i = 0; i < uncertaintyParams.numSimulations; i++)
+        {
+            room->GetWindMap().data = originalWind;
+            room->TestModifyWind(uncertaintyParams.sigmaWind);
+            SimWithResult result = SimulateSingleRoomFromPoint(room, sourcePoint);
+            Utils::Winsorize(*result.hitMap, 2);
+            Simulation::blurHitMap(*result.hitMap, options.blurSigma, room->GetOccupancy(), blurMasks[room]);
+            Utils::PowerMaxNormalize(*result.hitMap, room->GetOccupancy().occupancy);
+            if (uncertaintyParams.displaySimulations)
+                Simulation::displayImage(Grid2D<float>(*result.hitMap, room->GetOccupancy()));
+
+            for (size_t j = 0; j < variances.size(); j++)
+                variances.at(j).Update(result.hitMap->at(j), 1);
+        }
+
+        std::vector<float> var(variances.size());
+        for (size_t j = 0; j < variances.size(); j++)
+            var.at(j) = variances.at(j).variance;
+
+        Grid2D<float> grid(var, room->GetOccupancy());
+        Marker marker = Utils::createPointsMarker(grid,
+                                                  uncertaintyParams.minValueViz,
+                                                  uncertaintyParams.maxValueViz,
+                                                  Utils::ValueColorMode::Linear,
+                                                  Utils::Colors::ColorMaps::Plasma,
+                                                  0.3);
+
+        Utils::publishDebugMarkers(marker, "/uncertainty");
+        room->GetWindMap().data = originalWind;
+        GSL_INFO("Uncertainty test done");
     }
 
 } // namespace GSL::Graph_internal

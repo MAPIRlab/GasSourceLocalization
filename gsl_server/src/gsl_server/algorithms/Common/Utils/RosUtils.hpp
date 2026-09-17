@@ -65,6 +65,7 @@ namespace GSL
                                         float size = 0.05,
                                         std::optional<float> saturateLength = std::nullopt);
         Marker createPointsOccupancyMarker(const Grid2D<Occupancy> occupancy);
+        void publishDebugMarkers(Marker marker, const std::string& topic);
         void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic);
         void publishPositionWCovariance(Vector3 position, const class CovarianceMatrix& covariance, const std::string& topic);
     }; // namespace Utils

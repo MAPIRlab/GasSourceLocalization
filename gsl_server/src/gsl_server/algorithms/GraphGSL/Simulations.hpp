@@ -12,7 +12,7 @@ namespace GSL::Graph_internal
         bool cummulativeMap = true;
         float filamentsPerSecond = 5.0;
         float deltaTime = 0.1;
-        float blurSigma = 1.5;
+        float blurSigma = 3.0;
         float noiseSTDev = 0.15;
         float warmupTimeAcc = 4.0;
         size_t iterationLimit = 200;
@@ -52,6 +52,15 @@ namespace GSL::Graph_internal
         Vector2 GetPoint() override
         {
             return doorway->aabb.center();
+        }
+    };
+    struct NodeSource : public Source
+    {
+        explicit NodeSource(std::shared_ptr<PlaceNode> node) : node(node) {}
+        std::shared_ptr<PlaceNode> node;
+        Vector2 GetPoint() override
+        {
+            return node->GetPosition();
         }
     };
 

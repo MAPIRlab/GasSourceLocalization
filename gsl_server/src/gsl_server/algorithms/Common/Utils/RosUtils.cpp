@@ -339,7 +339,7 @@ namespace GSL::Utils
         return points;
     }
 
-    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic)
+    void publishDebugMarkers(Marker marker, const std::string& topic)
     {
         if (!debugNode)
             debugNode = std::make_shared<rclcpp::Node>("debugNode");
@@ -349,11 +349,14 @@ namespace GSL::Utils
         if (!publisherMap.contains(topic))
             publisherMap[topic] = debugNode->create_publisher<Marker>(topic, 1);
         auto pub = publisherMap[topic];
-        Marker points = createPointsMarker(grid);
-        // GSL_INFO("Publishing debug markers at {}", pub->get_topic_name());
-        pub->publish(points);
+        pub->publish(marker);
+    }
 
-    } // namespace GSL::Utils
+    void publishDebugMarkers(Grid2D<std_msgs::msg::ColorRGBA> grid, const std::string& topic)
+    {
+        Marker points = createPointsMarker(grid);
+        publishDebugMarkers(points, topic);
+    }
 
     void publishPositionWCovariance(Vector3 position, const CovarianceMatrix& covariance, const std::string& topic)
     {

@@ -33,6 +33,16 @@ namespace GSL::Graph_internal
         MarkerArray VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz);
 
         void blurTest(std::vector<Vector2Int> points); // this is a utility for testing the effects of the blur. Not part of the algorithm.
+        void uncertaintyTest(std::shared_ptr<PlaceNode> sourceRoom, Vector2 sourcePoint);
+        struct UncertaintyParams
+        {
+            float sigmaWind = 0.1;
+            size_t numSimulations = 5;
+            float minValueViz = 0;
+            float maxValueViz = 1;
+            Vector2 candidateSource = {5,5};
+            bool displaySimulations = false;
+        } uncertaintyParams;
 
         std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;

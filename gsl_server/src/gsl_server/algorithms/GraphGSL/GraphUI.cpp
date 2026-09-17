@@ -96,7 +96,9 @@ namespace GSL
             ImGui::DragFloat("Node separation", &gsl->graph.vizOptions.nodeSeparationViz, 0.005, 1., 10.);
             if (ImGui::Button("Update wind map"))
                 gsl->functionQueue.submit([this]()
-                                          { gsl->UpdateWindMaps(); });
+                                          {
+                                              gsl->UpdateWindMaps();
+                                          });
 
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Max concentration", &gsl->graph.vizOptions.maxConcentration, 0.1, 0., 100.);
@@ -110,7 +112,7 @@ namespace GSL
                 As<MovingStateGraph>(gsl->movingState)->AutoSetMaxInfoGain();
             ImGui::EndDisabled();
 
-            //TODO remove this bit once we have settled on a reasonable value
+            // TODO remove this bit once we have settled on a reasonable value
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Info gain sigma", &As<MovingStateGraph>(gsl->movingState)->sigmaDist, 0.1, 0, 100, "%.2f");
             ImGui::SetNextItemWidth(100);
@@ -127,6 +129,19 @@ namespace GSL
             ImGui::DragFloat("Probability max color", &gsl->graph.vizOptions.cellProbMax, 1e-4, 1e-5, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Expected value proportion", &gsl->expectedValueProportion, 0.01, 0.0, 1.0, "%.2f");
+        }
+        ImGui::End();
+
+        ImGui::Begin("Uncertainty test", nullptr,
+                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
+                         ImGuiWindowFlags_NoCollapse);
+        {
+            ImGui::DragFloat("sigmaWind", &gsl->simulationSystem.uncertaintyParams.sigmaWind, 0.1, 0., 100.);
+            ImGui::DragScalar("num simulations", ImGuiDataType_U64, &gsl->simulationSystem.uncertaintyParams.numSimulations);
+            ImGui::DragFloat("minValueViz", &gsl->simulationSystem.uncertaintyParams.minValueViz, 0.1, 0., 100.);
+            ImGui::DragFloat("maxValueViz", &gsl->simulationSystem.uncertaintyParams.maxValueViz, 0.1, 0., 100.);
+            ImGui::DragFloat2("Source", &gsl->simulationSystem.uncertaintyParams.candidateSource.x);
+            ImGui::Checkbox("Display simulations", &gsl->simulationSystem.uncertaintyParams.displaySimulations);
         }
         ImGui::End();
 
@@ -149,7 +164,9 @@ namespace GSL
             size_t previousIndex = selectedNodeData.nodeIndex;
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Selected Node", gsl->graph.nodes, selectedNodeData.nodeIndex, [](auto& node)
-                               { return node->id; });
+                               {
+                                   return node->id;
+                               });
             auto node = gsl->graph.nodes.at(selectedNodeData.nodeIndex);
             if (selectedNodeData.nodeIndex != previousIndex)
             {
@@ -227,7 +244,8 @@ namespace GSL
                                           {
                                               simulationOptions.simulationEnabled = false;
                                               gsl->EvaluateRoomProbabilities();
-                                              simulationOptions.simulationEnabled = true; });
+                                              simulationOptions.simulationEnabled = true;
+                                          });
             }
 
 #if ENABLE_NAIVE_EVALUATION
@@ -238,7 +256,8 @@ namespace GSL
                                           {
                                               simulationOptions.simulationEnabled = false;
                                               gsl->EvaluateSourceProbabilitiesInAllRooms();
-                                              simulationOptions.simulationEnabled = true; });
+                                              simulationOptions.simulationEnabled = true;
+                                          });
             }
             if (ImGui::Button("Naive Source Probs"))
             {
@@ -246,11 +265,14 @@ namespace GSL
                                           {
                                               simulationOptions.simulationEnabled = false;
                                               gsl->EvaluateProbabilitiesNaive();
-                                              simulationOptions.simulationEnabled = true; });
+                                              simulationOptions.simulationEnabled = true;
+                                          });
             }
             ImGui::SetNextItemWidth(120);
             ImGui::ComboSelect("Naive simulation viz", gsl->naiveCompleteMaps, gsl->naiveSimulationIndex, [](auto& map)
-                               { return fmt::format("{}", map.source->GetPoint()); });
+                               {
+                                   return fmt::format("{}", map.source->GetPoint());
+                               });
 #endif
 
             ImGui::EndDisabled();
@@ -306,7 +328,9 @@ namespace GSL
                 ImGui::PushID("node");
                 ImGui::SetNextItemWidth(120);
                 ImGui::ComboSelect("Doorway", node->doorways, simulationOptions.selectedArcIdx, [](auto& door)
-                                   { return door->GetName(); });
+                                   {
+                                       return door->GetName();
+                                   });
                 ImGui::PopID();
             }
         }

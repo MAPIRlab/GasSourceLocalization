@@ -82,6 +82,8 @@ namespace GSL
         RegionIdentifier GetCellIdentifier(size_t index);
         void ResetObservations() override;
 
+        void TestModifyWind(float sigma); // This is only for an uncertainty calculation test!
+
     private:
         Grid2D<Vector2> WindAsGrid();
 

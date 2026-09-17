@@ -172,6 +172,15 @@ namespace GSL
         wind.assign(wind.size(), Vector2{0, 0});
     }
 
+    void RoomNode::TestModifyWind(float sigma)
+    {
+        for (auto& w : wind)
+        {
+            w.x += Utils::randomFromGaussian(0, sigma);
+            w.y += Utils::randomFromGaussian(0, sigma);
+        }
+    }
+
     Grid2D<Vector2> RoomNode::WindAsGrid()
     {
         return Grid2D<Vector2>(wind, occupancy, gridMetadata);

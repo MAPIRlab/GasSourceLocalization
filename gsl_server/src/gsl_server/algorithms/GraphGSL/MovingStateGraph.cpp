@@ -60,7 +60,8 @@ namespace GSL
                 explorationValue[id] = CalculateExplorationValue(id);
                 finalInfoValue.at(roomNode).at(i) = explorationValue[id] //
                                                     * var                //
-                                                                         //  * doorwayValue[id]                                      //
+                                                    * roomNode->GetSourceProbabilities().data.at(i)
+                    //  * doorwayValue[id]                                      //
                     ;
             }
         }
@@ -97,7 +98,7 @@ namespace GSL
         // reset all the information from previous simulations
         expectedGasVariances.clear();
 
-        Utils::Synced<decltype(expectedGasVariances)&> syncedExpectedGasVariances(expectedGasVariances);
+        SYNCED_REF(expectedGasVariances, syncedExpectedGasVariances);
 
         // start updating the values with the latest results
         ThreadPool pool;

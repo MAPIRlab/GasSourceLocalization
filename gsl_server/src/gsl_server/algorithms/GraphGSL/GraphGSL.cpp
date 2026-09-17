@@ -9,6 +9,8 @@
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
 
+#define MEASUREMENT_SORTING 0
+
 namespace GSL
 {
 
@@ -104,13 +106,14 @@ namespace GSL
 
     void GraphGSL::OnUpdate()
     {
-        Algorithm::OnUpdate();
+        simulationSystem.uncertaintyTest(naiveEntireMap, simulationSystem.uncertaintyParams.candidateSource);
+        // Algorithm::OnUpdate();
 
-        if (visualizationCD.isDone())
-        {
-            Visualize();
-            visualizationCD.Restart();
-        }
+        // if (visualizationCD.isDone())
+        // {
+        //     Visualize();
+        //     visualizationCD.Restart();
+        // }
     }
 
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -211,7 +214,7 @@ namespace GSL
             pool.Wait();
         }
 
-        // add the residuals for the cells in the sourceNode itself
+#if !MEASUREMENT_SORTING
         {
             for (auto node : graph.nodes)
             {
@@ -219,6 +222,8 @@ namespace GSL
                                                     {
                                                         return r.node == node;
                                                     });
+
+                // add the residuals for the cells in the sourceNode itself
                 if (auto roomNode = As<RoomNode>(node))
                 {
                     for (size_t i = 0; i < roomNode->GetOccupancy().data.size(); i++)
@@ -233,10 +238,10 @@ namespace GSL
                         GSL_ASSERT(std::isfinite(nodeRes.residual));
                     }
                 }
-
                 nodeRes.residual /= graph.TotalFreeCellsCount();
             }
         }
+#endif
 
         // turn the residuals into probabilities
         CalculateNodeProbabilities(nodeResiduals);
@@ -252,47 +257,47 @@ namespace GSL
 
         constexpr float doFineLevelThreshold = 0.15;
         std::vector<std::shared_ptr<RoomNode>> simulatedFineLevel;
-        if (roomSourceProbabilities.at(nodeResiduals.at(0).node.get()) > doFineLevelThreshold)
-        {
-            size_t i = 0;
-            bool done = false;
-            do
-            {
-                auto room = As<RoomNode>(nodeResiduals.at(i).node);
-                if (room)
-                {
-                    GSL_INFO("Running fine-level simulations in node: {} (residual: {:.2e})", room->id, nodeResiduals.at(i).residual);
-                    simulatedFineLevel.push_back(room);
-                    float lowestResidual = EvaluateSourceProbabilitiesInRooms({room});
-                    nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
-                    GSL_TRACE("Lowest residual for node {}: {:.2e}", room->id, lowestResidual);
+        // if (roomSourceProbabilities.at(nodeResiduals.at(0).node.get()) > doFineLevelThreshold)
+        // {
+        //     size_t i = 0;
+        //     bool done = false;
+        //     do
+        //     {
+        //         auto room = As<RoomNode>(nodeResiduals.at(i).node);
+        //         if (room)
+        //         {
+        //             GSL_INFO("Running fine-level simulations in node: {} (residual: {:.2e})", room->id, nodeResiduals.at(i).residual);
+        //             simulatedFineLevel.push_back(room);
+        //             float lowestResidual = EvaluateSourceProbabilitiesInRooms({room});
+        //             nodeResiduals.at(i).residual = lowestResidual; // if no candidate position matched the ideal doorway distribution, overwrite the room residual with this more realistic value
+        //             GSL_TRACE("Lowest residual for node {}: {:.2e}", room->id, lowestResidual);
 
-                    constexpr float toleranceFactor = 0.8;
-                    if (i + 1 == nodeResiduals.size())
-                    {
-                        GSL_TRACE("No more nodes available for fine-level simulation");
-                        done = true;
-                    }
-                    else if (lowestResidual <= nodeResiduals.at(i + 1).residual * toleranceFactor)
-                    {
-                        GSL_TRACE("Stopping fine-level simulation (next residual: {:.2e} -- {})",
-                                  nodeResiduals.at(i + 1).residual,
-                                  nodeResiduals.at(i + 1).node->id);
-                        done = true;
-                    }
-                }
-                else
-                {
-                    GSL_TRACE("Stopping at node {} (residual: {:.2e}) -- not a room", nodeResiduals.at(i).node->id, nodeResiduals.at(i).residual);
-                    done = true;
-                }
+        //             constexpr float toleranceFactor = 0.8;
+        //             if (i + 1 == nodeResiduals.size())
+        //             {
+        //                 GSL_TRACE("No more nodes available for fine-level simulation");
+        //                 done = true;
+        //             }
+        //             else if (lowestResidual <= nodeResiduals.at(i + 1).residual * toleranceFactor)
+        //             {
+        //                 GSL_TRACE("Stopping fine-level simulation (next residual: {:.2e} -- {})",
+        //                           nodeResiduals.at(i + 1).residual,
+        //                           nodeResiduals.at(i + 1).node->id);
+        //                 done = true;
+        //             }
+        //         }
+        //         else
+        //         {
+        //             GSL_TRACE("Stopping at node {} (residual: {:.2e}) -- not a room", nodeResiduals.at(i).node->id, nodeResiduals.at(i).residual);
+        //             done = true;
+        //         }
 
-                i++;
-            } while (!done);
+        //         i++;
+        //     } while (!done);
 
-            // re-calculate the probabilities from the optimization residuals, including the fine level results
-            CalculateNodeProbabilities(nodeResiduals);
-        }
+        //     // re-calculate the probabilities from the optimization residuals, including the fine level results
+        //     CalculateNodeProbabilities(nodeResiduals);
+        // }
 
         // normalize the conditional probabilities -- p(s|r)
         for (auto node : graph.nodes)
@@ -529,6 +534,7 @@ namespace GSL
             GSL_ERROR("Failed to optimize scales for node {}", sourceNode->id);
         }
 
+#if !MEASUREMENT_SORTING
         mtx.lock();
 
         nodeResiduals.push_back({sourceNode, 0, 0});
@@ -556,13 +562,40 @@ namespace GSL
         }
 
         mtx.unlock();
+#else
+        Graph_internal::CompleteMap scaledMap{.source = std::make_shared<Graph_internal::NodeSource>(sourceNode)};
+
+        // calculate the combined scaled map
+        size_t doorwayIndex = 0;
+        for (const Graph_internal::CompleteMap& simulation : simulationSystem.gasMapsWithRoomSource.at(sourceNode))
+        {
+            for (const auto& [room, localSimMap] : simulation.gasMaps)
+            {
+                if (!scaledMap.gasMaps.contains(room))
+                    scaledMap.gasMaps[room] = std::vector<float>(localSimMap.size(), 0.0f);
+
+                for (size_t j = 0; j < localSimMap.size(); j++)
+                    scaledMap.gasMaps.at(room).at(j) += localSimMap.at(j) * result.scales.at(doorwayIndex);
+            }
+            doorwayIndex++;
+        }
+        auto [residual, nothing] = ResidualSingleSimulation(scaledMap);
+
+        nodeResiduals.push_back({sourceNode, 0, 0});
+        nodeResiduals.back().residual = residual;
+        nodeResiduals.back().confidenceSum = confidenceSum;
+        GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}. Scales: {:.2f}",
+                 sourceNode->id,
+                 nodeResiduals.back().residual,
+                 nodeResiduals.back().confidenceSum,
+                 fmt::join(result.scales.begin(), result.scales.end(), ", "));
+#endif
     }
 
     std::pair<float, float> GraphGSL::ResidualSingleSimulation(const Graph_internal::CompleteMap& simMap)
     {
         ZoneScopedN("Residual calculation");
 
-#define MEASUREMENT_SORTING 0
 #if MEASUREMENT_SORTING
         // this whole thing comes from here: https://arxiv.org/abs/2605.13208
 
@@ -583,14 +616,12 @@ namespace GSL
         std::map<const KernelDMVW::KernelCell*, NormalizedOrder> normalizedOrders;
         auto EvaluateSorting = [&]() -> float
         {
-            std::ranges::sort(measuredValues, [](const CellValue& a, const CellValue& b)
-                              {
-                                  return a.value < b.value;
-                              });
-            std::ranges::sort(simulatedValues, [](const CellValue& a, const CellValue& b)
-                              {
-                                  return a.value < b.value;
-                              });
+            auto ordering = [](const CellValue& a, const CellValue& b)
+            {
+                return a.value < b.value || (a.value == b.value && a.kernelCell < b.kernelCell); // if the values are the exact same (usually, 0), keep an arbitrary but *consistent* ordering to avoid issues
+            };
+            std::ranges::sort(measuredValues, ordering);
+            std::ranges::sort(simulatedValues, ordering);
 
             for (size_t i = 0; i < measuredValues.size(); i++)
                 normalizedOrders[measuredValues[i].kernelCell].measured = float(i) / measuredValues.size();
@@ -600,15 +631,18 @@ namespace GSL
 
             float sum = 0;
             size_t n = 0;
-            constexpr float sigma = 10; // ¯\_(ツ)_/¯
             for (const auto& [kernelCell, normalizedOrder] : normalizedOrders)
             {
                 float diff = normalizedOrder.measured - normalizedOrder.simulated;
-                sum += diff * diff / (sigma * sigma);
+                sum += diff * diff;
                 n++;
             }
             return 0.5f * (float(n) / n + 1) * sum;
         };
+
+        constexpr float confidenceThr = 0.3;
+#else
+        constexpr float confidenceThr = 0.05;
 #endif
 
         std::vector<float> measured;
@@ -626,7 +660,7 @@ namespace GSL
                 if (!measuredLocal.occupancy.at(i))
                     continue;
                 KernelDMVW::KernelCell& cell = measuredLocal.data.at(i);
-                if (cell.confidence < 0.05)
+                if (cell.confidence < confidenceThr)
                 {
                     skippedCellsResidual += NACCeres::defaultResidual;
                     continue;
@@ -636,6 +670,9 @@ namespace GSL
                 simulated.push_back(localSimMap.at(i));
                 uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
 #if MEASUREMENT_SORTING
+                if (auto nodeSource = As<Graph_internal::NodeSource>(simMap.source))
+                    if (nodeSource->node == room)
+                        continue;
                 measuredValues.push_back({&cell, measured.back()});
                 simulatedValues.push_back({&cell, simulated.back()});
 #endif
@@ -643,7 +680,7 @@ namespace GSL
         }
 
 #if MEASUREMENT_SORTING
-        return EvaluateSorting();
+        return {EvaluateSorting(), 1.0f};
 #else
         NACCeres::SingleScale result = NACCeres::FitSingleScale(simulated, measured, uncertainty);
 

@@ -36,3 +36,4 @@ namespace GSL::Utils
 
 } // namespace GSL::Utils
 #define SYNC(var) GSL::Utils::SyncedAccess(var).Get()
+#define SYNCED_REF(var, name) GSL::Utils::Synced<decltype(var)&> name(var)
