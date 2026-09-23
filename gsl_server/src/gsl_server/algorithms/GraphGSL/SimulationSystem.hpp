@@ -22,6 +22,7 @@ namespace GSL::Graph_internal
         void Reset(); // remove all the cached data and results, get ready to run new simulations
 
         SimWithResult SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
+        SimWithResult SimulateSingleRoomFromPointEulerian(const std::shared_ptr<RoomNode> node, Vector2 point);
         SimWithResult SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
                                                  const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);

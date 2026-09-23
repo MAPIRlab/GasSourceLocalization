@@ -32,6 +32,12 @@ namespace GSL::vmath
     {
         return glm::normalize(vec);
     }
+    
+    template <typename Vec>
+    inline float angle(const Vec& vec)
+    {
+        return std::atan2(vec.y, vec.x);
+    }
 
     template <typename Vec>
     inline Vec rotate(const Vec& vec, float signedAngleRadians)

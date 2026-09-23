@@ -15,6 +15,7 @@ namespace GSL::Utils
 
     static constexpr float INVALID_AVERAGE = -FLT_MAX;
 
+    float angleInRange(float angle, float min, float max);
     template <typename CollectionIterator>
     float getAverageFloatCollection(const CollectionIterator startIt, const CollectionIterator endIt);
 
@@ -29,6 +30,9 @@ namespace GSL::Utils
 
     double evaluate1DGaussian(double distance, double sigma);
     double evaluate2DGaussian(const Vector2& sampleOffset, const Vector2& sigma, float distributionRotation);
+    template <NumericType T>
+    T CauchyIntervalProb(T lowerBound, T upperBound, T mu, T rho);
+
     double logOddsToProbability(double l);
 
     double randomFromGaussian(double mean, double stdev);
@@ -121,10 +125,10 @@ namespace GSL::Utils
         {
             mean = 0;
             variance = 0;
-            
+
             // avoid NaNs if there are several 0-weight values
-            weight_sum = 1e-10; 
-            weight_squared_sum = 1e-20; 
+            weight_sum = 1e-10;
+            weight_squared_sum = 1e-20;
         }
 
     private:
@@ -172,6 +176,52 @@ namespace GSL::Utils
         float average_angle = atan2(y, x);
 
         return average_angle;
+    }
+
+    template <NumericType T>
+    T CauchyIntervalProb(T alpha, T beta, T mu, T rho)
+    {
+        if (rho < 0.0 || rho >= 1.0)
+            throw std::domain_error("rho must be in [0, 1)");
+
+        // Uniform case: avoid q = inf
+        if (rho == 0.0)
+        {
+            T d = std::fmod(beta - alpha, 2.0 * M_PI);
+            if (d < 0.0)
+                d += 2.0 * M_PI;
+            return d / (2.0 * M_PI);
+        }
+
+        const T q = (1.0 + rho) / (1.0 - rho);
+
+        // Continuous (branch-unwrapped) antiderivative G(x):
+        //   G(x) = atan(q * tan((x - mu)/2)) + pi * floor((x - mu + pi) / (2*pi))
+        // The floor term compensates the pi jumps of the principal arctan,
+        // making G strictly increasing across the whole real line.
+        auto G = [&](T x)
+        {
+            T t = q * std::tan((x - mu) * 0.5);
+            T branch = std::floor((x - mu + M_PI) / (2.0 * M_PI));
+            return std::atan(t) + branch * M_PI;
+        };
+
+        // Circular CDF normalized to [0, 1)
+        auto F = [&](T x)
+        {
+            T f = G(x) / M_PI;
+            f = std::fmod(f, 1.0);
+            if (f < 0.0)
+                f += 1.0;
+            return f;
+        };
+
+        // Probability of the positively oriented arc alpha -> beta,
+        // i.e. theta = alpha + s, s in [0, beta - alpha] (mod 2*pi)
+        T p = std::fmod(F(beta) - F(alpha), 1.0);
+        if (p < 0.0)
+            p += 1.0;
+        return p;
     }
 
     // Kullback-Leibler Divergence

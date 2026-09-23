@@ -6,6 +6,22 @@ namespace GSL::Utils
 {
     static thread_local std::minstd_rand0 RNGengine;
 
+    float angleInRange(float angle, float min, float max)
+    {
+        constexpr float twoPi = 2.0f * static_cast<float>(M_PI);
+
+        const float range = max - min;
+        float normalizedAngle = std::fmod(angle - min, twoPi);
+        if (normalizedAngle < 0)
+            normalizedAngle += twoPi;
+
+        float normalizedRange = std::fmod(range, twoPi);
+        if (normalizedRange < 0)
+            normalizedRange += twoPi;
+
+        return normalizedAngle <= normalizedRange;
+    }
+
     bool approx(double v1, double v2, double epsilon)
     {
         return std::abs(v1 - v2) < epsilon;

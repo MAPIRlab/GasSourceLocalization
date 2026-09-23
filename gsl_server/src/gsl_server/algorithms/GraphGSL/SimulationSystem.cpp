@@ -61,6 +61,40 @@ namespace GSL::Graph_internal
         return result;
     }
 
+    SimWithResult SimulationSystem::SimulateSingleRoomFromPointEulerian(const std::shared_ptr<RoomNode> roomNode, Vector2 point)
+    {
+        SimWithResult result;
+        result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
+        result.simulation = std::shared_ptr<Simulation>(new Simulation{
+            .source = SimulationSource(point),
+            .warmupAcceleration = options.warmupTimeAcc,
+            .timesteps = options.iterationLimit,
+            .deltaTime = options.deltaTime,
+            .noiseSTDev = options.noiseSTDev,
+            .minWarmupIterations = options.minWarmupIterations,
+            .maxWarmupIterations = options.maxWarmupIterations,
+            .wind = roomNode->GetWindMap(),
+            .outlets = SimulationOutlets{
+                .mask = roomNode->GetOutletsMask(),
+                .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
+                .numCellsOutlet = roomNode->GetOutletsCellCount(),
+            }});
+        // result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
+        result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
+
+        result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
+        result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
+
+        {
+            ScopedStopwatch watch("Eulerian Simulation");
+            result.simulation->RunEulerian(*result.hitMap);
+        }
+
+        PostProcessResult(result, roomNode->GetOccupancy());
+
+        return result;
+    }
+
     SimWithResult SimulationSystem::SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
                                                                const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways)
     {

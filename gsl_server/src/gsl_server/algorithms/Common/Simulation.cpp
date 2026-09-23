@@ -1,5 +1,6 @@
 #include "Simulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
+#include <angles/angles.h>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
@@ -97,6 +98,88 @@ namespace GSL
             _Run(hitMap, HitFreqFunc{}, type);
         else
             _Run(hitMap, CummulativeFunc{}, type);
+    }
+
+    void Simulation::RunEulerian(std::vector<float>& gasMap)
+    {
+        Grid2D<float> gasGrid{gasMap, wind.occupancy, wind.metadata};
+        Vector2 sourcePoint = source.getPoint();
+        Vector2Int sourceIndices = wind.metadata.coordinatesToIndices(sourcePoint);
+
+        struct NodeState
+        {
+            Vector2Int indices;
+            float probability;
+        };
+        std::vector<NodeState> activeStates;
+
+        activeStates.push_back({sourceIndices, 1.0f});
+
+        size_t numIterations = 0;
+        constexpr size_t maxIterations = 50000;
+        constexpr float lowerThr = 1e-3;
+
+        while (!activeStates.empty() )//&& numIterations < maxIterations)
+        {
+            NodeState state = activeStates.back();
+            activeStates.pop_back();
+            if (!gasGrid.metadata.indicesInBounds(state.indices) || state.probability < lowerThr)
+                continue;
+
+            gasGrid.dataAt(state.indices) += state.probability;
+            // GSL_INFO("{} : {:.2f} -- total: {:.2f}", state.indices, state.probability, gasGrid.dataAt(state.indices));
+
+            constexpr float maxSpeed = 0.2;
+            Vector2 windVec = wind.dataAt(state.indices);
+            float windSpeed = vmath::length(windVec);
+            float windAngle = vmath::angle(windVec);
+
+            // clang-format off
+            const Vector2 segmentAngles [3][3] = {
+                {{4.5f/8, 5.5f/8},  {3.5f/8, 4.5f/8},   {2.5f/8, 3.5f/8}},
+                {{5.5f/8, 6.5f/8},  {0,0},              {1.5f/8, 2.5f/8}},
+                {{6.5f/8, 7.5f/8},  {-0.5f/8, 0.5f/8},  {0.5f/8, 1.5f/8}},
+            };
+            // clang-format on
+
+            float newProbs[9] = {};
+            Vector2Int neighborIndices[9] = {};
+
+            // TODO handle prob transition to self
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                {
+                    Vector2Int neighborInd = state.indices + Vector2Int{i, j};
+                    if (!wind.metadata.indicesInBounds(neighborInd))
+                        continue;
+                    else if (!wind.occupancyAt(neighborInd))
+                        neighborIndices[(i + 1) * 3 + (j + 1)] = {-INT_MAX, -INT_MAX};
+                    else
+                    {
+                        Vector2 angleLimits = segmentAngles[i + 1][j + 1] * 2 * M_PI;
+                        // float proportion = Utils::angleInRange(windAngle, angleLimits.x, angleLimits.y) ? 1.0 : 0.0;
+                        float proportion = Utils::CauchyIntervalProb(angleLimits.x,
+                                                                     angleLimits.y,
+                                                                     windAngle,
+                                                                     std::lerp(0.f, 0.9f, std::clamp(windSpeed / maxSpeed, 0.f, 1.f)));
+                        newProbs[(i + 1) * 3 + (j + 1)] = proportion;
+                        neighborIndices[(i + 1) * 3 + (j + 1)] = neighborInd;
+                    }
+                }
+
+            // if some of the neighbors were blocked, normalize the probs to make sure it all still adds up to 1
+            float sum = std::accumulate(newProbs, newProbs + 9, 0.0f);
+            for (size_t k = 0; k < 9; k++)
+            {
+                if (newProbs[k] == 0 || neighborIndices[k].x == -INT_MAX)
+                    continue;
+
+                float prob = (newProbs[k] / sum) * state.probability;
+                activeStates.push_back({neighborIndices[k], prob});
+            }
+
+            numIterations++;
+        }
     }
 
     template <typename UpdateFunc>
