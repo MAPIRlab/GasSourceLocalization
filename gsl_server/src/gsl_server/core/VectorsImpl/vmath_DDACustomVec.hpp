@@ -2,6 +2,7 @@
 
 #include <DDA/Vectors.h>
 #include <tf2/LinearMath/Vector3.hpp>
+#include "../../third_party/fast_atan2/fast_atan.h"
 
 namespace GSL
 {
@@ -29,6 +30,12 @@ namespace GSL::vmath
     inline float angle(const Vec& vec)
     {
         return std::atan2(vec.y, vec.x);
+    }
+
+    template <typename Vec>
+    inline float angle_fast(const Vec& vec)
+    {
+        return atan2approx(vec.y, vec.x);
     }
 
     template <typename Vec>

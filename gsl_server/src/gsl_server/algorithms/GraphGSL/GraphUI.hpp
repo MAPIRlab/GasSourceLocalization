@@ -36,7 +36,7 @@ namespace GSL
 
         struct SimulationOptions
         {
-            bool exactPoint = false;
+            bool exactPoint = true;
             size_t selectedArcIdx = 0;
             bool simulationEnabled = true;
         } simulationOptions;

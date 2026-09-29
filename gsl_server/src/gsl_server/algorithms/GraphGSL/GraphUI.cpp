@@ -342,6 +342,8 @@ namespace GSL
         }
         ImGui::BeginDisabled(!simulationOptions.simulationEnabled);
 
+        static bool eulerian = true;
+        ImGui::Checkbox("Eulerian", &eulerian);
         if (ImGui::Button("Run single room simulation"))
         {
             auto roomNode = As<RoomNode>(node);
@@ -353,16 +355,21 @@ namespace GSL
                     simulationOptions.simulationEnabled = false;
                     SimWithResult result;
                     if (simulationOptions.exactPoint)
-                        result = gsl->simulationSystem.SimulateSingleRoomFromPointEulerian(roomNode, selectedCoordinates);
+                    {
+                        if (eulerian)
+                            result = gsl->simulationSystem.SimulateSingleRoomFromPointEulerian(roomNode, selectedCoordinates);
+                        else
+                            result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
+                    }
                     else
                         result = gsl->simulationSystem.SimulateSingleRoomFromDoorway(roomNode->doorways.at(simulationOptions.selectedArcIdx));
 
                     // Log results
-                    GSL_INFO("Emitted {} filaments during recording", result.simulation->totalEmittedFilaments);
-                    for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
-                        GSL_INFO("{} -> {}", result.ConcentrationExitingDoorway(i), roomNode->doorways.at(i)->to.lock()->id);
+                    // GSL_INFO("Emitted {} filaments during recording", result.simulation->totalEmittedFilaments);
+                    // for (size_t i = 0; i < result.simulation->outlets->exitsPerOutlet.size(); i++)
+                    //     GSL_INFO("{} -> {}", result.ConcentrationExitingDoorway(i), roomNode->doorways.at(i)->to.lock()->id);
 
-                    // Utils::Winsorize(*result.hitMap);
+                    // Utils::Winsorize(*result.hitMap, 2);
                     Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy);
                     Simulation::blurHitMap(*result.hitMap, gsl->simulationSystem.options.blurSigma, roomNode->GetOccupancy(), gsl->simulationSystem.blurMasks[roomNode]);
                     Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");

@@ -5,7 +5,10 @@ find_package(OpenCV REQUIRED)
 find_package(yaml-cpp)
 
 # Create the library
-add_library(GSL_common ${SOURCES})
+add_library(GSL_common 
+    ${SOURCES} 
+    third_party/fast_atan2/fast_atan.cpp
+)
 target_include_directories(GSL_common PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 # Link ament dependencies

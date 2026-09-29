@@ -54,7 +54,10 @@ namespace GSL::Graph_internal
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
 
         Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
-        result.simulation->Run(*result.hitMap, type);
+        {
+            ScopedStopwatch watch("Filament Simulation");
+            result.simulation->Run(*result.hitMap, type);
+        }
 
         PostProcessResult(result, roomNode->GetOccupancy());
 
@@ -85,6 +88,7 @@ namespace GSL::Graph_internal
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
 
+        for (int i = 0; i < 100; i++)
         {
             ScopedStopwatch watch("Eulerian Simulation");
             result.simulation->RunEulerian(*result.hitMap);

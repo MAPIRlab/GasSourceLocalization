@@ -12,7 +12,7 @@ namespace GSL::Graph_internal
         bool cummulativeMap = true;
         float filamentsPerSecond = 5.0;
         float deltaTime = 0.1;
-        float blurSigma = 3.0;
+        float blurSigma = 0.0;
         float noiseSTDev = 0.15;
         float warmupTimeAcc = 4.0;
         size_t iterationLimit = 200;
