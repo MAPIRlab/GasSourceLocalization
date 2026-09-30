@@ -297,7 +297,7 @@ namespace GSL::Graph_internal
             for (const auto& [node, map] : completeGasMap.gasMaps)
                 std::ranges::transform(node->GetOccupancy().occupancy, std::back_inserter(appendedOccupancy), std::identity{});
 
-            Utils::Winsorize(appendedHitMap, 2);
+            // Utils::Winsorize(appendedHitMap, 2);
             Utils::PowerMaxNormalize(appendedHitMap, appendedOccupancy, filamentOptions.normalizationPower);
 
             size_t globalIndex = 0;
@@ -305,10 +305,10 @@ namespace GSL::Graph_internal
                 for (size_t i = 0; i < map.size(); i++)
                     map.at(i) = appendedHitMap.at(globalIndex++);
 
-            mtx.lock();
-            for (auto& [node, map] : completeGasMap.gasMaps)
-                FilamentSimulation::blurHitMap(map, filamentOptions.blurSigma, node->GetOccupancy(), blurMasks[node]);
-            mtx.unlock();
+            // mtx.lock();
+            // for (auto& [node, map] : completeGasMap.gasMaps)
+            //     FilamentSimulation::blurHitMap(map, filamentOptions.blurSigma, node->GetOccupancy(), blurMasks[node]);
+            // mtx.unlock();
 
             // // normalize by the global maximum!
             float max = 0;
