@@ -304,6 +304,8 @@ namespace GSL
         ImGui::DragFloat("Blur sigma", &gsl->simulationSystem.options.blurSigma, 0.01, 0, 2.0);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Normalization power", &gsl->simulationSystem.options.normalizationPower, 0.01, 0, 5.0);
+        ImGui::SetNextItemWidth(100);
+        ImGui::InputFloat("Eulerian thr", &gsl->simulationSystem.options.eulerianLowerThr, 0, 0, "%.2e");
 
         ImGui::End();
     }

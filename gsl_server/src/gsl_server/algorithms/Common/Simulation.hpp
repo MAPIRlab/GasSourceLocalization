@@ -79,7 +79,7 @@ namespace GSL
         std::optional<SimulationOutlets> outlets;
 
         void Run(std::vector<float>& hitMap, Type type = Simulation::Type::HitFrequency);
-        void RunEulerian(std::vector<float>& gasMap);
+        void RunEulerian(std::vector<float>& gasMap, float lowerThr);
 
         void makeSimulationImage();
         static void displayImage(const Grid2D<float>& hitMap, const std::string& imageName = "simResult", float raisePower = 1);

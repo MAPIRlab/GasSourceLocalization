@@ -88,10 +88,12 @@ namespace GSL::Graph_internal
         result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
 
-        for (int i = 0; i < 100; i++)
         {
             ScopedStopwatch watch("Eulerian Simulation");
-            result.simulation->RunEulerian(*result.hitMap);
+            // for (int i = 0; i < 100; i++)
+            {
+                result.simulation->RunEulerian(*result.hitMap, options.eulerianLowerThr);
+            }
         }
 
         PostProcessResult(result, roomNode->GetOccupancy());

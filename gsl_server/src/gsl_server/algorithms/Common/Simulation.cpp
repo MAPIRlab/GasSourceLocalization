@@ -100,7 +100,7 @@ namespace GSL
             _Run(hitMap, CummulativeFunc{}, type);
     }
 
-    void Simulation::RunEulerian(std::vector<float>& gasMap)
+    void Simulation::RunEulerian(std::vector<float>& gasMap, float lowerThr)
     {
         ZoneScopedN("RunEulerian");
         Grid2D<float> totalGasGrid{gasMap, wind.occupancy, wind.metadata};
@@ -114,23 +114,22 @@ namespace GSL
         std::vector<float> currentGasVec(gasMap.size(), 0.0f);
         Grid2D<float> currentGasGrid{currentGasVec, wind.occupancy, wind.metadata};
 
-        // this can be persisted between simulations as long as we have the same wind map (and are working in the same room, of course)
-        struct TransitionData
-        {
-            float newProbs[9] = {};
-            Vector2Int neighborsIndicesArr[9] = {};
-        };
-        std::unordered_map<Vector2Int, TransitionData> transitionDataCache;
-
         std::queue<Vector2Int> activeStates;
         activeStates.push(sourceIndices);
         currentGasGrid.dataAt(sourceIndices) = 1.0f;
 
         size_t numIterations = 0;
-        constexpr size_t maxIterations = 50000;
-        constexpr float lowerThr = 1e-4;
+        constexpr size_t maxIterations = 1e7;
 
-        while (!activeStates.empty()) //&& numIterations < maxIterations)
+        // todo this can be persisted between simulations as long as we have the same wind map (and are working in the same room, of course)
+        struct TransitionData
+        {
+            float newProbs[9];
+            Vector2Int neighborsIndicesArr[9];
+        };
+        std::vector<std::optional<TransitionData>> transitionDataCache(currentGasGrid.data.size(), std::nullopt);
+
+        while (!activeStates.empty() && numIterations < maxIterations)
         {
             Vector2Int currentIndices = activeStates.front();
             size_t currentIndex = currentGasGrid.metadata.indexOf(currentIndices.x, currentIndices.y);
@@ -139,13 +138,8 @@ namespace GSL
             totalGasGrid.data.at(currentIndex) += currentGasAmount;
             currentGasGrid.data.at(currentIndex) = 0;
 
-            if (!totalGasGrid.metadata.indicesInBounds(currentIndices) || currentGasAmount < lowerThr)
+            if (currentIndex >= totalGasGrid.data.size() || currentGasAmount < lowerThr)
                 continue;
-
-            constexpr float maxSpeed = 0.15;
-            Vector2 windVec = wind.data.at(currentIndex);
-            float windSpeed = vmath::length(windVec);
-            float windAngle = vmath::angle_fast(windVec);
 
             // clang-format off
             const Vector2 segmentAngles [3][3] = {
@@ -157,36 +151,48 @@ namespace GSL
 
             constexpr int BLOCKED = -INT_MAX;
             TransitionData tData;
-            if (transitionDataCache.contains(currentIndices))
-                tData = transitionDataCache.at(currentIndices);
+            if (transitionDataCache.at(currentIndex))
+                tData = *transitionDataCache.at(currentIndex);
             else
             {
+                constexpr float maxSpeed = 0.2;
+                Vector2 windVec = wind.data.at(currentIndex);
+                float windSpeed = vmath::length(windVec);
+                float windAngle = vmath::angle_fast(windVec);
+
+                float sum = 0;
                 for (int i = -1; i <= 1; i++)
                     for (int j = -1; j <= 1; j++)
                     {
                         Vector2Int neighborInd = currentIndices + Vector2Int{i, j};
                         size_t oneDIndex = (i + 1) * 3 + (j + 1);
 
+                        // todo does this work the same way for OOB? and what about unknown cells?
                         if (wind.metadata.indicesInBounds(neighborInd) && !wind.occupancyAt(neighborInd))
+                        {
                             tData.neighborsIndicesArr[oneDIndex] = {BLOCKED, BLOCKED};
+                            tData.newProbs[oneDIndex] = 0;
+                        }
                         else
                         {
                             Vector2 angleLimits = segmentAngles[i + 1][j + 1] * 2 * M_PI;
                             float proportion = Utils::CauchyIntervalProb(angleLimits.x,
                                                                          angleLimits.y,
                                                                          windAngle,
-                                                                         std::lerp(0.f, 0.9f, std::clamp(windSpeed / maxSpeed, 0.f, 1.f)));
+                                                                         std::lerp(0.f, 0.85f, std::clamp(windSpeed / maxSpeed, 0.f, 1.f)));
                             tData.newProbs[oneDIndex] = proportion;
+                            sum += proportion;
                             tData.neighborsIndicesArr[oneDIndex] = neighborInd;
                         }
                     }
 
-                // tData.newProbs[4] = std::lerp(0.2f, 0.f, std::clamp(windSpeed / maxSpeed, 0.f, 1.f));
-                transitionDataCache[currentIndices] = tData;
+                // if neighbor was blocked, the corresponding gas proportion should stay in this cell
+                // while this seems a little arbitrary, removing it causes a noticeable artifact on cells adjacent to obstacles, so...
+                tData.newProbs[4] = 1.f - sum;
+
+                transitionDataCache[currentIndex] = tData;
             }
 
-            // if some of the neighbors were blocked, normalize the probs to make sure it all still adds up to 1
-            float sum = std::accumulate(tData.newProbs, tData.newProbs + 9, 0.0f);
             for (size_t k = 0; k < 9; k++)
             {
                 if (tData.newProbs[k] < 5e-3 || tData.neighborsIndicesArr[k].x == BLOCKED)
@@ -196,7 +202,7 @@ namespace GSL
                 if (neighborIndex >= currentGasGrid.data.size())
                     continue;
 
-                float prob = (tData.newProbs[k] / sum) * currentGasAmount;
+                float prob = tData.newProbs[k] * currentGasAmount;
                 if (currentGasGrid.data.at(neighborIndex) == 0)
                     activeStates.push(tData.neighborsIndicesArr[k]);
                 currentGasGrid.data.at(neighborIndex) += prob;
@@ -205,7 +211,8 @@ namespace GSL
             numIterations++;
         }
 
-        GSL_INFO("{} iterations", numIterations);
+        if (numIterations == maxIterations)
+            GSL_WARN("Reached {} iterations!", numIterations);
     }
 
     template <typename UpdateFunc>

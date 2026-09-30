@@ -19,6 +19,8 @@ namespace GSL::Graph_internal
         size_t minWarmupIterations = 1000;
         size_t maxWarmupIterations = 2000;
         float normalizationPower = 0.5;
+
+        float eulerianLowerThr = 1e-5;
     };
 
     struct SimWithResult
