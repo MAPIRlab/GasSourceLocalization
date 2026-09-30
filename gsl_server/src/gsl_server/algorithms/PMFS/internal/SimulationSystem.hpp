@@ -1,5 +1,5 @@
 #pragma once
-#include <gsl_server/algorithms/Common/Simulation.hpp>
+#include <gsl_server/algorithms/Common/FilamentSimulation.hpp>
 #include <gsl_server/algorithms/Common/NQAQuadtree.hpp>
 #include <gsl_server/algorithms/PMFS/internal/HitProbability.hpp>
 #include <gsl_server/algorithms/PMFS/internal/Settings.hpp>

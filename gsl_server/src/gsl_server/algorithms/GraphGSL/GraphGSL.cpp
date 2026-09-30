@@ -18,7 +18,7 @@ namespace GSL
         : Algorithm(_node),
           gui(this),
           visualizationCD(0.1),
-          naiveSimulationSystem(simulationSystem.options)
+          naiveSimulationSystem(simulationSystem.filamentOptions)
     {}
 
     void GraphGSL::Initialize()

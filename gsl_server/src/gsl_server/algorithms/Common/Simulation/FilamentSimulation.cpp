@@ -1,4 +1,4 @@
-#include "Simulation.hpp"
+#include "FilamentSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include <angles/angles.h>
 #include <opencv2/core/mat.hpp>
@@ -10,7 +10,7 @@ namespace GSL
     // We have a long list of pre-calculated random values for Speeeeeeeeeeeeeeeeed
     static thread_local Utils::PrecalculatedGaussian<2500> gaussian;
 
-    bool Simulation::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
+    bool FilamentSimulation::moveFilament(Filament& filament, Vector2Int& indices, float deltaTime, float noiseSTDev) const
     {
         filament.mostRecentOutlet = outlets->mask.dataAt(indices);
         Vector2 velocity = wind.dataAt(indices.x, indices.y) + Vector2(gaussian.nextValue(0, noiseSTDev), gaussian.nextValue(0, noiseSTDev));
@@ -20,7 +20,7 @@ namespace GSL
     }
 
     template <typename UpdateFunc>
-    bool Simulation::filamentIsOutside(Filament& filament, Vector2 oldPos, size_t currentTimestep, UpdateFunc updateFunc)
+    bool FilamentSimulation::filamentIsOutside(Filament& filament, Vector2 oldPos, size_t currentTimestep, UpdateFunc updateFunc)
     {
         Vector2Int newIndices = wind.metadata.coordinatesToIndices(filament.position.x, filament.position.y);
 
@@ -34,7 +34,7 @@ namespace GSL
                 // keep track of how many filaments exit through each outlet
                 if (outletNum >= 0 && outlets->enabled.at(outletNum))
                 {
-                    updateFunc.OnReachOutlet(outlets, outletNum, currentTimestep);
+                    updateFunc.OnReachOutlet(filamentOutlets, outletNum, currentTimestep);
                     return true;
                 }
                 else
@@ -51,7 +51,7 @@ namespace GSL
         return false;
     }
 
-    void Simulation::Run(std::vector<float>& hitMap, Type type)
+    void FilamentSimulation::Run(std::vector<float>& hitMap, Type type)
     {
         // we have this as a function template so the update process can be inlined and we have a single branch per simulation (here)
         // rather than every filament update
@@ -69,9 +69,8 @@ namespace GSL
                 }
             }
 
-            void OnReachOutlet(std::optional<SimulationOutlets>& outlets, size_t outletNum, size_t currentTimestep)
+            void OnReachOutlet(std::optional<FilamentOutletInfo>& outlets, size_t outletNum, size_t currentTimestep)
             {
-                outlets->totalExitCount++;
                 if (outlets->lastUpdateTime.at(outletNum) < currentTimestep)
                 {
                     outlets->exitsPerOutlet.at(outletNum)++;
@@ -87,9 +86,8 @@ namespace GSL
                 hitMap.at(index)++;
             }
 
-            void OnReachOutlet(std::optional<SimulationOutlets>& outlets, size_t outletNum, size_t currentTimestep)
+            void OnReachOutlet(std::optional<FilamentOutletInfo>& outlets, size_t outletNum, size_t currentTimestep)
             {
-                outlets->totalExitCount++;
                 outlets->exitsPerOutlet.at(outletNum)++;
             }
         };
@@ -98,128 +96,22 @@ namespace GSL
             _Run(hitMap, HitFreqFunc{}, type);
         else
             _Run(hitMap, CummulativeFunc{}, type);
-    }
 
-    void Simulation::RunEulerian(std::vector<float>& gasMap, float lowerThr)
-    {
-        ZoneScopedN("RunEulerian");
-        Grid2D<float> totalGasGrid{gasMap, wind.occupancy, wind.metadata};
-        gasMap.assign(gasMap.size(), 0.0f);
-        Vector2 sourcePoint = source.getPoint();
-        Vector2Int sourceIndices = wind.metadata.coordinatesToIndices(sourcePoint);
-
-        // this is an optimization: instead of tracking each branching path separately,
-        // group all the ones that end up at the same cell and continue a single branch from there
-        // markov, baby!
-        std::vector<float> currentGasVec(gasMap.size(), 0.0f);
-        Grid2D<float> currentGasGrid{currentGasVec, wind.occupancy, wind.metadata};
-
-        std::queue<Vector2Int> activeStates;
-        activeStates.push(sourceIndices);
-        currentGasGrid.dataAt(sourceIndices) = 1.0f;
-
-        size_t numIterations = 0;
-        constexpr size_t maxIterations = 1e7;
-
-        // todo this can be persisted between simulations as long as we have the same wind map (and are working in the same room, of course)
-        struct TransitionData
+        // update the outlets info
+        if (outlets)
         {
-            float newProbs[9];
-            Vector2Int neighborsIndicesArr[9];
-        };
-        std::vector<std::optional<TransitionData>> transitionDataCache(currentGasGrid.data.size(), std::nullopt);
-
-        while (!activeStates.empty() && numIterations < maxIterations)
-        {
-            Vector2Int currentIndices = activeStates.front();
-            size_t currentIndex = currentGasGrid.metadata.indexOf(currentIndices.x, currentIndices.y);
-            activeStates.pop();
-            float currentGasAmount = currentGasGrid.data.at(currentIndex);
-            totalGasGrid.data.at(currentIndex) += currentGasAmount;
-            currentGasGrid.data.at(currentIndex) = 0;
-
-            if (currentIndex >= totalGasGrid.data.size() || currentGasAmount < lowerThr)
-                continue;
-
-            // clang-format off
-            const Vector2 segmentAngles [3][3] = {
-                {{4.5f/8, 5.5f/8},  {3.5f/8, 4.5f/8},   {2.5f/8, 3.5f/8}},
-                {{5.5f/8, 6.5f/8},  {0,0},              {1.5f/8, 2.5f/8}},
-                {{6.5f/8, 7.5f/8},  {-0.5f/8, 0.5f/8},  {0.5f/8, 1.5f/8}},
-            };
-            // clang-format on
-
-            constexpr int BLOCKED = -INT_MAX;
-            TransitionData tData;
-            if (transitionDataCache.at(currentIndex))
-                tData = *transitionDataCache.at(currentIndex);
-            else
-            {
-                constexpr float maxSpeed = 0.2;
-                Vector2 windVec = wind.data.at(currentIndex);
-                float windSpeed = vmath::length(windVec);
-                float windAngle = vmath::angle_fast(windVec);
-
-                float sum = 0;
-                for (int i = -1; i <= 1; i++)
-                    for (int j = -1; j <= 1; j++)
-                    {
-                        Vector2Int neighborInd = currentIndices + Vector2Int{i, j};
-                        size_t oneDIndex = (i + 1) * 3 + (j + 1);
-
-                        // todo does this work the same way for OOB? and what about unknown cells?
-                        if (wind.metadata.indicesInBounds(neighborInd) && !wind.occupancyAt(neighborInd))
-                        {
-                            tData.neighborsIndicesArr[oneDIndex] = {BLOCKED, BLOCKED};
-                            tData.newProbs[oneDIndex] = 0;
-                        }
-                        else
-                        {
-                            Vector2 angleLimits = segmentAngles[i + 1][j + 1] * 2 * M_PI;
-                            float proportion = Utils::CauchyIntervalProb(angleLimits.x,
-                                                                         angleLimits.y,
-                                                                         windAngle,
-                                                                         std::lerp(0.f, 0.85f, std::clamp(windSpeed / maxSpeed, 0.f, 1.f)));
-                            tData.newProbs[oneDIndex] = proportion;
-                            sum += proportion;
-                            tData.neighborsIndicesArr[oneDIndex] = neighborInd;
-                        }
-                    }
-
-                // if neighbor was blocked, the corresponding gas proportion should stay in this cell
-                // while this seems a little arbitrary, removing it causes a noticeable artifact on cells adjacent to obstacles, so...
-                tData.newProbs[4] = 1.f - sum;
-
-                transitionDataCache[currentIndex] = tData;
-            }
-
-            for (size_t k = 0; k < 9; k++)
-            {
-                if (tData.newProbs[k] < 5e-3 || tData.neighborsIndicesArr[k].x == BLOCKED)
-                    continue;
-
-                size_t neighborIndex = currentGasGrid.metadata.indexOf(tData.neighborsIndicesArr[k]);
-                if (neighborIndex >= currentGasGrid.data.size())
-                    continue;
-
-                float prob = tData.newProbs[k] * currentGasAmount;
-                if (currentGasGrid.data.at(neighborIndex) == 0)
-                    activeStates.push(tData.neighborsIndicesArr[k]);
-                currentGasGrid.data.at(neighborIndex) += prob;
-            }
-
-            numIterations++;
+            rawMaxValue = *std::max_element(hitMap.begin(), hitMap.end());
+            outlets->concentrationExitingDoorway.resize(filamentOutlets->exitsPerOutlet.size());
+            for (size_t i = 0; i < outlets->concentrationExitingDoorway.size(); i++)
+                outlets->concentrationExitingDoorway.at(i) = (filamentOutlets->exitsPerOutlet.at(i) / rawMaxValue) / outlets->numCellsOutlet.at(i);
         }
-
-        if (numIterations == maxIterations)
-            GSL_WARN("Reached {} iterations!", numIterations);
     }
 
     template <typename UpdateFunc>
-    void Simulation::_Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type)
+    void FilamentSimulation::_Run(std::vector<float>& hitMap, UpdateFunc updateFunc, Type type)
     {
-        size_t max_filaments = maxWarmupIterations * source.numFilamentsSecond * deltaTime * warmupAcceleration // max filaments in warmup
-                               + timesteps * source.numFilamentsSecond * deltaTime;                             // max filaments when recording
+        size_t max_filaments = maxWarmupIterations * numFilamentsSecond * deltaTime * warmupAcceleration // max filaments in warmup
+                               + timesteps * numFilamentsSecond * deltaTime;                             // max filaments when recording
 
         // To avoid having to delete filaments from the middle of the vector, which is quite slow, we will ping-pong the active filaments between two vectors
         // at the start of any iteration, one vector (active) will contain all the released filaments and the other one will be empty
@@ -232,13 +124,13 @@ namespace GSL
         std::vector<Filament>* activeFilamentVec = &filaments1;
         std::vector<Filament>* otherFilamentVec = &filaments2;
 
-        outlets->lastUpdateTime.resize(outlets->enabled.size(), 0);
+        filamentOutlets->lastUpdateTime.resize(outlets->enabled.size(), 0);
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
         // reset the count of how many filaments took each outlet
         if (outlets)
-            std::fill(outlets->exitsPerOutlet.begin(), outlets->exitsPerOutlet.end(), 0);
+            std::fill(filamentOutlets->exitsPerOutlet.begin(), filamentOutlets->exitsPerOutlet.end(), 0);
 
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
@@ -249,7 +141,7 @@ namespace GSL
             size_t iterationCount = 0;
             while (iterationCount < minWarmupIterations || (!stable && iterationCount < maxWarmupIterations))
             {
-                size_t emitCount = source.FilamentsToEmit(deltaTime * warmupAcceleration);
+                size_t emitCount = FilamentsToEmit(deltaTime * warmupAcceleration);
                 for (int i = 0; i < emitCount; i++)
                 {
                     activeFilamentVec->emplace_back();
@@ -288,7 +180,7 @@ namespace GSL
         // now, we do the thing
         for (size_t t = 1; t < timesteps + 1; t++)
         {
-            size_t emitCount = source.FilamentsToEmit(deltaTime);
+            size_t emitCount = FilamentsToEmit(deltaTime);
             for (size_t i = 0; i < emitCount; i++)
             {
                 activeFilamentVec->emplace_back();
@@ -344,7 +236,7 @@ namespace GSL
         return randP;
     }
 
-    size_t SimulationSource::FilamentsToEmit(float deltaT)
+    size_t FilamentSimulation::FilamentsToEmit(float deltaT)
     {
         emissionCounter += numFilamentsSecond * deltaT;
         size_t num = emissionCounter;
@@ -352,7 +244,7 @@ namespace GSL
         return num;
     }
 
-    bool Simulation::moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const
+    bool FilamentSimulation::moveAlongPath(Vector2& currentPosition, const Vector2Int& indexOrigin, const Vector2& end) const
     {
         Vector2Int indexEnd = wind.metadata.coordinatesToIndices(end.x, end.y);
 
@@ -420,7 +312,7 @@ namespace GSL
         cv::destroyWindow(name);
     }
 
-    void Simulation::makeSimulationImage()
+    void FilamentSimulation::makeSimulationImage()
     {
         std::vector<float> hitMap(wind.data.size(), 0.0);
         Run(hitMap);
@@ -428,7 +320,7 @@ namespace GSL
         displayImage(Grid2D<float>(hitMap, wind.occupancy, wind.metadata));
     }
 
-    void Simulation::displayImage(const Grid2D<float>& hitMap, const std::string& imageName, float raisePower)
+    void FilamentSimulation::displayImage(const Grid2D<float>& hitMap, const std::string& imageName, float raisePower)
     {
         std::vector<float> hitMapCopy = hitMap.data;
         for (float& f : hitMapCopy)
@@ -460,7 +352,7 @@ namespace GSL
 #endif
     }
 
-    void Simulation::blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask)
+    void FilamentSimulation::blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask)
     {
         if (blurSigma == 0)
             return;

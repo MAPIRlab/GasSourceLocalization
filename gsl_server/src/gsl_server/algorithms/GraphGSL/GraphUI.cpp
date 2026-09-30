@@ -285,27 +285,28 @@ namespace GSL
 
         ImGui::Begin("Simulation configuration");
         ImGui::SetNextItemWidth(100);
-        ImGui::InputScalar("Iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.iterationLimit);
+        ImGui::InputScalar("Iterations", ImGuiDataType_U64, &gsl->simulationSystem.filamentOptions.iterationLimit);
 
         ImGui::SetNextItemWidth(100);
-        ImGui::InputScalar("Min Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.minWarmupIterations);
+        ImGui::InputScalar("Min Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.filamentOptions.minWarmupIterations);
         ImGui::SetNextItemWidth(100);
-        ImGui::InputScalar("Max Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.options.maxWarmupIterations);
+        ImGui::InputScalar("Max Warmup iterations", ImGuiDataType_U64, &gsl->simulationSystem.filamentOptions.maxWarmupIterations);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Delta time", &gsl->simulationSystem.options.deltaTime, 0.01, 0, 2);
+        ImGui::DragFloat("Delta time", &gsl->simulationSystem.filamentOptions.deltaTime, 0.01, 0, 2);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Warmup acceleration", &gsl->simulationSystem.options.warmupTimeAcc, 0.1, 0, 20);
+        ImGui::DragFloat("Warmup acceleration", &gsl->simulationSystem.filamentOptions.warmupTimeAcc, 0.1, 0, 20);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Filaments/second", &gsl->simulationSystem.options.filamentsPerSecond, 0.1, 0, 50);
-        ImGui::Checkbox("Cummulative map", &gsl->simulationSystem.options.cummulativeMap);
+        ImGui::DragFloat("Filaments/second", &gsl->simulationSystem.filamentOptions.filamentsPerSecond, 0.1, 0, 50);
+        ImGui::Checkbox("Cummulative map", &gsl->simulationSystem.filamentOptions.cummulativeMap);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Noise sigma", &gsl->simulationSystem.options.noiseSTDev, 0.01, 0, 1.0);
+        ImGui::DragFloat("Noise sigma", &gsl->simulationSystem.filamentOptions.noiseSTDev, 0.01, 0, 1.0);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Blur sigma", &gsl->simulationSystem.options.blurSigma, 0.01, 0, 2.0);
+        ImGui::DragFloat("Blur sigma", &gsl->simulationSystem.filamentOptions.blurSigma, 0.01, 0, 2.0);
         ImGui::SetNextItemWidth(100);
-        ImGui::DragFloat("Normalization power", &gsl->simulationSystem.options.normalizationPower, 0.01, 0, 5.0);
+        ImGui::DragFloat("Normalization power", &gsl->simulationSystem.filamentOptions.normalizationPower, 0.01, 0, 5.0);
         ImGui::SetNextItemWidth(100);
-        ImGui::InputFloat("Eulerian thr", &gsl->simulationSystem.options.eulerianLowerThr, 0, 0, "%.2e");
+        ImGui::Checkbox("Eulerian simulations", &gsl->simulationSystem.eulerianSimulation);
+        ImGui::InputFloat("Eulerian thr", &gsl->simulationSystem.eulerianLowerThr, 0, 0, "%.2e");
 
         ImGui::End();
     }
@@ -373,8 +374,8 @@ namespace GSL
 
                     // Utils::Winsorize(*result.hitMap, 2);
                     Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy);
-                    Simulation::blurHitMap(*result.hitMap, gsl->simulationSystem.options.blurSigma, roomNode->GetOccupancy(), gsl->simulationSystem.blurMasks[roomNode]);
-                    Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");
+                    FilamentSimulation::blurHitMap(*result.hitMap, gsl->simulationSystem.filamentOptions.blurSigma, roomNode->GetOccupancy(), gsl->simulationSystem.blurMasks[roomNode]);
+                    FilamentSimulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");
                     simulationOptions.simulationEnabled = true;
                 };
                 gsl->functionQueue.submit(lambda);
@@ -423,7 +424,7 @@ namespace GSL
 
                 Utils::Winsorize(combinedMap, 5);
                 Utils::PowerMaxNormalize(combinedMap, roomNode->GetOccupancy().data, 1.f);
-                Simulation::displayImage(Grid2D<float>(combinedMap, roomNode->GetOccupancy()));
+                FilamentSimulation::displayImage(Grid2D<float>(combinedMap, roomNode->GetOccupancy()));
                 simulationOptions.simulationEnabled = true;
             };
             gsl->functionQueue.submit(lambda);

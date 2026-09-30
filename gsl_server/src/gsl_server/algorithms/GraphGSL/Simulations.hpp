@@ -1,13 +1,13 @@
 #pragma once
 #include "Node.hpp"
-#include "gsl_server/algorithms/Common/Simulation.hpp"
+#include "gsl_server/algorithms/Common/Simulation/Simulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 #include "gsl_server/algorithms/Common/Utils/RosUtils.hpp"
 #include "gsl_server/core/ros_typedefs.hpp"
 
 namespace GSL::Graph_internal
 {
-    struct Options
+    struct FilamentSimOptions
     {
         bool cummulativeMap = true;
         float filamentsPerSecond = 5.0;
@@ -19,8 +19,6 @@ namespace GSL::Graph_internal
         size_t minWarmupIterations = 1000;
         size_t maxWarmupIterations = 2000;
         float normalizationPower = 0.5;
-
-        float eulerianLowerThr = 1e-5;
     };
 
     struct SimWithResult
@@ -30,8 +28,6 @@ namespace GSL::Graph_internal
 
         float ConcentrationExitingDoorway(size_t index) const;
         float ConcentrationAtDoorway(size_t index) const;
-
-        float rawMaxValue;
     };
 
     struct Source
@@ -120,8 +116,7 @@ namespace GSL::Graph_internal
 
     inline float SimWithResult::ConcentrationExitingDoorway(size_t index) const
     {
-        size_t count = simulation->outlets->exitsPerOutlet.at(index);
-        return (float(count) / rawMaxValue) / simulation->outlets->numCellsOutlet.at(index);
+        return simulation->outlets->concentrationExitingDoorway.at(index);
     }
 
     inline float SimWithResult::ConcentrationAtDoorway(size_t index) const

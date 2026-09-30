@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Simulations.hpp"
-#include "gsl_server/algorithms/Common/Simulation.hpp"
+#include "gsl_server/algorithms/Common/Simulation/FilamentSimulation.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <gsl_server/algorithms/Common/Utils/Synchronization.hpp>
@@ -22,7 +22,6 @@ namespace GSL::Graph_internal
         void Reset(); // remove all the cached data and results, get ready to run new simulations
 
         SimWithResult SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point);
-        SimWithResult SimulateSingleRoomFromPointEulerian(const std::shared_ptr<RoomNode> node, Vector2 point);
         SimWithResult SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
                                                  const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
@@ -47,7 +46,9 @@ namespace GSL::Graph_internal
 
         std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;
-        Options options;
+        FilamentSimOptions filamentOptions;
+        float eulerianLowerThr = 1e-5;
+        bool eulerianSimulation = true;
 
         // the simulation cache is further encapsulated into its own class
         class SimulationCache
@@ -69,7 +70,14 @@ namespace GSL::Graph_internal
             SimulationSystem* simSys;
         } simulationCache;
 
+
     private:
+        SimWithResult SimulateSingleRoomFromPointFilaments(const std::shared_ptr<RoomNode> node, Vector2 point);
+        SimWithResult SimulateSingleRoomFromPointEulerian(const std::shared_ptr<RoomNode> node, Vector2 point);
+        SimWithResult SimulateSingleRoomFromAABBFilaments(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
+                                                 const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
+        SimWithResult SimulateSingleRoomFromAABBEulerian(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
+                                                      const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         struct NodeState
         {
             float gasAtInlet;

@@ -4,7 +4,7 @@
 
 namespace GSL::Graph_internal
 {
-    NaiveSimulationSystem::NaiveSimulationSystem(Options& options)
+    NaiveSimulationSystem::NaiveSimulationSystem(FilamentSimOptions& options)
         : options(options) {}
         
     SimWithResult NaiveSimulationSystem::SimulateSourceFromPoint(const std::shared_ptr<PlaceNode> entireMap, const Vector2& sourcePoint)
@@ -13,32 +13,33 @@ namespace GSL::Graph_internal
 
         SimWithResult result;
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
-        result.simulation = std::shared_ptr<Simulation>(new Simulation{
-            .source = SimulationSource(sourcePoint),
-            .warmupAcceleration = options.warmupTimeAcc,
-            .timesteps = options.iterationLimit,
-            .deltaTime = options.deltaTime,
-            .noiseSTDev = options.noiseSTDev,
-            .minWarmupIterations = options.minWarmupIterations,
-            .maxWarmupIterations = options.maxWarmupIterations,
-            .wind = roomNode->GetWindMap(),
-            .outlets = SimulationOutlets{
-                .mask = roomNode->GetOutletsMask(),
-                .exitsPerOutlet = std::vector<size_t>(roomNode->doorways.size(), 0),
-                .numCellsOutlet = roomNode->GetOutletsCellCount(),
-            },
-        });
-        result.simulation->source.numFilamentsSecond = options.filamentsPerSecond;
+        std::shared_ptr<FilamentSimulation> filamentSim(new FilamentSimulation(SimulationSource(sourcePoint),
+                                                                               roomNode->GetWindMap(),
+                                                                               SimulationOutlets{
+                                                                                   .mask = roomNode->GetOutletsMask(),
+                                                                                   .numCellsOutlet = roomNode->GetOutletsCellCount(),
+                                                                               }));
+        result.simulation = filamentSim;
 
-        result.simulation->outlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
+        filamentSim->warmupAcceleration = options.warmupTimeAcc;
+        filamentSim->timesteps = options.iterationLimit;
+        filamentSim->deltaTime = options.deltaTime;
+        filamentSim->noiseSTDev = options.noiseSTDev;
+        filamentSim->minWarmupIterations = options.minWarmupIterations;
+        filamentSim->maxWarmupIterations = options.maxWarmupIterations;
+        filamentSim->numFilamentsSecond = options.filamentsPerSecond;
+        // result.simulation->visibilityMap.emplace(roomNode->GetVisibilityMap());
+
+        filamentSim->filamentOutlets->exitsPerOutlet.resize(roomNode->doorways.size(), 0);
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
 
-        Simulation::Type type = options.cummulativeMap ? Simulation::Type::Cummulative : Simulation::Type::HitFrequency;
-        result.simulation->Run(*result.hitMap, type);
+        FilamentSimulation::Type type = options.cummulativeMap ? FilamentSimulation::Type::Cummulative : FilamentSimulation::Type::HitFrequency;
+        filamentSim->Run(*result.hitMap, type);
+
 
         Utils::Winsorize(*result.hitMap, 5);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
-        Simulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
+        FilamentSimulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1.f);
         return result;
     }

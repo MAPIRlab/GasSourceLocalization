@@ -8,7 +8,7 @@ Panels:
         - /WindMaps1/Topic1
         - /Naive maps1/Topic1
       Splitter Ratio: 0.6257143020629883
-    Tree Height: 441
+    Tree Height: 759
   - Class: rviz_common/Selection
     Name: Selection
   - Class: rviz_common/Tool Properties
@@ -252,7 +252,7 @@ Visualization Manager:
         Value: /PioneerP3DX/infoGain
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: SimGasMaps
       Namespaces:
         {}
@@ -262,7 +262,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/simGasMaps
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: MeasuredGasMaps
