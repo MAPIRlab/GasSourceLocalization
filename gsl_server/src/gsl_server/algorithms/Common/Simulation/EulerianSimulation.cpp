@@ -1,11 +1,18 @@
 #include "EulerianSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
-#include <tracy/Tracy.hpp>
+#include "gsl_server/algorithms/Common/Utils/Synchronization.hpp"
+#include "gsl_server/core/Profiling.hpp"
 
 namespace GSL
 {
+    struct TransitionData
+    {
+        float newProbs[9];
+        Vector2Int neighborsIndicesArr[9];
+    };
+    static std::map<std::string, std::vector<std::optional<TransitionData>>> transitionDataCaches;
 
-    void EulerianSimulation::Run(std::vector<float>& gasMap, float lowerThr)
+    void EulerianSimulation::Run(std::vector<float>& gasMap, float lowerThr, std::string roomID)
     {
         outlets->concentrationExitingDoorway.resize(outlets->enabled.size(), 0);
 
@@ -24,7 +31,7 @@ namespace GSL
         if (source.mode == SimulationSource::AABB)
         {
             AABB2DInt sourceIndices = wind.metadata.coordinatesToIndices(*source.aabb);
-            for(auto ind : sourceIndices)
+            for (auto ind : sourceIndices)
             {
                 activeStates.push(ind);
                 currentGasGrid.dataAt(ind) = 1.0f;
@@ -41,18 +48,15 @@ namespace GSL
         size_t numIterations = 0;
         constexpr size_t maxIterations = 1e7;
 
-        // todo this can be persisted between simulations as long as we have the same wind map (and are working in the same room, of course)
-        struct TransitionData
-        {
-            float newProbs[9];
-            Vector2Int neighborsIndicesArr[9];
-        };
-        std::vector<std::optional<TransitionData>> transitionDataCache(currentGasGrid.data.size(), std::nullopt);
+        if (!transitionDataCaches.contains(roomID))
+            transitionDataCaches[roomID] = std::vector<std::optional<TransitionData>>(currentGasGrid.data.size(), std::nullopt);
+        SYNCED_REF(transitionDataCaches.at(roomID), transitionDataCache);
 
         while (!activeStates.empty() && numIterations < maxIterations)
         {
             Vector2Int currentIndices = activeStates.front();
             size_t currentIndex = currentGasGrid.metadata.indexOf(currentIndices.x, currentIndices.y);
+            GSL_ASSERT(currentGasGrid.occupancy.at(currentIndex) == Occupancy::Free);
             activeStates.pop();
             float currentGasAmount = currentGasGrid.data.at(currentIndex);
             totalGasGrid.data.at(currentIndex) += currentGasAmount;
@@ -71,8 +75,8 @@ namespace GSL
 
             constexpr int BLOCKED = -INT_MAX;
             TransitionData tData;
-            if (transitionDataCache.at(currentIndex))
-                tData = *transitionDataCache.at(currentIndex);
+            if (SYNC(transitionDataCache).at(currentIndex))
+                tData = *SYNC(transitionDataCache).at(currentIndex);
             else
             {
                 constexpr float maxSpeed = 0.2;
@@ -104,11 +108,15 @@ namespace GSL
                             sum += proportion;
                             tData.neighborsIndicesArr[oneDIndex] = neighborInd;
 
-                            if (outlets && (!inBounds || wind.occupancyAt(neighborInd) == Occupancy::Unknown))
+                            if (!inBounds || wind.occupancyAt(neighborInd) == Occupancy::Unknown)
                             {
-                                int outletInd = outlets->mask.data.at(currentIndex);
-                                if (outletInd >= 0)
-                                    outlets->concentrationExitingDoorway.at(outletInd) += proportion;
+                                tData.neighborsIndicesArr[oneDIndex] = {BLOCKED, BLOCKED};
+                                if (outlets)
+                                {
+                                    int outletInd = outlets->mask.data.at(currentIndex);
+                                    if (outletInd >= 0)
+                                        outlets->concentrationExitingDoorway.at(outletInd) += proportion;
+                                }
                             }
                         }
                     }
@@ -117,7 +125,7 @@ namespace GSL
                 // while this seems a little arbitrary, removing it causes a noticeable artifact on cells adjacent to obstacles, so...
                 tData.newProbs[4] = 1.f - sum;
 
-                transitionDataCache[currentIndex] = tData;
+                SYNC(transitionDataCache)[currentIndex] = tData;
             }
 
             for (size_t k = 0; k < 9; k++)
@@ -149,5 +157,15 @@ namespace GSL
             {
                 outlets->concentrationExitingDoorway.at(i) /= rawMax * outlets->numCellsOutlet.at(i);
             }
+    }
+
+    void EulerianSimulation::ClearAllCaches()
+    {
+        transitionDataCaches.clear();
+    }
+
+    void EulerianSimulation::ClearCacheRoom(std::string roomID)
+    {
+        transitionDataCaches.erase(roomID);
     }
 } // namespace GSL

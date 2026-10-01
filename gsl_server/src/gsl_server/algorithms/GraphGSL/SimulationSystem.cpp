@@ -11,6 +11,7 @@ namespace GSL::Graph_internal
         simulationCache.Clear();
         gasMapsWithRoomSource.clear();
         emergencyStopped = false;
+        EulerianSimulation::ClearAllCaches();
         // blurMasks.clear(); //this can probably be retained (if the graph does not change)
     }
 
@@ -56,6 +57,7 @@ namespace GSL::Graph_internal
                                                                                    .numCellsOutlet = roomNode->GetOutletsCellCount(),
                                                                                }));
         result.simulation = filamentSim;
+        filamentSim->filamentOutlets.emplace();
 
         filamentSim->warmupAcceleration = filamentOptions.warmupTimeAcc;
         filamentSim->timesteps = filamentOptions.iterationLimit;
@@ -89,7 +91,7 @@ namespace GSL::Graph_internal
                                                                                }));
         result.simulation = eulerianSim;
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
-        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, eulerianLowerThr);
+        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, eulerianLowerThr, roomNode->id);
         return result;
     }
 
@@ -113,6 +115,7 @@ namespace GSL::Graph_internal
                                                                                    .numCellsOutlet = roomNode->GetOutletsCellCount(),
                                                                                }));
         result.simulation = filamentSim;
+        filamentSim->filamentOutlets.emplace();
 
         filamentSim->warmupAcceleration = filamentOptions.warmupTimeAcc;
         filamentSim->timesteps = filamentOptions.iterationLimit;
@@ -164,7 +167,7 @@ namespace GSL::Graph_internal
             if (blockedDoorways.contains(roomNode->doorways.at(i)))
                 result.simulation->outlets->enabled.at(i) = false;
 
-        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, eulerianLowerThr);
+        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, eulerianLowerThr, roomNode->id);
         return result;
     }
 
@@ -348,7 +351,7 @@ namespace GSL::Graph_internal
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
 
-#define LOG_DETAILS 1
+#define LOG_DETAILS 0
 #if LOG_DETAILS
 #define LOG_TRACE(...) GSL_INFO(__VA_ARGS__)
 #else

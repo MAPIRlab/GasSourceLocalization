@@ -220,8 +220,9 @@ namespace GSL
                         Vector2 pos = selectedCoordinates;
                         if (!Is<RoomNode>(node))
                             pos = node->GetPosition();
+                        Utils::Time::Stopwatch watch;
                         gsl->simulationSystem.SimulateEntireGraph(node, pos);
-                        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Done simulating source in room '{}'", node->id);
+                        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Done simulating source in room '{} -- {:.3e}s'", node->id, watch.ellapsed());
                         gsl->simulationViz.simulationIndex = gsl->simulationSystem.gasMapsWithRoomSource.at(node).size() - 1;
                         simulationOptions.simulationEnabled = true;
                     };
@@ -304,8 +305,8 @@ namespace GSL
         ImGui::DragFloat("Blur sigma", &gsl->simulationSystem.filamentOptions.blurSigma, 0.01, 0, 2.0);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Normalization power", &gsl->simulationSystem.filamentOptions.normalizationPower, 0.01, 0, 5.0);
-        ImGui::SetNextItemWidth(100);
         ImGui::Checkbox("Eulerian simulations", &gsl->simulationSystem.eulerianSimulation);
+        ImGui::SetNextItemWidth(100);
         ImGui::InputFloat("Eulerian thr", &gsl->simulationSystem.eulerianLowerThr, 0, 0, "%.2e");
 
         ImGui::End();

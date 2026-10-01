@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.11)
 project(gsl_server)
 
 # enabling debug mode disables optimizations and activates a bunch of assertions in the code.
-set(CMAKE_BUILD_TYPE "Debug")
+set(CMAKE_BUILD_TYPE "Release")
 
 set(CMAKE_CXX_FLAGS "-g -glldb -Wpedantic -fno-omit-frame-pointer ${CMAKE_CXX_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 ${CMAKE_CXX_FLAGS}")
@@ -31,7 +31,7 @@ set(USE_GUI ON)
 
 
 # Tracy is a profiler. ON enables some instrumentation macros (and adds a dependency to tracy). To do sampling-based profiling you also need to run the node as sudo
-set(USE_TRACY ON)
+set(USE_TRACY OFF)
 # disable to do sampling-only profiling
 set(USE_TRACY_INSTRUMENTATION ON)
 
