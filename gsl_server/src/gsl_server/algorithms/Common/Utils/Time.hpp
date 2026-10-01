@@ -23,7 +23,7 @@ namespace GSL::Utils::Time
         {
         }
 
-        double ellapsed()
+        double elapsed()
         {
             return toSeconds(clock.now() - start);
         }

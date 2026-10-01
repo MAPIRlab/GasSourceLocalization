@@ -3,6 +3,7 @@
 #include "gsl_server/algorithms/Common/Simulation/EulerianSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
+#include "gsl_server/algorithms/Common/Utils/Time.hpp"
 
 namespace GSL::Graph_internal
 {
@@ -679,17 +680,20 @@ namespace GSL::Graph_internal
     {
         auto room = As<RoomNode>(sourceRoom);
 
+        Utils::Time::Stopwatch watch;
         std::vector<Utils::RunningVariance> variances(room->GetOccupancy().data.size());
         std::vector<Vector2> originalWind = room->GetWindMap().data;
-
+        float thr = eulerianLowerThr;
+        eulerianLowerThr = 1e-3;
         for (size_t i = 0; i < uncertaintyParams.numSimulations; i++)
         {
             room->GetWindMap().data = originalWind;
             room->TestModifyWind(uncertaintyParams.sigmaWind);
+            EulerianSimulation::ClearAllCaches();
             SimWithResult result = SimulateSingleRoomFromPoint(room, sourcePoint);
-            Utils::Winsorize(*result.hitMap, 2);
-            FilamentSimulation::blurHitMap(*result.hitMap, filamentOptions.blurSigma, room->GetOccupancy(), blurMasks[room]);
-            Utils::PowerMaxNormalize(*result.hitMap, room->GetOccupancy().occupancy);
+            // Utils::Winsorize(*result.hitMap, 2);
+            // FilamentSimulation::blurHitMap(*result.hitMap, filamentOptions.blurSigma, room->GetOccupancy(), blurMasks[room]);
+            // Utils::PowerMaxNormalize(*result.hitMap, room->GetOccupancy().occupancy);
             if (uncertaintyParams.displaySimulations)
                 FilamentSimulation::displayImage(Grid2D<float>(*result.hitMap, room->GetOccupancy()));
 
@@ -711,7 +715,8 @@ namespace GSL::Graph_internal
 
         Utils::publishDebugMarkers(marker, "/uncertainty");
         room->GetWindMap().data = originalWind;
-        GSL_INFO("Uncertainty test done");
+        GSL_INFO("Uncertainty test done -- {:.2f}s", watch.elapsed());
+        eulerianLowerThr = thr;
     }
 
 } // namespace GSL::Graph_internal

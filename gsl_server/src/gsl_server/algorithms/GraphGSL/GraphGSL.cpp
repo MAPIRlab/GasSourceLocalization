@@ -108,14 +108,14 @@ namespace GSL
 
     void GraphGSL::OnUpdate()
     {
-        // simulationSystem.uncertaintyTest(naiveEntireMap, simulationSystem.uncertaintyParams.candidateSource);
-        Algorithm::OnUpdate();
+        simulationSystem.uncertaintyTest(naiveEntireMap, simulationSystem.uncertaintyParams.candidateSource);
+        // Algorithm::OnUpdate();
 
-        if (visualizationCD.isDone())
-        {
-            Visualize();
-            visualizationCD.Restart();
-        }
+        // if (visualizationCD.isDone())
+        // {
+        //     Visualize();
+        //     visualizationCD.Restart();
+        // }
     }
 
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)

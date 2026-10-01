@@ -195,7 +195,7 @@ Visualization Manager:
       Enabled: true
       Name: Graph
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Transient Local
@@ -207,7 +207,7 @@ Visualization Manager:
       Enabled: true
       Name: Occupancy_nodes
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
@@ -252,7 +252,7 @@ Visualization Manager:
         Value: /PioneerP3DX/infoGain
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: SimGasMaps
       Namespaces:
         {}
@@ -262,9 +262,9 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/simGasMaps
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: MeasuredGasMaps
       Namespaces:
         {}
@@ -274,7 +274,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/measuredGasMaps
-      Value: false
+      Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: Quadtree
@@ -347,7 +347,7 @@ Visualization Manager:
         Value: /expected_source_position
       Value: false
     - Class: rviz_default_plugins/Marker
-      Enabled: true
+      Enabled: false
       Name: Marker
       Namespaces:
         {}
@@ -358,7 +358,7 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /uncertainty
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217

@@ -222,7 +222,7 @@ namespace GSL
                             pos = node->GetPosition();
                         Utils::Time::Stopwatch watch;
                         gsl->simulationSystem.SimulateEntireGraph(node, pos);
-                        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Done simulating source in room '{} -- {:.3e}s'", node->id, watch.ellapsed());
+                        GSL_INFO_COLOR(fmt::terminal_color::yellow, "Done simulating source in room '{} -- {:.3e}s'", node->id, watch.elapsed());
                         gsl->simulationViz.simulationIndex = gsl->simulationSystem.gasMapsWithRoomSource.at(node).size() - 1;
                         simulationOptions.simulationEnabled = true;
                     };
