@@ -305,9 +305,18 @@ namespace GSL
         ImGui::DragFloat("Blur sigma", &gsl->simulationSystem.filamentOptions.blurSigma, 0.01, 0, 2.0);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Normalization power", &gsl->simulationSystem.filamentOptions.normalizationPower, 0.01, 0, 5.0);
+        
         ImGui::Checkbox("Eulerian simulations", &gsl->simulationSystem.eulerianSimulation);
         ImGui::SetNextItemWidth(100);
-        ImGui::InputFloat("Eulerian thr", &gsl->simulationSystem.eulerianLowerThr, 0, 0, "%.2e");
+        ImGui::InputFloat("Eulerian thr", &gsl->simulationSystem.eulerianOptions.lowerThr, 0, 0, "%.2e");
+        ImGui::SetNextItemWidth(100);
+        ImGui::InputScalar("MaxIterations", ImGuiDataType_U64, &gsl->simulationSystem.eulerianOptions.maxIterations, NULL, NULL, "%e");
+        ImGui::SetNextItemWidth(100);
+        ImGui::InputFloat("maxWindSpeed", &gsl->simulationSystem.eulerianOptions.maxWindSpeed, 0, 0, "%.2f");
+        ImGui::SetNextItemWidth(100);
+        ImGui::InputFloat("minRho", &gsl->simulationSystem.eulerianOptions.minRho, 0, 0, "%.2f");
+        ImGui::SetNextItemWidth(100);
+        ImGui::InputFloat("maxRho", &gsl->simulationSystem.eulerianOptions.maxRho, 0, 0, "%.2f");
 
         ImGui::End();
     }

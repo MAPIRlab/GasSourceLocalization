@@ -5,6 +5,7 @@
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <gsl_server/algorithms/Common/Utils/Synchronization.hpp>
+#include "gsl_server/algorithms/Common/Simulation/EulerianSimulation.hpp"
 #include <stack>
 
 namespace GSL
@@ -47,7 +48,7 @@ namespace GSL::Graph_internal
         std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;
         FilamentSimOptions filamentOptions;
-        float eulerianLowerThr = 1e-5;
+        EulerianSimulation::Options eulerianOptions;
         bool eulerianSimulation = true;
 
         // the simulation cache is further encapsulated into its own class

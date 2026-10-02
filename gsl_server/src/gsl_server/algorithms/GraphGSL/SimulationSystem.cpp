@@ -86,13 +86,14 @@ namespace GSL::Graph_internal
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         std::shared_ptr<EulerianSimulation> eulerianSim(new EulerianSimulation(SimulationSource(point),
                                                                                roomNode->GetWindMap(),
+                                                                               eulerianOptions,
                                                                                SimulationOutlets{
                                                                                    .mask = roomNode->GetOutletsMask(),
                                                                                    .numCellsOutlet = roomNode->GetOutletsCellCount(),
                                                                                }));
         result.simulation = eulerianSim;
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
-        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, eulerianLowerThr, roomNode->id);
+        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, roomNode->id);
         return result;
     }
 
@@ -156,6 +157,7 @@ namespace GSL::Graph_internal
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         std::shared_ptr<EulerianSimulation> eulerianSim(new EulerianSimulation(SimulationSource(sourceAABB),
                                                                                roomNode->GetWindMap(),
+                                                                               eulerianOptions,
                                                                                SimulationOutlets{
                                                                                    .mask = roomNode->GetOutletsMask(),
                                                                                    .numCellsOutlet = roomNode->GetOutletsCellCount(),
@@ -168,7 +170,7 @@ namespace GSL::Graph_internal
             if (blockedDoorways.contains(roomNode->doorways.at(i)))
                 result.simulation->outlets->enabled.at(i) = false;
 
-        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, eulerianLowerThr, roomNode->id);
+        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, roomNode->id);
         return result;
     }
 
@@ -361,10 +363,10 @@ namespace GSL::Graph_internal
 
         for (const auto& initialNode : initialNodeStates)
         {
+            ZoneScopedN("Graph propagation");
             stateStack.push_back(initialNode);
             while (!stateStack.empty())
             {
-                ZoneScopedN("Graph propagation");
 
                 if (emergencyStopped)
                     break;
@@ -531,7 +533,7 @@ namespace GSL::Graph_internal
 
                     // calculate how much of the gas in the current node makes it to the next node
                     size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
-                    gasProportion = weight * result.ConcentrationExitingDoorway(outletIndex);
+                    gasProportion = weight * result.ConcentrationAtDoorway(outletIndex);
                 }
 
                 if (!Is<RoomNode>(next.doorSource->from))
@@ -683,8 +685,8 @@ namespace GSL::Graph_internal
         Utils::Time::Stopwatch watch;
         std::vector<Utils::RunningVariance> variances(room->GetOccupancy().data.size());
         std::vector<Vector2> originalWind = room->GetWindMap().data;
-        float thr = eulerianLowerThr;
-        eulerianLowerThr = 1e-3;
+        float thr = eulerianOptions.lowerThr;
+        eulerianOptions.lowerThr = 1e-3;
         for (size_t i = 0; i < uncertaintyParams.numSimulations; i++)
         {
             room->GetWindMap().data = originalWind;
@@ -716,7 +718,7 @@ namespace GSL::Graph_internal
         Utils::publishDebugMarkers(marker, "/uncertainty");
         room->GetWindMap().data = originalWind;
         GSL_INFO("Uncertainty test done -- {:.2f}s", watch.elapsed());
-        eulerianLowerThr = thr;
+        eulerianOptions.lowerThr = thr;
     }
 
 } // namespace GSL::Graph_internal

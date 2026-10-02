@@ -128,10 +128,6 @@ namespace GSL
 
         std::vector<uint16_t> updated(hitMap.size(), 0); // index of the last iteration in which this cell was updated, to avoid double-counting
 
-        // reset the count of how many filaments took each outlet
-        if (outlets)
-            std::fill(filamentOutlets->exitsPerOutlet.begin(), filamentOutlets->exitsPerOutlet.end(), 0);
-
         // warm-up: we don't want to start recording frequency of hits until the shape of the plume has stabilized. Wait until a filament exits the
         // environment through an outlet, or a maximum number of steps
         {
@@ -175,6 +171,10 @@ namespace GSL
             }
             // GSL_INFO("Warmup complete ({} iterations)", iterationCount);
         }
+
+        // reset the count of how many filaments took each outlet
+        if (outlets)
+            std::fill(filamentOutlets->exitsPerOutlet.begin(), filamentOutlets->exitsPerOutlet.end(), 0);
 
         ZoneScopedN("Recording");
         // now, we do the thing
