@@ -101,6 +101,26 @@ namespace GSL::Utils
         std::array<float, Size> m_precalculatedTable;
     };
 
+    struct RunningWeightedMean
+    {
+        void Update(float value, float weight)
+        {
+            sum += value * weight;
+            sum_w += weight;
+        }
+
+        float Mean() const
+        {
+            if (sum_w == 0)
+                return 0;
+            return sum / sum_w;
+        }
+
+    private:
+        float sum = 0;
+        float sum_w = 0;
+    };
+
     // See Updating Mean and Variance Estimates: An Improved Method D.H.D. West 1979
     struct RunningVariance
     {

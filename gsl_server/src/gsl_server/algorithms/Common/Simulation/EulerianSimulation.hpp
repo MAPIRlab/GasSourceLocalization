@@ -20,7 +20,7 @@ namespace GSL
                            std::optional<SimulationOutlets> outlets = std::nullopt)
             : Simulation(source, wind, outlets), options(opts) {}
 
-        void Run(std::vector<float>& gasMap, std::string roomID);
+        void Run(std::vector<float>& gasMap, std::string roomID, std::vector<float>& uncertainty);
         static void ClearAllCaches();
         static void ClearCacheRoom(std::string roomID);
     };

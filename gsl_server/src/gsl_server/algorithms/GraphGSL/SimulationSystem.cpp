@@ -3,7 +3,6 @@
 #include "gsl_server/algorithms/Common/Simulation/EulerianSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
-#include "gsl_server/algorithms/Common/Utils/Time.hpp"
 
 namespace GSL::Graph_internal
 {
@@ -84,6 +83,7 @@ namespace GSL::Graph_internal
     {
         SimWithResult result;
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
+        result.uncertainty = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         std::shared_ptr<EulerianSimulation> eulerianSim(new EulerianSimulation(SimulationSource(point),
                                                                                roomNode->GetWindMap(),
                                                                                eulerianOptions,
@@ -93,7 +93,7 @@ namespace GSL::Graph_internal
                                                                                }));
         result.simulation = eulerianSim;
         result.simulation->outlets->enabled.resize(roomNode->doorways.size(), true);
-        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, roomNode->id);
+        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, roomNode->id, *result.uncertainty);
         return result;
     }
 
@@ -155,6 +155,7 @@ namespace GSL::Graph_internal
 
         // configure the simulation
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
+        result.uncertainty = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         std::shared_ptr<EulerianSimulation> eulerianSim(new EulerianSimulation(SimulationSource(sourceAABB),
                                                                                roomNode->GetWindMap(),
                                                                                eulerianOptions,
@@ -170,7 +171,7 @@ namespace GSL::Graph_internal
             if (blockedDoorways.contains(roomNode->doorways.at(i)))
                 result.simulation->outlets->enabled.at(i) = false;
 
-        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, roomNode->id);
+        As<EulerianSimulation>(result.simulation)->Run(*result.hitMap, roomNode->id, *result.uncertainty);
         return result;
     }
 
@@ -682,32 +683,8 @@ namespace GSL::Graph_internal
     {
         auto room = As<RoomNode>(sourceRoom);
 
-        Utils::Time::Stopwatch watch;
-        std::vector<Utils::RunningVariance> variances(room->GetOccupancy().data.size());
-        std::vector<Vector2> originalWind = room->GetWindMap().data;
-        float thr = eulerianOptions.lowerThr;
-        eulerianOptions.lowerThr = 1e-3;
-        for (size_t i = 0; i < uncertaintyParams.numSimulations; i++)
-        {
-            room->GetWindMap().data = originalWind;
-            room->TestModifyWind(uncertaintyParams.sigmaWind);
-            EulerianSimulation::ClearAllCaches();
-            SimWithResult result = SimulateSingleRoomFromPoint(room, sourcePoint);
-            // Utils::Winsorize(*result.hitMap, 2);
-            // FilamentSimulation::blurHitMap(*result.hitMap, filamentOptions.blurSigma, room->GetOccupancy(), blurMasks[room]);
-            // Utils::PowerMaxNormalize(*result.hitMap, room->GetOccupancy().occupancy);
-            if (uncertaintyParams.displaySimulations)
-                FilamentSimulation::displayImage(Grid2D<float>(*result.hitMap, room->GetOccupancy()));
-
-            for (size_t j = 0; j < variances.size(); j++)
-                variances.at(j).Update(result.hitMap->at(j), 1);
-        }
-
-        std::vector<float> var(variances.size());
-        for (size_t j = 0; j < variances.size(); j++)
-            var.at(j) = variances.at(j).variance;
-
-        Grid2D<float> grid(var, room->GetOccupancy());
+        auto result = SimulateSingleRoomFromPoint(room, sourcePoint);
+        Grid2D<float> grid(*result.uncertainty, room->GetOccupancy());
         Marker marker = Utils::createPointsMarker(grid,
                                                   uncertaintyParams.minValueViz,
                                                   uncertaintyParams.maxValueViz,
@@ -716,9 +693,6 @@ namespace GSL::Graph_internal
                                                   0.3);
 
         Utils::publishDebugMarkers(marker, "/uncertainty");
-        room->GetWindMap().data = originalWind;
-        GSL_INFO("Uncertainty test done -- {:.2f}s", watch.elapsed());
-        eulerianOptions.lowerThr = thr;
     }
 
 } // namespace GSL::Graph_internal

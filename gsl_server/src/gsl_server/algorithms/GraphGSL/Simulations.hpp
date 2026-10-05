@@ -25,6 +25,7 @@ namespace GSL::Graph_internal
     {
         std::shared_ptr<Simulation> simulation;
         std::shared_ptr<std::vector<float>> hitMap;
+        std::shared_ptr<std::vector<float>> uncertainty;
 
         float ConcentrationExitingDoorway(size_t index) const;
         float ConcentrationAtDoorway(size_t index) const;

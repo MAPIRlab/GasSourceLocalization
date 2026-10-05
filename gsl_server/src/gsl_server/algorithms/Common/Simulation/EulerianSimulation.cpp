@@ -12,9 +12,10 @@ namespace GSL
     };
     static std::map<std::string, std::vector<std::optional<TransitionData>>> transitionDataCaches;
 
-    void EulerianSimulation::Run(std::vector<float>& gasMap, std::string roomID)
+    void EulerianSimulation::Run(std::vector<float>& gasMap, std::string roomID, std::vector<float>& uncertainty)
     {
         outlets->concentrationExitingDoorway.resize(outlets->enabled.size(), 0);
+        std::vector<Utils::RunningWeightedMean> age(uncertainty.size());
 
         ZoneScopedN("RunEulerian");
         Grid2D<float> totalGasGrid{gasMap, wind.occupancy, wind.metadata};
@@ -79,7 +80,6 @@ namespace GSL
                 tData = *SYNC(transitionDataCache).at(currentIndex);
             else
             {
-                constexpr float maxSpeed = 0.2;
                 Vector2 windVec = wind.data.at(currentIndex);
                 float windSpeed = vmath::length(windVec);
                 float windAngle = vmath::angle_fast(windVec);
@@ -103,7 +103,7 @@ namespace GSL
                             float proportion = Utils::CauchyIntervalProb(angleLimits.x,
                                                                          angleLimits.y,
                                                                          windAngle,
-                                                                         std::lerp(0.f, 0.85f, std::clamp(windSpeed / maxSpeed, 0.f, 1.f)));
+                                                                         std::lerp(0.f, 0.85f, std::clamp(windSpeed / options.maxWindSpeed, 0.f, 1.f)));
                             tData.newProbs[oneDIndex] = proportion;
                             sum += proportion;
                             tData.neighborsIndicesArr[oneDIndex] = neighborInd;
@@ -152,6 +152,7 @@ namespace GSL
                 if (currentGasGrid.data.at(neighborIndex) == 0)
                     activeStates.push(tData.neighborsIndicesArr[k]);
                 currentGasGrid.data.at(neighborIndex) += prob;
+                age.at(neighborIndex).Update(age.at(currentIndex).Mean() + 1.f, prob);
             }
 
             numIterations++;
@@ -168,6 +169,10 @@ namespace GSL
             {
                 outlets->concentrationExitingDoorway.at(i) /= rawMax * outlets->numCellsOutlet.at(i);
             }
+
+        for (size_t i = 0; i < uncertainty.size(); i++)
+            if (totalGasGrid.occupancy.at(i))
+                uncertainty.at(i) = age.at(i).Mean();
     }
 
     void EulerianSimulation::ClearAllCaches()
