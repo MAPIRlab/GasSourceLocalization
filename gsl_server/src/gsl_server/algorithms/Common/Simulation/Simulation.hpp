@@ -49,5 +49,7 @@ namespace GSL
             : source(source), wind(wind), outlets(outlets) {}
 
         virtual ~Simulation() = default; // we need something virtual so the compiler considers the type polymorphic and lets us do dynamic_cast
+
+        static void displayImage(const Grid2D<float>& hitMap, const std::string& imageName = "simResult", float raisePower = 1);
     };
 } // namespace GSL

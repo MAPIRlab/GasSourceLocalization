@@ -320,7 +320,7 @@ namespace GSL
         displayImage(Grid2D<float>(hitMap, wind.occupancy, wind.metadata));
     }
 
-    void FilamentSimulation::displayImage(const Grid2D<float>& hitMap, const std::string& imageName, float raisePower)
+    void Simulation::displayImage(const Grid2D<float>& hitMap, const std::string& imageName, float raisePower)
     {
         std::vector<float> hitMapCopy = hitMap.data;
         for (float& f : hitMapCopy)

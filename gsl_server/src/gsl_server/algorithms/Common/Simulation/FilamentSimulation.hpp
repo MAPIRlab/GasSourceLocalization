@@ -50,7 +50,6 @@ namespace GSL
         void Run(std::vector<float>& hitMap, Type type = FilamentSimulation::Type::HitFrequency);
 
         void makeSimulationImage();
-        static void displayImage(const Grid2D<float>& hitMap, const std::string& imageName = "simResult", float raisePower = 1);
         static void blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask);
 
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
