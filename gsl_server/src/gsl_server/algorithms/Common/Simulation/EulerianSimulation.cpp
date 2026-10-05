@@ -1,5 +1,4 @@
 #include "EulerianSimulation.hpp"
-#include "gsl_server/algorithms/Common/Utils/Collections.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Synchronization.hpp"
 #include "gsl_server/core/Profiling.hpp"
@@ -12,13 +11,6 @@ namespace GSL
         Vector2Int neighborsIndicesArr[9];
     };
     static std::map<std::string, std::vector<std::optional<TransitionData>>> transitionDataCaches;
-
-    struct SubSimulation
-    {
-        bool complete = false;
-        std::vector<float> gas;
-    };
-    static std::map<std::string, std::vector<SubSimulation>> simulationCache;
 
     void EulerianSimulation::Run(std::vector<float>& gasMap, std::string roomID)
     {
@@ -34,20 +26,14 @@ namespace GSL
         std::vector<float> currentGasVec(gasMap.size(), 0.0f);
         Grid2D<float> currentGasGrid{currentGasVec, wind.occupancy, wind.metadata};
 
-        struct State
-        {
-            Vector2Int indices;
-            size_t index;
-            bool alreadyVisited;
-        };
-        std::deque<State> activeStates;
+        std::queue<Vector2Int> activeStates;
 
         if (source.mode == SimulationSource::AABB)
         {
             AABB2DInt sourceIndices = wind.metadata.coordinatesToIndices(*source.aabb);
             for (auto ind : sourceIndices)
             {
-                activeStates.push_back({ind, wind.metadata.indexOf(ind), false});
+                activeStates.push(ind);
                 currentGasGrid.dataAt(ind) = 1.0f;
             }
         }
@@ -55,7 +41,7 @@ namespace GSL
         {
             Vector2 sourcePoint = source.getPoint();
             Vector2Int sourceIndices = wind.metadata.coordinatesToIndices(sourcePoint);
-            activeStates.push_back({sourceIndices, wind.metadata.indexOf(sourceIndices), false});
+            activeStates.push(sourceIndices);
             currentGasGrid.dataAt(sourceIndices) = 1.0f;
         }
 
@@ -65,98 +51,44 @@ namespace GSL
             transitionDataCaches[roomID] = std::vector<std::optional<TransitionData>>(currentGasGrid.data.size(), std::nullopt);
         SYNCED_REF(transitionDataCaches.at(roomID), transitionDataCache);
 
-        // SubSimulation caching optimization
-        struct ExpandedState
-        {
-            size_t index;
-            float gas;
-        };
-        std::deque<ExpandedState> expandedStates;
-        if (!simulationCache.contains(roomID))
-            simulationCache[roomID] = std::vector<SubSimulation>(currentGasGrid.data.size(), SubSimulation{.complete = false, .gas = std::vector<float>(currentGasGrid.data.size())});
-
         while (!activeStates.empty() && numIterations < options.maxIterations)
         {
-            State& currentState = activeStates.back();
+            Vector2Int currentIndices = activeStates.front();
+            size_t currentIndex = currentGasGrid.metadata.indexOf(currentIndices.x, currentIndices.y);
+            GSL_ASSERT(currentGasGrid.occupancy.at(currentIndex) == Occupancy::Free);
+            activeStates.pop();
+            float currentGasAmount = currentGasGrid.data.at(currentIndex);
+            totalGasGrid.data.at(currentIndex) += currentGasAmount;
+            currentGasGrid.data.at(currentIndex) = 0;
 
-            float currentGasAmount = currentGasGrid.data.at(currentState.index);
-            totalGasGrid.data.at(currentState.index) += currentGasAmount;
-            currentGasGrid.data.at(currentState.index) = 0;
-
-            GSL_INFO("Current: {} -- {:.2e}", currentState.index, currentGasAmount);
-            GSL_ASSERT(currentGasGrid.occupancy.at(currentState.index) == Occupancy::Free);
-
-            if (simulationCache.at(roomID).at(currentState.index).complete)
-            {
-                GSL_INFO("Already complete, updating from cache.");
-                for (size_t i = 0; i < simulationCache.at(roomID).at(currentState.index).gas.size(); i++)
-                    totalGasGrid.data.at(i) += currentGasAmount * simulationCache.at(roomID).at(currentState.index).gas.at(i);
-                activeStates.pop_back();
+            if (currentIndex >= totalGasGrid.data.size() || currentGasAmount < options.lowerThr)
                 continue;
-            }
-            else
-            {
-                for (auto& previous : expandedStates)
-                    simulationCache.at(roomID).at(previous.index).gas.at(currentState.index) += currentGasAmount / previous.gas;
-            }
 
-            // we only pop states once we are done with all their children (so, the second time they are at the top of the stack)
-            // that way, we know their sub-simulation is complete and can be used
-            if (currentState.alreadyVisited)
-            {
-                // we avoid adding the same indices twice to the expanded states list to avoid double counting the gas on the subSim map
-                if (expandedStates.back().index == currentState.index)
-                {
-                    GSL_INFO("State revisited: {} -- marking complete", currentState.index);
-                    expandedStates.pop_back();
-                    simulationCache.at(roomID).at(currentState.index).complete = true;
-                    displayImage(Grid2D<float>(simulationCache.at(roomID).at(currentState.index).gas, currentGasGrid), fmt::format("eulerian_{}", currentState.indices));
-                }
-                activeStates.pop_back();
-                continue;
-            }
-            currentState.alreadyVisited = true;
-
-            if (currentState.index >= totalGasGrid.data.size() || currentGasAmount == 0)
-            {
-                GSL_INFO("Skipping state: {}", currentState.index);
-                activeStates.pop_back();
-                continue;
-            }
-
-            if (!Utils::containsPred(expandedStates, [&currentState](const auto& state)
-                                     {
-                                         return state.index == currentState.index;
-                                     }))
-            {
-                GSL_INFO("Adding to expanded states: {}", currentState.index);
-                expandedStates.push_back({currentState.index, currentGasAmount});
-            }
+            // clang-format off
+            const Vector2 segmentAngles [3][3] = {
+                {{4.5f/8, 5.5f/8},  {3.5f/8, 4.5f/8},   {2.5f/8, 3.5f/8}},
+                {{5.5f/8, 6.5f/8},  {0,0},              {1.5f/8, 2.5f/8}},
+                {{6.5f/8, 7.5f/8},  {-0.5f/8, 0.5f/8},  {0.5f/8, 1.5f/8}},
+            };
+            // clang-format on
 
             constexpr int BLOCKED = -INT_MAX;
             constexpr int OUT = -INT_MAX + 1;
             TransitionData tData;
-            if (SYNC(transitionDataCache).at(currentState.index))
-                tData = *SYNC(transitionDataCache).at(currentState.index);
+            if (SYNC(transitionDataCache).at(currentIndex))
+                tData = *SYNC(transitionDataCache).at(currentIndex);
             else
             {
-                Vector2 windVec = wind.data.at(currentState.index);
+                constexpr float maxSpeed = 0.2;
+                Vector2 windVec = wind.data.at(currentIndex);
                 float windSpeed = vmath::length(windVec);
                 float windAngle = vmath::angle_fast(windVec);
-
-                // clang-format off
-                const Vector2 segmentAngles [3][3] = {
-                    {{4.5f/8, 5.5f/8},  {3.5f/8, 4.5f/8},   {2.5f/8, 3.5f/8}},
-                    {{5.5f/8, 6.5f/8},  {0,0},              {1.5f/8, 2.5f/8}},
-                    {{6.5f/8, 7.5f/8},  {-0.5f/8, 0.5f/8},  {0.5f/8, 1.5f/8}},
-                };
-                // clang-format on
 
                 float sum = 0;
                 for (int i = -1; i <= 1; i++)
                     for (int j = -1; j <= 1; j++)
                     {
-                        Vector2Int neighborInd = currentState.indices + Vector2Int{i, j};
+                        Vector2Int neighborInd = currentIndices + Vector2Int{i, j};
                         size_t oneDIndex = (i + 1) * 3 + (j + 1);
 
                         bool inBounds = wind.metadata.indicesInBounds(neighborInd);
@@ -171,7 +103,7 @@ namespace GSL
                             float proportion = Utils::CauchyIntervalProb(angleLimits.x,
                                                                          angleLimits.y,
                                                                          windAngle,
-                                                                         std::lerp(options.minRho, options.maxRho, std::clamp(windSpeed / options.maxWindSpeed, 0.f, 1.f)));
+                                                                         std::lerp(0.f, 0.85f, std::clamp(windSpeed / maxSpeed, 0.f, 1.f)));
                             tData.newProbs[oneDIndex] = proportion;
                             sum += proportion;
                             tData.neighborsIndicesArr[oneDIndex] = neighborInd;
@@ -180,7 +112,7 @@ namespace GSL
                             {
                                 tData.neighborsIndicesArr[oneDIndex] = {OUT, OUT};
                                 if (outlets)
-                                    tData.neighborsIndicesArr[oneDIndex].y = outlets->mask.data.at(currentState.index);
+                                    tData.neighborsIndicesArr[oneDIndex].y = outlets->mask.data.at(currentIndex);
                             }
                         }
                     }
@@ -188,13 +120,20 @@ namespace GSL
                 // if neighbor was blocked, the corresponding gas proportion should stay in this cell
                 // while this seems a little arbitrary, removing it causes a noticeable artifact on cells adjacent to obstacles, so...
                 tData.newProbs[4] = 1.f - sum;
-
-                SYNC(transitionDataCache)
-                [currentState.index] = tData;
+                SYNC(transitionDataCache).at(currentIndex) = tData;
             }
+
+            float rejectedByObstacles = tData.newProbs[4];
+            float extraAmount = (1.f / (1.f - rejectedByObstacles) - 1.f) * currentGasAmount;
+            currentGasAmount += extraAmount;
+            totalGasGrid.data.at(currentIndex) += extraAmount;
 
             for (size_t k = 0; k < 9; k++)
             {
+                // skip self
+                if (k == 4)
+                    continue;
+
                 float prob = tData.newProbs[k] * currentGasAmount;
                 if (tData.neighborsIndicesArr[k].x == OUT)
                 {
@@ -203,7 +142,7 @@ namespace GSL
                     continue;
                 }
 
-                if (tData.newProbs[k] < 1e-2 || tData.neighborsIndicesArr[k].x == BLOCKED)
+                if (tData.newProbs[k] < 5e-3 || tData.neighborsIndicesArr[k].x == BLOCKED)
                     continue;
 
                 size_t neighborIndex = currentGasGrid.metadata.indexOf(tData.neighborsIndicesArr[k]);
@@ -211,7 +150,7 @@ namespace GSL
                     continue;
 
                 if (currentGasGrid.data.at(neighborIndex) == 0)
-                    activeStates.push_back(State{.indices = tData.neighborsIndicesArr[k], .index = neighborIndex, .alreadyVisited = false});
+                    activeStates.push(tData.neighborsIndicesArr[k]);
                 currentGasGrid.data.at(neighborIndex) += prob;
             }
 
@@ -234,12 +173,10 @@ namespace GSL
     void EulerianSimulation::ClearAllCaches()
     {
         transitionDataCaches.clear();
-        simulationCache.clear();
     }
 
     void EulerianSimulation::ClearCacheRoom(std::string roomID)
     {
         transitionDataCaches.erase(roomID);
-        simulationCache.erase(roomID);
     }
 } // namespace GSL
