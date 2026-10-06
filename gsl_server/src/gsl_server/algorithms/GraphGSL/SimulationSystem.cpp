@@ -1,6 +1,7 @@
 #include "SimulationSystem.hpp"
 #include "Node.hpp"
 #include "gsl_server/algorithms/Common/Simulation/EulerianSimulation.hpp"
+#include "gsl_server/algorithms/Common/Simulation/FilamentSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 
@@ -314,7 +315,7 @@ namespace GSL::Graph_internal
 
             // mtx.lock();
             // for (auto& [node, map] : completeGasMap.gasMaps)
-            //     FilamentSimulation::blurHitMap(map, filamentOptions.blurSigma, node->GetOccupancy(), blurMasks[node]);
+            //     Utils::Image::Blur(map, filamentOptions.blurSigma, node->GetOccupancy(), blurMasks[node]);
             // mtx.unlock();
 
             // // normalize by the global maximum!
@@ -672,8 +673,8 @@ namespace GSL::Graph_internal
         Grid2DMetadata metadata = Grid2DMetadata{.dimensions = Vector2Int(sizeX, sizeY)};
         Grid2D<Occupancy> occupancy{occupancy_data, occupancy_data, metadata};
 
-        std::optional<SimulationBlurMask> mask = std::nullopt;
-        FilamentSimulation::blurHitMap(map, 1, occupancy, mask);
+        std::optional<Utils::Image::BlurMask> mask = std::nullopt;
+        Utils::Image::Blur(map, 1, occupancy, mask);
 
         float total = std::accumulate(map.begin(), map.end(), 0.0f);
         GSL_INFO("Total gas: {}", total);

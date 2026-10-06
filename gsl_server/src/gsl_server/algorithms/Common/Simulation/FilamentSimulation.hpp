@@ -1,7 +1,6 @@
 #pragma once
 #include "Simulation.hpp"
 #include "gsl_server/algorithms/Common/VisibilityMap.hpp"
-#include <opencv2/core/mat.hpp>
 
 namespace GSL
 {
@@ -10,12 +9,6 @@ namespace GSL
         Vector2 position;
         uint age = 0;
         int mostRecentOutlet = -1;
-    };
-
-    struct SimulationBlurMask
-    {
-        float sigma = 0.0;
-        cv::Mat mask;
     };
 
     struct FilamentOutletInfo
@@ -50,7 +43,6 @@ namespace GSL
         void Run(std::vector<float>& hitMap, Type type = FilamentSimulation::Type::HitFrequency);
 
         void makeSimulationImage();
-        static void blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask);
 
         size_t totalEmittedFilaments = 0; // to be read after the simulation ends
 

@@ -1,9 +1,6 @@
 #include "FilamentSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include <angles/angles.h>
-#include <opencv2/core/mat.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
 
 namespace GSL
 {
@@ -301,17 +298,6 @@ namespace GSL
 #endif
     }
 
-    static void show(const cv::Mat& mat, std::string name)
-    {
-        cv::Mat resized;
-        cv::resize(mat, resized, cv::Size(mat.size[1] * 10, mat.size[0] * 10), 0, 0, cv::INTER_NEAREST);
-        cv::imshow(name, resized);
-        cv::setWindowProperty(name, cv::WND_PROP_TOPMOST, 1); // force focus
-        while (cv::getWindowProperty(name, cv::WindowPropertyFlags::WND_PROP_VISIBLE) && cv::waitKey(30) == -1)
-            ;
-        cv::destroyWindow(name);
-    }
-
     void FilamentSimulation::makeSimulationImage()
     {
         std::vector<float> hitMap(wind.data.size(), 0.0);
@@ -320,76 +306,5 @@ namespace GSL
         displayImage(Grid2D<float>(hitMap, wind.occupancy, wind.metadata));
     }
 
-    void Simulation::displayImage(const Grid2D<float>& hitMap, const std::string& imageName, float raisePower)
-    {
-        std::vector<float> hitMapCopy = hitMap.data;
-        for (float& f : hitMapCopy)
-            f = std::pow(f, raisePower);
-        cv::Mat asImage(hitMapCopy);
-        asImage = asImage.reshape(1, hitMap.metadata.dimensions.y);
 
-        cv::Mat inColor;
-        asImage.convertTo(asImage, CV_8UC1, 255);
-        cv::applyColorMap(asImage, inColor, cv::COLORMAP_VIRIDIS);
-
-        for (int j = 0; j < hitMap.metadata.dimensions.y; j++)
-        {
-            for (int i = 0; i < hitMap.metadata.dimensions.x; i++)
-            {
-                if (!hitMap.occupancyAt(i, j))
-                    inColor.at<cv::Vec3b>(j, i) = cv::Vec3b(80, 80, 80);
-            }
-        }
-
-#if 0
-        cv::flip(inColor, inColor, 0);
-        inColor *= 255;
-        cv::imwrite(fmt::format("{}.png", imageName), inColor);
-        GSL_WARN("hitMap image saved");
-#else
-        cv::flip(inColor, inColor, 0);
-        show(inColor, imageName);
-#endif
-    }
-
-    void FilamentSimulation::blurHitMap(std::vector<float>& hitMap, float blurSigma, Grid2D<Occupancy> occupancy, std::optional<SimulationBlurMask>& blurredMask)
-    {
-        if (blurSigma == 0)
-            return;
-        cv::Mat asImage(hitMap, false); // copyData=false, so changes to the matrix will affect the hitMap vector
-        asImage = asImage.reshape(1, occupancy.metadata.dimensions.y);
-
-        cv::GaussianBlur(asImage, asImage, cv::Size(0, 0), blurSigma, blurSigma);
-
-        // divide by the blurred mask to correct the edges always getting lower
-        if (!blurredMask || blurredMask->sigma != blurSigma)
-        {
-            blurredMask.emplace();
-            blurredMask->sigma = blurSigma;
-            cv::Mat freeSpaceMask(
-                cv::Size(occupancy.metadata.dimensions.x, occupancy.metadata.dimensions.y),
-                CV_32F,
-                cv::Scalar(0, 0, 0));
-
-            for (int j = 0; j < occupancy.metadata.dimensions.y; j++)
-            {
-                for (int i = 0; i < occupancy.metadata.dimensions.x; i++)
-                {
-                    if (occupancy.occupancyAt(i, j))
-                        freeSpaceMask.at<float>(j, i) = 1;
-                }
-            }
-
-            cv::GaussianBlur(freeSpaceMask, blurredMask->mask, cv::Size(0, 0), blurSigma, blurSigma);
-        }
-
-        for (int i = 0; i < occupancy.metadata.dimensions.y; i++)
-            for (int j = 0; j < occupancy.metadata.dimensions.x; j++)
-            {
-                if (!occupancy.occupancyAt(j, i))
-                    asImage.at<float>(i, j) = 0;
-                else if (blurredMask->mask.at<float>(i, j) > 0)
-                    asImage.at<float>(i, j) = Utils::clamp(asImage.at<float>(i, j) / blurredMask->mask.at<float>(i, j), 0, 1);
-            }
-    }
 } // namespace GSL

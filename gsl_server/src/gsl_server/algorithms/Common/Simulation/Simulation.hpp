@@ -2,6 +2,8 @@
 #include "gsl_server/algorithms/Common/Grid2D.hpp"
 #include "gsl_server/algorithms/Semantics/Semantics/Common/AABB.hpp"
 #include "gsl_server/core/Vectors.hpp"
+#include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc.hpp>
 #include <optional>
 
 namespace GSL
@@ -36,7 +38,7 @@ namespace GSL
         std::vector<size_t> numCellsOutlet;
         std::vector<bool> enabled;
     };
-
+    
     struct Simulation
     {
         SimulationSource source;

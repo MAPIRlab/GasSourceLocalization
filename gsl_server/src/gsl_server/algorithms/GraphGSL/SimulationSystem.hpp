@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Simulations.hpp"
-#include "gsl_server/algorithms/Common/Simulation/FilamentSimulation.hpp"
+#include "gsl_server/algorithms/Common/Utils/Images.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <gsl_server/algorithms/Common/Utils/Synchronization.hpp>
@@ -94,7 +94,7 @@ namespace GSL::Graph_internal
 
         bool emergencyStopped = false;
         std::mutex mtx;
-        std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
+        std::map<std::shared_ptr<RoomNode>, std::optional<Utils::Image::BlurMask>> blurMasks;
 
         struct DoorwayPair
         {

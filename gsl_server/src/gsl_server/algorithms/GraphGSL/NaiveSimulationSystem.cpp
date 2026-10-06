@@ -1,4 +1,5 @@
 #include "NaiveSimulationSystem.hpp"
+#include "gsl_server/algorithms/Common/Simulation/FilamentSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Pointers.hpp"
 
@@ -39,7 +40,7 @@ namespace GSL::Graph_internal
 
         Utils::Winsorize(*result.hitMap, 5);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, options.normalizationPower);
-        FilamentSimulation::blurHitMap(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
+        Utils::Image::Blur(*result.hitMap, options.blurSigma, roomNode->GetOccupancy(), blurMasks[roomNode]);
         Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy, 1.f);
         return result;
     }

@@ -384,8 +384,8 @@ namespace GSL
 
                     // Utils::Winsorize(*result.hitMap, 2);
                     Utils::PowerMaxNormalize(*result.hitMap, roomNode->GetOccupancy().occupancy);
-                    FilamentSimulation::blurHitMap(*result.hitMap, gsl->simulationSystem.filamentOptions.blurSigma, roomNode->GetOccupancy(), gsl->simulationSystem.blurMasks[roomNode]);
-                    FilamentSimulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");
+                    Utils::Image::Blur(*result.hitMap, gsl->simulationSystem.filamentOptions.blurSigma, roomNode->GetOccupancy(), gsl->simulationSystem.blurMasks[roomNode]);
+                    Simulation::displayImage(Grid2D<float>(*result.hitMap, roomNode->GetOccupancy()), "result");
                     simulationOptions.simulationEnabled = true;
                 };
                 gsl->functionQueue.submit(lambda);
@@ -434,7 +434,7 @@ namespace GSL
 
                 Utils::Winsorize(combinedMap, 5);
                 Utils::PowerMaxNormalize(combinedMap, roomNode->GetOccupancy().data, 1.f);
-                FilamentSimulation::displayImage(Grid2D<float>(combinedMap, roomNode->GetOccupancy()));
+                Simulation::displayImage(Grid2D<float>(combinedMap, roomNode->GetOccupancy()));
                 simulationOptions.simulationEnabled = true;
             };
             gsl->functionQueue.submit(lambda);

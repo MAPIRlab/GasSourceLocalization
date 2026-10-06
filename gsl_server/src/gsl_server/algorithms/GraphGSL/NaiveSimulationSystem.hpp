@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Simulations.hpp"
-#include "gsl_server/algorithms/Common/Simulation/FilamentSimulation.hpp"
+#include "gsl_server/algorithms/Common/Utils/Images.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 
 namespace GSL::Graph_internal
@@ -16,6 +16,6 @@ namespace GSL::Graph_internal
         FilamentSimOptions& options;
 
     private:
-        std::map<std::shared_ptr<RoomNode>, std::optional<SimulationBlurMask>> blurMasks;
+        std::map<std::shared_ptr<RoomNode>, std::optional<Utils::Image::BlurMask>> blurMasks;
     };
 } // namespace GSL::Graph_internal
