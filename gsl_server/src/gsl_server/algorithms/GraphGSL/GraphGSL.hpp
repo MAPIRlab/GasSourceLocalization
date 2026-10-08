@@ -59,6 +59,7 @@ namespace GSL
             rclcpp::Publisher<MarkerArray>::SharedPtr occupancyPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr windPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr simGasMapsPub;
+            rclcpp::Publisher<MarkerArray>::SharedPtr simUncertaintyPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr measuredGasMapsPub;
             rclcpp::Publisher<MarkerArray>::SharedPtr quadtreePub;
             rclcpp::Publisher<MarkerArray>::SharedPtr sourceProbPub;

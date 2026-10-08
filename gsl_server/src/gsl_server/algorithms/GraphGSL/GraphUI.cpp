@@ -132,19 +132,6 @@ namespace GSL
         }
         ImGui::End();
 
-        ImGui::Begin("Uncertainty test", nullptr,
-                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar |
-                         ImGuiWindowFlags_NoCollapse);
-        {
-            ImGui::DragFloat("sigmaWind", &gsl->simulationSystem.uncertaintyParams.sigmaWind, 0.1, 0., 100.);
-            ImGui::DragScalar("num simulations", ImGuiDataType_U64, &gsl->simulationSystem.uncertaintyParams.numSimulations);
-            ImGui::DragFloat("minValueViz", &gsl->simulationSystem.uncertaintyParams.minValueViz, 0.1, 0., 100.);
-            ImGui::DragFloat("maxValueViz", &gsl->simulationSystem.uncertaintyParams.maxValueViz, 0.1, 0., 100.);
-            ImGui::DragFloat2("Source", &gsl->simulationSystem.uncertaintyParams.candidateSource.x);
-            ImGui::Checkbox("Display simulations", &gsl->simulationSystem.uncertaintyParams.displaySimulations);
-        }
-        ImGui::End();
-
         SimulateSourceMenu();
 
         ImGui::Begin("Current State");
@@ -317,6 +304,8 @@ namespace GSL
         ImGui::InputFloat("minRho", &gsl->simulationSystem.eulerianOptions.minRho, 0, 0, "%.2f");
         ImGui::SetNextItemWidth(100);
         ImGui::InputFloat("maxRho", &gsl->simulationSystem.eulerianOptions.maxRho, 0, 0, "%.2f");
+        ImGui::SetNextItemWidth(100);
+        ImGui::InputFloat("uncertaintyBlurSigma", &gsl->simulationSystem.eulerianOptions.uncertaintyBlurSigma, 0.05, 0.1, "%.2f");
 
         ImGui::End();
     }

@@ -1,4 +1,5 @@
 #include "EulerianSimulation.hpp"
+#include "gsl_server/algorithms/Common/Utils/Images.hpp"
 #include "gsl_server/algorithms/Common/Utils/Math.hpp"
 #include "gsl_server/algorithms/Common/Utils/Synchronization.hpp"
 #include "gsl_server/core/Profiling.hpp"
@@ -12,10 +13,10 @@ namespace GSL
     };
     static std::map<std::string, std::vector<std::optional<TransitionData>>> transitionDataCaches;
 
-    void EulerianSimulation::Run(std::vector<float>& gasMap, std::string roomID, std::vector<float>& uncertainty)
+    void EulerianSimulation::Run(std::vector<float>& gasMap, std::string roomID, std::optional<std::reference_wrapper<std::vector<float>>> uncertainty)
     {
         outlets->concentrationExitingDoorway.resize(outlets->enabled.size(), 0);
-        std::vector<Utils::RunningWeightedMean> age(uncertainty.size());
+        std::vector<Utils::RunningWeightedMean> age(uncertainty ? uncertainty.value().get().size() : 0);
 
         ZoneScopedN("RunEulerian");
         Grid2D<float> totalGasGrid{gasMap, wind.occupancy, wind.metadata};
@@ -152,7 +153,9 @@ namespace GSL
                 if (currentGasGrid.data.at(neighborIndex) == 0)
                     activeStates.push(tData.neighborsIndicesArr[k]);
                 currentGasGrid.data.at(neighborIndex) += prob;
-                age.at(neighborIndex).Update(age.at(currentIndex).Mean() + 1.f, prob);
+                
+                if (uncertainty)
+                    age.at(neighborIndex).Update(age.at(currentIndex).Mean() + 1.f, prob);
             }
 
             numIterations++;
@@ -170,9 +173,19 @@ namespace GSL
                 outlets->concentrationExitingDoorway.at(i) /= rawMax * outlets->numCellsOutlet.at(i);
             }
 
-        for (size_t i = 0; i < uncertainty.size(); i++)
-            if (totalGasGrid.occupancy.at(i))
-                uncertainty.at(i) = age.at(i).Mean();
+        float max = 0;
+        if (uncertainty)
+        {
+            for (size_t i = 0; i < uncertainty.value().get().size(); i++)
+                if (totalGasGrid.occupancy.at(i))
+                    max = std::max(max, age.at(i).Mean());
+            for (size_t i = 0; i < uncertainty.value().get().size(); i++)
+                if (totalGasGrid.occupancy.at(i))
+                    uncertainty.value().get().at(i) = age.at(i).Mean() / max;
+
+            std::optional<Utils::Image::BlurMask> blurMask;
+            Utils::Image::Blur(uncertainty.value(), options.uncertaintyBlurSigma, totalGasGrid.AsOccupancy(), blurMask);
+        }
     }
 
     void EulerianSimulation::ClearAllCaches()

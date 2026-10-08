@@ -69,6 +69,7 @@ namespace GSL
         pubs.occupancyPub = rclnode->create_publisher<MarkerArray>("/gsl_occupancy", 1);
         pubs.windPub = rclnode->create_publisher<MarkerArray>("/gsl_wind", rclcpp::QoS(1).durability_volatile().best_effort());
         pubs.simGasMapsPub = rclnode->create_publisher<MarkerArray>("simGasMaps", 1);
+        pubs.simUncertaintyPub = rclnode->create_publisher<MarkerArray>("simUncertainty", 1);
         pubs.measuredGasMapsPub = rclnode->create_publisher<MarkerArray>("measuredGasMaps", 1);
         pubs.quadtreePub = rclnode->create_publisher<MarkerArray>("quadtree", 1);
         pubs.sourceProbPub = rclnode->create_publisher<MarkerArray>("sourceProb", 1);
@@ -102,20 +103,17 @@ namespace GSL
 
         UpdateExpectedValue();
         stateMachine.forceSetState(movingState.get());
-
-
     }
 
     void GraphGSL::OnUpdate()
     {
-        simulationSystem.uncertaintyTest(naiveEntireMap, simulationSystem.uncertaintyParams.candidateSource);
-        // Algorithm::OnUpdate();
+        Algorithm::OnUpdate();
 
-        // if (visualizationCD.isDone())
-        // {
-        //     Visualize();
-        //     visualizationCD.Restart();
-        // }
+        if (visualizationCD.isDone())
+        {
+            Visualize();
+            visualizationCD.Restart();
+        }
     }
 
     void GraphGSL::processGasAndWindMeasurements(double concentration, double windSpeed, double windDirection)
@@ -765,10 +763,17 @@ namespace GSL
         pubs.doorwaysPub->publish(graph.VisualizeDoorwayCells());
         pubs.occupancyPub->publish(graph.VisualizeOccupancy());
         pubs.measuredGasMapsPub->publish(graph.VisualizeGasReadings());
-        pubs.simGasMapsPub->publish(simulationSystem.VisualizeCachedResults(simulationViz.selectedNode, simulationViz.simulationIndex, graph.vizOptions.nodeSeparationViz));
+        {
+            auto gasMapMarkers = simulationSystem.VisualizeCachedResults(simulationViz.selectedNode, simulationViz.simulationIndex, graph.vizOptions.nodeSeparationViz);
+            pubs.simGasMapsPub->publish(gasMapMarkers.gasMarkers);
+            pubs.simUncertaintyPub->publish(gasMapMarkers.uncertaintyMarkers);
+        }
 #if ENABLE_NAIVE_EVALUATION
         if (naiveSimulationIndex < naiveCompleteMaps.size())
-            naiveMapsPub->publish(Graph_internal::VisualizeCompleteMap(naiveCompleteMaps.at(naiveSimulationIndex), {naiveEntireMap}, graph.vizOptions.nodeSeparationViz, 0.2));
+        {
+            auto markers = Graph_internal::VisualizeCompleteMap(naiveCompleteMaps.at(naiveSimulationIndex), {naiveEntireMap}, graph.vizOptions.nodeSeparationViz, 0.2);
+            naiveMapsPub->publish(markers.gasMarkers);
+        }
 #endif
         pubs.sourceProbPub->publish(graph.VisualizeSourceProbs());
         UpdateExpectedValue();

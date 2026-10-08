@@ -68,11 +68,18 @@ namespace GSL::Graph_internal
     {
         std::shared_ptr<Source> source;
         std::map<std::shared_ptr<RoomNode>, std::vector<float>> gasMaps;
+        std::map<std::shared_ptr<RoomNode>, std::vector<float>> uncertaintyMaps;
     };
 
-    inline MarkerArray VisualizeCompleteMap(const CompleteMap& map, const std::vector<std::shared_ptr<PlaceNode>>& nodes, float nodeSeparationViz, float height)
+    struct GasMapVisualization
     {
-        MarkerArray array;
+        MarkerArray gasMarkers;
+        MarkerArray uncertaintyMarkers;
+    };
+
+    inline GasMapVisualization VisualizeCompleteMap(const CompleteMap& map, const std::vector<std::shared_ptr<PlaceNode>>& nodes, float nodeSeparationViz, float height)
+    {
+        GasMapVisualization viz;
 
         // create a marker for the source location
         {
@@ -83,7 +90,7 @@ namespace GSL::Graph_internal
             sourceMarker.pose.position.set__x(map.source->GetPoint().x).set__y(map.source->GetPoint().y).set__z(0.3);
             sourceMarker.id = 0;
             sourceMarker.color = Utils::create_color(1, 1, 1);
-            array.markers.push_back(sourceMarker);
+            viz.gasMarkers.markers.push_back(sourceMarker);
         }
 
         size_t i = 1;
@@ -110,9 +117,9 @@ namespace GSL::Graph_internal
 
             Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, occupancy.occupancy, vizMetadata), height);
             marker.id = i++;
-            array.markers.push_back(marker);
+            viz.gasMarkers.markers.push_back(marker);
         }
-        return array;
+        return viz;
     }
 
     inline float SimWithResult::ConcentrationExitingDoorway(size_t index) const

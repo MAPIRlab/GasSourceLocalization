@@ -597,14 +597,14 @@ namespace GSL::Graph_internal
         }
     }
 
-    MarkerArray SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz)
+    GasMapVisualization SimulationSystem::VisualizeCachedResults(std::shared_ptr<PlaceNode> sourceRoom, size_t simulationIndex, float nodeSeparationViz)
     {
         if (!gasMapsWithRoomSource.contains(sourceRoom))
-            return MarkerArray{};
+            return {MarkerArray{}, MarkerArray{}};
 
         auto& gasMaps = gasMapsWithRoomSource.at(sourceRoom);
         if (simulationIndex >= gasMaps.size())
-            return MarkerArray{};
+            return {MarkerArray{}, MarkerArray{}};
 
         CompleteMap& map = gasMaps.at(simulationIndex);
         return VisualizeCompleteMap(map, graph->nodes, nodeSeparationViz, 0.1);
@@ -687,8 +687,8 @@ namespace GSL::Graph_internal
         auto result = SimulateSingleRoomFromPoint(room, sourcePoint);
         Grid2D<float> grid(*result.uncertainty, room->GetOccupancy());
         Marker marker = Utils::createPointsMarker(grid,
-                                                  uncertaintyParams.minValueViz,
-                                                  uncertaintyParams.maxValueViz,
+                                                  0,
+                                                  1,
                                                   Utils::ValueColorMode::Linear,
                                                   Utils::Colors::ColorMaps::Plasma,
                                                   0.3);
