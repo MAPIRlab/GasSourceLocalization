@@ -240,17 +240,24 @@ namespace GSL::Graph_internal
         {
             // handle the source node first, separately from the main traversal algorithm (since it doesn't have a doorway inlet)
             std::vector<float> weightDoorwaysfirstNodeInSim(firstNodeInSim->doorways.size(), 0);
+            std::vector<float> uncertaintyDoorwaysfirstNodeInSim(firstNodeInSim->doorways.size(), 0);
             if (Is<RoomNode>(firstNodeInSim))
             {
                 auto roomNode = As<RoomNode>(firstNodeInSim);
                 SimWithResult result = SimulateSingleRoomFromPoint(roomNode, completeGasMap.source->GetPoint());
                 completeGasMap.gasMaps[roomNode] = *result.hitMap;
                 for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
+                {
                     weightDoorwaysfirstNodeInSim.at(i) = result.ConcentrationAtDoorway(i);
+                    uncertaintyDoorwaysfirstNodeInSim.at(i) = result.UncertaintyAtDoorway(i);
+                }
             }
             else // if the source is an outside node, just use the doorways themselves as the starting point
                 for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
+                {
                     weightDoorwaysfirstNodeInSim.at(i) = 1. / firstNodeInSim->doorways.size();
+                    uncertaintyDoorwaysfirstNodeInSim.at(i) = 1. / firstNodeInSim->doorways.size();
+                }
 
             for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
             {
@@ -263,6 +270,7 @@ namespace GSL::Graph_internal
                 nextRoom.doorSource = doorway->OtherSide();
                 nextRoom.gasAtInlet = weightDoorwaysfirstNodeInSim.at(i);
                 nextRoom.gasProportion = nextRoom.gasAtInlet;
+                nextRoom.uncertaintyAtInlet = uncertaintyDoorwaysfirstNodeInSim.at(i);
 
                 for (const auto& nextDoorway : doorway->to.lock()->doorways)
                     if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
@@ -285,7 +293,7 @@ namespace GSL::Graph_internal
             }
 
             auto source = As<DoorwaySource>(completeGasMap.source);
-            NodeState nextRoom{.gasAtInlet = 1.f, .gasProportion = 1.f, .doorSource = source->doorway};
+            NodeState nextRoom{.gasAtInlet = 1.f, .gasProportion = 1.f, .uncertaintyAtInlet = 1.f, .doorSource = source->doorway};
             for (const auto& nextDoorway : source->doorway->from.lock()->doorways)
                 if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
                     nextRoom.doorways.push(nextDoorway);
@@ -342,11 +350,17 @@ namespace GSL::Graph_internal
 
     void SimulationSystem::PropagateSimThroughGraph(std::deque<NodeState>& initialNodeStates, CompleteMap& completeGasMap, const std::shared_ptr<PlaceNode> firstNodeInSim)
     {
-        std::map<std::shared_ptr<const DoorwayNode>, float> totalGasThroughDoorway;
+        struct DoorwayInfo
+        {
+            float totalGas = 0;
+            Utils::RunningWeightedMean uncertainty;
+        };
+        std::map<std::shared_ptr<const DoorwayNode>, DoorwayInfo> doorwaysInfo;
 
         for (const auto& node : initialNodeStates)
         {
-            totalGasThroughDoorway[node.doorSource] = node.gasAtInlet;
+            doorwaysInfo[node.doorSource].totalGas = node.gasAtInlet;
+            doorwaysInfo[node.doorSource].uncertainty.Update(node.uncertaintyAtInlet, node.gasAtInlet);
         }
 
         std::map<std::shared_ptr<const DoorwayNode>, GraphCacheEntry> graphCache;
@@ -369,7 +383,6 @@ namespace GSL::Graph_internal
             stateStack.push_back(initialNode);
             while (!stateStack.empty())
             {
-
                 if (emergencyStopped)
                     break;
 
@@ -439,11 +452,14 @@ namespace GSL::Graph_internal
 
                         // then, we update the actual gas amounts in the result data structure, (not the cached proportions)
                         for (auto& [doorway, gasProportion] : graphCache[current.doorSource].gasProportion)
-                            totalGasThroughDoorway[doorway] += gasProportion * extraAmount;
+                        {
+                            doorwaysInfo[doorway].totalGas += gasProportion * extraAmount;
+                            // TODO uncertainty?????
+                        }
 
-                        // we need to remove the (first iteration)looped gas fraction from the loop start doorway,
+                        // we need to remove the (first iteration) looped gas fraction from the loop start doorway,
                         // as that has already been counted when creating currentState
-                        totalGasThroughDoorway[current.doorSource] -= current.gasAtInlet;
+                        doorwaysInfo[current.doorSource].totalGas -= current.gasAtInlet;
 
                         // finally, update the NodeStates for all the doorways in the loop, in case they still have some unexplored doorways
                         // (which should still consider the extra gas due to the loop)
@@ -521,22 +537,17 @@ namespace GSL::Graph_internal
                 next.doorSource = current.doorways.top()->OtherSide();
                 current.doorways.pop();
 
-                float gasProportion;
-                DoorwayPair pair{current.doorSource, next.doorSource};
-                if (Utils::SyncedAccess(doorwayPairs).Get().contains(pair))
-                    gasProportion = Utils::SyncedAccess(doorwayPairs).Get().at(pair);
-                else
-                {
-                    SimWithResult result = simulationCache.Get(current.doorSource);
+                SimWithResult result = simulationCache.Get(current.doorSource);
 
-                    // adjust for the fact that the normalized concentration at the inlet might not be 1
-                    float concentrationInlet = result.ConcentrationAtDoorway(current.doorSource->GetIndex());
-                    float weight = 1.f / concentrationInlet;
+                // adjust for the fact that the normalized concentration at the inlet might not be 1
+                float concentrationInlet = result.ConcentrationAtDoorway(current.doorSource->GetIndex());
+                float weight = 1.f / concentrationInlet;
 
-                    // calculate how much of the gas in the current node makes it to the next node
-                    size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
-                    gasProportion = weight * result.ConcentrationAtDoorway(outletIndex);
-                }
+                // calculate how much of the gas in the current node makes it to the next node
+                size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
+                next.gasProportion = weight * result.ConcentrationAtDoorway(outletIndex);
+                next.gasAtInlet = current.gasAtInlet * next.gasProportion;
+                next.uncertaintyAtInlet = result.UncertaintyAtDoorway(outletIndex) * current.uncertaintyAtInlet;
 
                 if (!Is<RoomNode>(next.doorSource->from))
                 {
@@ -544,16 +555,15 @@ namespace GSL::Graph_internal
                     continue;
                 }
 
-                next.gasProportion = gasProportion;
-                next.gasAtInlet = current.gasAtInlet * gasProportion;
+                // update the total amount of gas that passes through the doorway
+                doorwaysInfo[next.doorSource].totalGas += next.gasAtInlet;
+                doorwaysInfo[next.doorSource].uncertainty.Update(next.uncertaintyAtInlet, next.gasAtInlet);
+
                 if (next.gasProportion < minimumGasProportion || !std::isfinite(next.gasAtInlet))
                 {
                     LOG_TRACE("Ignoring next node {}, too little gas", next.doorSource->GetDebuggingName());
                     continue;
                 }
-
-                // update the total amount of gas that passes through the doorway
-                totalGasThroughDoorway[next.doorSource] += next.gasAtInlet;
 
                 for (auto& previous : stateStack)
                     graphCache[previous.doorSource].gasProportion[next.doorSource] += next.gasAtInlet / previous.gasAtInlet;
@@ -577,22 +587,28 @@ namespace GSL::Graph_internal
                 continue;
 
             if (room != firstNodeInSim)
+            {
                 completeGasMap.gasMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
+                completeGasMap.uncertaintyMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
+            }
 
             for (const auto& doorway : node->doorways)
             {
-                if (!totalGasThroughDoorway.contains(doorway) || !simulationCache.Contains(doorway))
+                if (!doorwaysInfo.contains(doorway) || !simulationCache.Contains(doorway))
                     continue;
 
                 const SimWithResult& result = simulationCache.Get(doorway);
-                float weight = totalGasThroughDoorway.at(doorway);
+                float concentrationWeight = doorwaysInfo.at(doorway).totalGas;
+                float uncertaintyWeight = doorwaysInfo.at(doorway).uncertainty.Mean();
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
                 float concentrationInlet = result.ConcentrationAtDoorway(doorway->GetIndex());
-                weight /= concentrationInlet;
+                concentrationWeight /= concentrationInlet;
 
                 for (size_t i = 0; i < result.hitMap->size(); i++)
-                    completeGasMap.gasMaps[room].at(i) += result.hitMap->at(i) * weight;
+                    completeGasMap.gasMaps[room].at(i) += result.hitMap->at(i) * concentrationWeight;
+                for (size_t i = 0; i < result.uncertainty->size(); i++)
+                    completeGasMap.uncertaintyMaps[room].at(i) += result.uncertainty->at(i) * uncertaintyWeight;
             }
         }
     }

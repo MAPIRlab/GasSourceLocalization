@@ -29,6 +29,7 @@ namespace GSL::Graph_internal
 
         float ConcentrationExitingDoorway(size_t index) const;
         float ConcentrationAtDoorway(size_t index) const;
+        float UncertaintyAtDoorway(size_t index) const;
     };
 
     struct Source
@@ -101,23 +102,39 @@ namespace GSL::Graph_internal
                 continue;
 
             Grid2D<Occupancy> occupancy = room->GetOccupancy();
-            std::vector<ColorRGBA> colors(occupancy.data.size());
+            std::vector<ColorRGBA> gascolors(occupancy.data.size());
+            Grid2DMetadata vizMetadata = occupancy.metadata;
+            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+
+            // gas
             if (map.gasMaps.contains(room))
             {
                 const auto& result = map.gasMaps.at(room);
                 for (size_t i = 0; i < result.size(); i++)
-                    colors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
+                    gascolors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
             }
             else
-                for (size_t i = 0; i < colors.size(); i++)
-                    colors.at(i) = Utils::valueToColor(0, 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
+                for (size_t i = 0; i < gascolors.size(); i++)
+                    gascolors.at(i) = Utils::valueToColor(0, 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
+            Marker gasmarker = Utils::createPointsMarker(Grid2D<ColorRGBA>(gascolors, occupancy.occupancy, vizMetadata), height);
+            gasmarker.id = i++;
+            viz.gasMarkers.markers.push_back(gasmarker);
 
-            Grid2DMetadata vizMetadata = occupancy.metadata;
-            vizMetadata.origin = vizMetadata.origin * nodeSeparationViz;
+            // uncertainty
+            std::vector<ColorRGBA> uncertaintycolors(occupancy.data.size());
+            if (map.uncertaintyMaps.contains(room))
+            {
+                const auto& result = map.uncertaintyMaps.at(room);
+                for (size_t i = 0; i < result.size(); i++)
+                    uncertaintycolors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
+            }
+            else
+                for (size_t i = 0; i < uncertaintycolors.size(); i++)
+                    uncertaintycolors.at(i) = Utils::valueToColor(0, 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
 
-            Marker marker = Utils::createPointsMarker(Grid2D<ColorRGBA>(colors, occupancy.occupancy, vizMetadata), height);
-            marker.id = i++;
-            viz.gasMarkers.markers.push_back(marker);
+            Marker uncertaintymarker = Utils::createPointsMarker(Grid2D<ColorRGBA>(uncertaintycolors, occupancy.occupancy, vizMetadata), height);
+            uncertaintymarker.id = i++;
+            viz.uncertaintyMarkers.markers.push_back(uncertaintymarker);
         }
         return viz;
     }
@@ -136,6 +153,19 @@ namespace GSL::Graph_internal
         for (size_t i = 0; i < mask.data.size(); i++)
             if (mask.occupancy.at(i) && mask.data.at(i) == index)
                 sum += localHitMap.at(i);
+
+        return sum / simulation->outlets->numCellsOutlet.at(index);
+    }
+
+    inline float SimWithResult::UncertaintyAtDoorway(size_t index) const
+    {
+        const auto& mask = simulation->outlets->mask;
+        const auto& localUncertaintyMap = *uncertainty;
+
+        float sum = 0;
+        for (size_t i = 0; i < mask.data.size(); i++)
+            if (mask.occupancy.at(i) && mask.data.at(i) == index)
+                sum += localUncertaintyMap.at(i);
 
         return sum / simulation->outlets->numCellsOutlet.at(index);
     }

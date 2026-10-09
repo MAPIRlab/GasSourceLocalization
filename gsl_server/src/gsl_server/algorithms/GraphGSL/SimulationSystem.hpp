@@ -75,6 +75,7 @@ namespace GSL::Graph_internal
         {
             float gasAtInlet;
             float gasProportion; // relative to the previous nodestate
+            float uncertaintyAtInlet;
             std::shared_ptr<const DoorwayNode> doorSource;
             std::stack<std::shared_ptr<const DoorwayNode>> doorways;
         };
@@ -87,20 +88,6 @@ namespace GSL::Graph_internal
         bool emergencyStopped = false;
         std::mutex mtx;
         std::map<std::shared_ptr<RoomNode>, std::optional<Utils::Image::BlurMask>> blurMasks;
-
-        struct DoorwayPair
-        {
-            std::shared_ptr<const DoorwayNode> start;
-            std::shared_ptr<const DoorwayNode> end;
-
-            friend bool operator<(const DoorwayPair& a, const DoorwayPair& b)
-            {
-                if (a.start != b.start)
-                    return a.start < b.start;
-                return a.end < b.end;
-            }
-        };
-        Utils::Synced<std::map<DoorwayPair, float>> doorwayPairs;
 
         void PostProcessResult(SimWithResult& result, const Grid2D<Occupancy>& occupancy);
         void _SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, CompleteMap& completeMap);
