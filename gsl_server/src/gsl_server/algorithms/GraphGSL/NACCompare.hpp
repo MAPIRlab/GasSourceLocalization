@@ -57,7 +57,8 @@ namespace GSL::NACCeres
     };
     SingleScale FitSingleScale(const std::vector<float>& simulated,
                                const std::vector<float>& observed,
-                               const std::vector<float>& uncertainty);
+                               const std::vector<float>& measurementUncertainty,
+                               const std::vector<float>& simUncertainty);
 
     struct MultipleScales
     {
@@ -66,5 +67,6 @@ namespace GSL::NACCeres
     };
     MultipleScales FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
                                     const std::vector<float>& observed,
-                                    const std::vector<float>& uncertainty);
+                                    const std::vector<float>& measurementUncertainty,
+                                    const std::vector<float>& simUncertainty);
 }; // namespace GSL::NACCeres

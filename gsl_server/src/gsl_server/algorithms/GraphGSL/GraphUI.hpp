@@ -25,6 +25,7 @@ namespace GSL
         void SimulateSourceMenu();
         void SimulateSingleRoomMenu();
         void OnSelectNode(size_t nodeIndex);
+        void PlotLikelihoods();
 
         GraphGSL* gsl;
         std::jthread renderThread;

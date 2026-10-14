@@ -13,6 +13,7 @@
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <implot/implot.h>
 #include <rclcpp/rclcpp.hpp>
+#include <cmath>
 
 using namespace GSL::Graph_internal;
 namespace GSL
@@ -142,6 +143,10 @@ namespace GSL
                 ImGui::Text("Null state");
         }
         ImGui::End();
+
+        ImGui::Begin("LikelihoodPlot");
+        PlotLikelihoods();
+        ImGui::End();
     }
 
     void GraphUI::SimulateSourceMenu()
@@ -226,6 +231,8 @@ namespace GSL
             ImGui::DragFloat("Default residual", &NACCeres::defaultResidual, 1e-6, 0.0, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 1e-4, 1e-5, 1, "%.2e");
+            ImGui::SetNextItemWidth(100);
+            ImGui::DragFloat("Uncertainty sigma", &gsl->uncertaintySigma, 0, 1e1, 1e3, "%.2e");
             if (ImGui::Button("Evaluate Source Probs"))
             {
                 gsl->functionQueue.submit([this]()
@@ -292,7 +299,7 @@ namespace GSL
         ImGui::DragFloat("Blur sigma", &gsl->simulationSystem.filamentOptions.blurSigma, 0.01, 0, 2.0);
         ImGui::SetNextItemWidth(100);
         ImGui::DragFloat("Normalization power", &gsl->simulationSystem.filamentOptions.normalizationPower, 0.01, 0, 5.0);
-        
+
         ImGui::Checkbox("Eulerian simulations", &gsl->simulationSystem.eulerianSimulation);
         ImGui::SetNextItemWidth(100);
         ImGui::InputFloat("Eulerian thr", &gsl->simulationSystem.eulerianOptions.lowerThr, 0, 0, "%.2e");
@@ -437,6 +444,148 @@ namespace GSL
         auto node = gsl->graph.nodes.at(nodeIndex);
         selectedNodeData.combineWeights = std::vector<float>(node->doorways.size(), 0);
         gsl->simulationViz.selectedNode = node;
+    }
+
+    void GraphUI::PlotLikelihoods()
+    {
+        static float sigma = gsl->likelihoodSigma;
+        if(sigma != gsl->likelihoodSigma)
+        {
+            sigma = gsl->likelihoodSigma;
+            gsl->CalculateNodeProbabilities(gsl->mostRecentRoomResults);
+        }
+
+        const bool validSigma = std::isfinite(sigma) && sigma > 0.0f;
+        if (!validSigma)
+            ImGui::Text("Likelihood sigma must be positive.");
+
+        float xMax = 5.0f * sigma;
+        std::vector<float> residuals;
+        std::vector<float> likelihoods;
+        std::vector<std::string> roomIds;
+        std::vector<float> normalizedProbabilities;
+        std::vector<float> roomIndices;
+        std::vector<std::string> probabilityRoomIds;
+        std::vector<double> roomTicks;
+        residuals.reserve(gsl->mostRecentRoomResults.size());
+        likelihoods.reserve(gsl->mostRecentRoomResults.size());
+        roomIds.reserve(gsl->mostRecentRoomResults.size());
+        normalizedProbabilities.reserve(gsl->mostRecentRoomResults.size());
+        roomIndices.reserve(gsl->mostRecentRoomResults.size());
+        probabilityRoomIds.reserve(gsl->mostRecentRoomResults.size());
+        roomTicks.reserve(gsl->mostRecentRoomResults.size());
+
+        for (const auto& result : gsl->mostRecentRoomResults)
+        {
+            if (validSigma && std::isfinite(result.residual))
+            {
+                residuals.push_back(result.residual);
+                likelihoods.push_back(std::exp(-result.residual / sigma));
+                roomIds.push_back(result.node->id);
+                if (result.residual > xMax)
+                    xMax = result.residual * 1.05f;
+            }
+            if (std::isfinite(result.normalizedProb) && result.node)
+            {
+                const double index = static_cast<double>(normalizedProbabilities.size());
+                roomIndices.push_back(static_cast<float>(index));
+                roomTicks.push_back(index);
+                normalizedProbabilities.push_back(result.normalizedProb);
+                probabilityRoomIds.push_back(result.node->id);
+            }
+        }
+
+        if (validSigma)
+        {
+            constexpr int sampleCount = 101;
+            std::vector<float> curveX(sampleCount);
+            std::vector<float> curveY(sampleCount);
+            for (int i = 0; i < sampleCount; ++i)
+            {
+                const float x = xMax * i / (sampleCount - 1);
+                curveX[i] = x;
+                curveY[i] = std::exp(-x / sigma);
+            }
+
+            if (ImPlot::BeginPlot("Likelihoods", ImVec2(-1, 260)))
+            {
+                ImPlot::SetupAxes("Residual", "Likelihood",
+                                  ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+                ImPlot::PlotLine("exp(-x / sigma)", curveX.data(), curveY.data(), sampleCount);
+                if (!residuals.empty())
+                {
+                    ImPlot::PlotScatter("Room residuals", residuals.data(), likelihoods.data(),
+                                        static_cast<int>(residuals.size()));
+
+                    if (ImPlot::IsPlotHovered())
+                    {
+                        const ImVec2 mouse = ImGui::GetMousePos();
+                        constexpr float hoverRadius = 8.0f;
+                        const float maxDistanceSquared = hoverRadius * hoverRadius;
+                        float nearestDistanceSquared = maxDistanceSquared;
+                        size_t nearestPoint = residuals.size();
+
+                        for (size_t i = 0; i < residuals.size(); ++i)
+                        {
+                            const ImVec2 point = ImPlot::PlotToPixels(residuals[i], likelihoods[i]);
+                            const float dx = point.x - mouse.x;
+                            const float dy = point.y - mouse.y;
+                            const float distanceSquared = dx * dx + dy * dy;
+                            if (distanceSquared < nearestDistanceSquared)
+                            {
+                                nearestDistanceSquared = distanceSquared;
+                                nearestPoint = i;
+                            }
+                        }
+
+                        if (nearestPoint < roomIds.size())
+                        {
+                            ImGui::BeginTooltip();
+                            ImGui::Text("Room: %s", roomIds[nearestPoint].c_str());
+                            ImGui::EndTooltip();
+                        }
+                    }
+                }
+                ImPlot::EndPlot();
+            }
+        }
+
+        if (!normalizedProbabilities.empty() &&
+            ImPlot::BeginPlot("Normalized room probabilities", ImVec2(-1, 260)))
+        {
+            std::vector<const char*> probabilityRoomLabels;
+            probabilityRoomLabels.reserve(probabilityRoomIds.size());
+            for (const auto& id : probabilityRoomIds)
+                probabilityRoomLabels.push_back(id.c_str());
+
+            ImPlot::SetupAxes("Room", "Normalized probability",
+                              ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+            ImPlot::SetupAxisTicks(ImAxis_X1, roomTicks.data(),
+                                   static_cast<int>(probabilityRoomLabels.size()),
+                                   probabilityRoomLabels.data());
+            ImPlot::PlotBars("Normalized probability", roomIndices.data(),
+                             normalizedProbabilities.data(),
+                             static_cast<int>(normalizedProbabilities.size()), 0.8);
+
+            if (ImPlot::IsPlotHovered())
+            {
+                const ImPlotPoint mouse = ImPlot::GetPlotMousePos();
+                const long index = std::lround(mouse.x);
+                if (index >= 0 &&
+                    static_cast<size_t>(index) < normalizedProbabilities.size() &&
+                    std::abs(mouse.x - index) <= 0.4 &&
+                    mouse.y >= 0 &&
+                    mouse.y <= normalizedProbabilities[static_cast<size_t>(index)])
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("Room: %s", probabilityRoomIds[static_cast<size_t>(index)].c_str());
+                    ImGui::Text("Normalized probability: %.6g",
+                                normalizedProbabilities[static_cast<size_t>(index)]);
+                    ImGui::EndTooltip();
+                }
+            }
+            ImPlot::EndPlot();
+        }
     }
 } // namespace GSL
 

@@ -286,6 +286,7 @@ namespace GSL::Graph_internal
             if (roomNode)
             {
                 completeGasMap.gasMaps[roomNode] = std::vector<float>(roomNode->GetOccupancy().data.size(), 1);
+                completeGasMap.uncertaintyMaps[roomNode] = std::vector<float>(roomNode->GetOccupancy().data.size(), 10000);
                 for (size_t i = 0; i < roomNode->GetOccupancy().data.size(); i++)
                 {
                     if (!roomNode->GetOccupancy().data.at(i))

@@ -473,7 +473,8 @@ namespace GSL
         // while we fill a row of the matrix for each simulation out of this node, we only want one copy of the measurements and their uncertainty
         // if we are done recording those, skip them on the next iteration
         std::vector<float> measured;
-        std::vector<float> uncertainty;
+        std::vector<float> measurementUncertainty;
+        std::vector<float> simUncertainty;
 
         float skippedCellsResidual = 0; // to reduce computational complexity, we are going to avoid adding 0-confidence cells to the optimization problem
                                         // we can calculate what their residual should be anyways, since at 0 confidence it is actually a constant
@@ -508,7 +509,8 @@ namespace GSL
                             cellIDs.push_back(room->GetCellIdentifier(i));
                             simulated.push_back(std::vector<float>());
                             measured.push_back(cell.meanAndVariance.mean);
-                            uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
+                            measurementUncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
+                            simUncertainty.push_back(1 - std::exp(-simulation.uncertaintyMaps.at(room).at(i) / uncertaintySigma));
                         }
 
                         simulated.at(cellIdx).push_back(localSimMap.at(i));
@@ -521,10 +523,10 @@ namespace GSL
         }
 
         float confidenceSum = 0;
-        for (const auto& u : uncertainty)
+        for (const auto& u : measurementUncertainty)
             confidenceSum += 1 - u;
 
-        NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, uncertainty);
+        NACCeres::MultipleScales result = GSL::NACCeres::FitDoorwayScales(simulated, measured, measurementUncertainty, simUncertainty);
 
         // if the optimization failed
         if (result.result.residuals.empty())
@@ -540,10 +542,10 @@ namespace GSL
         nodeResiduals.push_back({sourceNode, 0, 0});
         nodeResiduals.back().residual = result.result.TotalResidual() + skippedCellsResidual;
         nodeResiduals.back().confidenceSum = confidenceSum;
-        GSL_INFO("Residual at {}: {:.2e}, Confidence Sum: {:.2e}. Scales: {:.2f}",
+        GSL_INFO("Residual at {}: {:.2e}. Scales: {:.2f}",
                  sourceNode->id,
-                 nodeResiduals.back().residual,
-                 nodeResiduals.back().confidenceSum,
+                 nodeResiduals.back().residual / graph.TotalFreeCellsCount(),
+                //  nodeResiduals.back().confidenceSum,
                  fmt::join(result.scales.begin(), result.scales.end(), ", "));
 
         if (auto move = As<MovingStateGraph>(movingState))
@@ -647,7 +649,8 @@ namespace GSL
 
         std::vector<float> measured;
         std::vector<float> simulated;
-        std::vector<float> uncertainty;
+        std::vector<float> measurementUncertainty;
+        std::vector<float> simUncertainty;
 
         float skippedCellsResidual = 0;
         for (const auto& [room, localSimMap] : simMap.gasMaps)
@@ -668,7 +671,8 @@ namespace GSL
 
                 measured.push_back(cell.meanAndVariance.mean);
                 simulated.push_back(localSimMap.at(i));
-                uncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
+                measurementUncertainty.push_back(1 - measuredLocal.data.at(i).confidence);
+                simUncertainty.push_back(1 - std::exp(-simMap.uncertaintyMaps.at(room).at(i) / uncertaintySigma));
 #if MEASUREMENT_SORTING
                 if (auto nodeSource = As<Graph_internal::NodeSource>(simMap.source))
                     if (nodeSource->node == room)
@@ -682,7 +686,7 @@ namespace GSL
 #if MEASUREMENT_SORTING
         return {EvaluateSorting(), 1.0f};
 #else
-        NACCeres::SingleScale result = NACCeres::FitSingleScale(simulated, measured, uncertainty);
+        NACCeres::SingleScale result = NACCeres::FitSingleScale(simulated, measured, measurementUncertainty, simUncertainty);
 
         float finalResidual = result.result.TotalResidual() + skippedCellsResidual;
         return {finalResidual / graph.TotalFreeCellsCount(), result.scale};
@@ -698,21 +702,25 @@ namespace GSL
 
     void GraphGSL::CalculateNodeProbabilities(const std::vector<NodeResult>& residuals)
     {
+        mostRecentRoomResults = residuals;
         roomSourceProbabilities.clear();
         GSL_INFO("Results with sigma={:.2e}", likelihoodSigma);
-        std::map<std::shared_ptr<PlaceNode>, long double> scores;
+        std::vector<long double> scores(residuals.size());
         long double scoresSum = 0;
-        for (const NodeResult& result : residuals)
+        for (size_t i = 0; i < residuals.size(); i++)
         {
-            scores[result.node] = ProbFromResidual(result.residual);
-            scoresSum += scores[result.node];
+            const auto& result = residuals.at(i);
+            scores.at(i) = ProbFromResidual(result.residual);
+            scoresSum += scores.at(i);
         }
 
-        for (const auto& [room, score] : scores)
+        for (size_t i = 0; i < residuals.size(); i++)
         {
-            double prob = score / scoresSum;
-            roomSourceProbabilities[room.get()] = prob;
-            GSL_INFO("\t{}: {:.2f}", room->id, prob);
+            const auto& result = residuals.at(i);
+            double prob = scores.at(i) / scoresSum;
+            roomSourceProbabilities[result.node.get()] = prob;
+            mostRecentRoomResults.at(i).normalizedProb = prob;
+            GSL_INFO("\t{}: {:.2f}", result.node->id, prob);
         }
     }
 

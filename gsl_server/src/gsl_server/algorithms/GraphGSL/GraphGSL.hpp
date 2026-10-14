@@ -35,7 +35,10 @@ namespace GSL
             std::shared_ptr<PlaceNode> node;
             float residual;
             float confidenceSum;
+            float normalizedProb;
         };
+        std::vector<NodeResult> mostRecentRoomResults;
+
         void GetNodeResidual(std::shared_ptr<PlaceNode> sourceNode, std::vector<NodeResult>& nodeResiduals, std::mutex& mtx);
         void CalculateNodeProbabilities(const std::vector<NodeResult>& nodeResiduals);
 
@@ -44,6 +47,7 @@ namespace GSL
         Graph_internal::SimulationSystem simulationSystem;
         
         float likelihoodSigma = 7e-4;
+        float uncertaintySigma = 1e2;
         std::map<const PlaceNode*, float> roomSourceProbabilities;
         std::map<RegionIdentifier, float> bestResidualPerCell; // to generate an optimistic estimation of the residual in the source node at the coarse level
         

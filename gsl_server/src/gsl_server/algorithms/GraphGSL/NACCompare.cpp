@@ -105,10 +105,12 @@ namespace GSL::NAC
 namespace GSL::NACCeres
 {
     template <typename T>
-    T EvaluateScale(T scaledSimulated, T observed, T uncertainty)
+    T EvaluateScale(T scaledSimulated, T observed, T measurementUncertainty, T simUncertainty)
     {
-        T diff = ceres::abs(ceres::log(observed + T(1)) - ceres::log(scaledSimulated + T(1)));
-        diff = ceres::lerp(diff, T(defaultResidual), uncertainty);
+        // T diff = ceres::abs(ceres::log(observed + T(1)) - ceres::log(scaledSimulated + T(1)));
+        T diff = ceres::abs(observed - scaledSimulated);
+        diff = ceres::lerp(diff, T(defaultResidual), measurementUncertainty);
+        diff = ceres::lerp(diff, T(defaultResidual), simUncertainty);
         return diff;
     }
 
@@ -152,13 +154,14 @@ namespace GSL::NACCeres
     {
         const float simulated;
         const float observed;
-        const float uncertainty;
+        const float measurementUncertainty;
+        const float simUncertainty;
 
         template <typename T>
         bool operator()(const T* const x, T* residual) const
         {
             T scale = x[0];
-            residual[0] = EvaluateScale(scale * T(simulated), T(observed), T(uncertainty));
+            residual[0] = EvaluateScale(scale * T(simulated), T(observed), T(measurementUncertainty), T(simUncertainty));
 
             return true;
         }
@@ -191,7 +194,8 @@ namespace GSL::NACCeres
 
     SingleScale FitSingleScale(const std::vector<float>& simulated,
                                const std::vector<float>& observed,
-                               const std::vector<float>& uncertainty)
+                               const std::vector<float>& measurementUncertainty,
+                               const std::vector<float>& simUncertainty)
     {
         double x = 1.0;
 
@@ -202,7 +206,9 @@ namespace GSL::NACCeres
                 new CostFunctorSingle{
                     .simulated = simulated.at(i),
                     .observed = observed.at(i),
-                    .uncertainty = uncertainty.at(i)});
+                    .measurementUncertainty = measurementUncertainty.at(i),
+                    .simUncertainty = simUncertainty.at(i),
+                });
             problem.AddResidualBlock(cost_function, new ceres::HuberLoss(2.0), &x);
         }
 
@@ -219,7 +225,8 @@ namespace GSL::NACCeres
     {
         const std::vector<float>& simulated;
         const float& observed;
-        const float& uncertainty;
+        const float& measurementUncertainty;
+        const float& simUncertainty;
 
         template <typename T>
         bool operator()(const T* const* x, T* residual) const
@@ -231,7 +238,7 @@ namespace GSL::NACCeres
                 sim += scale * T(simulated.at(doorwayIdx));
             }
 
-            residual[0] = EvaluateScale(sim, T(observed), T(uncertainty));
+            residual[0] = EvaluateScale(sim, T(observed), T(measurementUncertainty), T(simUncertainty));
 
             GSL_ASSERT(ceres::isfinite(residual[0]));
             return true;
@@ -240,7 +247,8 @@ namespace GSL::NACCeres
 
     MultipleScales FitDoorwayScales(const std::vector<std::vector<float>>& simulated,
                                     const std::vector<float>& observed,
-                                    const std::vector<float>& uncertainty)
+                                    const std::vector<float>& measurementUncertainty,
+                                    const std::vector<float>& simUncertainty)
     {
         if (simulated.empty())
             return MultipleScales{.scales = {}, .result = Result{.residuals = {}}};
@@ -259,7 +267,8 @@ namespace GSL::NACCeres
                 new CostFunctorDoorways{
                     .simulated = simulated.at(i),
                     .observed = observed.at(i),
-                    .uncertainty = uncertainty.at(i)});
+                    .measurementUncertainty = measurementUncertainty.at(i),
+                    .simUncertainty = simUncertainty.at(i)});
 
             for (size_t j = 0; j < result.scales.size(); j++)
                 cost_function->AddParameterBlock(1);
