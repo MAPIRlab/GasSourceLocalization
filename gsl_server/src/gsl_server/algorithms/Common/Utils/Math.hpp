@@ -103,6 +103,11 @@ namespace GSL::Utils
 
     struct RunningWeightedMean
     {
+        void Init(float initialWeight)
+        {
+            sum_w = initialWeight;
+        }
+        
         void Update(float value, float weight)
         {
             sum += value * weight;

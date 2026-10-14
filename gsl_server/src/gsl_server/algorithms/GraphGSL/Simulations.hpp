@@ -126,7 +126,7 @@ namespace GSL::Graph_internal
             {
                 const auto& result = map.uncertaintyMaps.at(room);
                 for (size_t i = 0; i < result.size(); i++)
-                    uncertaintycolors.at(i) = Utils::valueToColor(result.at(i), 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
+                    uncertaintycolors.at(i) = Utils::valueToColor(1.-std::exp(-result.at(i) / 100), 0, 1, Utils::ValueColorMode::Linear, Utils::Colors::ColorMaps::Viridis);
             }
             else
                 for (size_t i = 0; i < uncertaintycolors.size(); i++)

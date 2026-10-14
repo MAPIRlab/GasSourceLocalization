@@ -37,6 +37,7 @@ namespace GSL
             {
                 activeStates.push(ind);
                 currentGasGrid.dataAt(ind) = 1.0f;
+                age.at(wind.metadata.indexOf(ind)).Update(1, 1);
             }
         }
         else
@@ -45,6 +46,7 @@ namespace GSL
             Vector2Int sourceIndices = wind.metadata.coordinatesToIndices(sourcePoint);
             activeStates.push(sourceIndices);
             currentGasGrid.dataAt(sourceIndices) = 1.0f;
+            age.at(wind.metadata.indexOf(sourceIndices)).Update(1, 1);
         }
 
         size_t numIterations = 0;
@@ -185,6 +187,12 @@ namespace GSL
 
             std::optional<Utils::Image::BlurMask> blurMask;
             Utils::Image::Blur(uncertainty.value(), options.uncertaintyBlurSigma, totalGasGrid.AsOccupancy(), blurMask);
+            // GSL_INFO("max: {}", max);
+            // displayImage(Grid2D<float>{*uncertainty, wind});
+
+            for (size_t i = 0; i < uncertainty.value().get().size(); i++)
+                if (totalGasGrid.occupancy.at(i))
+                    uncertainty.value().get().at(i) *= max;
         }
     }
 

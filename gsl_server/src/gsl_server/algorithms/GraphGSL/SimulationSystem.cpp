@@ -246,6 +246,7 @@ namespace GSL::Graph_internal
                 auto roomNode = As<RoomNode>(firstNodeInSim);
                 SimWithResult result = SimulateSingleRoomFromPoint(roomNode, completeGasMap.source->GetPoint());
                 completeGasMap.gasMaps[roomNode] = *result.hitMap;
+                completeGasMap.uncertaintyMaps[roomNode] = *result.uncertainty;
                 for (size_t i = 0; i < firstNodeInSim->doorways.size(); i++)
                 {
                     weightDoorwaysfirstNodeInSim.at(i) = result.ConcentrationAtDoorway(i);
@@ -365,8 +366,8 @@ namespace GSL::Graph_internal
 
         std::map<std::shared_ptr<const DoorwayNode>, GraphCacheEntry> graphCache;
 
-        constexpr float minimumGasProportion = 1e-4;
-        constexpr float minimumGasInlet = 1e-6;
+        constexpr float minimumGasProportion = 1e-3;
+        constexpr float minimumGasInlet = 1e-4;
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
 
@@ -540,14 +541,15 @@ namespace GSL::Graph_internal
                 SimWithResult result = simulationCache.Get(current.doorSource);
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
-                float concentrationInlet = result.ConcentrationAtDoorway(current.doorSource->GetIndex());
+                size_t inletIndex = current.doorSource->GetIndex();
+                float concentrationInlet = result.ConcentrationAtDoorway(inletIndex);
                 float weight = 1.f / concentrationInlet;
 
                 // calculate how much of the gas in the current node makes it to the next node
                 size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
                 next.gasProportion = weight * result.ConcentrationAtDoorway(outletIndex);
                 next.gasAtInlet = current.gasAtInlet * next.gasProportion;
-                next.uncertaintyAtInlet = result.UncertaintyAtDoorway(outletIndex) * current.uncertaintyAtInlet;
+                next.uncertaintyAtInlet = (result.UncertaintyAtDoorway(outletIndex) / result.UncertaintyAtDoorway(inletIndex)) * current.uncertaintyAtInlet;
 
                 if (!Is<RoomNode>(next.doorSource->from))
                 {
@@ -592,6 +594,10 @@ namespace GSL::Graph_internal
                 completeGasMap.uncertaintyMaps[room] = std::vector<float>(room->GetOccupancy().data.size(), 0.);
             }
 
+            std::vector<Utils::RunningWeightedMean> weightedUncertainty(room->GetOccupancy().data.size());
+            for (size_t i = 0; i < weightedUncertainty.size(); i++)
+                weightedUncertainty.at(i).Init(1e-4);
+
             for (const auto& doorway : node->doorways)
             {
                 if (!doorwaysInfo.contains(doorway) || !simulationCache.Contains(doorway))
@@ -601,15 +607,20 @@ namespace GSL::Graph_internal
                 float concentrationWeight = doorwaysInfo.at(doorway).totalGas;
                 float uncertaintyWeight = doorwaysInfo.at(doorway).uncertainty.Mean();
 
-                // adjust for the fact that the normalized concentration at the inlet might not be 1
-                float concentrationInlet = result.ConcentrationAtDoorway(doorway->GetIndex());
-                concentrationWeight /= concentrationInlet;
+                // adjust for the fact that the normalized concentration (or uncertainty) at the inlet might not be 1
+                concentrationWeight /= result.ConcentrationAtDoorway(doorway->GetIndex());
+                uncertaintyWeight /= result.UncertaintyAtDoorway(doorway->GetIndex());
 
+                // TODO check the weighted average for room 2 here
                 for (size_t i = 0; i < result.hitMap->size(); i++)
                     completeGasMap.gasMaps[room].at(i) += result.hitMap->at(i) * concentrationWeight;
                 for (size_t i = 0; i < result.uncertainty->size(); i++)
-                    completeGasMap.uncertaintyMaps[room].at(i) += result.uncertainty->at(i) * uncertaintyWeight;
+                    weightedUncertainty.at(i).Update(result.uncertainty->at(i) * uncertaintyWeight, result.hitMap->at(i) * concentrationWeight);
             }
+
+            // finalize the uncertainty map
+            for (size_t i = 0; i < weightedUncertainty.size(); i++)
+                completeGasMap.uncertaintyMaps[room].at(i) += weightedUncertainty.at(i).Mean();
         }
     }
 
