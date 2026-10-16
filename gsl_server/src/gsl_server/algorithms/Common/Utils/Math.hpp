@@ -68,6 +68,10 @@ namespace GSL::Utils
     template <std::floating_point T>
     double Variance(const MultiGrid<T> grid);
 
+    // Median Absolute Deviation -- https://en.wikipedia.org/wiki/Median_absolute_deviation
+    template <std::floating_point T>
+    T MAD(std::vector<T> values);
+
     struct CovarianceMatrix
     {
         float x;
@@ -107,7 +111,7 @@ namespace GSL::Utils
         {
             sum_w = initialWeight;
         }
-        
+
         void Update(float value, float weight)
         {
             sum += value * weight;
@@ -389,6 +393,21 @@ namespace GSL::Utils
             }
         }
         return x + y;
+    }
+
+    template <std::floating_point T>
+    T MAD(std::vector<T> values)
+    {
+        std::ranges::sort(values);
+        T median = values[values.size() / 2];
+        std::vector<T> absDeviations;
+        absDeviations.reserve(values.size());
+        for (const T& value : values)
+        {
+            absDeviations.push_back(std::abs(value - median));
+        }
+        std::ranges::sort(absDeviations);
+        return absDeviations[absDeviations.size() / 2];
     }
 
     template <std::floating_point T>

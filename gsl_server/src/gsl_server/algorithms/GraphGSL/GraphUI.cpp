@@ -65,7 +65,7 @@ namespace GSL
             fmt::format("{}/resources/graph_imgui.ini",
                         ament_index_cpp::get_package_share_directory("gsl_server"))
                 .c_str(),
-            "GraphGSL", 900, 600);
+            "GraphGSL", 1500, 900);
         ImPlot::CreateContext();
 
         rclcpp::Rate rate(30);

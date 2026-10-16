@@ -700,23 +700,29 @@ namespace GSL
         return std::exp(-residual / likelihoodSigma);
     }
 
-    void GraphGSL::CalculateNodeProbabilities(const std::vector<NodeResult>& residuals)
+    void GraphGSL::CalculateNodeProbabilities(const std::vector<NodeResult>& results)
     {
-        mostRecentRoomResults = residuals;
+        mostRecentRoomResults = results;
         roomSourceProbabilities.clear();
+        
+        std::vector<float> residuals;
+        for (const auto& result : results)
+            residuals.push_back(result.residual);
+
+        likelihoodSigma = Utils::MAD(residuals);
         GSL_INFO("Results with sigma={:.2e}", likelihoodSigma);
-        std::vector<long double> scores(residuals.size());
+        std::vector<long double> scores(results.size());
         long double scoresSum = 0;
-        for (size_t i = 0; i < residuals.size(); i++)
+        for (size_t i = 0; i < results.size(); i++)
         {
-            const auto& result = residuals.at(i);
+            const auto& result = results.at(i);
             scores.at(i) = ProbFromResidual(result.residual);
             scoresSum += scores.at(i);
         }
 
-        for (size_t i = 0; i < residuals.size(); i++)
+        for (size_t i = 0; i < results.size(); i++)
         {
-            const auto& result = residuals.at(i);
+            const auto& result = results.at(i);
             double prob = scores.at(i) / scoresSum;
             roomSourceProbabilities[result.node.get()] = prob;
             mostRecentRoomResults.at(i).normalizedProb = prob;
