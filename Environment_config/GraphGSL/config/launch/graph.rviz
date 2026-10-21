@@ -301,17 +301,17 @@ Visualization Manager:
         Value: /PioneerP3DX/simGasMaps
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: true
+      Enabled: false
       Name: MeasuredGasMaps
       Namespaces:
-        "": true
+        {}
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/measuredGasMaps
-      Value: true
+      Value: false
     - Class: rviz_default_plugins/MarkerArray
       Enabled: false
       Name: Quadtree
@@ -384,17 +384,17 @@ Visualization Manager:
         Value: /expected_source_position
       Value: false
     - Class: rviz_default_plugins/MarkerArray
-      Enabled: false
+      Enabled: true
       Name: Uncertainty
       Namespaces:
-        {}
+        "": true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /PioneerP3DX/simUncertainty
-      Value: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 183; 194; 217
@@ -453,8 +453,8 @@ Visualization Manager:
       Scale: 53.053306579589844
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz_default_plugins)
-      X: 6.664997577667236
-      Y: 8.166669845581055
+      X: 5.364421844482422
+      Y: 5.471273899078369
     Saved: ~
 Window Geometry:
   Displays:

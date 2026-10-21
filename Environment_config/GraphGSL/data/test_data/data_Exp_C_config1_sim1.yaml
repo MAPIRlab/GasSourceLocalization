@@ -76,3 +76,42 @@
 #     frame: ""
 #   gas:
 #     concentration: 0
+- pose:
+    x: 4.9500000000000002
+    y: 2.3500000000000001
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -1.19513273
+    speed: 0.737318873
+    frame: ""
+  gas:
+    concentration: 1.8088882
+- pose:
+    x: 5.2136273384094238
+    y: 2.9078083038330078
+    qx: 0
+    qy: 0
+    qz: 0
+    qw: 1
+  wind:
+    direction: -1.21687293
+    speed: 0.742911339
+    frame: ""
+  gas:
+    concentration: 7.95173883
+- pose:
+    x: 4.4219708442687988
+    y: 5.1131372451782227
+    qx: 0
+    qy: 0
+    qz: 1
+    qw: 6.123233995736766e-17
+  wind:
+    direction: -1.31178308
+    speed: 0.479539871
+    frame: ""
+  gas:
+    concentration: 47.7663155

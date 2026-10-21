@@ -202,7 +202,7 @@ namespace GSL
                     for (auto& doorway : node->doorways)
                         pool.QueueJob([&, node, doorway]()
                                       {
-                                          simulationSystem.SimulateEntireGraph(doorway->OtherSide());
+                                          simulationSystem.SimulateEntireGraph(doorway);
                                       });
                 }
             }

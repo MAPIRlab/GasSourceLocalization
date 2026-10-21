@@ -381,7 +381,7 @@ namespace GSL::Graph_internal
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
 
-#define LOG_DETAILS 1
+#define LOG_DETAILS 0
 #if LOG_DETAILS
 #define LOG_TRACE(...) GSL_INFO(__VA_ARGS__)
 #else
@@ -610,8 +610,6 @@ namespace GSL::Graph_internal
             }
 
             std::vector<Utils::RunningWeightedMean> weightedUncertainty(room->GetOccupancy().data.size());
-            for (size_t i = 0; i < weightedUncertainty.size(); i++)
-                weightedUncertainty.at(i).Init(1e-4);
 
             for (const auto& doorway : node->doorways)
             {
@@ -627,7 +625,6 @@ namespace GSL::Graph_internal
                 concentrationWeight /= result.ConcentrationAtDoorway(doorway->GetIndex());
                 uncertaintyWeight /= result.UncertaintyAtDoorway(doorway->GetIndex());
 
-                // TODO check the weighted average for room 2 here
                 for (size_t i = 0; i < result.hitMap->size(); i++)
                     completeGasMap.gasMaps[room].at(i) += result.hitMap->at(i) * concentrationWeight;
                 for (size_t i = 0; i < result.uncertainty->size(); i++)
