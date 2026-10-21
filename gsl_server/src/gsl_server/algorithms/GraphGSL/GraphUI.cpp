@@ -11,9 +11,9 @@
 #include "imgui_gl/imgui_gl.h"
 #include "imgui_gl/utils.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <cmath>
 #include <implot/implot.h>
 #include <rclcpp/rclcpp.hpp>
-#include <cmath>
 
 using namespace GSL::Graph_internal;
 namespace GSL
@@ -449,7 +449,7 @@ namespace GSL
     void GraphUI::PlotLikelihoods()
     {
         static float sigma = gsl->likelihoodSigma;
-        if(sigma != gsl->likelihoodSigma)
+        if (sigma != gsl->likelihoodSigma)
         {
             sigma = gsl->likelihoodSigma;
             gsl->CalculateNodeProbabilities(gsl->mostRecentRoomResults);
@@ -459,7 +459,8 @@ namespace GSL
         if (!validSigma)
             ImGui::Text("Likelihood sigma must be positive.");
 
-        float xMax = 5.0f * sigma;
+        float xMax = -FLT_MAX;
+        float xMin = FLT_MAX;
         std::vector<float> residuals;
         std::vector<float> likelihoods;
         std::vector<std::string> roomIds;
@@ -484,6 +485,8 @@ namespace GSL
                 roomIds.push_back(result.node->id);
                 if (result.residual > xMax)
                     xMax = result.residual * 1.05f;
+                if (result.residual < xMin)
+                    xMin = result.residual * 0.95f;
             }
             if (std::isfinite(result.normalizedProb) && result.node)
             {
@@ -495,55 +498,54 @@ namespace GSL
             }
         }
 
-        if (validSigma)
+        if (validSigma && !residuals.empty())
         {
             constexpr int sampleCount = 101;
             std::vector<float> curveX(sampleCount);
             std::vector<float> curveY(sampleCount);
             for (int i = 0; i < sampleCount; ++i)
             {
-                const float x = xMax * i / (sampleCount - 1);
+                const float x = xMin + (xMax - xMin) * i / (sampleCount - 1);
                 curveX[i] = x;
                 curveY[i] = std::exp(-x / sigma);
             }
 
             if (ImPlot::BeginPlot("Likelihoods", ImVec2(-1, 260)))
             {
-                ImPlot::SetupAxes("Residual", "Likelihood",
-                                  ImPlotAxisFlags_AutoFit, ImPlotAxisFlags_AutoFit);
+                ImPlot::SetupAxes("Residual", "Likelihood");
+                ImPlot::SetupAxisLimits(ImAxis_X1, xMin, xMax, ImPlotCond_Always);
+                ImPlot::SetupAxisLimits(ImAxis_Y1, 0,
+                                        std::exp(-xMin / sigma), ImPlotCond_Always);
                 ImPlot::PlotLine("exp(-x / sigma)", curveX.data(), curveY.data(), sampleCount);
-                if (!residuals.empty())
+                ImPlot::PlotScatter("Room residuals", residuals.data(), likelihoods.data(),
+                                    static_cast<int>(residuals.size()));
+
+                if (ImPlot::IsPlotHovered())
                 {
-                    ImPlot::PlotScatter("Room residuals", residuals.data(), likelihoods.data(),
-                                        static_cast<int>(residuals.size()));
+                    const ImVec2 mouse = ImGui::GetMousePos();
+                    constexpr float hoverRadius = 8.0f;
+                    const float maxDistanceSquared = hoverRadius * hoverRadius;
+                    float nearestDistanceSquared = maxDistanceSquared;
+                    size_t nearestPoint = residuals.size();
 
-                    if (ImPlot::IsPlotHovered())
+                    for (size_t i = 0; i < residuals.size(); ++i)
                     {
-                        const ImVec2 mouse = ImGui::GetMousePos();
-                        constexpr float hoverRadius = 8.0f;
-                        const float maxDistanceSquared = hoverRadius * hoverRadius;
-                        float nearestDistanceSquared = maxDistanceSquared;
-                        size_t nearestPoint = residuals.size();
-
-                        for (size_t i = 0; i < residuals.size(); ++i)
+                        const ImVec2 point = ImPlot::PlotToPixels(residuals[i], likelihoods[i]);
+                        const float dx = point.x - mouse.x;
+                        const float dy = point.y - mouse.y;
+                        const float distanceSquared = dx * dx + dy * dy;
+                        if (distanceSquared < nearestDistanceSquared)
                         {
-                            const ImVec2 point = ImPlot::PlotToPixels(residuals[i], likelihoods[i]);
-                            const float dx = point.x - mouse.x;
-                            const float dy = point.y - mouse.y;
-                            const float distanceSquared = dx * dx + dy * dy;
-                            if (distanceSquared < nearestDistanceSquared)
-                            {
-                                nearestDistanceSquared = distanceSquared;
-                                nearestPoint = i;
-                            }
+                            nearestDistanceSquared = distanceSquared;
+                            nearestPoint = i;
                         }
+                    }
 
-                        if (nearestPoint < roomIds.size())
-                        {
-                            ImGui::BeginTooltip();
-                            ImGui::Text("Room: %s", roomIds[nearestPoint].c_str());
-                            ImGui::EndTooltip();
-                        }
+                    if (nearestPoint < roomIds.size())
+                    {
+                        ImGui::BeginTooltip();
+                        ImGui::Text("Room: %s", roomIds[nearestPoint].c_str());
+                        ImGui::EndTooltip();
                     }
                 }
                 ImPlot::EndPlot();

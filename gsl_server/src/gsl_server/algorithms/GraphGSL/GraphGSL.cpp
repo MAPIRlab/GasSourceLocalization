@@ -221,13 +221,19 @@ namespace GSL
                 pool.QueueJob([&]()
                               {
                                   float bestResidual = std::numeric_limits<float>::max();
+                                  float scaleBest;
                                   for (const auto& map : simulationSystem.gasMapsWithRoomSource.at(node))
                                   {
-                                      float residual = ResidualSingleSimulation(map).first;
-                                      bestResidual = std::min(bestResidual, residual);
+                                      auto [residual, scale] = ResidualSingleSimulation(map);
+                                      if(residual < bestResidual)
+                                      {
+                                          bestResidual = residual;
+                                          scaleBest = scale;
+                                      }
                                   }
 
                                   mtx.lock();
+                                  GSL_INFO("Best residual for node {}: {:.2e} (scale: {:.2e})", node->id, bestResidual, scaleBest);
                                   nodeResiduals.push_back({.node = node, .residual = bestResidual});
                                   mtx.unlock();
                               });
