@@ -185,19 +185,20 @@ namespace GSL::Graph_internal
 
     SimWithResult SimulationSystem::SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway)
     {
-        auto roomNode = As<RoomNode>(doorway->from.lock());
+        auto roomNode = As<RoomNode>(doorway->to.lock());
         GSL_ASSERT_MSG(roomNode, "Tried to do simulation in place node which is not a room: {}", doorway->from.lock()->id);
         Grid2DMetadata nodeMetadata = roomNode->GetOccupancy().metadata;
+        auto otherSide = doorway->OtherSide();
+        
         ScopedStopwatch watch(doorway->GetDebuggingName());
-
         if (eulerianSimulation)
         {
-            SimWithResult result = SimulateSingleRoomFromAABBEulerian(roomNode, doorway->aabb, doorway->samePhysicalDoorway);
+            SimWithResult result = SimulateSingleRoomFromAABBEulerian(roomNode, otherSide->aabb, otherSide->samePhysicalDoorway);
             return result;
         }
         else
         {
-            SimWithResult result = SimulateSingleRoomFromAABBFilaments(roomNode, doorway->aabb, doorway->samePhysicalDoorway);
+            SimWithResult result = SimulateSingleRoomFromAABBFilaments(roomNode, otherSide->aabb, otherSide->samePhysicalDoorway);
             return result;
         }
     }
@@ -216,19 +217,17 @@ namespace GSL::Graph_internal
         return map;
     }
 
-    CompleteMap& SimulationSystem::SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway, std::optional<std::shared_ptr<PlaceNode>> keyRoom)
+    CompleteMap& SimulationSystem::SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway)
     {
         // create an entry for this simulation in the results data structure
-        if (!keyRoom)
-            keyRoom = sourceDoorway->to.lock();
         completeMapsMtx.lock();
-        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[keyRoom.value()];
+        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[sourceDoorway->from.lock()];
         maps.push_back(CompleteMap{.source = std::make_shared<DoorwaySource>(sourceDoorway)});
         CompleteMap& map = maps.back();
         completeMapsMtx.unlock();
 
         // run the simulation
-        _SimulateEntireGraph(sourceDoorway->to.lock(), map);
+        _SimulateEntireGraph(sourceDoorway->from.lock(), map);
         return map;
     }
 
@@ -278,13 +277,13 @@ namespace GSL::Graph_internal
                     continue;
 
                 NodeState nextRoom;
-                nextRoom.doorSource = doorway->OtherSide();
+                nextRoom.doorSource = doorway;
                 nextRoom.gasAtInlet = weightDoorwaysfirstNodeInSim.at(i);
                 nextRoom.gasProportion = nextRoom.gasAtInlet;
                 nextRoom.uncertaintyAtInlet = uncertaintyDoorwaysfirstNodeInSim.at(i);
 
                 for (const auto& nextDoorway : doorway->to.lock()->doorways)
-                    if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
+                    if (!nextRoom.doorSource->OtherSide()->samePhysicalDoorway.contains(nextDoorway))
                         nextRoom.doorways.push(nextDoorway);
 
                 stateStack.push_back(nextRoom);
@@ -306,8 +305,8 @@ namespace GSL::Graph_internal
 
             auto source = As<DoorwaySource>(completeGasMap.source);
             NodeState nextRoom{.gasAtInlet = 1.f, .gasProportion = 1.f, .uncertaintyAtInlet = 1.f, .doorSource = source->doorway};
-            for (const auto& nextDoorway : source->doorway->from.lock()->doorways)
-                if (!nextRoom.doorSource->samePhysicalDoorway.contains(nextDoorway))
+            for (const auto& nextDoorway : source->doorway->to.lock()->doorways)
+                if (!nextRoom.doorSource->OtherSide()->samePhysicalDoorway.contains(nextDoorway))
                     nextRoom.doorways.push(nextDoorway);
             stateStack.push_back(nextRoom);
         }
@@ -382,7 +381,7 @@ namespace GSL::Graph_internal
         size_t iterations = 0;
         std::deque<NodeState> stateStack;
 
-#define LOG_DETAILS 0
+#define LOG_DETAILS 1
 #if LOG_DETAILS
 #define LOG_TRACE(...) GSL_INFO(__VA_ARGS__)
 #else
@@ -399,6 +398,11 @@ namespace GSL::Graph_internal
                     break;
 
                 NodeState& current = stateStack.back();
+                if(current.gasAtInlet < minimumGasInlet)
+                {
+                    stateStack.pop_back();
+                    continue;
+                }
 #if LOG_DETAILS
                 std::stringstream ss;
                 for (const auto& node : stateStack)
@@ -546,25 +550,25 @@ namespace GSL::Graph_internal
 
                 // otherwise, let's get the next doorway and continue
                 NodeState next;
-                next.doorSource = current.doorways.top()->OtherSide();
+                next.doorSource = current.doorways.top();
                 current.doorways.pop();
 
                 SimWithResult result = simulationCache.Get(current.doorSource);
 
                 // adjust for the fact that the normalized concentration at the inlet might not be 1
-                size_t inletIndex = current.doorSource->GetIndex();
+                size_t inletIndex = current.doorSource->OtherSide()->GetIndex();
                 float concentrationInlet = result.ConcentrationAtDoorway(inletIndex);
                 float weight = 1.f / concentrationInlet;
 
                 // calculate how much of the gas in the current node makes it to the next node
-                size_t outletIndex = next.doorSource->OtherSide()->GetIndex();
+                size_t outletIndex = next.doorSource->GetIndex();
                 next.gasProportion = weight * result.ConcentrationAtDoorway(outletIndex);
                 next.gasAtInlet = current.gasAtInlet * next.gasProportion;
                 next.uncertaintyAtInlet = (result.UncertaintyAtDoorway(outletIndex) / result.UncertaintyAtDoorway(inletIndex)) * current.uncertaintyAtInlet;
 
-                if (!Is<RoomNode>(next.doorSource->from))
+                if (!Is<RoomNode>(next.doorSource->to))
                 {
-                    LOG_TRACE("Skipping outside node {}", next.doorSource->from.lock()->id);
+                    LOG_TRACE("Skipping outside node {}", next.doorSource->to.lock()->id);
                     continue;
                 }
 
@@ -582,8 +586,8 @@ namespace GSL::Graph_internal
                     graphCache[previous.doorSource].gasProportion[next.doorSource] += next.gasAtInlet / previous.gasAtInlet;
 
                 // fill in the doorways of the next state node
-                for (const auto nextDoorway : next.doorSource->from.lock()->doorways)
-                    if (!next.doorSource->samePhysicalDoorway.contains(nextDoorway))
+                for (const auto nextDoorway : next.doorSource->to.lock()->doorways)
+                    if (!next.doorSource->OtherSide()->samePhysicalDoorway.contains(nextDoorway))
                         next.doorways.push(nextDoorway);
 
                 // push the new state on top
@@ -611,12 +615,13 @@ namespace GSL::Graph_internal
 
             for (const auto& doorway : node->doorways)
             {
-                if (!doorwaysInfo.contains(doorway) || !simulationCache.Contains(doorway))
+                auto otherSide = doorway->OtherSide();
+                if (!doorwaysInfo.contains(otherSide) || !simulationCache.Contains(otherSide))
                     continue;
 
-                const SimWithResult& result = simulationCache.Get(doorway);
-                float concentrationWeight = doorwaysInfo.at(doorway).totalGas;
-                float uncertaintyWeight = doorwaysInfo.at(doorway).uncertainty.Mean();
+                const SimWithResult& result = simulationCache.Get(otherSide);
+                float concentrationWeight = doorwaysInfo.at(otherSide).totalGas;
+                float uncertaintyWeight = doorwaysInfo.at(otherSide).uncertainty.Mean();
 
                 // adjust for the fact that the normalized concentration (or uncertainty) at the inlet might not be 1
                 concentrationWeight /= result.ConcentrationAtDoorway(doorway->GetIndex());
@@ -665,7 +670,7 @@ namespace GSL::Graph_internal
             {
                 std::scoped_lock lock(mtx);
                 simsInFlight.insert(doorway);
-                GSL_TRACE("Running simulation in room {} from doorway {}", doorway->from.lock()->id, doorway->GetName());
+                GSL_TRACE("Running simulation in room {} from doorway {}", doorway->to.lock()->id, doorway->GetName());
             }
             SimWithResult result = simSys->SimulateSingleRoomFromDoorway(doorway);
             {

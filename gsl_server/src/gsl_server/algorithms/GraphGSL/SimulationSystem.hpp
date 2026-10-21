@@ -27,7 +27,7 @@ namespace GSL::Graph_internal
                                                  const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
         CompleteMap& SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint);
-        CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway, std::optional<std::shared_ptr<PlaceNode>> keyRoom = std::nullopt);
+        CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
 
         void EmergencyStop(); // to be called from the UI when there is an infinite loop
 
