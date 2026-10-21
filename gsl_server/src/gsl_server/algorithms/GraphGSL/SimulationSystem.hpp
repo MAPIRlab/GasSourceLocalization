@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Simulations.hpp"
+#include "gsl_server/algorithms/Common/Simulation/EulerianSimulation.hpp"
 #include "gsl_server/algorithms/Common/Utils/Images.hpp"
 #include "gsl_server/algorithms/GraphGSL/Graph.hpp"
 #include "gsl_server/algorithms/GraphGSL/Node.hpp"
 #include <gsl_server/algorithms/Common/Utils/Synchronization.hpp>
-#include "gsl_server/algorithms/Common/Simulation/EulerianSimulation.hpp"
 #include <stack>
 
 namespace GSL
@@ -27,7 +27,7 @@ namespace GSL::Graph_internal
                                                  const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromDoorway(const std::shared_ptr<const DoorwayNode> doorway);
         CompleteMap& SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint);
-        CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway);
+        CompleteMap& SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway, std::optional<std::shared_ptr<PlaceNode>> keyRoom = std::nullopt);
 
         void EmergencyStop(); // to be called from the UI when there is an infinite loop
 
@@ -35,6 +35,7 @@ namespace GSL::Graph_internal
 
         void blurTest(std::vector<Vector2Int> points); // this is a utility for testing the effects of the blur. Not part of the algorithm.
         void uncertaintyTest(std::shared_ptr<PlaceNode> sourceRoom, Vector2 sourcePoint);
+        size_t GetSimCount() { return SYNC(simulationCount); }
 
         std::map<std::shared_ptr<PlaceNode>, std::deque<CompleteMap>> gasMapsWithRoomSource;
         Graph* graph;
@@ -62,15 +63,13 @@ namespace GSL::Graph_internal
             SimulationSystem* simSys;
         } simulationCache;
 
-
-
     private:
         SimWithResult SimulateSingleRoomFromPointFilaments(const std::shared_ptr<RoomNode> node, Vector2 point);
         SimWithResult SimulateSingleRoomFromPointEulerian(const std::shared_ptr<RoomNode> node, Vector2 point);
         SimWithResult SimulateSingleRoomFromAABBFilaments(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
-                                                 const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
+                                                          const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         SimWithResult SimulateSingleRoomFromAABBEulerian(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
-                                                      const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
+                                                         const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways);
         struct NodeState
         {
             float gasAtInlet;
@@ -86,8 +85,9 @@ namespace GSL::Graph_internal
         };
 
         bool emergencyStopped = false;
-        std::mutex mtx;
+        std::mutex completeMapsMtx;
         std::map<std::shared_ptr<RoomNode>, std::optional<Utils::Image::BlurMask>> blurMasks;
+        Utils::Synced<size_t> simulationCount;
 
         void PostProcessResult(SimWithResult& result, const Grid2D<Occupancy>& occupancy);
         void _SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, CompleteMap& completeMap);

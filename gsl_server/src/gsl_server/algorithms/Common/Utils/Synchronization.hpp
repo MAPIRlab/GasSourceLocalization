@@ -3,13 +3,19 @@
 
 namespace GSL::Utils
 {
+
+    template <typename T> class SyncedAccess; // fwd declare for friendship
+
     template <typename T>
     class Synced
     {
+        friend class SyncedAccess<T>;
+
     public:
         Synced() : obj() {}
         Synced(const T& value) : obj(value) {}
 
+    private:
         T obj;
         std::mutex mtx;
     };

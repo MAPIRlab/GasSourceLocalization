@@ -187,16 +187,27 @@ namespace GSL
             for (const auto& node : graph.nodes)
             {
                 auto roomNode = As<RoomNode>(node);
-                if (!roomNode)
-                    continue;
+                if (roomNode)
+                {
+                    std::vector<Vector2> representativePoints = roomNode->RepresentativePoints();
 
-                for (auto doorway : roomNode->doorways)
-                    pool.QueueJob([&, doorway]()
-                                  {
-                                      simulationSystem.SimulateEntireGraph(doorway);
-                                  });
+                    for (auto& point : representativePoints)
+                        pool.QueueJob([&, node, point]()
+                                      {
+                                          simulationSystem.SimulateEntireGraph(node, point);
+                                      });
+                }
+                else
+                {
+                    for (auto& doorway : node->doorways)
+                        pool.QueueJob([&, node, doorway]()
+                                      {
+                                          simulationSystem.SimulateEntireGraph(doorway->OtherSide(), node);
+                                      });
+                }
             }
             pool.Wait();
+            GSL_INFO("Total simulations run: {}", simulationSystem.GetSimCount());
         }
 
         // calculate the residuals
@@ -209,39 +220,19 @@ namespace GSL
             for (const auto& node : graph.nodes)
                 pool.QueueJob([&]()
                               {
-                                  GetNodeResidual(node, nodeResiduals, mtx);
+                                  float bestResidual = std::numeric_limits<float>::max();
+                                  for (const auto& map : simulationSystem.gasMapsWithRoomSource.at(node))
+                                  {
+                                      float residual = ResidualSingleSimulation(map).first;
+                                      bestResidual = std::min(bestResidual, residual);
+                                  }
+
+                                  mtx.lock();
+                                  nodeResiduals.push_back({.node = node, .residual = bestResidual});
+                                  mtx.unlock();
                               });
             pool.Wait();
         }
-
-#if !MEASUREMENT_SORTING
-        {
-            for (auto node : graph.nodes)
-            {
-                NodeResult& nodeRes = *std::find_if(nodeResiduals.begin(), nodeResiduals.end(), [node](const NodeResult& r)
-                                                    {
-                                                        return r.node == node;
-                                                    });
-
-                // add the residuals for the cells in the sourceNode itself
-                if (auto roomNode = As<RoomNode>(node))
-                {
-                    for (size_t i = 0; i < roomNode->GetOccupancy().data.size(); i++)
-                    {
-                        if (!roomNode->GetOccupancy().occupancy.at(i))
-                            continue;
-                        if (bestResidualPerCell.contains(roomNode->GetCellIdentifier(i)))
-                            nodeRes.residual += bestResidualPerCell.at(roomNode->GetCellIdentifier(i));
-                        else
-                            nodeRes.residual += NACCeres::defaultResidual;
-
-                        GSL_ASSERT(std::isfinite(nodeRes.residual));
-                    }
-                }
-                nodeRes.residual /= graph.TotalFreeCellsCount();
-            }
-        }
-#endif
 
         // turn the residuals into probabilities
         CalculateNodeProbabilities(nodeResiduals);
@@ -545,7 +536,7 @@ namespace GSL
         GSL_INFO("Residual at {}: {:.2e}. Scales: {:.2f}",
                  sourceNode->id,
                  nodeResiduals.back().residual / graph.TotalFreeCellsCount(),
-                //  nodeResiduals.back().confidenceSum,
+                 //  nodeResiduals.back().confidenceSum,
                  fmt::join(result.scales.begin(), result.scales.end(), ", "));
 
         if (auto move = As<MovingStateGraph>(movingState))
@@ -704,12 +695,12 @@ namespace GSL
     {
         mostRecentRoomResults = results;
         roomSourceProbabilities.clear();
-        
-        std::vector<float> residuals;
-        for (const auto& result : results)
-            residuals.push_back(result.residual);
 
-        likelihoodSigma = Utils::MAD(residuals);
+        // std::vector<float> residuals;
+        // for (const auto& result : results)
+        //     residuals.push_back(result.residual);
+
+        // likelihoodSigma = Utils::MAD(residuals);
         GSL_INFO("Results with sigma={:.2e}", likelihoodSigma);
         std::vector<long double> scores(results.size());
         long double scoresSum = 0;

@@ -46,7 +46,7 @@ namespace GSL
         Graph graph;
         Graph_internal::SimulationSystem simulationSystem;
         
-        float likelihoodSigma = 7e-4;
+        float likelihoodSigma = 3e-3;
         float uncertaintySigma = 1e2;
         std::map<const PlaceNode*, float> roomSourceProbabilities;
         std::map<RegionIdentifier, float> bestResidualPerCell; // to generate an optimistic estimation of the residual in the source node at the coarse level

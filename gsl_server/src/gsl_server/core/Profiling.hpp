@@ -17,7 +17,7 @@ class ScopedStopwatch
     using TimePoint = std::chrono::_V2::system_clock::time_point;
 
 public:
-    ScopedStopwatch(const std::string& _name = "")
+    ScopedStopwatch(std::string_view _name = "")
     {
         start = clock.now();
         name = _name;

@@ -13,6 +13,7 @@ namespace GSL::Graph_internal
         gasMapsWithRoomSource.clear();
         emergencyStopped = false;
         EulerianSimulation::ClearAllCaches();
+        SYNC(simulationCount) = 0;
         // blurMasks.clear(); //this can probably be retained (if the graph does not change)
     }
 
@@ -32,6 +33,8 @@ namespace GSL::Graph_internal
 
     SimWithResult SimulationSystem::SimulateSingleRoomFromPoint(const std::shared_ptr<RoomNode> node, Vector2 point)
     {
+        SYNC(simulationCount) += 1;
+
         if (eulerianSimulation)
             return SimulateSingleRoomFromPointEulerian(node, point);
         else
@@ -41,6 +44,8 @@ namespace GSL::Graph_internal
     SimWithResult SimulationSystem::SimulateSingleRoomFromAABB(const std::shared_ptr<RoomNode> roomNode, AABB2D sourceAABB,
                                                                const std::set<std::shared_ptr<DoorwayNode>>& blockedDoorways)
     {
+        SYNC(simulationCount) += 1;
+
         if (eulerianSimulation)
             return SimulateSingleRoomFromAABBEulerian(roomNode, sourceAABB, blockedDoorways);
         else
@@ -51,6 +56,7 @@ namespace GSL::Graph_internal
     {
         SimWithResult result;
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
+        result.uncertainty = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         std::shared_ptr<FilamentSimulation> filamentSim(new FilamentSimulation(SimulationSource(point),
                                                                                roomNode->GetWindMap(),
                                                                                SimulationOutlets{
@@ -111,6 +117,7 @@ namespace GSL::Graph_internal
 
         // configure the simulation
         result.hitMap = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
+        result.uncertainty = std::make_shared<std::vector<float>>(roomNode->GetOccupancy().data.size(), 0.);
         std::shared_ptr<FilamentSimulation> filamentSim(new FilamentSimulation(SimulationSource(sourceAABB),
                                                                                roomNode->GetWindMap(),
                                                                                SimulationOutlets{
@@ -181,6 +188,7 @@ namespace GSL::Graph_internal
         auto roomNode = As<RoomNode>(doorway->from.lock());
         GSL_ASSERT_MSG(roomNode, "Tried to do simulation in place node which is not a room: {}", doorway->from.lock()->id);
         Grid2DMetadata nodeMetadata = roomNode->GetOccupancy().metadata;
+        ScopedStopwatch watch(doorway->GetDebuggingName());
 
         if (eulerianSimulation)
         {
@@ -197,25 +205,27 @@ namespace GSL::Graph_internal
     CompleteMap& SimulationSystem::SimulateEntireGraph(const std::shared_ptr<PlaceNode> firstNodeInSim, Vector2 sourcePoint)
     {
         // create an entry for this simulation in the results data structure
-        mtx.lock();
+        completeMapsMtx.lock();
         std::deque<CompleteMap>& maps = gasMapsWithRoomSource[firstNodeInSim];
         maps.push_back(CompleteMap{.source = std::make_shared<PointSource>(sourcePoint)});
         CompleteMap& map = maps.back();
-        mtx.unlock();
+        completeMapsMtx.unlock();
 
         // run the simulation
         _SimulateEntireGraph(firstNodeInSim, map);
         return map;
     }
 
-    CompleteMap& SimulationSystem::SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway)
+    CompleteMap& SimulationSystem::SimulateEntireGraph(std::shared_ptr<DoorwayNode> sourceDoorway, std::optional<std::shared_ptr<PlaceNode>> keyRoom)
     {
         // create an entry for this simulation in the results data structure
-        mtx.lock();
-        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[sourceDoorway->to.lock()];
+        if (!keyRoom)
+            keyRoom = sourceDoorway->to.lock();
+        completeMapsMtx.lock();
+        std::deque<CompleteMap>& maps = gasMapsWithRoomSource[keyRoom.value()];
         maps.push_back(CompleteMap{.source = std::make_shared<DoorwaySource>(sourceDoorway)});
         CompleteMap& map = maps.back();
-        mtx.unlock();
+        completeMapsMtx.unlock();
 
         // run the simulation
         _SimulateEntireGraph(sourceDoorway->to.lock(), map);

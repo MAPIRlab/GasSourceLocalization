@@ -144,15 +144,17 @@ namespace GSL
 
     std::vector<Vector2> RoomNode::RepresentativePoints() const
     {
-        constexpr size_t num = 2;
-
         AABB2D aabb = GetAABB();
-        Vector2 step = aabb.size() / (num + 1);
+
+        float stepSize = 1.5f;
+        stepSize = std::min(stepSize, std::min(aabb.size().x, aabb.size().y) / 2.1f);
+
+        Vector2 step{stepSize, stepSize};
 
         std::vector<Vector2> points;
 
-        for (size_t i = 1; i <= num; i++)
-            for (size_t j = 1; j <= num; j++)
+        for (size_t i = 1; i <= aabb.size().x / step.x; i++)
+            for (size_t j = 1; j <= aabb.size().y / step.y; j++)
             {
                 Vector2 p = aabb.min + Vector2(step.x * i, step.y * j);
                 if (GetOccupancy().occupancyAt(p))
