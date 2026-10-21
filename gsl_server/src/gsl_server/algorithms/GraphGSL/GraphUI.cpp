@@ -371,7 +371,7 @@ namespace GSL
                             result = gsl->simulationSystem.SimulateSingleRoomFromPoint(roomNode, selectedCoordinates);
                     }
                     else
-                        result = gsl->simulationSystem.SimulateSingleRoomFromDoorway(roomNode->doorways.at(simulationOptions.selectedArcIdx));
+                        result = gsl->simulationSystem.SimulateSingleRoomFromDoorway(roomNode->doorways.at(simulationOptions.selectedArcIdx)->OtherSide());
 
                     // Log results
                     // GSL_INFO("Emitted {} filaments during recording", result.simulation->totalEmittedFilaments);
