@@ -230,7 +230,7 @@ namespace GSL
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Default residual", &NACCeres::defaultResidual, 1e-6, 0.0, 1.0, "%.2e");
             ImGui::SetNextItemWidth(100);
-            ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 1e-4, 1e-5, 1, "%.2e");
+            ImGui::DragFloat("Likelihood sigma", &gsl->likelihoodSigma, 0, 0, 1e4, "%.2e");
             ImGui::SetNextItemWidth(100);
             ImGui::DragFloat("Uncertainty sigma", &gsl->uncertaintySigma, 0, 1e1, 1e3, "%.2e");
             if (ImGui::Button("Evaluate Source Probs"))
