@@ -93,6 +93,12 @@ namespace GSL::Utils
         return r * Vector2(cos(theta), sin(theta));
     }
 
+    double EvaluatePareto(double x, double alpha)
+    {
+        // x_m assumed to be 1, and x shifted by 1 so we can evaluate values starting at 0
+        return alpha / std::pow(x + 1, alpha + 1);
+    }
+
     double uniformRandom(double min, double max)
     {
         return uniformRandomT(min, max);

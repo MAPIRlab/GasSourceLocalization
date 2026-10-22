@@ -40,6 +40,8 @@ namespace GSL::Utils
     float uniformRandomF(float min, float max);
     Vector2 polarToCartesian(float r, float theta);
 
+    double EvaluatePareto(double x, double alpha);
+
     template <typename T>
     double KLD(
         const std::vector<T>& a,

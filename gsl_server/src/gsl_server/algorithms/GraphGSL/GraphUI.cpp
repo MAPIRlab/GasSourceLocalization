@@ -481,7 +481,7 @@ namespace GSL
             if (validSigma && std::isfinite(result.residual))
             {
                 residuals.push_back(result.residual);
-                likelihoods.push_back(std::exp(-result.residual / sigma));
+                likelihoods.push_back(gsl->ProbFromResidual(result.residual));
                 roomIds.push_back(result.node->id);
                 if (result.residual > xMax)
                     xMax = result.residual * 1.05f;
@@ -507,7 +507,7 @@ namespace GSL
             {
                 const float x = xMin + (xMax - xMin) * i / (sampleCount - 1);
                 curveX[i] = x;
-                curveY[i] = std::exp(-x / sigma);
+                curveY[i] = gsl->ProbFromResidual(x);
             }
 
             if (ImPlot::BeginPlot("Likelihoods", ImVec2(-1, 260)))
@@ -515,8 +515,8 @@ namespace GSL
                 ImPlot::SetupAxes("Residual", "Likelihood");
                 ImPlot::SetupAxisLimits(ImAxis_X1, xMin, xMax, ImPlotCond_Always);
                 ImPlot::SetupAxisLimits(ImAxis_Y1, 0,
-                                        std::exp(-xMin / sigma), ImPlotCond_Always);
-                ImPlot::PlotLine("exp(-x / sigma)", curveX.data(), curveY.data(), sampleCount);
+                                        gsl->ProbFromResidual(xMin), ImPlotCond_Always);
+                ImPlot::PlotLine("Pareto", curveX.data(), curveY.data(), sampleCount);
                 ImPlot::PlotScatter("Room residuals", residuals.data(), likelihoods.data(),
                                     static_cast<int>(residuals.size()));
 

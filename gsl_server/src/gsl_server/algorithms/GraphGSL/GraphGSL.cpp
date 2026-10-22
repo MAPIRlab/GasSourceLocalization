@@ -694,7 +694,7 @@ namespace GSL
     {
         if (!std::isfinite(residual))
             return 0.0;
-        return std::exp(-residual / likelihoodSigma);
+        return Utils::EvaluatePareto(residual, likelihoodSigma);
     }
 
     void GraphGSL::CalculateNodeProbabilities(const std::vector<NodeResult>& results)
