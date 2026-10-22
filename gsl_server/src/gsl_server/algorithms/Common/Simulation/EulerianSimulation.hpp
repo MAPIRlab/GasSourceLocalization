@@ -9,9 +9,9 @@ namespace GSL
         {
             float lowerThr = 1e-5;
             size_t maxIterations = 1e7;
-            float maxWindSpeed = 0.2;
+            float maxWindSpeed = 0.1;
             float minRho = 0;
-            float maxRho = 0.9;
+            float maxRho = 0.8;
             float uncertaintyBlurSigma = 3.f;
         } options;
 

@@ -106,7 +106,7 @@ namespace GSL
                             float proportion = Utils::CauchyIntervalProb(angleLimits.x,
                                                                          angleLimits.y,
                                                                          windAngle,
-                                                                         std::lerp(0.f, 0.85f, std::clamp(windSpeed / options.maxWindSpeed, 0.f, 1.f)));
+                                                                         std::lerp(options.minRho, options.maxRho, std::clamp(windSpeed / options.maxWindSpeed, 0.f, 1.f)));
                             tData.newProbs[oneDIndex] = proportion;
                             sum += proportion;
                             tData.neighborsIndicesArr[oneDIndex] = neighborInd;
@@ -155,7 +155,7 @@ namespace GSL
                 if (currentGasGrid.data.at(neighborIndex) == 0)
                     activeStates.push(tData.neighborsIndicesArr[k]);
                 currentGasGrid.data.at(neighborIndex) += prob;
-                
+
                 if (uncertainty)
                     age.at(neighborIndex).Update(age.at(currentIndex).Mean() + 1.f, prob);
             }
