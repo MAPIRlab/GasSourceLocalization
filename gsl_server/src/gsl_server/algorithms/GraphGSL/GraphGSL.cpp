@@ -8,6 +8,7 @@
 #include <fmt/ranges.h>
 #include <gsl_server/algorithms/Common/Utils/Collections.hpp>
 #include <gsl_server/algorithms/Common/Utils/RosUtils.hpp>
+#include <dbscan/dbscan.hpp>
 
 #define MEASUREMENT_SORTING 0
 

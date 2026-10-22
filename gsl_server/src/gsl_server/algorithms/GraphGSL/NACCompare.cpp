@@ -107,8 +107,8 @@ namespace GSL::NACCeres
     template <typename T>
     T EvaluateScale(T scaledSimulated, T observed, T measurementUncertainty, T simUncertainty)
     {
-        // T diff = ceres::abs(ceres::log(observed + T(1)) - ceres::log(scaledSimulated + T(1)));
-        T diff = ceres::abs(observed - scaledSimulated);
+        T diff = ceres::abs(ceres::log(observed + T(1)) - ceres::log(scaledSimulated + T(1)));
+        // T diff = ceres::abs(observed - scaledSimulated);
         diff = ceres::lerp(diff, T(defaultResidual), measurementUncertainty);
         // diff = ceres::lerp(diff, T(defaultResidual), simUncertainty); 
         return diff;

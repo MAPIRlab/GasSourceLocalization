@@ -1,6 +1,7 @@
 
 file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 
+add_subdirectory(third_party/dbscan)
 find_package(gmrf_wind_mapping REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Ceres REQUIRED)
@@ -20,6 +21,7 @@ target_link_libraries(GraphGSL
     GSL_common
     Eigen3::Eigen
     Ceres::ceres
+    dbscan
 )
 add_compile_definitions(ENABLE_GraphGSL=1)
 
